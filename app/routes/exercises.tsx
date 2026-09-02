@@ -51,7 +51,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
     <main className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-2xl font-bold">Exercise Library</h1>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {equipmentGroups.map((equipment) => {
           const list = byEquipment.get(equipment) ?? [];
           return (
