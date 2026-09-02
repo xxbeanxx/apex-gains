@@ -1,6 +1,5 @@
-import { Menu } from "lucide-react";
+import { AlertTriangleIcon, HomeIcon } from "lucide-react";
 import {
-  Form,
   Link,
   isRouteErrorResponse,
   Links,
@@ -8,20 +7,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useSubmit,
 } from "react-router";
 
+import { AppNav } from "~/components/app-nav";
+import { themeInitScript } from "~/components/theme-toggle";
 import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
 import { Button } from "~/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -41,10 +33,15 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: themeInitScript sets `class` and
+    // `style.color-scheme` on <html> before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* Must stay blocking and ahead of styles - it prevents the
+            light-mode flash on a dark-mode load. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Meta />
         <Links />
       </head>
@@ -59,93 +56,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App({ loaderData }: Route.ComponentProps) {
   const user = loaderData?.user ?? null;
-  const submit = useSubmit();
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <Link to="/" className="font-bold tracking-tight">
-          Apex Gains
-        </Link>
-        {user ? (
-          <>
-            <nav className="hidden items-center gap-4 text-sm md:flex">
-              <Link to="/today">Today</Link>
-              <Link to="/exercises">Exercises</Link>
-              <Link to="/templates">Templates</Link>
-              <Link to="/routines">Routines</Link>
-              <Link to="/history">History</Link>
-              <Link to="/settings">Settings</Link>
-              <span className="text-muted-foreground">{user.name}</span>
-              <Form method="post" action="/auth/logout">
-                <Button type="submit" variant="ghost" size="sm">
-                  Sign out
-                </Button>
-              </Form>
-            </nav>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="md:hidden"
-                  aria-label="Open menu"
-                >
-                  <Menu />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/today">Today</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/exercises">Exercises</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/templates">Templates</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/routines">Routines</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/history">History</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() =>
-                    submit(null, { method: "post", action: "/auth/logout" })
-                  }
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        ) : (
-          <Button asChild variant="outline" size="sm">
-            <Link to="/auth/google">Sign in with Google</Link>
-          </Button>
-        )}
-      </header>
+    <div className="flex min-h-dvh flex-col">
+      <AppNav user={user} />
       <Outlet />
     </div>
   );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
+  let message = "Something went wrong";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    message = error.status === 404 ? "Page not found" : "Error";
     details =
       error.status === 404
         ? "The requested page could not be found."
@@ -156,11 +82,30 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main
+      id="main"
+      className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-5 px-(--page-px) py-24 text-center"
+    >
+      <span
+        aria-hidden="true"
+        className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+      >
+        <AlertTriangleIcon className="size-6" />
+      </span>
+      <div className="flex flex-col gap-2">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          {message}
+        </h1>
+        <p className="text-muted-foreground">{details}</p>
+      </div>
+      <Button asChild variant="outline">
+        <Link to="/">
+          <HomeIcon aria-hidden="true" />
+          Back home
+        </Link>
+      </Button>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre className="mt-4 w-full overflow-x-auto rounded-xl bg-muted p-4 text-left text-xs text-muted-foreground">
           <code>{stack}</code>
         </pre>
       )}
