@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   date,
   integer,
@@ -29,6 +30,7 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   weightUnit: weightUnitEnum("weight_unit").notNull().default("lb"),
   distanceUnit: distanceUnitEnum("distance_unit").notNull().default("km"),
+  showSampleData: boolean("show_sample_data").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -37,19 +39,36 @@ export const users = pgTable("users", {
     .defaultNow(),
 });
 
-export const exercises = pgTable("exercises", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  exerciseType: exerciseTypeEnum("exercise_type").notNull(),
-  muscleGroup: text("muscle_group"),
-  description: text("description"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const exercises = pgTable(
+  "exercises",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    forkedFromId: uuid("forked_from_id").references(
+      (): AnyPgColumn => exercises.id,
+      { onDelete: "set null" },
+    ),
+    name: text("name").notNull(),
+    exerciseType: exerciseTypeEnum("exercise_type").notNull(),
+    muscleGroup: text("muscle_group"),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("exercises_sample_name_unique")
+      .on(table.name)
+      .where(sql`${table.userId} is null`),
+    unique("exercises_user_name_unique").on(table.userId, table.name),
+  ],
+);
 
 export const equipment = pgTable("equipment", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -69,19 +88,31 @@ export const exerciseEquipment = pgTable(
   (table) => [primaryKey({ columns: [table.exerciseId, table.equipmentId] })],
 );
 
-export const templates = pgTable("templates", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const templates = pgTable(
+  "templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    forkedFromId: uuid("forked_from_id").references(
+      (): AnyPgColumn => templates.id,
+      { onDelete: "set null" },
+    ),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("templates_sample_name_unique")
+      .on(table.name)
+      .where(sql`${table.userId} is null`),
+  ],
+);
 
 export const templateExercises = pgTable(
   "template_exercises",
@@ -113,9 +144,13 @@ export const routines = pgTable(
   "routines",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    forkedFromId: uuid("forked_from_id").references(
+      (): AnyPgColumn => routines.id,
+      { onDelete: "set null" },
+    ),
     name: text("name").notNull(),
     isActive: boolean("is_active").notNull().default(false),
     anchorDate: date("anchor_date").notNull(),
@@ -130,6 +165,9 @@ export const routines = pgTable(
     uniqueIndex("routines_one_active_per_user")
       .on(table.userId)
       .where(sql`${table.isActive} = true`),
+    uniqueIndex("routines_sample_name_unique")
+      .on(table.name)
+      .where(sql`${table.userId} is null`),
   ],
 );
 
@@ -205,13 +243,27 @@ export const usersRelations = relations(users, ({ many }) => ({
   workoutSessions: many(workoutSessions),
 }));
 
-export const exercisesRelations = relations(exercises, ({ many }) => ({
+export const exercisesRelations = relations(exercises, ({ one, many }) => ({
+  user: one(users, {
+    fields: [exercises.userId],
+    references: [users.id],
+  }),
+  forkedFrom: one(exercises, {
+    fields: [exercises.forkedFromId],
+    references: [exercises.id],
+    relationName: "exerciseFork",
+  }),
+  forks: many(exercises, { relationName: "exerciseFork" }),
   templateExercises: many(templateExercises),
   sessionSets: many(sessionSets),
   equipmentLinks: many(exerciseEquipment),
 }));
 
-export const equipmentRelations = relations(equipment, ({ many }) => ({
+export const equipmentRelations = relations(equipment, ({ one, many }) => ({
+  user: one(users, {
+    fields: [equipment.userId],
+    references: [users.id],
+  }),
   exerciseLinks: many(exerciseEquipment),
 }));
 
@@ -234,6 +286,12 @@ export const templatesRelations = relations(templates, ({ one, many }) => ({
     fields: [templates.userId],
     references: [users.id],
   }),
+  forkedFrom: one(templates, {
+    fields: [templates.forkedFromId],
+    references: [templates.id],
+    relationName: "templateFork",
+  }),
+  forks: many(templates, { relationName: "templateFork" }),
   templateExercises: many(templateExercises),
   routineSlots: many(routineSlots),
 }));
@@ -257,6 +315,12 @@ export const routinesRelations = relations(routines, ({ one, many }) => ({
     fields: [routines.userId],
     references: [users.id],
   }),
+  forkedFrom: one(routines, {
+    fields: [routines.forkedFromId],
+    references: [routines.id],
+    relationName: "routineFork",
+  }),
+  forks: many(routines, { relationName: "routineFork" }),
   slots: many(routineSlots),
 }));
 

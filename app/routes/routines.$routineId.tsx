@@ -1,10 +1,11 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, or } from "drizzle-orm";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   CalendarPlusIcon,
   MoonIcon,
   PowerIcon,
+  RotateCcwIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
@@ -34,6 +35,10 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { routineSlots, routines, templates } from "~/db/schema";
+import {
+  forkRoutineForUser,
+  sampleOrOwnTemplatesWhere,
+} from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/routines.$routineId";
 
@@ -43,9 +48,12 @@ export function meta({ loaderData }: Route.MetaArgs) {
   ];
 }
 
-async function loadOwnedRoutine(routineId: string, userId: string) {
+async function loadVisibleRoutine(routineId: string, userId: string) {
   const routine = await db.query.routines.findFirst({
-    where: and(eq(routines.id, routineId), eq(routines.userId, userId)),
+    where: and(
+      eq(routines.id, routineId),
+      or(eq(routines.userId, userId), isNull(routines.userId)),
+    ),
     with: {
       slots: {
         orderBy: asc(routineSlots.position),
@@ -58,16 +66,16 @@ async function loadOwnedRoutine(routineId: string, userId: string) {
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const routine = await loadOwnedRoutine(params.routineId, user.id);
+  const routine = await loadVisibleRoutine(params.routineId, user.id);
   if (!routine) {
     throw data("Routine not found", { status: 404 });
   }
-  const userTemplates = await db
+  const visibleTemplates = await db
     .select()
     .from(templates)
-    .where(eq(templates.userId, user.id))
+    .where(sampleOrOwnTemplatesWhere(user.id, user.showSampleData))
     .orderBy(asc(templates.name));
-  return { routine, templates: userTemplates };
+  return { routine, templates: visibleTemplates };
 }
 
 const renameSchema = z.object({ name: z.string().trim().min(1).max(100) });
@@ -80,13 +88,73 @@ const addSlotSchema = z.object({
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
-  const routine = await loadOwnedRoutine(params.routineId, user.id);
+  const routine = await loadVisibleRoutine(params.routineId, user.id);
   if (!routine) {
     throw data("Routine not found", { status: 404 });
   }
 
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "delete") {
+    if (routine.userId === null) {
+      return data(
+        { error: "Sample routines can't be deleted." },
+        { status: 400 },
+      );
+    }
+    await db.delete(routines).where(eq(routines.id, routine.id));
+    throw redirect("/routines");
+  }
+
+  if (intent === "revert") {
+    if (routine.userId !== user.id || !routine.forkedFromId) {
+      return data({ error: "Nothing to revert" }, { status: 400 });
+    }
+    const forkedFromId = routine.forkedFromId;
+    await db.delete(routines).where(eq(routines.id, routine.id));
+    throw redirect(`/routines/${forkedFromId}`);
+  }
+
+  // Every remaining intent mutates the routine's own content, so editing a
+  // sample routine forks it into a personal copy first (fork-on-save) and
+  // the mutation below is applied to the fork instead of the sample.
+  const didFork = routine.userId === null;
+  let activeRoutineId = routine.id;
+  let activeSlots: { id: string; position: number }[] = routine.slots;
+
+  if (didFork) {
+    if (
+      intent !== "rename" &&
+      intent !== "reanchor" &&
+      intent !== "activate" &&
+      intent !== "deactivate" &&
+      intent !== "addSlot" &&
+      intent !== "removeSlot" &&
+      intent !== "move"
+    ) {
+      return data({ error: "Unknown action" }, { status: 400 });
+    }
+
+    const submittedSlotId = formData.get("slotId");
+    const originalPosition =
+      typeof submittedSlotId === "string"
+        ? routine.slots.find((s) => s.id === submittedSlotId)?.position
+        : undefined;
+
+    const { fork, forkedSlots } = await db.transaction((tx) =>
+      forkRoutineForUser(tx, routine, user.id),
+    );
+    activeRoutineId = fork.id;
+    activeSlots = forkedSlots;
+
+    if (originalPosition !== undefined) {
+      const forkedMatch = forkedSlots.find(
+        (s) => s.position === originalPosition,
+      );
+      if (forkedMatch) formData.set("slotId", forkedMatch.id);
+    }
+  }
 
   if (intent === "rename") {
     const result = renameSchema.safeParse({ name: formData.get("name") });
@@ -96,7 +164,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     await db
       .update(routines)
       .set({ name: result.data.name, updatedAt: new Date() })
-      .where(eq(routines.id, routine.id));
+      .where(eq(routines.id, activeRoutineId));
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
@@ -110,7 +179,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     await db
       .update(routines)
       .set({ anchorDate: result.data.anchorDate, updatedAt: new Date() })
-      .where(eq(routines.id, routine.id));
+      .where(eq(routines.id, activeRoutineId));
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
@@ -123,8 +193,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       await tx
         .update(routines)
         .set({ isActive: true, updatedAt: new Date() })
-        .where(eq(routines.id, routine.id));
+        .where(eq(routines.id, activeRoutineId));
     });
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
@@ -132,7 +203,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     await db
       .update(routines)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(routines.id, routine.id));
+      .where(eq(routines.id, activeRoutineId));
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
@@ -144,25 +216,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       return data({ error: "Invalid slot" }, { status: 400 });
     }
     const nextPosition =
-      routine.slots.reduce((max, slot) => Math.max(max, slot.position), -1) +
-      1;
+      activeSlots.reduce((max, slot) => Math.max(max, slot.position), -1) + 1;
     await db.insert(routineSlots).values({
-      routineId: routine.id,
+      routineId: activeRoutineId,
       position: nextPosition,
       templateId:
         result.data.templateId === "rest" ? null : result.data.templateId,
     });
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
   if (intent === "removeSlot") {
     const slotId = String(formData.get("slotId"));
-    const removed = routine.slots.find((s) => s.id === slotId);
-    if (!removed) return { ok: true };
+    const removed = activeSlots.find((s) => s.id === slotId);
+    if (!removed) {
+      if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+      return { ok: true };
+    }
 
     await db.transaction(async (tx) => {
       await tx.delete(routineSlots).where(eq(routineSlots.id, slotId));
-      const toShift = routine.slots
+      const toShift = activeSlots
         .filter((s) => s.position > removed.position)
         .sort((a, b) => a.position - b.position);
       for (const slot of toShift) {
@@ -172,16 +247,18 @@ export async function action({ request, params, context }: Route.ActionArgs) {
           .where(eq(routineSlots.id, slot.id));
       }
     });
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
 
   if (intent === "move") {
     const slotId = String(formData.get("slotId"));
     const direction = formData.get("direction");
-    const sorted = routine.slots;
+    const sorted = [...activeSlots].sort((a, b) => a.position - b.position);
     const index = sorted.findIndex((s) => s.id === slotId);
     const swapIndex = direction === "up" ? index - 1 : index + 1;
     if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) {
+      if (didFork) throw redirect(`/routines/${activeRoutineId}`);
       return { ok: true };
     }
     const current = sorted[index];
@@ -201,12 +278,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         .set({ position: swap.position })
         .where(eq(routineSlots.id, current.id));
     });
+    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
-  }
-
-  if (intent === "delete") {
-    await db.delete(routines).where(eq(routines.id, routine.id));
-    throw redirect("/routines");
   }
 
   return data({ error: "Unknown action" }, { status: 400 });
@@ -216,17 +289,26 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
   const { routine, templates: templateList } = loaderData;
 
   const slotCount = routine.slots.length;
+  const isSample = routine.userId === null;
+  const isCustomized = routine.forkedFromId !== null;
 
   return (
     <Page width="narrow">
       <PageHeader
         title={routine.name}
         badge={
-          routine.isActive ? (
-            <Badge variant="brand">Active</Badge>
-          ) : (
-            <Badge variant="outline">Inactive</Badge>
-          )
+          <>
+            {routine.isActive ? (
+              <Badge variant="brand">Active</Badge>
+            ) : (
+              <Badge variant="outline">Inactive</Badge>
+            )}
+            {isSample ? (
+              <Badge variant="outline">Sample</Badge>
+            ) : isCustomized ? (
+              <Badge variant="secondary">Customized</Badge>
+            ) : null}
+          </>
         }
         description={
           slotCount > 0
@@ -253,26 +335,53 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
                 {routine.isActive ? "Deactivate" : "Set active"}
               </SubmitButton>
             </form>
-            <form method="post">
-              <input type="hidden" name="intent" value="delete" />
-              <SubmitButton
-                variant="destructive"
-                size="sm"
-                match={{ intent: "delete" }}
-                pendingLabel="Deleting routine"
-              >
-                <Trash2Icon aria-hidden="true" />
-                Delete routine
-              </SubmitButton>
-            </form>
+            {isSample ? null : isCustomized ? (
+              <form method="post">
+                <input type="hidden" name="intent" value="revert" />
+                <SubmitButton
+                  variant="outline"
+                  size="sm"
+                  match={{ intent: "revert" }}
+                  pendingLabel="Reverting"
+                >
+                  <RotateCcwIcon aria-hidden="true" />
+                  Revert to sample
+                </SubmitButton>
+              </form>
+            ) : (
+              <form method="post">
+                <input type="hidden" name="intent" value="delete" />
+                <SubmitButton
+                  variant="destructive"
+                  size="sm"
+                  match={{ intent: "delete" }}
+                  pendingLabel="Deleting routine"
+                >
+                  <Trash2Icon aria-hidden="true" />
+                  Delete routine
+                </SubmitButton>
+              </form>
+            )}
           </>
         }
       />
+
+      {isCustomized ? (
+        <p className="mt-(--section-gap) text-sm text-muted-foreground">
+          This is your customized copy of a sample routine. The original
+          sample is unaffected.
+        </p>
+      ) : null}
 
       <div className="mt-(--section-gap) grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Rename</CardTitle>
+            {isSample ? (
+              <p className="text-sm text-muted-foreground">
+                Editing a sample routine creates your own customized copy.
+              </p>
+            ) : null}
           </CardHeader>
           <CardContent>
             <form method="post">

@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { Checkbox } from "~/components/ui/checkbox";
 import { Field } from "~/components/ui/field";
 import { SubmitButton } from "~/components/ui/submit-button";
 import {
@@ -30,7 +31,7 @@ export function meta() {
   return [{ title: "Settings - Apex Gains" }];
 }
 
-const settingsSchema = z.object({
+const unitsSchema = z.object({
   weightUnit: z.enum(["lb", "kg"]),
   distanceUnit: z.enum(["km", "mi"]),
 });
@@ -40,13 +41,27 @@ export async function loader({ context }: Route.LoaderArgs) {
   return {
     weightUnit: user.weightUnit,
     distanceUnit: user.distanceUnit,
+    showSampleData: user.showSampleData,
   };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
   const formData = await request.formData();
-  const result = settingsSchema.safeParse({
+  const intent = formData.get("intent");
+
+  if (intent === "updateSampleDataVisibility") {
+    await db
+      .update(users)
+      .set({
+        showSampleData: formData.get("showSampleData") === "true",
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+    return { ok: true, intent: "updateSampleDataVisibility" } as const;
+  }
+
+  const result = unitsSchema.safeParse({
     weightUnit: formData.get("weightUnit"),
     distanceUnit: formData.get("distanceUnit"),
   });
@@ -64,7 +79,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     })
     .where(eq(users.id, user.id));
 
-  return { ok: true };
+  return { ok: true, intent: "updateUnits" } as const;
 }
 
 export default function Settings({
@@ -91,6 +106,7 @@ export default function Settings({
         </CardHeader>
         <CardContent>
           <form method="post" className="flex flex-col gap-6">
+            <input type="hidden" name="intent" value="updateUnits" />
             <Field label="Weight" error={error}>
               {({ id, describedBy }) => (
                 <Select name="weightUnit" defaultValue={loaderData.weightUnit}>
@@ -129,7 +145,9 @@ export default function Settings({
             {/* Both outcomes land in one live region so a screen reader hears
                 the result of saving without moving focus. */}
             <div aria-live="polite" className="empty:hidden">
-              {actionData && "ok" in actionData ? (
+              {actionData &&
+              "ok" in actionData &&
+              actionData.intent === "updateUnits" ? (
                 <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
                   <CheckCircle2Icon className="size-4" aria-hidden="true" />
                   Saved.
@@ -137,7 +155,59 @@ export default function Settings({
               ) : null}
             </div>
 
-            <SubmitButton pendingLabel="Saving" className="self-start">
+            <SubmitButton
+              match={{ intent: "updateUnits" }}
+              pendingLabel="Saving"
+              className="self-start"
+            >
+              Save
+            </SubmitButton>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-(--section-gap)">
+        <CardHeader>
+          <CardTitle>Sample data</CardTitle>
+          <CardDescription>
+            Apex Gains ships with sample exercises, templates, and a routine
+            so there's something to explore right away. Hide them once you've
+            built out your own — anything you've customized from a sample
+            stays visible either way.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form method="post" className="flex flex-col gap-4">
+            <input
+              type="hidden"
+              name="intent"
+              value="updateSampleDataVisibility"
+            />
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+              <Checkbox
+                name="showSampleData"
+                value="true"
+                defaultChecked={loaderData.showSampleData}
+              />
+              Show sample data
+            </label>
+
+            <div aria-live="polite" className="empty:hidden">
+              {actionData &&
+              "ok" in actionData &&
+              actionData.intent === "updateSampleDataVisibility" ? (
+                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                  Saved.
+                </p>
+              ) : null}
+            </div>
+
+            <SubmitButton
+              match={{ intent: "updateSampleDataVisibility" }}
+              pendingLabel="Saving"
+              className="self-start"
+            >
               Save
             </SubmitButton>
           </form>

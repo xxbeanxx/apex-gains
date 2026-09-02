@@ -1,7 +1,15 @@
-import { inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "./index.server";
-import { equipment, exerciseEquipment, exercises } from "./schema";
+import {
+  equipment,
+  exerciseEquipment,
+  exercises,
+  routineSlots,
+  routines,
+  templateExercises,
+  templates,
+} from "./schema";
 
 const equipmentNames = [
   "BowFlex PR1000",
@@ -206,6 +214,78 @@ const seedExercises: SeedExercise[] = [
   },
 ];
 
+type SeedTemplateExercise = {
+  exerciseName: (typeof seedExercises)[number]["name"];
+  targetSets?: number;
+  targetReps?: number;
+  targetDurationSeconds?: number;
+  targetSpeed?: string;
+  targetResistance?: number;
+};
+
+const seedTemplates: { name: string; exercises: SeedTemplateExercise[] }[] = [
+  {
+    name: "Push Day",
+    exercises: [
+      { exerciseName: "Chest Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Incline Chest Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Shoulder Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Tricep Pressdown", targetSets: 3, targetReps: 12 },
+    ],
+  },
+  {
+    name: "Pull Day",
+    exercises: [
+      { exerciseName: "Seated Row", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Lat Pulldown", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Bicep Curl", targetSets: 3, targetReps: 12 },
+      { exerciseName: "Upright Row", targetSets: 3, targetReps: 10 },
+    ],
+  },
+  {
+    name: "Leg Day",
+    exercises: [
+      { exerciseName: "Squat", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Leg Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Leg Extension", targetSets: 3, targetReps: 12 },
+      { exerciseName: "Leg Curl", targetSets: 3, targetReps: 12 },
+    ],
+  },
+  {
+    name: "Easy Row",
+    exercises: [
+      {
+        exerciseName: "Rowing",
+        targetDurationSeconds: 20 * 60,
+        targetResistance: 4,
+      },
+    ],
+  },
+  {
+    name: "Treadmill Intervals",
+    exercises: [
+      {
+        exerciseName: "Treadmill Run",
+        targetDurationSeconds: 20 * 60,
+        targetSpeed: "6.0",
+      },
+    ],
+  },
+];
+
+// null = a rest day. A fixed placeholder anchor date is fine since this
+// sample routine is never activated directly - only a user's fork (created
+// on the "activate" action) gets reanchored, via the existing Anchor date
+// form.
+const seedRoutine = {
+  name: "Push/Pull/Legs + Cardio",
+  anchorDate: "2024-01-01",
+  days: ["Push Day", "Pull Day", "Leg Day", "Easy Row", null] as (
+    | string
+    | null
+  )[],
+};
+
 async function seed() {
   await db
     .insert(equipment)
@@ -225,6 +305,7 @@ async function seed() {
     .values(seedExercises.map(({ equipment: _equipment, ...rest }) => rest))
     .onConflictDoUpdate({
       target: exercises.name,
+      targetWhere: sql`${exercises.userId} is null`,
       set: {
         description: sql`coalesce(${exercises.description}, excluded.description)`,
       },
@@ -250,8 +331,80 @@ async function seed() {
       });
   }
 
+  // Sample templates/routine. Idempotent by name (scoped to sample rows via
+  // the partial unique indexes on schema.ts) - once a template/routine has
+  // its child rows populated, later reseeds leave it alone rather than
+  // fighting with a user's fork or overwriting seed content in place.
+  await db
+    .insert(templates)
+    .values(seedTemplates.map((t) => ({ userId: null, name: t.name })))
+    .onConflictDoNothing({
+      target: templates.name,
+      where: sql`${templates.userId} is null`,
+    });
+
+  const templateRows = await db.query.templates.findMany({
+    where: and(
+      isNull(templates.userId),
+      inArray(
+        templates.name,
+        seedTemplates.map((t) => t.name),
+      ),
+    ),
+    with: { templateExercises: true },
+  });
+  const templateRowByName = new Map(templateRows.map((t) => [t.name, t]));
+
+  for (const seedTemplate of seedTemplates) {
+    const templateRow = templateRowByName.get(seedTemplate.name);
+    if (!templateRow || templateRow.templateExercises.length > 0) continue;
+
+    await db.insert(templateExercises).values(
+      seedTemplate.exercises.map((te, position) => ({
+        templateId: templateRow.id,
+        exerciseId: exerciseIdByName.get(te.exerciseName)!,
+        position,
+        targetSets: te.targetSets ?? null,
+        targetReps: te.targetReps ?? null,
+        targetDurationSeconds: te.targetDurationSeconds ?? null,
+        targetSpeed: te.targetSpeed ?? null,
+        targetResistance: te.targetResistance ?? null,
+      })),
+    );
+  }
+
+  await db
+    .insert(routines)
+    .values({
+      userId: null,
+      name: seedRoutine.name,
+      anchorDate: seedRoutine.anchorDate,
+    })
+    .onConflictDoNothing({
+      target: routines.name,
+      where: sql`${routines.userId} is null`,
+    });
+
+  const routineRow = await db.query.routines.findFirst({
+    where: and(isNull(routines.userId), eq(routines.name, seedRoutine.name)),
+    with: { slots: true },
+  });
+
+  if (routineRow && routineRow.slots.length === 0) {
+    await db.insert(routineSlots).values(
+      seedRoutine.days.map((templateName, position) => ({
+        routineId: routineRow.id,
+        position,
+        templateId:
+          templateName === null
+            ? null
+            : (templateRowByName.get(templateName)?.id ?? null),
+      })),
+    );
+  }
+
   console.log(
-    `Seeded/updated ${exerciseRows.length} exercise(s), linked to ${equipmentRows.length} equipment.`,
+    `Seeded/updated ${exerciseRows.length} exercise(s), linked to ${equipmentRows.length} equipment, ${templateRows.length} sample template(s), and 1 sample routine.`,
   );
   process.exit(0);
 }

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { RepeatIcon } from "lucide-react";
 import { Link, data, redirect } from "react-router";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { routines } from "~/db/schema";
 import { todayDateString } from "~/lib/cycle";
+import { sampleOrOwnRoutinesWhere } from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/routines";
 
@@ -32,12 +33,12 @@ const createRoutineSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const userRoutines = await db.query.routines.findMany({
-    where: eq(routines.userId, user.id),
+  const visibleRoutines = await db.query.routines.findMany({
+    where: sampleOrOwnRoutinesWhere(user.id, user.showSampleData),
     orderBy: desc(routines.updatedAt),
     with: { slots: true },
   });
-  return { routines: userRoutines };
+  return { routines: visibleRoutines };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -135,6 +136,11 @@ export default function Routines({
                       </Link>
                       {routine.isActive ? (
                         <Badge variant="brand">Active</Badge>
+                      ) : null}
+                      {routine.userId === null ? (
+                        <Badge variant="outline">Sample</Badge>
+                      ) : routine.forkedFromId !== null ? (
+                        <Badge variant="secondary">Customized</Badge>
                       ) : null}
                     </span>
                     <span className="text-sm text-muted-foreground tabular-nums">

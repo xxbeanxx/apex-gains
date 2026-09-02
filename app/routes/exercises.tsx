@@ -1,9 +1,16 @@
 import { and, asc, eq } from "drizzle-orm";
-import { DumbbellIcon, PencilIcon, PlusIcon, XIcon } from "lucide-react";
+import {
+  DumbbellIcon,
+  PencilIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  XIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { data, useFetcher } from "react-router";
 import { z } from "zod";
 
+import { userContext } from "~/auth/user-context";
 import { Page, PageHeader, Section } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -35,6 +42,11 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { db } from "~/db/index.server";
 import { equipment, exerciseEquipment, exercises } from "~/db/schema";
+import {
+  forkExerciseForUser,
+  sampleOrOwnEquipmentWhere,
+  sampleOrOwnExercisesWhere,
+} from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/exercises";
 
@@ -47,13 +59,17 @@ const typeLabels: Record<string, string> = {
   cardio: "Cardio",
 };
 
-export async function loader() {
+export async function loader({ context }: Route.LoaderArgs) {
+  const user = context.get(userContext)!;
+
   const allEquipment = await db
     .select()
     .from(equipment)
+    .where(sampleOrOwnEquipmentWhere(user.id, user.showSampleData))
     .orderBy(asc(equipment.name));
 
   const allExercises = await db.query.exercises.findMany({
+    where: sampleOrOwnExercisesWhere(user.id, user.showSampleData),
     orderBy: asc(exercises.name),
     with: { equipmentLinks: { with: { equipment: true } } },
   });
@@ -88,7 +104,8 @@ const exerciseDetailsSchema = z.object({
     .transform((v) => (v ? v : undefined)),
 });
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
+  const user = context.get(userContext)!;
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -102,14 +119,16 @@ export async function action({ request }: Route.ActionArgs) {
     }
     await db
       .insert(equipment)
-      .values({ name: result.data.name })
+      .values({ userId: user.id, name: result.data.name })
       .onConflictDoNothing({ target: equipment.name });
     return { ok: true };
   }
 
   if (intent === "deleteEquipment") {
     const id = String(formData.get("equipmentId"));
-    await db.delete(equipment).where(eq(equipment.id, id));
+    await db
+      .delete(equipment)
+      .where(and(eq(equipment.id, id), eq(equipment.userId, user.id)));
     return { ok: true };
   }
 
@@ -119,22 +138,35 @@ export async function action({ request }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid toggle" }, { status: 400 });
     }
-    const { exerciseId, equipmentId } = result.data;
-    if (result.data.checked === "true") {
-      await db
-        .insert(exerciseEquipment)
-        .values({ exerciseId, equipmentId })
-        .onConflictDoNothing();
-    } else {
-      await db
-        .delete(exerciseEquipment)
-        .where(
-          and(
-            eq(exerciseEquipment.exerciseId, exerciseId),
-            eq(exerciseEquipment.equipmentId, equipmentId),
-          ),
-        );
-    }
+    const { equipmentId } = result.data;
+
+    await db.transaction(async (tx) => {
+      const exercise = await tx.query.exercises.findFirst({
+        where: eq(exercises.id, result.data.exerciseId),
+      });
+      if (!exercise) return;
+
+      const exerciseId =
+        exercise.userId === null
+          ? (await forkExerciseForUser(tx, exercise, user.id)).id
+          : exercise.id;
+
+      if (result.data.checked === "true") {
+        await tx
+          .insert(exerciseEquipment)
+          .values({ exerciseId, equipmentId })
+          .onConflictDoNothing();
+      } else {
+        await tx
+          .delete(exerciseEquipment)
+          .where(
+            and(
+              eq(exerciseEquipment.exerciseId, exerciseId),
+              eq(exerciseEquipment.equipmentId, equipmentId),
+            ),
+          );
+      }
+    });
     return { ok: true };
   }
 
@@ -148,7 +180,10 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
     const existing = await db.query.exercises.findFirst({
-      where: eq(exercises.name, result.data.name),
+      where: and(
+        eq(exercises.userId, user.id),
+        eq(exercises.name, result.data.name),
+      ),
     });
     if (existing) {
       return data(
@@ -157,6 +192,7 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
     await db.insert(exercises).values({
+      userId: user.id,
       name: result.data.name,
       exerciseType: result.data.exerciseType,
       muscleGroup: result.data.muscleGroup ?? null,
@@ -175,33 +211,82 @@ export async function action({ request }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    const existing = await db.query.exercises.findFirst({
-      where: eq(exercises.name, result.data.name),
+
+    const outcome = await db.transaction(async (tx) => {
+      const exercise = await tx.query.exercises.findFirst({
+        where: eq(exercises.id, exerciseId),
+      });
+      if (!exercise) return "not-found" as const;
+
+      const target =
+        exercise.userId === null
+          ? await forkExerciseForUser(tx, exercise, user.id)
+          : exercise;
+
+      const existing = await tx.query.exercises.findFirst({
+        where: and(
+          eq(exercises.userId, user.id),
+          eq(exercises.name, result.data.name),
+        ),
+      });
+      if (existing && existing.id !== target.id) {
+        return "conflict" as const;
+      }
+
+      await tx
+        .update(exercises)
+        .set({
+          name: result.data.name,
+          exerciseType: result.data.exerciseType,
+          muscleGroup: result.data.muscleGroup ?? null,
+          description: result.data.description ?? null,
+        })
+        .where(eq(exercises.id, target.id));
+      return "ok" as const;
     });
-    if (existing && existing.id !== exerciseId) {
+
+    if (outcome === "conflict") {
       return data(
         { error: "An exercise with this name already exists" },
         { status: 400 },
       );
     }
-    await db
-      .update(exercises)
-      .set({
-        name: result.data.name,
-        exerciseType: result.data.exerciseType,
-        muscleGroup: result.data.muscleGroup ?? null,
-        description: result.data.description ?? null,
-      })
-      .where(eq(exercises.id, exerciseId));
+    if (outcome === "not-found") {
+      return data({ error: "Exercise not found" }, { status: 404 });
+    }
+    return { ok: true };
+  }
+
+  if (intent === "revertExercise") {
+    const exerciseId = String(formData.get("exerciseId"));
+    const exercise = await db.query.exercises.findFirst({
+      where: and(eq(exercises.id, exerciseId), eq(exercises.userId, user.id)),
+    });
+    if (!exercise || !exercise.forkedFromId) {
+      return data({ error: "Nothing to revert" }, { status: 400 });
+    }
+    try {
+      await db.delete(exercises).where(eq(exercises.id, exercise.id));
+    } catch {
+      return data(
+        {
+          error:
+            "This customization is used in a template or logged workout — remove it from those first.",
+        },
+        { status: 400 },
+      );
+    }
     return { ok: true };
   }
 
   return data({ error: "Unknown action" }, { status: 400 });
 }
 
-type EquipmentOption = { id: string; name: string };
+type EquipmentOption = { id: string; name: string; userId: string | null };
 type ExerciseWithEquipment = {
   id: string;
+  userId: string | null;
+  forkedFromId: string | null;
   name: string;
   exerciseType: string;
   muscleGroup: string | null;
@@ -277,10 +362,16 @@ function ExerciseEditorDialog({
   allEquipment: EquipmentOption[];
 }) {
   const fetcher = useFetcher();
+  const revertFetcher = useFetcher();
   const linkedIds = new Set(exercise.equipmentLinks.map((l) => l.equipment.id));
+  const isCustomized = exercise.forkedFromId !== null;
 
   const error =
     fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+  const revertError =
+    revertFetcher.data && "error" in revertFetcher.data
+      ? revertFetcher.data.error
+      : undefined;
 
   return (
     <Dialog>
@@ -295,6 +386,31 @@ function ExerciseEditorDialog({
         <DialogHeader>
           <DialogTitle>{exercise.name}</DialogTitle>
         </DialogHeader>
+        {isCustomized ? (
+          <div className="flex flex-col gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm">
+            <p className="text-muted-foreground">
+              This is your customized copy of a sample exercise. The
+              original sample is unaffected.
+            </p>
+            <revertFetcher.Form method="post" className="flex flex-col gap-2">
+              <input type="hidden" name="intent" value="revertExercise" />
+              <input type="hidden" name="exerciseId" value={exercise.id} />
+              {revertError ? (
+                <p className="text-destructive">{revertError}</p>
+              ) : null}
+              <SubmitButton
+                variant="outline"
+                size="sm"
+                pending={revertFetcher.state !== "idle"}
+                pendingLabel="Reverting"
+                className="self-start"
+              >
+                <RotateCcwIcon aria-hidden="true" />
+                Revert to sample
+              </SubmitButton>
+            </revertFetcher.Form>
+          </div>
+        ) : null}
         <fetcher.Form method="post" className="flex flex-col gap-4">
           <input type="hidden" name="intent" value="updateExercise" />
           <input type="hidden" name="exerciseId" value={exercise.id} />
@@ -436,36 +552,44 @@ export default function Exercises({
           <CardContent className="flex flex-col gap-4">
             {equipmentList.length > 0 ? (
               <ul className="flex flex-wrap gap-2">
-                {equipmentList.map((eq) => (
-                  <li key={eq.id}>
-                    <form method="post" className="inline-flex">
-                      <input
-                        type="hidden"
-                        name="intent"
-                        value="deleteEquipment"
-                      />
-                      <input
-                        type="hidden"
-                        name="equipmentId"
-                        value={eq.id}
-                      />
-                      <Badge variant="secondary" className="h-6 gap-1 pr-1">
+                {equipmentList.map((eq) =>
+                  eq.userId === null ? (
+                    <li key={eq.id}>
+                      <Badge variant="outline" className="h-6">
                         {eq.name}
-                        {/* after:-inset-1 grows the hit area to 24px without
-                            growing the glyph (WCAG 2.5.8 target size). */}
-                        <button
-                          type="submit"
-                          className="relative flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--dur-fast) after:absolute after:-inset-1 after:content-[''] hover:bg-destructive/15 hover:text-destructive"
-                        >
-                          <XIcon className="size-3" aria-hidden="true" />
-                          <span className="sr-only">
-                            Remove {eq.name} equipment
-                          </span>
-                        </button>
                       </Badge>
-                    </form>
-                  </li>
-                ))}
+                    </li>
+                  ) : (
+                    <li key={eq.id}>
+                      <form method="post" className="inline-flex">
+                        <input
+                          type="hidden"
+                          name="intent"
+                          value="deleteEquipment"
+                        />
+                        <input
+                          type="hidden"
+                          name="equipmentId"
+                          value={eq.id}
+                        />
+                        <Badge variant="secondary" className="h-6 gap-1 pr-1">
+                          {eq.name}
+                          {/* after:-inset-1 grows the hit area to 24px without
+                              growing the glyph (WCAG 2.5.8 target size). */}
+                          <button
+                            type="submit"
+                            className="relative flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--dur-fast) after:absolute after:-inset-1 after:content-[''] hover:bg-destructive/15 hover:text-destructive"
+                          >
+                            <XIcon className="size-3" aria-hidden="true" />
+                            <span className="sr-only">
+                              Remove {eq.name} equipment
+                            </span>
+                          </button>
+                        </Badge>
+                      </form>
+                    </li>
+                  ),
+                )}
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -532,8 +656,13 @@ export default function Exercises({
                 <li key={exercise.id}>
                   <Card className="h-full">
                     <CardHeader>
-                      <CardTitle className="text-base">
+                      <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
                         {exercise.name}
+                        {exercise.userId === null ? (
+                          <Badge variant="outline">Sample</Badge>
+                        ) : exercise.forkedFromId !== null ? (
+                          <Badge variant="secondary">Customized</Badge>
+                        ) : null}
                       </CardTitle>
                       {exercise.muscleGroup ? (
                         <p className="text-sm text-muted-foreground">

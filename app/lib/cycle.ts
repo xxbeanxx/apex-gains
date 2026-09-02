@@ -11,6 +11,13 @@ export function todayDateString(date: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+export function isValidDateString(dateStr: string): boolean {
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(dateStr) &&
+    !Number.isNaN(Date.parse(`${dateStr}T00:00:00Z`))
+  );
+}
+
 export function daysBetweenDateStrings(from: string, to: string): number {
   const fromMs = Date.parse(`${from}T00:00:00Z`);
   const toMs = Date.parse(`${to}T00:00:00Z`);

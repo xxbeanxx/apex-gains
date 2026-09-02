@@ -1,9 +1,10 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { ClipboardListIcon } from "lucide-react";
 import { Link, data, redirect } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
+import { Badge } from "~/components/ui/badge";
 import { Page, PageHeader, Section } from "~/components/layout/page";
 import {
   Card,
@@ -17,6 +18,7 @@ import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { templates } from "~/db/schema";
+import { sampleOrOwnTemplatesWhere } from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/templates";
 
@@ -30,12 +32,12 @@ const createTemplateSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const userTemplates = await db.query.templates.findMany({
-    where: eq(templates.userId, user.id),
+  const visibleTemplates = await db.query.templates.findMany({
+    where: sampleOrOwnTemplatesWhere(user.id, user.showSampleData),
     orderBy: desc(templates.updatedAt),
     with: { templateExercises: true },
   });
-  return { templates: userTemplates };
+  return { templates: visibleTemplates };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -120,12 +122,19 @@ export default function Templates({
               <li key={template.id}>
                 <Card interactive size="sm" className="relative h-full">
                   <CardContent className="flex h-full flex-col justify-between gap-2">
-                    <Link
-                      to={`/templates/${template.id}`}
-                      className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
-                    >
-                      {template.name}
-                    </Link>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Link
+                        to={`/templates/${template.id}`}
+                        className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
+                      >
+                        {template.name}
+                      </Link>
+                      {template.userId === null ? (
+                        <Badge variant="outline">Sample</Badge>
+                      ) : template.forkedFromId !== null ? (
+                        <Badge variant="secondary">Customized</Badge>
+                      ) : null}
+                    </span>
                     <span className="text-sm text-muted-foreground tabular-nums">
                       {template.templateExercises.length} exercise
                       {template.templateExercises.length === 1 ? "" : "s"}

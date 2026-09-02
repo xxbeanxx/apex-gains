@@ -1,11 +1,14 @@
 import { desc, eq } from "drizzle-orm";
-import { HistoryIcon, MoonIcon } from "lucide-react";
+import { HistoryIcon, MoonIcon, PlusIcon } from "lucide-react";
+import { Link } from "react-router";
 
 import { userContext } from "~/auth/user-context";
 import { Page, PageHeader } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -131,6 +134,16 @@ export default function History({ loaderData }: Route.ComponentProps) {
                     <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                       {formatFullDate(session.date)}
                     </CardTitle>
+                    <CardAction>
+                      <Button asChild variant="ghost" size="icon-sm">
+                        <Link
+                          to={`/today?date=${session.date}`}
+                          aria-label={`Add sets for ${formatFullDate(session.date)}`}
+                        >
+                          <PlusIcon aria-hidden="true" />
+                        </Link>
+                      </Button>
+                    </CardAction>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {isRest ? (
                         <Badge variant="secondary">

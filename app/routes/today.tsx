@@ -1,12 +1,22 @@
 import { and, asc, eq } from "drizzle-orm";
-import { CheckIcon, MoonIcon, PlusIcon, XIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoonIcon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
-import { data, useFetcher } from "react-router";
+import { data, Link, useFetcher, useNavigate } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
 import { Page, PageHeader, Section } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Calendar } from "~/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -16,6 +26,7 @@ import {
 import { EmptyState } from "~/components/ui/empty-state";
 import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -27,9 +38,11 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { type Exercise, exercises, sessionSets } from "~/db/schema";
 import {
+  addDays,
   formatFullDate,
   formatMonthDay,
   formatWeekday,
+  isValidDateString,
   todayDateString,
 } from "~/lib/cycle";
 import { cn } from "~/lib/utils";
@@ -83,14 +96,22 @@ function setSummary(set: {
   return parts.join(", ");
 }
 
-export async function loader({ context }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
   const todayStr = todayDateString();
-  const plan = await getTodaysPlan(user.id, todayStr);
+  const requestedDate = new URL(request.url).searchParams.get("date");
+  const dateStr =
+    requestedDate &&
+    isValidDateString(requestedDate) &&
+    requestedDate <= todayStr
+      ? requestedDate
+      : todayStr;
+  const isToday = dateStr === todayStr;
+  const plan = await getTodaysPlan(user.id, dateStr);
 
   const session = await db.query.workoutSessions.findFirst({
     where: (ws, { and, eq }) =>
-      and(eq(ws.userId, user.id), eq(ws.date, todayStr)),
+      and(eq(ws.userId, user.id), eq(ws.date, dateStr)),
     with: {
       sets: { with: { exercise: true }, orderBy: (s, { asc }) => asc(s.createdAt) },
     },
@@ -107,7 +128,9 @@ export async function loader({ context }: Route.LoaderArgs) {
   ]);
 
   return {
-    date: todayStr,
+    date: dateStr,
+    todayStr,
+    isToday,
     plan,
     loggedSets: session?.sets ?? [],
     allExercises,
@@ -118,6 +141,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 const logSetSchema = z.object({
   exerciseId: z.uuid(),
+  date: z.string().refine(isValidDateString),
   reps: z.coerce.number().int().positive().optional(),
   weight: z.coerce.number().positive().optional(),
   durationMinutes: z.coerce.number().positive().optional(),
@@ -132,14 +156,22 @@ export async function action({ request, context }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent === "logSet") {
-    const raw = Object.fromEntries(formData);
+    // Blank optional fields arrive as "", which z.coerce.number() reads as 0
+    // (failing .positive()) rather than as absent - drop them so they parse
+    // as undefined instead.
+    const raw = Object.fromEntries(
+      [...formData].filter(([, value]) => value !== ""),
+    );
     const result = logSetSchema.safeParse(raw);
     if (!result.success) {
       return data({ error: "Invalid set" }, { status: 400 });
     }
+    // Clamp instead of rejecting: a stale form (left open since yesterday)
+    // should still log against today rather than fail outright.
+    const dateStr = result.data.date <= todayStr ? result.data.date : todayStr;
 
-    const plan = await getTodaysPlan(user.id, todayStr);
-    const session = await getOrCreateSession(user.id, todayStr, plan);
+    const plan = await getTodaysPlan(user.id, dateStr);
+    const session = await getOrCreateSession(user.id, dateStr, plan);
 
     const existingSets = await db
       .select()
@@ -184,9 +216,11 @@ export async function action({ request, context }: Route.ActionArgs) {
 function LogSetForm({
   exercise,
   exerciseOptions,
+  date,
 }: {
   exercise?: Exercise;
   exerciseOptions?: Exercise[];
+  date: string;
 }) {
   const fetcher = useFetcher();
   const [selectedId, setSelectedId] = useState(exercise?.id ?? "");
@@ -199,6 +233,7 @@ function LogSetForm({
   return (
     <fetcher.Form method="post" className="flex flex-col gap-3">
       <input type="hidden" name="intent" value="logSet" />
+      <input type="hidden" name="date" value={date} />
       {exercise ? (
         <input type="hidden" name="exerciseId" value={exercise.id} />
       ) : (
@@ -346,24 +381,27 @@ function DayCell({
   date,
   isToday = false,
   label,
+  to,
   children,
 }: {
   date: string;
   isToday?: boolean;
   /** Full sentence for screen readers, e.g. "Tuesday 2 September, Push Day". */
   label: string;
+  /** When set, the whole cell links here (e.g. to log that day). */
+  to?: string;
   children: React.ReactNode;
 }) {
-  return (
-    <li
-      aria-label={label}
-      className={cn(
-        "relative flex min-w-18 flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-(--dur)",
-        isToday
-          ? "border-brand/40 bg-brand-muted"
-          : "border-border bg-card/50"
-      )}
-    >
+  const cellClassName = cn(
+    "relative flex min-w-18 flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-(--dur)",
+    isToday ? "border-brand/40 bg-brand-muted" : "border-border bg-card/50",
+    to
+      ? "outline-none hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+      : null
+  );
+
+  const content = (
+    <>
       {isToday ? (
         <span
           aria-hidden="true"
@@ -388,6 +426,22 @@ function DayCell({
       <div aria-hidden="true" className="mt-0.5 w-full">
         {children}
       </div>
+    </>
+  );
+
+  if (to) {
+    return (
+      <li className="flex min-w-18 flex-1">
+        <Link to={to} aria-label={label} className={cellClassName}>
+          {content}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li aria-label={label} className={cellClassName}>
+      {content}
     </li>
   );
 }
@@ -478,7 +532,8 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
               <DayCell
                 key={day.date}
                 date={day.date}
-                label={`${formatFullDate(day.date)}: ${what}`}
+                to={`/today?date=${day.date}`}
+                label={`${formatFullDate(day.date)}: ${what}. Log a set for this day.`}
               >
                 {day.status === "workout" ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums">
@@ -545,8 +600,26 @@ function SetProgress({ done, target }: { done: number; target: number }) {
 }
 
 export default function Today({ loaderData }: Route.ComponentProps) {
-  const { date, plan, loggedSets, allExercises, upcomingWeek, pastWeek } =
-    loaderData;
+  const {
+    date,
+    todayStr,
+    isToday,
+    plan,
+    loggedSets,
+    allExercises,
+    upcomingWeek,
+    pastWeek,
+  } = loaderData;
+  const prevDate = addDays(date, -1);
+  const nextDate = addDays(date, 1);
+  const dayWord = isToday ? "today" : "that day";
+  const navigate = useNavigate();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  function goToDate(dateStr: string) {
+    setCalendarOpen(false);
+    navigate(dateStr === todayStr ? "/today" : `/today?date=${dateStr}`);
+  }
 
   const setsByExercise = new Map<string, typeof loggedSets>();
   for (const set of loggedSets) {
@@ -574,7 +647,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
   return (
     <Page>
       <PageHeader
-        title="Today"
+        title={isToday ? "Today" : "Log a workout"}
         description={formatFullDate(date)}
         badge={
           plan.type === "rest" ? (
@@ -586,6 +659,63 @@ export default function Today({ loaderData }: Route.ComponentProps) {
             <Badge variant="brand-subtle">{planLabel}</Badge>
           ) : null
         }
+        actions={
+          <div className="flex items-center gap-1.5">
+            <Button asChild variant="outline" size="icon-sm">
+              <Link
+                to={`/today?date=${prevDate}`}
+                aria-label={`Go to ${formatFullDate(prevDate)}`}
+              >
+                <ChevronLeftIcon aria-hidden="true" />
+              </Link>
+            </Button>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon-sm" aria-label="Choose a day">
+                  <CalendarIcon aria-hidden="true" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="center" className="w-auto">
+                <Calendar
+                  selected={date}
+                  today={todayStr}
+                  maxDate={todayStr}
+                  onSelect={goToDate}
+                />
+                <div className="mt-3 border-t border-border pt-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    disabled={isToday}
+                    onClick={() => goToDate(todayStr)}
+                  >
+                    Today
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            {isToday ? (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                disabled
+                aria-label="No later days to show"
+              >
+                <ChevronRightIcon aria-hidden="true" />
+              </Button>
+            ) : (
+              <Button asChild variant="outline" size="icon-sm">
+                <Link
+                  to={`/today?date=${nextDate}`}
+                  aria-label={`Go to ${formatFullDate(nextDate)}`}
+                >
+                  <ChevronRightIcon aria-hidden="true" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        }
       />
 
       <div className="mt-(--section-gap) grid gap-4 lg:grid-cols-2">
@@ -595,7 +725,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
 
       {plan.type === "template" ? (
         <Section
-          title="Today's workout"
+          title={isToday ? "Today's workout" : "That day's workout"}
           description={`${plan.items.length} exercise${plan.items.length === 1 ? "" : "s"} in ${plan.templateName}.`}
         >
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -620,7 +750,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                     <LoggedSetsList
                       sets={setsByExercise.get(item.exercise.id) ?? []}
                     />
-                    <LogSetForm exercise={item.exercise} />
+                    <LogSetForm exercise={item.exercise} date={date} />
                   </CardContent>
                 </Card>
               );
@@ -633,30 +763,34 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         title={plan.type === "rest" ? "Log a workout anyway" : "Log an exercise"}
         description={
           plan.type === "none"
-            ? "No routine is active, so log whatever you like."
+            ? `No routine is active, so log whatever you like for ${dayWord}.`
             : plan.type === "rest"
-              ? "Today is scheduled as rest, but nothing stops you."
-              : "Anything outside today's template goes here."
+              ? `${isToday ? "Today is" : "That day was"} scheduled as rest, but nothing stops you.`
+              : `Anything outside ${isToday ? "today's" : "that day's"} template goes here.`
         }
       >
         <Card className="max-w-2xl">
           <CardContent>
-            <LogSetForm exerciseOptions={allExercises} />
+            <LogSetForm exerciseOptions={allExercises} date={date} />
           </CardContent>
         </Card>
       </Section>
 
       {/*
-        Anything logged today that today's template does not cover. Without
+        Anything logged that day that its template does not cover. Without
         this, sets for an off-template exercise were logged successfully and
         then displayed nowhere at all whenever a template was active.
       */}
       {extraEntries.length > 0 || plan.type !== "template" ? (
         <Section
-          title={plan.type === "template" ? "Also logged today" : "Logged today"}
+          title={
+            plan.type === "template"
+              ? `Also logged ${dayWord}`
+              : `Logged ${dayWord}`
+          }
           description={
             plan.type === "template"
-              ? "Sets you recorded outside today's template."
+              ? `Sets you recorded outside ${isToday ? "today's" : "that day's"} template.`
               : undefined
           }
         >
@@ -679,7 +813,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
             <EmptyState
               icon={PlusIcon}
               title="Nothing logged yet"
-              description="Sets you record today will appear here."
+              description={`Sets you record ${dayWord} will appear here.`}
             />
           )}
         </Section>
