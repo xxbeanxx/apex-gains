@@ -91,11 +91,18 @@ manifest, or your host's secret store).
 
 The app runs on Azure Container Apps (`apex-gains` app, in the
 `rg-apex-gains` resource group / `cae-apex-gains` environment, Canada
-Central), scaled to zero when idle. The image is public on GHCR
+Central), scaled to zero when idle, served at
+[apex.atomic-nucleus.com](https://apex.atomic-nucleus.com) via a
+custom domain with an Azure-managed certificate (the DNS zone lives in
+`DefaultResourceGroup-CCAN`; a CNAME + `asuid.apex` TXT record point
+it at the Container App's default `*.azurecontainerapps.io` hostname,
+which still works directly too). The image is public on GHCR
 (`ghcr.io/xxbeanxx/apex-gains`), so the Container App pulls it without
 registry credentials. `DATABASE_URL`, `SESSION_SECRET`, and
 `GOOGLE_CLIENT_SECRET` are stored as Container App secrets;
-`GOOGLE_CLIENT_ID`, `PORT`, and `ORIGIN` are plain env vars.
+`GOOGLE_CLIENT_ID`, `PORT`, and `ORIGIN` are plain env vars (`ORIGIN`
+is `https://apex.atomic-nucleus.com`, since that's what Google's
+OAuth redirect URI is registered against).
 
 ## Database migrations and deployment in CI
 

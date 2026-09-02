@@ -50,7 +50,9 @@ connection is IPv6-only). `.github/workflows/build.yml` runs
 `migrate-database` job (the `DATABASE_URL` repo secret), so schema
 changes ship on merge. The app itself is hosted on Azure Container
 Apps (`apex-gains` app in the `rg-apex-gains` resource group, Canada
-Central, scale-to-zero) and deployed by the same workflow's `deploy`
+Central, scale-to-zero), served at apex.atomic-nucleus.com via a
+custom domain with an Azure-managed certificate (DNS zone in
+`DefaultResourceGroup-CCAN`), and deployed by the same workflow's `deploy`
 job, which runs after `migrate-database` and `build` and points the
 Container App at the image `build` just pushed to GHCR (public, so no
 registry pull credentials are needed) via `az containerapp update`,
