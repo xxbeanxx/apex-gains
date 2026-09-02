@@ -73,12 +73,12 @@ file. See `.env.example` for the full list.
 
 ## Containerization
 
-Built with `Containerfile` (not `Dockerfile` - this project targets
+Built with `containerfile` (not `Dockerfile` - this project targets
 Podman) and run locally for dev via `podman play kube` (not
 docker-compose).
 
 ```bash
-podman build -t apex-gains -f Containerfile .
+podman build -t apex-gains -f containerfile .
 ```
 
 The app container needs `DATABASE_URL`, `SESSION_SECRET`,

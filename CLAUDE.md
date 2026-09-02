@@ -44,7 +44,7 @@ not (a container gets its environment from the runtime, not a bundled
 
 Local Postgres: `podman play kube deploy/postgres-pod.yaml` (down with
 `--down`). Data persists in the `apex-gains-db-data` podman volume.
-Built with `Containerfile` (not `Dockerfile`) — this project targets
+Built with `containerfile` (not `Dockerfile`) — this project targets
 Podman, not docker-compose. See README.md for full first-time setup
 (env vars, Google OAuth client, etc).
 
