@@ -1,87 +1,107 @@
-# Welcome to React Router!
+# Apex Gains
 
-A modern, production-ready template for building full-stack React applications using React Router.
+A personal workout tracker: an exercise library for a BowFlex PR1000,
+rowing machine, and treadmill, reusable workout templates, day-slot
+routines that cycle from an anchor date, per-set logging, and history.
+Auth is Google OIDC (open signup).
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Stack: React Router v8 (framework mode), TypeScript, PostgreSQL,
+Drizzle ORM, Tailwind + shadcn/ui, Podman.
 
-## Features
+## Local development
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+### 1. Start Postgres
 
-## Getting Started
+```bash
+podman play kube deploy/postgres-pod.yaml
+```
 
-### Installation
+Tear it down with `podman play kube --down deploy/postgres-pod.yaml`.
+Data persists in the `apex-gains-db-data` podman volume across restarts.
 
-Install the dependencies:
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Fill in:
+
+- `SESSION_SECRET` - generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - from an OAuth client at
+  https://console.cloud.google.com/apis/credentials. Authorized redirect
+  URI must be `<ORIGIN>/auth/google/callback` (`http://localhost:5173/auth/google/callback`
+  for local dev).
+
+### 3. Install dependencies, migrate, and seed
 
 ```bash
 npm install
+npm run db:migrate
+npm run db:seed
 ```
 
-### Development
+`db:seed` is idempotent - safe to re-run.
 
-Start the development server with HMR:
+### 4. Run the app
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+App is at `http://localhost:5173`.
 
-## Building for Production
+## Scripts
 
-Create a production build:
+| Script              | Purpose                                             |
+| -------------------- | ---------------------------------------------------- |
+| `npm run dev`         | Dev server with HMR                                   |
+| `npm run build`       | Production build                                      |
+| `npm run start`       | Serve a production build (`build/server/index.js`)    |
+| `npm run typecheck`   | Generate route types and run `tsc`                     |
+| `npm run db:generate` | Generate a Drizzle migration from `app/db/schema.ts`   |
+| `npm run db:migrate`  | Apply pending migrations                               |
+| `npm run db:studio`   | Open Drizzle Studio against the local database         |
+| `npm run db:seed`     | Seed/refresh the exercise library                      |
+
+## Environment variables
+
+`dev`, `db:*` scripts load `.env` via `dotenv-cli` (host-side dev
+convenience). The production `start` script does **not** - a container
+gets its environment from the runtime (pod/host), not a bundled `.env`
+file. See `.env.example` for the full list.
+
+## Containerization
+
+Built with `Containerfile` (not `Dockerfile` - this project targets
+Podman) and run locally for dev via `podman play kube` (not
+docker-compose).
 
 ```bash
-npm run build
+podman build -t apex-gains -f Containerfile .
 ```
 
-## Deployment
+The app container needs `DATABASE_URL`, `SESSION_SECRET`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `ORIGIN` set in its
+environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
+manifest, or your host's secret store) - production deployment target
+is not yet decided, so nothing beyond the image itself is prescribed here.
 
-### Docker Deployment
+## Architecture notes
 
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+- **Routines are cycles, not weekdays.** A routine is an ordered list
+  of day-slots (each a template or an explicit rest day). "Today's
+  slot" = `(days since anchor date) mod (slot count)` - see
+  `app/lib/cycle.ts`. This is strict calendar-day math: it does not
+  pause for missed days, and a routine's anchor date can be set
+  independently of when it was activated.
+- **Sets are logged individually**, not as one row per exercise, so
+  pyramids/drop-sets are representable. Template "targets" pre-fill
+  the logging form but every field is editable per set.
+- **Cardio fields differ by equipment**: treadmill logs
+  duration + speed; rowing logs duration + resistance (no
+  distance/pace for either - not reliably derivable from what's
+  tracked).
+- Auth is Google OIDC only (`openid-client`), session via a signed
+  httpOnly cookie. Any Google account can sign in (open signup); a
+  user row is created on first login.
