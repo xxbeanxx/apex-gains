@@ -85,16 +85,37 @@ podman build -t apex-gains -f containerfile .
 The app container needs `DATABASE_URL`, `SESSION_SECRET`,
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `ORIGIN` set in its
 environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
-manifest, or your host's secret store) - production deployment target
-is not yet decided, so nothing beyond the image itself is prescribed here.
+manifest, or your host's secret store).
 
-## Database migrations in CI
+## Hosting
 
-`.github/workflows/build.yml` has a `migrate-database` job that runs
-`drizzle-kit migrate` against the Supabase project on every push to
-`main` (after tests pass), using the `DATABASE_URL` repo secret. This
-is the database half of continuous deployment; the app-deployment half
-will be wired up once a hosting target is chosen.
+The app runs on Azure Container Apps (`apex-gains` app, in the
+`rg-apex-gains` resource group / `cae-apex-gains` environment, Canada
+Central), scaled to zero when idle. The image is public on GHCR
+(`ghcr.io/xxbeanxx/apex-gains`), so the Container App pulls it without
+registry credentials. `DATABASE_URL`, `SESSION_SECRET`, and
+`GOOGLE_CLIENT_SECRET` are stored as Container App secrets;
+`GOOGLE_CLIENT_ID`, `PORT`, and `ORIGIN` are plain env vars.
+
+## Database migrations and deployment in CI
+
+`.github/workflows/build.yml` runs three jobs after tests pass on a
+push to `main`:
+
+- `migrate-database` - applies pending Drizzle migrations to the
+  Supabase project via `drizzle-kit migrate`, using the `DATABASE_URL`
+  repo secret.
+- `build` - builds and pushes the container image to GHCR.
+- `deploy` - logs in to Azure via OIDC federated credentials (no
+  stored client secret; `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and
+  `AZURE_SUBSCRIPTION_ID` repo secrets identify the app registration
+  and subscription) and runs `az containerapp update` to point the
+  Container App at the image the `build` job just pushed. Migrations
+  run before the deploy, so the new image never sees a schema it
+  predates.
+
+This is a straight rolling update - every push to `main` deploys.
+There's no separate staging slot or manual promotion step.
 
 ## Architecture notes
 

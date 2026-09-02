@@ -48,8 +48,16 @@ prepared statements, unlike the transaction pooler; the direct
 connection is IPv6-only). `.github/workflows/build.yml` runs
 `drizzle-kit migrate` against it on every push to `main` via the
 `migrate-database` job (the `DATABASE_URL` repo secret), so schema
-changes ship on merge — the database half of continuous deployment;
-the app-hosting half isn't wired up yet. For local dev without
+changes ship on merge. The app itself is hosted on Azure Container
+Apps (`apex-gains` app in the `rg-apex-gains` resource group, Canada
+Central, scale-to-zero) and deployed by the same workflow's `deploy`
+job, which runs after `migrate-database` and `build` and points the
+Container App at the image `build` just pushed to GHCR (public, so no
+registry pull credentials are needed) via `az containerapp update`,
+authenticating to Azure with OIDC federated credentials (no stored
+client secret). Every push to `main` is a full deploy — see README.md
+"Hosting" and "Database migrations and deployment in CI" for details.
+For local dev without
 depending on Supabase, run local Postgres instead: `podman play kube
 deploy/postgres-pod.yaml` (down with `--down`; data persists in the
 `apex-gains-db-data` podman volume) and point `DATABASE_URL` at it.
