@@ -12,6 +12,7 @@ export default [
   route("auth/logout", "routes/auth.logout.tsx"),
   layout("routes/_protected.tsx", [
     route("today", "routes/today.tsx"),
+    route("exercises", "routes/exercises.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),
 ] satisfies RouteConfig;
