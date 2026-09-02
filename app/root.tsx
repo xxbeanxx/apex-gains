@@ -59,6 +59,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
         {user ? (
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/today">Today</Link>
+            <Link to="/settings">Settings</Link>
             <span className="text-muted-foreground">{user.name}</span>
             <Form method="post" action="/auth/logout">
               <Button type="submit" variant="ghost" size="sm">
