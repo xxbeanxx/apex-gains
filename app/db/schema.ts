@@ -42,6 +42,7 @@ export const exercises = pgTable("exercises", {
   name: text("name").notNull().unique(),
   exerciseType: exerciseTypeEnum("exercise_type").notNull(),
   muscleGroup: text("muscle_group"),
+  description: text("description"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

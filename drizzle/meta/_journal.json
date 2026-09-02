@@ -15,6 +15,13 @@
       "when": 1788342962078,
       "tag": "0001_luxuriant_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788344011945,
+      "tag": "0002_optimal_longshot",
+      "breakpoints": true
     }
   ]
 }
