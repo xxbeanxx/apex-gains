@@ -9,8 +9,8 @@ PR1000, rowing machine, and treadmill; reusable workout templates;
 day-slot routines that cycle from an anchor date; per-set logging;
 history). Auth is Google OIDC with open signup.
 
-Stack: React Router v8 (Framework Mode), TypeScript, PostgreSQL,
-Drizzle ORM, Tailwind v4 + shadcn/ui, Podman.
+Stack: React Router v8 (Framework Mode), TypeScript, PostgreSQL
+(hosted on Supabase), Drizzle ORM, Tailwind v4 + shadcn/ui, Podman.
 
 ## Commands
 
@@ -42,8 +42,17 @@ Drizzle query chain (`db.select().from().where()...`) that resolves to
 not (a container gets its environment from the runtime, not a bundled
 `.env`).
 
-Local Postgres: `podman play kube deploy/postgres-pod.yaml` (down with
-`--down`). Data persists in the `apex-gains-db-data` podman volume.
+Database: a hosted Supabase Postgres project (`DATABASE_URL` is its
+Session pooler connection string — IPv4-compatible and supports
+prepared statements, unlike the transaction pooler; the direct
+connection is IPv6-only). `.github/workflows/build.yml` runs
+`drizzle-kit migrate` against it on every push to `main` via the
+`migrate-database` job (the `DATABASE_URL` repo secret), so schema
+changes ship on merge — the database half of continuous deployment;
+the app-hosting half isn't wired up yet. For local dev without
+depending on Supabase, run local Postgres instead: `podman play kube
+deploy/postgres-pod.yaml` (down with `--down`; data persists in the
+`apex-gains-db-data` podman volume) and point `DATABASE_URL` at it.
 Built with `containerfile` (not `Dockerfile`) — this project targets
 Podman, not docker-compose. See README.md for full first-time setup
 (env vars, Google OAuth client, etc).

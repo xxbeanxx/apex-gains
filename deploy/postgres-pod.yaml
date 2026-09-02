@@ -1,4 +1,6 @@
-# Local dev database. Run with:
+# Optional local dev database. The app is normally pointed at a hosted
+# Supabase Postgres instance (see README.md); use this pod instead if you
+# want to develop without depending on Supabase. Run with:
 #   podman play kube deploy/postgres-pod.yaml
 # Tear down with:
 #   podman play kube --down deploy/postgres-pod.yaml

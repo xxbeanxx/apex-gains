@@ -5,21 +5,13 @@ rowing machine, and treadmill, reusable workout templates, day-slot
 routines that cycle from an anchor date, per-set logging, and history.
 Auth is Google OIDC (open signup).
 
-Stack: React Router v8 (framework mode), TypeScript, PostgreSQL,
-Drizzle ORM, Tailwind + shadcn/ui, Podman.
+Stack: React Router v8 (framework mode), TypeScript, PostgreSQL
+(hosted on [Supabase](https://supabase.com)), Drizzle ORM, Tailwind +
+shadcn/ui, Podman.
 
 ## Local development
 
-### 1. Start Postgres
-
-```bash
-podman play kube deploy/postgres-pod.yaml
-```
-
-Tear it down with `podman play kube --down deploy/postgres-pod.yaml`.
-Data persists in the `apex-gains-db-data` podman volume across restarts.
-
-### 2. Configure environment
+### 1. Configure environment
 
 ```bash
 cp .env.example .env
@@ -27,13 +19,22 @@ cp .env.example .env
 
 Fill in:
 
+- `DATABASE_URL` - the Supabase project's **Session pooler** connection
+  string (Dashboard > Project Settings > Database > Connection string).
+  Use the session pooler, not the transaction pooler or the direct
+  connection - it's IPv4-compatible (the direct connection is IPv6-only)
+  and, unlike the transaction pooler, supports the prepared statements
+  `postgres-js`/Drizzle use. If you'd rather not depend on Supabase for
+  local dev, run `podman play kube deploy/postgres-pod.yaml` instead
+  (tear down with `--down`; data persists in the `apex-gains-db-data`
+  podman volume) and point `DATABASE_URL` at that instead.
 - `SESSION_SECRET` - generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - from an OAuth client at
   https://console.cloud.google.com/apis/credentials. Authorized redirect
   URI must be `<ORIGIN>/auth/google/callback` (`http://localhost:5173/auth/google/callback`
   for local dev).
 
-### 3. Install dependencies, migrate, and seed
+### 2. Install dependencies, migrate, and seed
 
 ```bash
 npm install
@@ -43,7 +44,7 @@ npm run db:seed
 
 `db:seed` is idempotent - safe to re-run.
 
-### 4. Run the app
+### 3. Run the app
 
 ```bash
 npm run dev
@@ -86,6 +87,14 @@ The app container needs `DATABASE_URL`, `SESSION_SECRET`,
 environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
 manifest, or your host's secret store) - production deployment target
 is not yet decided, so nothing beyond the image itself is prescribed here.
+
+## Database migrations in CI
+
+`.github/workflows/build.yml` has a `migrate-database` job that runs
+`drizzle-kit migrate` against the Supabase project on every push to
+`main` (after tests pass), using the `DATABASE_URL` repo secret. This
+is the database half of continuous deployment; the app-deployment half
+will be wired up once a hosting target is chosen.
 
 ## Architecture notes
 
