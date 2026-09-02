@@ -84,18 +84,31 @@ jobs:
           echo "  - Version: ${IMAGE_NAME}:${VERSION_TAG}"
           echo "  - Latest:  ${IMAGE_NAME}:latest"
 
-      - name: Build container image with Podman
-        run: |
-          podman build \
-            --file containerfile \
-            --build-arg VERSION_TAG="${{ steps.tags.outputs.version_tag }}" \
-            --tag "${{ steps.tags.outputs.full_version_tag }}" \
-            --tag "${{ steps.tags.outputs.full_latest_tag }}" .
-
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Build container image with Podman
+        run: |
+          # Layer cache lives in the same GHCR repo the image tags are
+          # pushed to (a bare repo ref, no tag - podman manages its own
+          # cache references underneath it). Only main-branch pushes are
+          # logged in to GHCR, so only they can pull/push that cache.
+          CACHE_ARGS=()
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            CACHE_ARGS=(
+              --cache-from "${{ steps.tags.outputs.image_name }}"
+              --cache-to "${{ steps.tags.outputs.image_name }}"
+            )
+          fi
+
+          podman build \
+            --file containerfile \
+            --build-arg VERSION_TAG="${{ steps.tags.outputs.version_tag }}" \
+            "${CACHE_ARGS[@]}" \
+            --tag "${{ steps.tags.outputs.full_version_tag }}" \
+            --tag "${{ steps.tags.outputs.full_latest_tag }}" .
 
       - name: Push container image to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
