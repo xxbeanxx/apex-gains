@@ -23,12 +23,18 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { type Exercise, exercises, sessionSets } from "~/db/schema";
-import { todayDateString } from "~/lib/cycle";
+import { formatMonthDay, formatWeekday, todayDateString } from "~/lib/cycle";
 import {
   getOrCreateSession,
   getTodaysPlan,
   type TodaysPlanItem,
 } from "~/lib/todays-plan.server";
+import {
+  getPastWeekSummary,
+  getUpcomingWeekPlan,
+  type WeekHistoryDay,
+  type WeekPlanDay,
+} from "~/lib/week-summary.server";
 
 import type { Route } from "./+types/today";
 
@@ -86,11 +92,18 @@ export async function loader({ context }: Route.LoaderArgs) {
     .from(exercises)
     .orderBy(asc(exercises.equipment), asc(exercises.name));
 
+  const [upcomingWeek, pastWeek] = await Promise.all([
+    getUpcomingWeekPlan(user.id, todayStr),
+    getPastWeekSummary(user.id, todayStr),
+  ]);
+
   return {
     date: todayStr,
     plan,
     loggedSets: session?.sets ?? [],
     allExercises,
+    upcomingWeek,
+    pastWeek,
   };
 }
 
@@ -299,8 +312,99 @@ function LoggedSetsList({
   );
 }
 
+function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>This week</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {days.map((day, index) => (
+            <div
+              key={day.date}
+              className={`flex min-w-16 flex-1 flex-col items-center gap-1 rounded-lg border p-2 text-center ${
+                index === 0 ? "border-primary" : ""
+              }`}
+            >
+              <span className="text-muted-foreground text-xs">
+                {formatWeekday(day.date)}
+              </span>
+              <span className="text-muted-foreground text-[10px]">
+                {formatMonthDay(day.date)}
+              </span>
+              {day.type === "rest" ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  Rest
+                </Badge>
+              ) : day.type === "template" ? (
+                <span
+                  className="w-full truncate text-xs font-medium"
+                  title={day.templateName}
+                >
+                  {day.templateName}
+                </span>
+              ) : (
+                <span className="text-muted-foreground text-xs">-</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
+  const workouts = days.filter((d) => d.status === "workout").length;
+  const rests = days.filter((d) => d.status === "rest").length;
+  const totalSets = days.reduce((sum, d) => sum + d.setCount, 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Last week</CardTitle>
+        <p className="text-muted-foreground text-sm">
+          {workouts} workout{workouts === 1 ? "" : "s"}, {rests} rest day
+          {rests === 1 ? "" : "s"}, {totalSets} set{totalSets === 1 ? "" : "s"}{" "}
+          logged
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {days.map((day) => (
+            <div
+              key={day.date}
+              className="flex min-w-16 flex-1 flex-col items-center gap-1 rounded-lg border p-2 text-center"
+            >
+              <span className="text-muted-foreground text-xs">
+                {formatWeekday(day.date)}
+              </span>
+              <span className="text-muted-foreground text-[10px]">
+                {formatMonthDay(day.date)}
+              </span>
+              {day.status === "workout" ? (
+                <span className="text-xs font-medium">
+                  {day.setCount} set{day.setCount === 1 ? "" : "s"}
+                </span>
+              ) : day.status === "rest" ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  Rest
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground text-xs">-</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Today({ loaderData }: Route.ComponentProps) {
-  const { plan, loggedSets, allExercises } = loaderData;
+  const { plan, loggedSets, allExercises, upcomingWeek, pastWeek } =
+    loaderData;
 
   const setsByExercise = new Map<string, typeof loggedSets>();
   for (const set of loggedSets) {
@@ -310,11 +414,17 @@ export default function Today({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-bold">Today</h1>
 
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <UpcomingWeekCard days={upcomingWeek} />
+        <PastWeekCard days={pastWeek} />
+      </div>
+
+      <h2 className="mt-8 text-lg font-semibold">Today's workout</h2>
       {plan.type === "rest" ? (
-        <Badge variant="secondary" className="mt-4">
+        <Badge variant="secondary" className="mt-2">
           Rest day
         </Badge>
       ) : null}
@@ -328,7 +438,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       ) : null}
 
       {plan.type === "template" ? (
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           {plan.items.map((item) => (
             <Card key={item.exercise.id}>
               <CardHeader>
@@ -364,7 +474,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       </Card>
 
       {loggedSets.length > 0 && plan.type !== "template" ? (
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           {[...setsByExercise.entries()].map(([exerciseId, sets]) => (
             <Card key={exerciseId}>
               <CardHeader>

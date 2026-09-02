@@ -17,6 +17,26 @@ export function daysBetweenDateStrings(from: string, to: string): number {
   return Math.round((toMs - fromMs) / 86_400_000);
 }
 
+export function addDays(dateStr: string, delta: number): string {
+  const ms = Date.parse(`${dateStr}T00:00:00Z`) + delta * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+export function formatWeekday(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    weekday: "short",
+  });
+}
+
+export function formatMonthDay(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function slotIndexForDate(
   anchorDate: string,
   cycleLength: number,
