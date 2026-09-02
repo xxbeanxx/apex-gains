@@ -14,6 +14,7 @@ import { themeInitScript } from "~/components/theme-toggle";
 import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
 import { Button } from "~/components/ui/button";
+import { getBuildInfo } from "~/lib/build-info.server";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -28,6 +29,7 @@ export async function loader({ context }: Route.LoaderArgs) {
     user: user
       ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl }
       : null,
+    buildInfo: getBuildInfo(),
   };
 }
 
@@ -61,6 +63,9 @@ export default function App({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-dvh flex-col">
       <AppNav user={user} />
       <Outlet />
+      <footer className="border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground">
+        Build {loaderData?.buildInfo ?? "unknown"}
+      </footer>
     </div>
   );
 }
