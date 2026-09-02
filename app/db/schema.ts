@@ -265,3 +265,12 @@ export const sessionSetsRelations = relations(sessionSets, ({ one }) => ({
     references: [exercises.id],
   }),
 }));
+
+export type User = typeof users.$inferSelect;
+export type Exercise = typeof exercises.$inferSelect;
+export type Template = typeof templates.$inferSelect;
+export type TemplateExercise = typeof templateExercises.$inferSelect;
+export type Routine = typeof routines.$inferSelect;
+export type RoutineSlot = typeof routineSlots.$inferSelect;
+export type WorkoutSession = typeof workoutSessions.$inferSelect;
+export type SessionSet = typeof sessionSets.$inferSelect;

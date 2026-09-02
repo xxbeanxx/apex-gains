@@ -1,4 +1,6 @@
 import {
+  Form,
+  Link,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -7,10 +9,24 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import { loadUserMiddleware } from "~/auth/current-user.server";
+import { userContext } from "~/auth/user-context";
+
 import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
+
+export const middleware: Route.MiddlewareFunction[] = [loadUserMiddleware];
+
+export async function loader({ context }: Route.LoaderArgs) {
+  const user = context.get(userContext);
+  return {
+    user: user
+      ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl }
+      : null,
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,8 +46,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  return <Outlet />;
+export default function App({ loaderData }: Route.ComponentProps) {
+  const user = loaderData?.user ?? null;
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <Link to="/" className="font-bold tracking-tight">
+          Apex Gains
+        </Link>
+        {user ? (
+          <nav className="flex items-center gap-4 text-sm">
+            <Link to="/today">Today</Link>
+            <span className="text-muted-foreground">{user.name}</span>
+            <Form method="post" action="/auth/logout">
+              <button type="submit" className="underline">
+                Sign out
+              </button>
+            </Form>
+          </nav>
+        ) : (
+          <Link to="/auth/google" className="text-sm underline">
+            Sign in with Google
+          </Link>
+        )}
+      </header>
+      <Outlet />
+    </div>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
