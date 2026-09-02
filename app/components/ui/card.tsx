@@ -5,14 +5,21 @@ import { cn } from "~/lib/utils"
 function Card({
   className,
   size = "default",
+  interactive = false,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & {
+  size?: "default" | "sm"
+  /** Adds a hover lift + border warm-up. Only for cards that are clickable. */
+  interactive?: boolean
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-interactive={interactive || undefined}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 [--card-spacing:--spacing(5)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 dark:shadow-black/20 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "data-interactive:transition-[box-shadow,transform,--tw-ring-color] data-interactive:duration-(--dur) data-interactive:ease-(--ease-quint) data-interactive:hover:-translate-y-0.5 data-interactive:hover:shadow-md data-interactive:hover:ring-foreground/20 data-interactive:has-[:focus-visible]:ring-2 data-interactive:has-[:focus-visible]:ring-ring",
         className
       )}
       {...props}
