@@ -60,6 +60,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/today">Today</Link>
             <Link to="/exercises">Exercises</Link>
+            <Link to="/templates">Templates</Link>
             <Link to="/settings">Settings</Link>
             <span className="text-muted-foreground">{user.name}</span>
             <Form method="post" action="/auth/logout">
