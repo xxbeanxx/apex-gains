@@ -68,8 +68,17 @@ export default function Routines({
   actionData,
 }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold">Routines</h1>
+      <p className="text-muted-foreground mt-1 text-sm">
+        A routine is a repeating cycle of days - each day is either one of
+        your{" "}
+        <Link to="/templates" className="underline">
+          templates
+        </Link>{" "}
+        or a rest day. Only one routine can be active at a time; the active
+        routine drives what shows up on the Today page.
+      </p>
 
       <Card className="mt-6">
         <CardHeader>
@@ -96,18 +105,16 @@ export default function Routines({
         </CardContent>
       </Card>
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {loaderData.routines.map((routine) => (
           <li key={routine.id}>
             <Link
               to={`/routines/${routine.id}`}
-              className="flex items-center justify-between rounded-lg border px-4 py-3 hover:bg-muted"
+              className="flex h-full flex-col justify-between gap-2 rounded-lg border px-4 py-3 hover:bg-muted"
             >
               <span className="flex items-center gap-2 font-medium">
                 {routine.name}
-                {routine.isActive ? (
-                  <Badge>Active</Badge>
-                ) : null}
+                {routine.isActive ? <Badge>Active</Badge> : null}
               </span>
               <span className="text-muted-foreground text-sm">
                 {routine.slots.length} day

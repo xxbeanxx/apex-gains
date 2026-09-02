@@ -62,8 +62,17 @@ export default function Templates({
   actionData,
 }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold">Templates</h1>
+      <p className="text-muted-foreground mt-1 text-sm">
+        A template is a reusable list of exercises with target sets, reps,
+        and weight - a single workout, like "Push Day" or "Leg Day". Build
+        templates here, then arrange them into a weekly cycle on the{" "}
+        <Link to="/routines" className="underline">
+          Routines
+        </Link>{" "}
+        page.
+      </p>
 
       <Card className="mt-6">
         <CardHeader>
@@ -85,12 +94,12 @@ export default function Templates({
         </CardContent>
       </Card>
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {loaderData.templates.map((template) => (
           <li key={template.id}>
             <Link
               to={`/templates/${template.id}`}
-              className="flex items-center justify-between rounded-lg border px-4 py-3 hover:bg-muted"
+              className="flex h-full flex-col justify-between gap-2 rounded-lg border px-4 py-3 hover:bg-muted"
             >
               <span className="font-medium">{template.name}</span>
               <span className="text-muted-foreground text-sm">

@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { data, redirect } from "react-router";
+import { Link, data, redirect } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
@@ -204,7 +204,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
   const { routine, templates: templateList } = loaderData;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           {routine.name}
@@ -281,6 +281,10 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Days</CardTitle>
+          <p className="text-muted-foreground text-sm">
+            Each day is one of your templates or a rest day. Day 1 falls on
+            the anchor date above and the cycle repeats every N days.
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {routine.slots.map((slot, index) => (
@@ -362,6 +366,15 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
             </div>
             <Button type="submit">Add</Button>
           </form>
+          {templateList.length === 0 ? (
+            <p className="text-muted-foreground mt-2 text-sm">
+              You don't have any templates yet -{" "}
+              <Link to="/templates" className="underline">
+                create one
+              </Link>{" "}
+              to add it as a day here.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </main>
