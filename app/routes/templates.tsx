@@ -1,17 +1,20 @@
 import { desc, eq } from "drizzle-orm";
+import { ClipboardListIcon } from "lucide-react";
 import { Link, data, redirect } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
-import { Button } from "~/components/ui/button";
+import { Page, PageHeader, Section } from "~/components/layout/page";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
+import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { templates } from "~/db/schema";
 
@@ -61,60 +64,79 @@ export default function Templates({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-2xl font-bold">Templates</h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        A template is a reusable list of exercises with target sets, reps,
-        and weight - a single workout, like "Push Day" or "Leg Day". Build
-        templates here, then arrange them into a weekly cycle on the{" "}
-        <Link to="/routines" className="underline">
-          Routines
-        </Link>{" "}
-        page.
-      </p>
+  const error =
+    actionData && "error" in actionData ? actionData.error : undefined;
+  const { templates: templateList } = loaderData;
 
-      <Card className="mt-6 max-w-md">
+  return (
+    <Page>
+      <PageHeader
+        title="Templates"
+        description={
+          <>
+            A template is a reusable list of exercises with target sets, reps,
+            and weight — a single workout, like “Push Day” or “Leg Day”. Build
+            templates here, then arrange them into a cycle on the{" "}
+            <Link
+              to="/routines"
+              className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+            >
+              Routines
+            </Link>{" "}
+            page.
+          </>
+        }
+      />
+
+      <Card className="mt-(--section-gap) max-w-md">
         <CardHeader>
           <CardTitle>New template</CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="post" className="flex items-end gap-3">
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" placeholder="Push Day" required />
-            </div>
-            <Button type="submit">Create</Button>
+          <form method="post">
+            <Field
+              label="Name"
+              error={error}
+              action={
+                <SubmitButton pendingLabel="Creating">Create</SubmitButton>
+              }
+            >
+              <Input name="name" placeholder="Push Day" required />
+            </Field>
           </form>
-          {actionData && "error" in actionData ? (
-            <p className="text-destructive mt-2 text-sm">
-              {actionData.error}
-            </p>
-          ) : null}
         </CardContent>
       </Card>
 
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {loaderData.templates.map((template) => (
-          <li key={template.id}>
-            <Link
-              to={`/templates/${template.id}`}
-              className="flex h-full flex-col justify-between gap-2 rounded-lg border px-4 py-3 hover:bg-muted"
-            >
-              <span className="font-medium">{template.name}</span>
-              <span className="text-muted-foreground text-sm">
-                {template.templateExercises.length} exercise
-                {template.templateExercises.length === 1 ? "" : "s"}
-              </span>
-            </Link>
-          </li>
-        ))}
-        {loaderData.templates.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No templates yet. Create one above.
-          </p>
-        ) : null}
-      </ul>
-    </main>
+      <Section title="Your templates">
+        {templateList.length === 0 ? (
+          <EmptyState
+            icon={ClipboardListIcon}
+            title="No templates yet"
+            description="Create one above, then fill it with exercises and targets."
+          />
+        ) : (
+          <ul className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {templateList.map((template) => (
+              <li key={template.id}>
+                <Card interactive size="sm" className="relative h-full">
+                  <CardContent className="flex h-full flex-col justify-between gap-2">
+                    <Link
+                      to={`/templates/${template.id}`}
+                      className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
+                    >
+                      {template.name}
+                    </Link>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {template.templateExercises.length} exercise
+                      {template.templateExercises.length === 1 ? "" : "s"}
+                    </span>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+    </Page>
   );
 }

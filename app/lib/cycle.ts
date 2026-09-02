@@ -37,6 +37,35 @@ export function formatMonthDay(dateStr: string): string {
   });
 }
 
+function toLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/** "Tuesday, 2 September" - for page headings and history groups. */
+export function formatFullDate(dateStr: string): string {
+  return toLocalDate(dateStr).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/**
+ * "Today" / "Yesterday", else the full date. Screen readers announce raw ISO
+ * strings a character at a time, so nothing user-facing should show them.
+ */
+export function formatRelativeDate(
+  dateStr: string,
+  today: string = todayDateString(),
+): string {
+  const delta = daysBetweenDateStrings(dateStr, today);
+  if (delta === 0) return "Today";
+  if (delta === 1) return "Yesterday";
+  if (delta === -1) return "Tomorrow";
+  return formatFullDate(dateStr);
+}
+
 export function slotIndexForDate(
   anchorDate: string,
   cycleLength: number,

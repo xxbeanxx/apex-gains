@@ -1,9 +1,18 @@
 import { and, asc, eq } from "drizzle-orm";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ListPlusIcon,
+  PlusIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { data, redirect, useFetcher } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
+import { Page, PageHeader, Section } from "~/components/layout/page";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -11,8 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
+import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { SubmitButton } from "~/components/ui/submit-button";
 import {
   Select,
   SelectContent,
@@ -204,88 +215,92 @@ function AddExerciseForm({ exerciseList }: { exerciseList: Exercise[] }) {
   const [exerciseId, setExerciseId] = useState<string>("");
   const selected = exerciseList.find((e) => e.id === exerciseId);
 
+  const pending = fetcher.state !== "idle";
+
   return (
-    <fetcher.Form method="post" className="flex flex-col gap-3">
+    <fetcher.Form method="post" className="flex flex-col gap-4">
       <input type="hidden" name="intent" value="addExercise" />
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="exerciseId">Exercise</Label>
-        <Select
-          name="exerciseId"
-          value={exerciseId}
-          onValueChange={setExerciseId}
-        >
-          <SelectTrigger id="exerciseId" className="w-full">
-            <SelectValue placeholder="Choose an exercise" />
-          </SelectTrigger>
-          <SelectContent>
-            {exerciseList.map((exercise) => (
-              <SelectItem key={exercise.id} value={exercise.id}>
-                {exercise.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Field label="Exercise">
+        {({ id }) => (
+          <Select
+            name="exerciseId"
+            value={exerciseId}
+            onValueChange={setExerciseId}
+          >
+            <SelectTrigger id={id} className="w-full">
+              <SelectValue placeholder="Choose an exercise" />
+            </SelectTrigger>
+            <SelectContent>
+              {exerciseList.map((exercise) => (
+                <SelectItem key={exercise.id} value={exercise.id}>
+                  {exercise.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </Field>
 
       {selected?.exerciseType === "strength" ? (
         <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetSets">Sets</Label>
-            <Input id="targetSets" name="targetSets" type="number" min={1} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetReps">Reps</Label>
-            <Input id="targetReps" name="targetReps" type="number" min={1} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetWeight">Weight</Label>
+          <Field label="Sets">
+            <Input name="targetSets" type="number" min={1} inputMode="numeric" />
+          </Field>
+          <Field label="Reps">
+            <Input name="targetReps" type="number" min={1} inputMode="numeric" />
+          </Field>
+          <Field label="Weight">
             <Input
-              id="targetWeight"
               name="targetWeight"
               type="number"
               min={0}
               step="0.5"
+              inputMode="decimal"
             />
-          </div>
+          </Field>
         </div>
       ) : null}
 
       {selected?.exerciseType === "cardio" ? (
         <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetDurationMinutes">Duration (min)</Label>
+          <Field label="Minutes">
             <Input
-              id="targetDurationMinutes"
               name="targetDurationMinutes"
               type="number"
               min={1}
+              inputMode="numeric"
             />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetSpeed">Speed</Label>
+          </Field>
+          <Field label="Speed">
             <Input
-              id="targetSpeed"
               name="targetSpeed"
               type="number"
               min={0}
               step="0.1"
+              inputMode="decimal"
             />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="targetResistance">Resistance</Label>
+          </Field>
+          <Field label="Resistance">
             <Input
-              id="targetResistance"
               name="targetResistance"
               type="number"
               min={1}
+              inputMode="numeric"
             />
-          </div>
+          </Field>
         </div>
       ) : null}
 
-      <Button type="submit" disabled={!exerciseId} className="self-start">
+      <SubmitButton
+        pending={pending}
+        pendingLabel="Adding exercise"
+        disabled={!exerciseId}
+        variant="brand"
+        className="self-start"
+      >
+        {pending ? null : <PlusIcon aria-hidden="true" />}
         Add exercise
-      </Button>
+      </SubmitButton>
     </fetcher.Form>
   );
 }
@@ -293,117 +308,157 @@ function AddExerciseForm({ exerciseList }: { exerciseList: Exercise[] }) {
 export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
   const { template, exercises: exerciseList } = loaderData;
 
-  return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{template.name}</h1>
-        <form method="post">
-          <input type="hidden" name="intent" value="delete" />
-          <Button type="submit" variant="destructive" size="sm">
-            Delete template
-          </Button>
-        </form>
-      </div>
+  const exerciseCount = template.templateExercises.length;
 
-      <Card className="mt-6 max-w-md">
+  return (
+    <Page width="narrow">
+      <PageHeader
+        title={template.name}
+        description={`${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"} in this workout.`}
+        actions={
+          <form method="post">
+            <input type="hidden" name="intent" value="delete" />
+            <SubmitButton
+              variant="destructive"
+              size="sm"
+              match={{ intent: "delete" }}
+              pendingLabel="Deleting template"
+            >
+              <Trash2Icon aria-hidden="true" />
+              Delete template
+            </SubmitButton>
+          </form>
+        }
+      />
+
+      <Card className="mt-(--section-gap) max-w-md">
         <CardHeader>
           <CardTitle>Rename</CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="post" className="flex items-end gap-3">
+          <form method="post">
             <input type="hidden" name="intent" value="rename" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={template.name}
-                required
-              />
-            </div>
-            <Button type="submit">Save</Button>
+            <Field
+              label="Name"
+              action={
+                <SubmitButton match={{ intent: "rename" }} pendingLabel="Saving">
+                  Save
+                </SubmitButton>
+              }
+            >
+              <Input name="name" defaultValue={template.name} required />
+            </Field>
           </form>
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Exercises</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="grid gap-3 lg:grid-cols-2">
-          {template.templateExercises.map((te, index) => (
-            <div
-              key={te.id}
-              className="flex items-center justify-between rounded-lg border px-3 py-2"
-            >
-              <div>
-                <p className="font-medium">{te.exercise.name}</p>
-                <p className="text-muted-foreground text-sm">
-                  {targetSummary(te)}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <form method="post">
-                  <input type="hidden" name="intent" value="move" />
-                  <input
-                    type="hidden"
-                    name="templateExerciseId"
-                    value={te.id}
-                  />
-                  <input type="hidden" name="direction" value="up" />
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={index === 0}
+      <Section
+        title="Exercises"
+        description="Targets pre-fill the logging form on the Today page; every field stays editable per set."
+      >
+        {exerciseCount === 0 ? (
+          <EmptyState
+            icon={ListPlusIcon}
+            title="No exercises yet"
+            description="Add the first movement using the form below."
+            compact
+          />
+        ) : (
+          <ol className="grid gap-3 lg:grid-cols-2">
+            {template.templateExercises.map((te, index) => (
+              <li
+                key={te.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm shadow-black/[0.03] transition-colors duration-(--dur) hover:border-ring/30 dark:shadow-black/20"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground tabular-nums"
                   >
-                    ↑
-                  </Button>
-                </form>
-                <form method="post">
-                  <input type="hidden" name="intent" value="move" />
-                  <input
-                    type="hidden"
-                    name="templateExerciseId"
-                    value={te.id}
-                  />
-                  <input type="hidden" name="direction" value="down" />
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={index === template.templateExercises.length - 1}
-                  >
-                    ↓
-                  </Button>
-                </form>
-                <form method="post">
-                  <input type="hidden" name="intent" value="removeExercise" />
-                  <input
-                    type="hidden"
-                    name="templateExerciseId"
-                    value={te.id}
-                  />
-                  <Button type="submit" variant="ghost" size="icon-sm">
-                    ✕
-                  </Button>
-                </form>
-              </div>
-            </div>
-          ))}
-          </div>
-          {template.templateExercises.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No exercises yet. Add one below.
-            </p>
-          ) : null}
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{te.exercise.name}</p>
+                    <p className="truncate text-sm text-muted-foreground tabular-nums">
+                      {targetSummary(te)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <form method="post">
+                    <input type="hidden" name="intent" value="move" />
+                    <input
+                      type="hidden"
+                      name="templateExerciseId"
+                      value={te.id}
+                    />
+                    <input type="hidden" name="direction" value="up" />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={index === 0}
+                    >
+                      <ArrowUpIcon aria-hidden="true" />
+                      <span className="sr-only">
+                        Move {te.exercise.name} up
+                      </span>
+                    </Button>
+                  </form>
+                  <form method="post">
+                    <input type="hidden" name="intent" value="move" />
+                    <input
+                      type="hidden"
+                      name="templateExerciseId"
+                      value={te.id}
+                    />
+                    <input type="hidden" name="direction" value="down" />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={index === exerciseCount - 1}
+                    >
+                      <ArrowDownIcon aria-hidden="true" />
+                      <span className="sr-only">
+                        Move {te.exercise.name} down
+                      </span>
+                    </Button>
+                  </form>
+                  <form method="post">
+                    <input type="hidden" name="intent" value="removeExercise" />
+                    <input
+                      type="hidden"
+                      name="templateExerciseId"
+                      value={te.id}
+                    />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <XIcon aria-hidden="true" />
+                      <span className="sr-only">
+                        Remove {te.exercise.name} from this template
+                      </span>
+                    </Button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
 
-          <div className="mt-2 max-w-xl border-t pt-4">
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle>Add an exercise</CardTitle>
+          </CardHeader>
+          <CardContent>
             <AddExerciseForm exerciseList={exerciseList} />
-          </div>
-        </CardContent>
-      </Card>
-    </main>
+          </CardContent>
+        </Card>
+      </Section>
+    </Page>
   );
 }

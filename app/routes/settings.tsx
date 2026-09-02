@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
+import { CheckCircle2Icon } from "lucide-react";
 import { data } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
-import { Button } from "~/components/ui/button";
+import { Page, PageHeader } from "~/components/layout/page";
 import {
   Card,
   CardContent,
@@ -11,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Label } from "~/components/ui/label";
+import { Field } from "~/components/ui/field";
+import { SubmitButton } from "~/components/ui/submit-button";
 import {
   Select,
   SelectContent,
@@ -69,10 +71,17 @@ export default function Settings({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
+  const error =
+    actionData && "error" in actionData ? actionData.error : undefined;
+
   return (
-    <main className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="text-2xl font-bold">Settings</h1>
-      <Card className="mt-6">
+    <Page width="prose">
+      <PageHeader
+        title="Settings"
+        description="Preferences that apply across every workout you log."
+      />
+
+      <Card className="mt-(--section-gap)">
         <CardHeader>
           <CardTitle>Units</CardTitle>
           <CardDescription>
@@ -82,51 +91,58 @@ export default function Settings({
         </CardHeader>
         <CardContent>
           <form method="post" className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="weightUnit">Weight</Label>
-              <Select
-                name="weightUnit"
-                defaultValue={loaderData.weightUnit}
-              >
-                <SelectTrigger id="weightUnit" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lb">Pounds (lb)</SelectItem>
-                  <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                </SelectContent>
-              </Select>
+            <Field label="Weight" error={error}>
+              {({ id, describedBy }) => (
+                <Select name="weightUnit" defaultValue={loaderData.weightUnit}>
+                  <SelectTrigger
+                    id={id}
+                    aria-describedby={describedBy}
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lb">Pounds (lb)</SelectItem>
+                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </Field>
+
+            <Field label="Distance & speed">
+              {({ id }) => (
+                <Select
+                  name="distanceUnit"
+                  defaultValue={loaderData.distanceUnit}
+                >
+                  <SelectTrigger id={id} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="km">Kilometers (km, km/h)</SelectItem>
+                    <SelectItem value="mi">Miles (mi, mph)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </Field>
+
+            {/* Both outcomes land in one live region so a screen reader hears
+                the result of saving without moving focus. */}
+            <div aria-live="polite" className="empty:hidden">
+              {actionData && "ok" in actionData ? (
+                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                  Saved.
+                </p>
+              ) : null}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="distanceUnit">Distance &amp; speed</Label>
-              <Select
-                name="distanceUnit"
-                defaultValue={loaderData.distanceUnit}
-              >
-                <SelectTrigger id="distanceUnit" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="km">Kilometers (km, km/h)</SelectItem>
-                  <SelectItem value="mi">Miles (mi, mph)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {actionData && "error" in actionData ? (
-              <p className="text-destructive text-sm">{actionData.error}</p>
-            ) : null}
-            {actionData && "ok" in actionData ? (
-              <p className="text-sm text-green-600">Saved.</p>
-            ) : null}
-
-            <Button type="submit" className="self-start">
+            <SubmitButton pendingLabel="Saving" className="self-start">
               Save
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
-    </main>
+    </Page>
   );
 }

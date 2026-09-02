@@ -1,8 +1,10 @@
 import { and, asc, eq } from "drizzle-orm";
+import { DumbbellIcon, PencilIcon, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { data, useFetcher } from "react-router";
 import { z } from "zod";
 
+import { Page, PageHeader, Section } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -19,8 +21,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { EmptyState } from "~/components/ui/empty-state";
+import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { SubmitButton } from "~/components/ui/submit-button";
 import {
   Select,
   SelectContent,
@@ -207,6 +211,7 @@ type ExerciseWithEquipment = {
 
 function ExerciseDetailsFields({
   defaultValues,
+  error,
 }: {
   defaultValues?: {
     name: string;
@@ -214,53 +219,52 @@ function ExerciseDetailsFields({
     muscleGroup: string | null;
     description: string | null;
   };
+  error?: string;
 }) {
+  // Every id here comes from `Field`'s `useId`, so rendering this block twice
+  // on one page (the create form and an edit dialog) no longer produces
+  // colliding ids or labels pointing at the wrong input.
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="name">Name</Label>
+    <div className="flex flex-col gap-4">
+      <Field label="Name" error={error}>
         <Input
-          id="name"
           name="name"
           defaultValue={defaultValues?.name}
           placeholder="Cable Crossover"
           required
         />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="exerciseType">Type</Label>
-        <Select
-          name="exerciseType"
-          defaultValue={defaultValues?.exerciseType ?? "strength"}
-        >
-          <SelectTrigger id="exerciseType" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="strength">Strength</SelectItem>
-            <SelectItem value="cardio">Cardio</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="muscleGroup">Muscle group</Label>
+      </Field>
+      <Field label="Type">
+        {({ id }) => (
+          <Select
+            name="exerciseType"
+            defaultValue={defaultValues?.exerciseType ?? "strength"}
+          >
+            <SelectTrigger id={id} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="strength">Strength</SelectItem>
+              <SelectItem value="cardio">Cardio</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </Field>
+      <Field label="Muscle group">
         <Input
-          id="muscleGroup"
           name="muscleGroup"
           defaultValue={defaultValues?.muscleGroup ?? ""}
           placeholder="chest"
         />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="description">Description</Label>
+      </Field>
+      <Field label="Description">
         <Textarea
-          id="description"
           name="description"
           defaultValue={defaultValues?.description ?? ""}
           placeholder="How to perform this exercise, form cues, etc."
           rows={3}
         />
-      </div>
+      </Field>
     </div>
   );
 }
@@ -275,30 +279,36 @@ function ExerciseEditorDialog({
   const fetcher = useFetcher();
   const linkedIds = new Set(exercise.equipmentLinks.map((l) => l.equipment.id));
 
+  const error =
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="relative z-10 self-start">
+          <PencilIcon aria-hidden="true" />
           Edit
+          <span className="sr-only"> {exercise.name}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{exercise.name}</DialogTitle>
         </DialogHeader>
-        <fetcher.Form method="post" className="flex flex-col gap-3">
+        <fetcher.Form method="post" className="flex flex-col gap-4">
           <input type="hidden" name="intent" value="updateExercise" />
           <input type="hidden" name="exerciseId" value={exercise.id} />
-          <ExerciseDetailsFields defaultValues={exercise} />
-          {fetcher.data && "error" in fetcher.data ? (
-            <p className="text-destructive text-sm">{fetcher.data.error}</p>
-          ) : null}
-          <Button type="submit" className="self-start">
+          <ExerciseDetailsFields defaultValues={exercise} error={error} />
+          <SubmitButton
+            pending={fetcher.state !== "idle"}
+            pendingLabel="Saving exercise"
+            className="self-start"
+          >
             Save
-          </Button>
+          </SubmitButton>
         </fetcher.Form>
 
-        <div className="mt-2 flex flex-col gap-3 border-t pt-4">
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
           <p className="text-sm font-medium">Equipment</p>
           {allEquipment.map((eq) => (
             <EquipmentCheckboxRow
@@ -310,8 +320,8 @@ function ExerciseEditorDialog({
             />
           ))}
           {allEquipment.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No equipment yet. Add some above first.
+            <p className="text-sm text-muted-foreground">
+              No equipment yet. Add some on the Exercise Library page first.
             </p>
           ) : null}
         </div>
@@ -335,7 +345,7 @@ function EquipmentCheckboxRow({
   const [checked, setChecked] = useState(defaultChecked);
 
   return (
-    <label className="flex items-center gap-2 text-sm">
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted has-[:focus-visible]:bg-muted">
       <Checkbox
         checked={checked}
         onCheckedChange={(value) => {
@@ -367,20 +377,23 @@ function NewExerciseForm() {
     }
   }, [fetcher.state, fetcher.data]);
 
+  const pending = fetcher.state !== "idle";
+  const error =
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+
   return (
-    <fetcher.Form
-      ref={formRef}
-      method="post"
-      className="flex flex-col gap-3"
-    >
+    <fetcher.Form ref={formRef} method="post" className="flex flex-col gap-4">
       <input type="hidden" name="intent" value="createExercise" />
-      <ExerciseDetailsFields />
-      {fetcher.data && "error" in fetcher.data ? (
-        <p className="text-destructive text-sm">{fetcher.data.error}</p>
-      ) : null}
-      <Button type="submit" className="self-start">
+      <ExerciseDetailsFields error={error} />
+      <SubmitButton
+        pending={pending}
+        pendingLabel="Creating exercise"
+        variant="brand"
+        className="self-start"
+      >
+        {pending ? null : <PlusIcon aria-hidden="true" />}
         Create exercise
-      </Button>
+      </SubmitButton>
     </fetcher.Form>
   );
 }
@@ -398,72 +411,95 @@ export default function Exercises({
     byType.set(exercise.exerciseType, list);
   }
 
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-2xl font-bold">Exercise Library</h1>
+  const error =
+    actionData && "error" in actionData ? actionData.error : undefined;
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+  return (
+    <Page>
+      <PageHeader
+        title="Exercise Library"
+        description={`${exerciseList.length} movement${exerciseList.length === 1 ? "" : "s"} across ${equipmentList.length} piece${equipmentList.length === 1 ? "" : "s"} of equipment.`}
+      />
+
+      {/* items-start: let each card take its natural height instead of the
+          shorter one stretching to match and leaving a void. */}
+      <div className="mt-(--section-gap) grid gap-4 lg:grid-cols-2 lg:items-start">
         <Card>
           <CardHeader>
             <CardTitle>Equipment</CardTitle>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Add equipment you have, then link it to exercises below. An
-              exercise can use more than one - e.g. Bicep Curl on both the
+              exercise can use more than one — e.g. Bicep Curl on both the
               BowFlex and free weights.
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {equipmentList.map((eq) => (
-                <form key={eq.id} method="post" className="inline-flex">
-                  <input type="hidden" name="intent" value="deleteEquipment" />
-                  <input type="hidden" name="equipmentId" value={eq.id} />
-                  <Badge variant="secondary" className="gap-1.5 pr-1">
-                    {eq.name}
-                    <button
-                      type="submit"
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label={`Remove ${eq.name}`}
-                    >
-                      ✕
-                    </button>
-                  </Badge>
-                </form>
-              ))}
-              {equipmentList.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No equipment yet. Add your first one below.
-                </p>
-              ) : null}
-            </div>
-
-            <form method="post" className="mt-4 flex items-end gap-3">
-              <input type="hidden" name="intent" value="addEquipment" />
-              <div className="flex flex-1 flex-col gap-2 sm:max-w-xs">
-                <Label htmlFor="name">Add equipment</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Free Weights"
-                  required
-                />
-              </div>
-              <Button type="submit">Add</Button>
-            </form>
-            {actionData && "error" in actionData ? (
-              <p className="text-destructive mt-2 text-sm">
-                {actionData.error}
+          <CardContent className="flex flex-col gap-4">
+            {equipmentList.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {equipmentList.map((eq) => (
+                  <li key={eq.id}>
+                    <form method="post" className="inline-flex">
+                      <input
+                        type="hidden"
+                        name="intent"
+                        value="deleteEquipment"
+                      />
+                      <input
+                        type="hidden"
+                        name="equipmentId"
+                        value={eq.id}
+                      />
+                      <Badge variant="secondary" className="h-6 gap-1 pr-1">
+                        {eq.name}
+                        {/* after:-inset-1 grows the hit area to 24px without
+                            growing the glyph (WCAG 2.5.8 target size). */}
+                        <button
+                          type="submit"
+                          className="relative flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--dur-fast) after:absolute after:-inset-1 after:content-[''] hover:bg-destructive/15 hover:text-destructive"
+                        >
+                          <XIcon className="size-3" aria-hidden="true" />
+                          <span className="sr-only">
+                            Remove {eq.name} equipment
+                          </span>
+                        </button>
+                      </Badge>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No equipment yet. Add your first one below.
               </p>
-            ) : null}
+            )}
+
+            <form method="post">
+              <input type="hidden" name="intent" value="addEquipment" />
+              <Field
+                label="Add equipment"
+                error={error}
+                className="sm:max-w-sm"
+                action={
+                  <SubmitButton
+                    match={{ intent: "addEquipment" }}
+                    pendingLabel="Adding equipment"
+                  >
+                    Add
+                  </SubmitButton>
+                }
+              >
+                <Input name="name" placeholder="Free Weights" required />
+              </Field>
+            </form>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>New exercise</CardTitle>
-            <p className="text-muted-foreground text-sm">
-              Equipment can be linked afterward from the exercise's Edit
-              dialog below.
+            <p className="text-sm text-muted-foreground">
+              Equipment can be linked afterward from the exercise's Edit dialog
+              below.
             </p>
           </CardHeader>
           <CardContent>
@@ -472,52 +508,71 @@ export default function Exercises({
         </Card>
       </div>
 
+      {exerciseList.length === 0 ? (
+        <div className="mt-(--section-gap)">
+          <EmptyState
+            icon={DumbbellIcon}
+            title="No exercises yet"
+            description="Create your first movement with the form above."
+          />
+        </div>
+      ) : null}
+
       {["strength", "cardio"].map((type) => {
         const list = byType.get(type) ?? [];
         if (list.length === 0) return null;
         return (
-          <div key={type} className="mt-8">
-            <h2 className="text-lg font-semibold">{typeLabels[type]}</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Section
+            key={type}
+            title={typeLabels[type]}
+            description={`${list.length} exercise${list.length === 1 ? "" : "s"}`}
+          >
+            <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {list.map((exercise) => (
-                <Card key={exercise.id}>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {exercise.name}
-                    </CardTitle>
-                    {exercise.muscleGroup ? (
-                      <p className="text-muted-foreground text-sm">
-                        {exercise.muscleGroup}
-                      </p>
-                    ) : null}
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    {exercise.description ? (
-                      <p className="text-sm">{exercise.description}</p>
-                    ) : null}
-                    <div className="flex flex-wrap gap-1.5">
-                      {exercise.equipmentLinks.map((link) => (
-                        <Badge key={link.equipment.id} variant="secondary">
-                          {link.equipment.name}
-                        </Badge>
-                      ))}
-                      {exercise.equipmentLinks.length === 0 ? (
-                        <span className="text-muted-foreground text-xs">
-                          No equipment linked
-                        </span>
+                <li key={exercise.id}>
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle className="text-base">
+                        {exercise.name}
+                      </CardTitle>
+                      {exercise.muscleGroup ? (
+                        <p className="text-sm text-muted-foreground">
+                          {exercise.muscleGroup}
+                        </p>
                       ) : null}
-                    </div>
-                    <ExerciseEditorDialog
-                      exercise={exercise}
-                      allEquipment={equipmentList}
-                    />
-                  </CardContent>
-                </Card>
+                    </CardHeader>
+                    <CardContent className="flex flex-1 flex-col gap-4">
+                      {exercise.description ? (
+                        <p className="text-sm text-pretty text-muted-foreground">
+                          {exercise.description}
+                        </p>
+                      ) : null}
+                      <div className="mt-auto flex flex-col gap-4">
+                        <div className="flex flex-wrap gap-1.5">
+                          {exercise.equipmentLinks.map((link) => (
+                            <Badge key={link.equipment.id} variant="secondary">
+                              {link.equipment.name}
+                            </Badge>
+                          ))}
+                          {exercise.equipmentLinks.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">
+                              No equipment linked
+                            </span>
+                          ) : null}
+                        </div>
+                        <ExerciseEditorDialog
+                          exercise={exercise}
+                          allEquipment={equipmentList}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </Section>
         );
       })}
-    </main>
+    </Page>
   );
 }
