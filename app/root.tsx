@@ -62,6 +62,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
             <Link to="/exercises">Exercises</Link>
             <Link to="/templates">Templates</Link>
             <Link to="/routines">Routines</Link>
+            <Link to="/history">History</Link>
             <Link to="/settings">Settings</Link>
             <span className="text-muted-foreground">{user.name}</span>
             <Form method="post" action="/auth/logout">
