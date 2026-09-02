@@ -1,0 +1,32 @@
+# Local dev database. Run with:
+#   podman play kube deploy/postgres-pod.yaml
+# Tear down with:
+#   podman play kube --down deploy/postgres-pod.yaml
+#
+# The app itself runs on the host via `npm run dev` for fast HMR rather
+# than in this pod - only Postgres needs to be containerized for local dev.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: apex-gains-db
+spec:
+  containers:
+    - name: postgres
+      image: docker.io/library/postgres:16-alpine
+      env:
+        - name: POSTGRES_USER
+          value: apex_gains
+        - name: POSTGRES_PASSWORD
+          value: apex_gains
+        - name: POSTGRES_DB
+          value: apex_gains
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - name: apex-gains-db-data
+          mountPath: /var/lib/postgresql/data
+  volumes:
+    - name: apex-gains-db-data
+      persistentVolumeClaim:
+        claimName: apex-gains-db-data
