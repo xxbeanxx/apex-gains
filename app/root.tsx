@@ -11,6 +11,7 @@ import {
 
 import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
+import { Button } from "~/components/ui/button";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -60,15 +61,15 @@ export default function App({ loaderData }: Route.ComponentProps) {
             <Link to="/today">Today</Link>
             <span className="text-muted-foreground">{user.name}</span>
             <Form method="post" action="/auth/logout">
-              <button type="submit" className="underline">
+              <Button type="submit" variant="ghost" size="sm">
                 Sign out
-              </button>
+              </Button>
             </Form>
           </nav>
         ) : (
-          <Link to="/auth/google" className="text-sm underline">
-            Sign in with Google
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/auth/google">Sign in with Google</Link>
+          </Button>
         )}
       </header>
       <Outlet />

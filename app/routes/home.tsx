@@ -1,6 +1,7 @@
 import { redirect } from "react-router";
 
 import { userContext } from "~/auth/user-context";
+import { Button } from "~/components/ui/button";
 
 import type { Route } from "./+types/home";
 
@@ -26,12 +27,9 @@ export default function Home() {
       <p className="text-muted-foreground">
         Your workout journey starts here.
       </p>
-      <a
-        href="/auth/google"
-        className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
-      >
-        Sign in with Google
-      </a>
+      <Button asChild size="lg">
+        <a href="/auth/google">Sign in with Google</a>
+      </Button>
     </main>
   );
 }
