@@ -62,7 +62,7 @@ export default function Templates({
   actionData,
 }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">Templates</h1>
       <p className="text-muted-foreground mt-1 text-sm">
         A template is a reusable list of exercises with target sets, reps,
@@ -74,7 +74,7 @@ export default function Templates({
         page.
       </p>
 
-      <Card className="mt-6">
+      <Card className="mt-6 max-w-md">
         <CardHeader>
           <CardTitle>New template</CardTitle>
         </CardHeader>
@@ -94,7 +94,7 @@ export default function Templates({
         </CardContent>
       </Card>
 
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loaderData.templates.map((template) => (
           <li key={template.id}>
             <Link

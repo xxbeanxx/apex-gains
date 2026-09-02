@@ -204,7 +204,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
   const { routine, templates: templateList } = loaderData;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           {routine.name}
@@ -230,53 +230,55 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
         </div>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Rename</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form method="post" className="flex items-end gap-3">
-            <input type="hidden" name="intent" value="rename" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={routine.name}
-                required
-              />
-            </div>
-            <Button type="submit">Save</Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Rename</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form method="post" className="flex items-end gap-3">
+              <input type="hidden" name="intent" value="rename" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={routine.name}
+                  required
+                />
+              </div>
+              <Button type="submit">Save</Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Anchor date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-3 text-sm">
-            The day this routine's cycle starts counting from. Day 1 of the
-            cycle falls on this date, and it repeats every {routine.slots.length || "N"}{" "}
-            days from there.
-          </p>
-          <form method="post" className="flex items-end gap-3">
-            <input type="hidden" name="intent" value="reanchor" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor="anchorDate">Anchor date</Label>
-              <Input
-                id="anchorDate"
-                name="anchorDate"
-                type="date"
-                defaultValue={routine.anchorDate}
-                required
-              />
-            </div>
-            <Button type="submit">Save</Button>
-          </form>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Anchor date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-3 text-sm">
+              The day this routine's cycle starts counting from. Day 1 of the
+              cycle falls on this date, and it repeats every{" "}
+              {routine.slots.length || "N"} days from there.
+            </p>
+            <form method="post" className="flex items-end gap-3">
+              <input type="hidden" name="intent" value="reanchor" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="anchorDate">Anchor date</Label>
+                <Input
+                  id="anchorDate"
+                  name="anchorDate"
+                  type="date"
+                  defaultValue={routine.anchorDate}
+                  required
+                />
+              </div>
+              <Button type="submit">Save</Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="mt-6">
         <CardHeader>
@@ -287,6 +289,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
           {routine.slots.map((slot, index) => (
             <div
               key={slot.id}
@@ -337,6 +340,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
           ))}
+          </div>
           {routine.slots.length === 0 ? (
             <p className="text-muted-foreground text-sm">
               No days yet. Add one below.
@@ -345,7 +349,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
 
           <form
             method="post"
-            className="mt-2 flex items-end gap-3 border-t pt-4"
+            className="mt-2 flex max-w-xl items-end gap-3 border-t pt-4"
           >
             <input type="hidden" name="intent" value="addSlot" />
             <div className="flex flex-1 flex-col gap-2">

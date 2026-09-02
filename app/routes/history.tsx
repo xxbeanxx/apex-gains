@@ -53,10 +53,10 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export default function History({ loaderData }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">History</h1>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loaderData.sessions.map((session) => {
           const setsByExercise = new Map<string, typeof session.sets>();
           for (const set of session.sets) {

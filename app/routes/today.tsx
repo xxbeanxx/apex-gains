@@ -403,7 +403,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">Today</h1>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -427,7 +427,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       ) : null}
 
       {plan.type === "template" ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plan.items.map((item) => (
             <Card key={item.exercise.id}>
               <CardHeader>
@@ -463,7 +463,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       </Card>
 
       {loggedSets.length > 0 && plan.type !== "template" ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[...setsByExercise.entries()].map(([exerciseId, sets]) => (
             <Card key={exerciseId}>
               <CardHeader>

@@ -294,7 +294,7 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
   const { template, exercises: exerciseList } = loaderData;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{template.name}</h1>
         <form method="post">
@@ -305,7 +305,7 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
         </form>
       </div>
 
-      <Card className="mt-6">
+      <Card className="mt-6 max-w-md">
         <CardHeader>
           <CardTitle>Rename</CardTitle>
         </CardHeader>
@@ -331,6 +331,7 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
           <CardTitle>Exercises</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
           {template.templateExercises.map((te, index) => (
             <div
               key={te.id}
@@ -391,13 +392,14 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
           ))}
+          </div>
           {template.templateExercises.length === 0 ? (
             <p className="text-muted-foreground text-sm">
               No exercises yet. Add one below.
             </p>
           ) : null}
 
-          <div className="mt-2 border-t pt-4">
+          <div className="mt-2 max-w-xl border-t pt-4">
             <AddExerciseForm exerciseList={exerciseList} />
           </div>
         </CardContent>

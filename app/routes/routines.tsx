@@ -68,7 +68,7 @@ export default function Routines({
   actionData,
 }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">Routines</h1>
       <p className="text-muted-foreground mt-1 text-sm">
         A routine is a repeating cycle of days - each day is either one of
@@ -80,7 +80,7 @@ export default function Routines({
         routine drives what shows up on the Today page.
       </p>
 
-      <Card className="mt-6">
+      <Card className="mt-6 max-w-md">
         <CardHeader>
           <CardTitle>New routine</CardTitle>
         </CardHeader>
@@ -105,7 +105,7 @@ export default function Routines({
         </CardContent>
       </Card>
 
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loaderData.routines.map((routine) => (
           <li key={routine.id}>
             <Link

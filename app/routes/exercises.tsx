@@ -399,7 +399,7 @@ export default function Exercises({
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">Exercise Library</h1>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -478,7 +478,7 @@ export default function Exercises({
         return (
           <div key={type} className="mt-8">
             <h2 className="text-lg font-semibold">{typeLabels[type]}</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {list.map((exercise) => (
                 <Card key={exercise.id}>
                   <CardHeader>
