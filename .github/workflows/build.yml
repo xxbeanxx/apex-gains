@@ -15,12 +15,12 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,58 +44,35 @@ jobs:
     name: Build & Push Container Image
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Generate image tags
         id: tags
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           # 8-digit date in UTC (e.g. 20260901)
-          DATE=$(date -u +'%Y%m%d')
+          DATE=$(date --utc +'%Y%m%d')
 
-          # 8-character commit SHA
-          COMMIT_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          if [ -z "$COMMIT_SHA" ]; then
-            COMMIT_SHA=$(git rev-parse HEAD)
-          fi
-          SHA="${COMMIT_SHA:0:8}"
+          # 8-character commit SHA of what was actually checked out
+          SHA="${GITHUB_SHA:0:8}"
 
           # Lowercase image repository name for GHCR
-          IMAGE_NAME="ghcr.io/${{ github.repository }}"
-          IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=$(echo "ghcr.io/${REPOSITORY}" | tr '[:upper:]' '[:lower:]')
 
-          # Query existing tags from GHCR to determine daily build number
-          EXISTING_TAGS=$(skopeo list-tags --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" "docker://${IMAGE_NAME}" 2>/dev/null || echo "{}")
+          # 8-character zero-padded hex build number (e.g. 0000002a)
+          # github.run_number is unique and monotonically increasing per
+          # workflow, so it needs no registry lookup and can't race.
+          BUILD_NUM=$(printf '%08x' "${RUN_NUMBER}")
 
-          # Calculate build number: resets to 000 when date changes, increments otherwise
-          BUILD_NUM=$(python3 -c '
-          import json, os, re, sys
-
-          date_str = sys.argv[1]
-          tags_json_str = sys.argv[2]
-
-          try:
-              data = json.loads(tags_json_str) if tags_json_str else {}
-              tags = data.get("Tags", []) or []
-          except Exception:
-              tags = []
-
-          pattern = re.compile(rf"^{re.escape(date_str)}-[a-fA-F0-9]+-(\d{{3,}})$")
-          max_num = -1
-
-          for tag in tags:
-              match = pattern.match(tag)
-              if match:
-                  num = int(match.group(1))
-                  if num > max_num:
-                      max_num = num
-
-          next_num = max_num + 1 if max_num >= 0 else 0
-          print(f"{next_num:03d}")
-          ' "$DATE" "$EXISTING_TAGS")
-
-          # Tag format: date-sha-XXX (e.g. 20260901-abcd1234-000)
+          # Tag format: date-sha-buildnum (e.g. 20260901-abcd1234-0000002a)
           VERSION_TAG="${DATE}-${SHA}-${BUILD_NUM}"
 
           echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
@@ -110,20 +87,18 @@ jobs:
       - name: Build container image with Podman
         run: |
           podman build \
-            -f containerfile \
-            -t "${{ steps.tags.outputs.full_version_tag }}" \
-            -t "${{ steps.tags.outputs.full_latest_tag }}" \
-            -t "apex-gains:${{ steps.tags.outputs.version_tag }}" \
-            -t "apex-gains:latest" \
-            .
+            --file containerfile \
+            --build-arg VERSION_TAG="${{ steps.tags.outputs.version_tag }}" \
+            --tag "${{ steps.tags.outputs.full_version_tag }}" \
+            --tag "${{ steps.tags.outputs.full_latest_tag }}" .
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
 
       - name: Push container image to GHCR
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           podman push "${{ steps.tags.outputs.full_version_tag }}"
           podman push "${{ steps.tags.outputs.full_latest_tag }}"
@@ -138,8 +113,10 @@ jobs:
           echo "| Image | \`${{ steps.tags.outputs.image_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Version Tag | \`${{ steps.tags.outputs.version_tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Latest Tag | \`latest\` |" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "| Push Status | ℹ️ Built and verified (push skipped on pull request) |" >> "$GITHUB_STEP_SUMMARY"
-          else
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "| Push Status | ℹ️ Built and verified (push skipped: not a push to main) |" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ job.status }}" = "success" ]; then
             echo "| Push Status | 🚀 Successfully pushed to GHCR |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Push Status | ❌ Push failed |" >> "$GITHUB_STEP_SUMMARY"
           fi
