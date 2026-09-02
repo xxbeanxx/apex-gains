@@ -15,6 +15,8 @@ export default [
     route("exercises", "routes/exercises.tsx"),
     route("templates", "routes/templates.tsx"),
     route("templates/:templateId", "routes/templates.$templateId.tsx"),
+    route("routines", "routes/routines.tsx"),
+    route("routines/:routineId", "routes/routines.$routineId.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),
 ] satisfies RouteConfig;
