@@ -2,21 +2,26 @@ import { asc } from "drizzle-orm";
 
 import { Badge } from "~/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { db } from "~/db/index.server";
-import { exercises } from "~/db/schema";
+import { type Exercise, exercises } from "~/db/schema";
 
 import type { Route } from "./+types/exercises";
 
 export function meta() {
   return [{ title: "Exercises - Apex Gains" }];
 }
+
+const equipmentOrder = [
+  "bowflex_pr1000",
+  "rowing_machine",
+  "treadmill",
+  "bodyweight",
+] as const;
 
 const equipmentLabels: Record<string, string> = {
   bowflex_pr1000: "BowFlex PR1000",
@@ -34,38 +39,51 @@ export async function loader() {
 }
 
 export default function Exercises({ loaderData }: Route.ComponentProps) {
+  const byEquipment = new Map<string, Exercise[]>();
+  for (const exercise of loaderData.exercises) {
+    const list = byEquipment.get(exercise.equipment) ?? [];
+    list.push(exercise);
+    byEquipment.set(exercise.equipment, list);
+  }
+  const equipmentGroups = equipmentOrder.filter((eq) => byEquipment.has(eq));
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-2xl font-bold">Exercise Library</h1>
-      <div className="mt-6 overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Equipment</TableHead>
-              <TableHead>Muscle Group</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loaderData.exercises.map((exercise) => (
-              <TableRow key={exercise.id}>
-                <TableCell className="font-medium">
-                  {exercise.name}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{exercise.exerciseType}</Badge>
-                </TableCell>
-                <TableCell>
-                  {equipmentLabels[exercise.equipment] ?? exercise.equipment}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {exercise.muscleGroup ?? "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {equipmentGroups.map((equipment) => {
+          const list = byEquipment.get(equipment) ?? [];
+          return (
+            <Card key={equipment}>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {equipmentLabels[equipment] ?? equipment}
+                </CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  {list.length} exercise{list.length === 1 ? "" : "s"}
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {list.map((exercise) => (
+                  <div key={exercise.id}>
+                    <p className="font-medium">{exercise.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {exercise.exerciseType}
+                      </Badge>
+                      {exercise.muscleGroup ? (
+                        <span className="text-muted-foreground text-xs">
+                          {exercise.muscleGroup}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </main>
   );
