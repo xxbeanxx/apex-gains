@@ -53,7 +53,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const allExercises = await db
     .select()
     .from(exercises)
-    .orderBy(asc(exercises.equipment), asc(exercises.name));
+    .orderBy(asc(exercises.name));
   return { template, exercises: allExercises };
 }
 
@@ -237,23 +237,21 @@ function AddExerciseForm({ exerciseList }: { exerciseList: Exercise[] }) {
             <Label htmlFor="targetReps">Reps</Label>
             <Input id="targetReps" name="targetReps" type="number" min={1} />
           </div>
-          {selected.equipment !== "bodyweight" ? (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="targetWeight">Weight</Label>
-              <Input
-                id="targetWeight"
-                name="targetWeight"
-                type="number"
-                min={0}
-                step="0.5"
-              />
-            </div>
-          ) : null}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="targetWeight">Weight</Label>
+            <Input
+              id="targetWeight"
+              name="targetWeight"
+              type="number"
+              min={0}
+              step="0.5"
+            />
+          </div>
         </div>
       ) : null}
 
       {selected?.exerciseType === "cardio" ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col gap-2">
             <Label htmlFor="targetDurationMinutes">Duration (min)</Label>
             <Input
@@ -263,29 +261,25 @@ function AddExerciseForm({ exerciseList }: { exerciseList: Exercise[] }) {
               min={1}
             />
           </div>
-          {selected.equipment === "treadmill" ? (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="targetSpeed">Speed</Label>
-              <Input
-                id="targetSpeed"
-                name="targetSpeed"
-                type="number"
-                min={0}
-                step="0.1"
-              />
-            </div>
-          ) : null}
-          {selected.equipment === "rowing_machine" ? (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="targetResistance">Resistance</Label>
-              <Input
-                id="targetResistance"
-                name="targetResistance"
-                type="number"
-                min={1}
-              />
-            </div>
-          ) : null}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="targetSpeed">Speed</Label>
+            <Input
+              id="targetSpeed"
+              name="targetSpeed"
+              type="number"
+              min={0}
+              step="0.1"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="targetResistance">Resistance</Label>
+            <Input
+              id="targetResistance"
+              name="targetResistance"
+              type="number"
+              min={1}
+            />
+          </div>
         </div>
       ) : null}
 

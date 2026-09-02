@@ -90,7 +90,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   const allExercises = await db
     .select()
     .from(exercises)
-    .orderBy(asc(exercises.equipment), asc(exercises.name));
+    .orderBy(asc(exercises.name));
 
   const [upcomingWeek, pastWeek] = await Promise.all([
     getUpcomingWeekPlan(user.id, todayStr),
@@ -217,18 +217,16 @@ function LogSetForm({
             <Label>Reps</Label>
             <Input name="reps" type="number" min={1} className="w-20" />
           </div>
-          {active.equipment !== "bodyweight" ? (
-            <div className="flex flex-col gap-2">
-              <Label>Weight</Label>
-              <Input
-                name="weight"
-                type="number"
-                min={0}
-                step="0.5"
-                className="w-24"
-              />
-            </div>
-          ) : null}
+          <div className="flex flex-col gap-2">
+            <Label>Weight</Label>
+            <Input
+              name="weight"
+              type="number"
+              min={0}
+              step="0.5"
+              className="w-24"
+            />
+          </div>
         </>
       ) : null}
 
@@ -243,29 +241,20 @@ function LogSetForm({
               className="w-24"
             />
           </div>
-          {active.equipment === "treadmill" ? (
-            <div className="flex flex-col gap-2">
-              <Label>Speed</Label>
-              <Input
-                name="speed"
-                type="number"
-                min={0}
-                step="0.1"
-                className="w-20"
-              />
-            </div>
-          ) : null}
-          {active.equipment === "rowing_machine" ? (
-            <div className="flex flex-col gap-2">
-              <Label>Resistance</Label>
-              <Input
-                name="resistance"
-                type="number"
-                min={1}
-                className="w-20"
-              />
-            </div>
-          ) : null}
+          <div className="flex flex-col gap-2">
+            <Label>Speed</Label>
+            <Input
+              name="speed"
+              type="number"
+              min={0}
+              step="0.1"
+              className="w-20"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Resistance</Label>
+            <Input name="resistance" type="number" min={1} className="w-20" />
+          </div>
         </>
       ) : null}
 

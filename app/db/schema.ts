@@ -6,6 +6,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -18,12 +19,6 @@ export const distanceUnitEnum = pgEnum("distance_unit", ["km", "mi"]);
 export const exerciseTypeEnum = pgEnum("exercise_type", [
   "strength",
   "cardio",
-]);
-export const equipmentEnum = pgEnum("equipment", [
-  "bowflex_pr1000",
-  "rowing_machine",
-  "treadmill",
-  "bodyweight",
 ]);
 
 export const users = pgTable("users", {
@@ -46,12 +41,32 @@ export const exercises = pgTable("exercises", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
   exerciseType: exerciseTypeEnum("exercise_type").notNull(),
-  equipment: equipmentEnum("equipment").notNull(),
   muscleGroup: text("muscle_group"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
+
+export const equipment = pgTable("equipment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const exerciseEquipment = pgTable(
+  "exercise_equipment",
+  {
+    exerciseId: uuid("exercise_id")
+      .notNull()
+      .references(() => exercises.id, { onDelete: "cascade" }),
+    equipmentId: uuid("equipment_id")
+      .notNull()
+      .references(() => equipment.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.exerciseId, table.equipmentId] })],
+);
 
 export const templates = pgTable("templates", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -192,7 +207,26 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const exercisesRelations = relations(exercises, ({ many }) => ({
   templateExercises: many(templateExercises),
   sessionSets: many(sessionSets),
+  equipmentLinks: many(exerciseEquipment),
 }));
+
+export const equipmentRelations = relations(equipment, ({ many }) => ({
+  exerciseLinks: many(exerciseEquipment),
+}));
+
+export const exerciseEquipmentRelations = relations(
+  exerciseEquipment,
+  ({ one }) => ({
+    exercise: one(exercises, {
+      fields: [exerciseEquipment.exerciseId],
+      references: [exercises.id],
+    }),
+    equipment: one(equipment, {
+      fields: [exerciseEquipment.equipmentId],
+      references: [equipment.id],
+    }),
+  }),
+);
 
 export const templatesRelations = relations(templates, ({ one, many }) => ({
   user: one(users, {
@@ -268,6 +302,7 @@ export const sessionSetsRelations = relations(sessionSets, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
+export type Equipment = typeof equipment.$inferSelect;
 export type Template = typeof templates.$inferSelect;
 export type TemplateExercise = typeof templateExercises.$inferSelect;
 export type Routine = typeof routines.$inferSelect;
