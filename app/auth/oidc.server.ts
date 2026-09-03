@@ -12,5 +12,6 @@ export function getGoogleConfig(): Promise<client.Configuration> {
       getGoogleClientSecret(),
     );
   }
+
   return configPromise;
 }

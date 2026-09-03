@@ -75,9 +75,9 @@ under the `routes/_protected.tsx` layout, which sets
 `requireUserMiddleware` (`app/auth/require-user.server.ts`) to redirect
 anonymous requests to `/auth/google`. The current user is threaded
 through via React Router's context API: `app/auth/user-context.ts`
-defines `userContext`, populated somewhere upstream (root/session
-middleware) and read in loaders/actions with
-`context.get(userContext)`. Route modules import their generated types
+defines `userContext`, populated by `loadUserMiddleware` (see Auth,
+below) and read in loaders/actions with `context.get(userContext)`.
+Route modules import their generated types
 from `./+types/<route-file-name>`.
 
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
@@ -86,6 +86,20 @@ from `./+types/<route-file-name>`.
 read queries that combine multiple tables (e.g. "what's today's
 workout") live in `app/lib/*.server.ts` (`todays-plan.server.ts`,
 `week-summary.server.ts`) rather than inline in routes.
+
+**Sample data and fork-on-write.** `exercises`, `templates`, and
+`routines` rows with a null `userId` are seeded sample/system data
+shared read-only by every account; `app/lib/sample-data.server.ts`
+exports the `sampleOrOwn*Where` query-condition helpers (own rows plus
+any not-yet-forked sample rows) and the `fork*ForUser` helpers, which
+copy a sample row (and its children — equipment links, template
+exercises, routine slots) into a real per-user row with `forkedFromId`
+pointing back at the sample the moment a user edits it; the sample
+original is then excluded from that user's view so the same logical
+item doesn't show twice. Because of this, "does this row's `userId`
+match the current user" isn't quite the whole authorization story —
+scoped loaders must also decide whether to include the null-`userId`
+sample rows via these helpers.
 
 **Domain model shape**, roughly nested:
 `templates` (a named list of exercises with target sets/reps/weight or
@@ -128,11 +142,23 @@ one form, or every submit button on the page will spin together.
 
 **Auth.** Google OIDC via `openid-client` (`app/auth/oidc.server.ts`,
 `oidc-state.server.ts`), session stored as a signed httpOnly cookie
-(`app/auth/session.server.ts`). Any Google account can sign in (open
+(`app/auth/session.server.ts`). `loadUserMiddleware`
+(`app/auth/current-user.server.ts`) reads the session and populates
+`userContext` on every request (registered in `root.tsx`'s
+`middleware` export, ahead of `requireUserMiddleware` which only the
+`_protected` layout adds). Any Google account can sign in (open
 signup) — a `users` row is created on first login. There is no
 role/permission system; all authorization is "does this row's
 `userId` match the current user" (see `loadOwnedRoutine`-style loaders
-that scope every query by `userId` before returning 404).
+that scope every query by `userId` before returning 404) plus the
+sample-data fork rule above. Azure Container Apps terminates TLS at
+its ingress and forwards plain HTTP, and `react-router-serve` never
+enables "trust proxy", so `request.url` in the OAuth callback route
+looks like `http://...` even for real `https://` requests;
+`app/routes/auth.google.callback.tsx` rebuilds the URL passed to
+`authorizationCodeGrant` from the `ORIGIN` env var instead of the raw
+`request.url` so the token exchange's `redirect_uri` matches what's
+registered with Google.
 
 **UI.** shadcn/ui primitives (Radix + `class-variance-authority`) live
 in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
@@ -142,3 +168,22 @@ volt accent for active states/focus rings/progress, dark mode via
 `.dark` class) are defined once in `app/app.css` — extend the token
 set there rather than hardcoding colors in components. Path alias `~/`
 maps to `app/` (see `tsconfig.json` and `components.json`).
+`app/components/nav-progress.tsx` drives an NProgress bar off
+`useNavigation()` so client-side transitions get a loading indicator.
+
+**Logging.** `app/lib/logger.server.ts` exports a base `pino` logger
+(JSON on stdout/stderr everywhere except `development`, where it pipes
+through `pino-pretty`; Azure Container Apps ships stdout JSON straight
+into Log Analytics) and `requestLoggingMiddleware`, registered first
+in `root.tsx`'s `middleware` export, which binds a per-request child
+logger (with a `requestId`) into `loggerContext` and logs one
+`"request completed"`/`"request failed"` line per request with
+method/path/status/duration/userId. Route code that wants request-
+scoped logging reads it via `context.get(loggerContext)` rather than
+importing the base `logger` directly.
+
+**Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
+returns the `VERSION_TAG` env var (baked into the image as
+`date-sha-buildnum` by `containerfile`/`build.yml`) or, outside a
+container, the working tree's short git SHA. It's shown in the app
+footer (`root.tsx`) and included in every log line's `build` field.

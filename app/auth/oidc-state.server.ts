@@ -25,15 +25,15 @@ export async function parseOidcState(
   cookieHeader: string | null,
 ): Promise<OidcState | null> {
   const value = await cookie.parse(cookieHeader);
-  if (
-    !value ||
-    typeof value.codeVerifier !== "string" ||
-    typeof value.state !== "string" ||
-    typeof value.redirectTo !== "string"
-  ) {
-    return null;
-  }
-  return value as OidcState;
+
+  const hasRequiredFields = !!value
+    && typeof value.codeVerifier === "string"
+    && typeof value.state === "string"
+    && typeof value.redirectTo === "string";
+
+  if (!hasRequiredFields) { return null; }
+
+  return value;
 }
 
 export async function clearOidcState(): Promise<string> {

@@ -13,7 +13,8 @@ export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({
 }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const userId = session.get("userId");
-  if (!userId) return;
+
+  if (!userId) { return; }
 
   const [user] = await db
     .select()
@@ -21,7 +22,5 @@ export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({
     .where(eq(users.id, userId))
     .limit(1);
 
-  if (user) {
-    context.set(userContext, user);
-  }
+  if (user) { context.set(userContext, user); }
 };

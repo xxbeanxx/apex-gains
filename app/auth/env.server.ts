@@ -1,8 +1,8 @@
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} environment variable is not set`);
-  }
+
+  if (!value) { throw new Error(`${name} environment variable is not set`); }
+
   return value;
 }
 
@@ -23,8 +23,7 @@ export function getGoogleClientSecret(): string {
 }
 
 // Off by default - only e2e/CI environments should ever set this. Unlike
-// the getters above, this has no "unset" failure mode: absence just means
-// disabled.
+// the getters above, this has no "unset" failure mode: absence just means disabled.
 export function isTestLoginEnabled(): boolean {
   return process.env.ENABLE_TEST_LOGIN === "true";
 }

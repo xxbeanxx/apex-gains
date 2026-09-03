@@ -8,11 +8,10 @@ export const requireUserMiddleware: MiddlewareFunction<void | Response> = ({
   context,
 }) => {
   const user = context.get(userContext);
+
   if (!user) {
     const url = new URL(request.url);
     const redirectTo = `${url.pathname}${url.search}`;
-    throw redirect(
-      `/auth/google?redirectTo=${encodeURIComponent(redirectTo)}`,
-    );
+    throw redirect(`/auth/google?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 };
