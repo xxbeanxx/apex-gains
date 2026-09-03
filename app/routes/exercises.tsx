@@ -1,28 +1,26 @@
 import {
+  ChevronRightIcon,
   DumbbellIcon,
-  PencilIcon,
   PlusIcon,
   RotateCcwIcon,
+  SearchIcon,
+  Settings2Icon,
   XIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { data, useFetcher } from "react-router";
 import { z } from "zod";
 
 import { userContext } from "~/auth/user-context";
-import { Page, PageHeader, Section } from "~/components/layout/page";
+import { Page, PageHeader } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -272,9 +270,12 @@ function ExerciseDetailsFields({
 function ExerciseEditorDialog({
   exercise,
   allEquipment,
+  children,
 }: {
   exercise: ExerciseWithEquipment;
   allEquipment: Equipment[];
+  /** The trigger. The whole library row is the control that opens this. */
+  children: ReactNode;
 }) {
   const fetcher = useFetcher();
   const revertFetcher = useFetcher();
@@ -290,13 +291,7 @@ function ExerciseEditorDialog({
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="relative z-10 self-start">
-          <PencilIcon aria-hidden="true" />
-          Edit
-          <span className="sr-only"> {exercise.name}</span>
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{exercise.name}</DialogTitle>
@@ -352,7 +347,7 @@ function ExerciseEditorDialog({
           ))}
           {allEquipment.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No equipment yet. Add some on the Exercise Library page first.
+              No equipment yet — add some with “Manage equipment” first.
             </p>
           ) : null}
         </div>
@@ -398,15 +393,16 @@ function EquipmentCheckboxRow({
   );
 }
 
-function NewExerciseForm() {
+function NewExerciseForm({ onCreated }: { onCreated: () => void }) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data && !("error" in fetcher.data)) {
       formRef.current?.reset();
+      onCreated();
     }
-  }, [fetcher.state, fetcher.data]);
+  }, [fetcher.state, fetcher.data, onCreated]);
 
   const pending = fetcher.state !== "idle";
   const error =
@@ -429,194 +425,430 @@ function NewExerciseForm() {
   );
 }
 
-export default function Exercises({
-  loaderData,
-  actionData,
-}: Route.ComponentProps) {
-  const { equipment: equipmentList, exercises: exerciseList } = loaderData;
+/**
+ * The create form lives behind this dialog rather than on the page: creating an
+ * exercise is rare, browsing the library is not, so the library gets the space.
+ * The form is only mounted while the dialog is open, which is what resets its
+ * fetcher state between openings.
+ */
+function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  // Stable identity: the form has this in an effect's dependencies.
+  const close = useCallback(() => setOpen(false), []);
 
-  const byType = new Map<string, ExerciseWithEquipment[]>();
-  for (const exercise of exerciseList) {
-    const list = byType.get(exercise.exerciseType) ?? [];
-    list.push(exercise);
-    byType.set(exercise.exerciseType, list);
-  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New exercise</DialogTitle>
+          <DialogDescription>
+            Equipment is linked afterward, from the exercise’s own editor.
+          </DialogDescription>
+        </DialogHeader>
+        <NewExerciseForm onCreated={close} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EquipmentRow({ equipment }: { equipment: Equipment }) {
+  const fetcher = useFetcher();
+
+  return (
+    // Hidden while its own delete is in flight so the row goes away on click
+    // rather than at the end of the revalidation round-trip.
+    <li
+      className="flex items-center gap-2 px-3 py-2"
+      hidden={fetcher.state !== "idle"}
+    >
+      <span className="min-w-0 flex-1 text-pretty">{equipment.name}</span>
+      {equipment.userId === null ? (
+        <Badge variant="outline">Sample</Badge>
+      ) : (
+        <fetcher.Form method="post" className="flex">
+          <input type="hidden" name="intent" value="deleteEquipment" />
+          <input type="hidden" name="equipmentId" value={equipment.id} />
+          <Button type="submit" variant="ghost" size="icon-sm">
+            <XIcon aria-hidden="true" />
+            <span className="sr-only">Remove {equipment.name}</span>
+          </Button>
+        </fetcher.Form>
+      )}
+    </li>
+  );
+}
+
+function EquipmentDialog({
+  equipment,
+  trigger,
+}: {
+  equipment: Equipment[];
+  trigger: ReactNode;
+}) {
+  const fetcher = useFetcher();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data && !("error" in fetcher.data)) {
+      formRef.current?.reset();
+    }
+  }, [fetcher.state, fetcher.data]);
 
   const error =
-    actionData && "error" in actionData ? actionData.error : undefined;
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Equipment</DialogTitle>
+          <DialogDescription>
+            Add the equipment you own, then link it to exercises from each
+            exercise’s editor. An exercise can use more than one — e.g. Standing
+            Biceps Curl on both the BowFlex and free weights.
+          </DialogDescription>
+        </DialogHeader>
+
+        {equipment.length > 0 ? (
+          <ul className="divide-y divide-border/60 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+            {equipment.map((eq) => (
+              <EquipmentRow key={eq.id} equipment={eq} />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No equipment yet. Add your first one below.
+          </p>
+        )}
+
+        <fetcher.Form ref={formRef} method="post">
+          <input type="hidden" name="intent" value="addEquipment" />
+          <Field
+            label="Add equipment"
+            error={error}
+            action={
+              <SubmitButton
+                pending={fetcher.state !== "idle"}
+                pendingLabel="Adding equipment"
+              >
+                Add
+              </SubmitButton>
+            }
+          >
+            <Input name="name" placeholder="Free Weights" required />
+          </Field>
+        </fetcher.Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Muscle groups read in body order rather than alphabetically. Anything the
+ * user typed that isn't in here sorts alphabetically after these, and the two
+ * synthetic buckets below always come last.
+ */
+const muscleGroupOrder = ["chest", "back", "shoulders", "arms", "core", "legs"];
+
+/** Cardio movements carry no muscle group, so they get a bucket of their own. */
+const cardioGroup = "cardio";
+const ungroupedGroup = "other";
+
+function groupKeyFor(exercise: ExerciseWithEquipment) {
+  if (exercise.muscleGroup?.trim()) {
+    return exercise.muscleGroup.trim().toLowerCase();
+  }
+  return exercise.exerciseType === "cardio" ? cardioGroup : ungroupedGroup;
+}
+
+function groupRank(key: string) {
+  if (key === ungroupedGroup) return muscleGroupOrder.length + 2;
+  if (key === cardioGroup) return muscleGroupOrder.length + 1;
+  const index = muscleGroupOrder.indexOf(key);
+  return index === -1 ? muscleGroupOrder.length : index;
+}
+
+function groupExercises(exercises: ExerciseWithEquipment[]) {
+  const groups = new Map<string, ExerciseWithEquipment[]>();
+  for (const exercise of exercises) {
+    const key = groupKeyFor(exercise);
+    const list = groups.get(key);
+    if (list) list.push(exercise);
+    else groups.set(key, [exercise]);
+  }
+
+  return [...groups.entries()]
+    .map(([key, list]) => ({
+      key,
+      exercises: [...list].sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort(
+      (a, b) => groupRank(a.key) - groupRank(b.key) || a.key.localeCompare(b.key),
+    );
+}
+
+/** A filter pill row. Radix `Tabs` would imply panels; these only filter. */
+function TypeFilter({
+  value,
+  onChange,
+  counts,
+}: {
+  value: TypeFilterValue;
+  onChange: (value: TypeFilterValue) => void;
+  counts: Record<TypeFilterValue, number>;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Filter by type"
+      className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-lg bg-muted p-[3px] pointer-coarse:h-11"
+    >
+      {(["all", "strength", "cardio"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={value === option}
+          onClick={() => onChange(option)}
+          className="inline-flex h-full items-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-foreground/60 transition-colors duration-(--dur-fast) hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm dark:aria-pressed:bg-input/30"
+        >
+          {option === "all" ? "All" : typeLabels[option]}
+          <span className="text-xs tabular-nums opacity-60">
+            {counts[option]}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ExerciseRow({
+  exercise,
+  allEquipment,
+}: {
+  exercise: ExerciseWithEquipment;
+  allEquipment: Equipment[];
+}) {
+  return (
+    <li>
+      <ExerciseEditorDialog exercise={exercise} allEquipment={allEquipment}>
+        <button
+          type="button"
+          className="group/row flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors duration-(--dur-fast) hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none pointer-coarse:py-3"
+        >
+          <span className="min-w-0 flex-1 font-medium text-pretty">
+            {exercise.name}
+          </span>
+          {exercise.userId === null ? null : exercise.forkedFromId !== null ? (
+            <Badge variant="secondary">Customized</Badge>
+          ) : (
+            <Badge variant="brand-subtle">Yours</Badge>
+          )}
+          <ChevronRightIcon
+            className="size-4 shrink-0 text-muted-foreground/60 transition-transform duration-(--dur-fast) group-hover/row:translate-x-0.5 group-hover/row:text-foreground"
+            aria-hidden="true"
+          />
+        </button>
+      </ExerciseEditorDialog>
+    </li>
+  );
+}
+
+type TypeFilterValue = "all" | "strength" | "cardio";
+
+export default function Exercises({ loaderData }: Route.ComponentProps) {
+  const { equipment: equipmentList, exercises: exerciseList } = loaderData;
+
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState<TypeFilterValue>("all");
+  const [equipmentId, setEquipmentId] = useState("all");
+
+  // Search and the equipment picker narrow the pool; the type counts are then
+  // taken from that pool so each pill shows what it would actually reveal.
+  const pool = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return exerciseList.filter((exercise) => {
+      if (
+        equipmentId !== "all" &&
+        !exercise.equipmentLinks.some((l) => l.equipment.id === equipmentId)
+      ) {
+        return false;
+      }
+      if (needle === "") return true;
+      return (
+        exercise.name.toLowerCase().includes(needle) ||
+        (exercise.muscleGroup ?? "").toLowerCase().includes(needle) ||
+        exercise.equipmentLinks.some((l) =>
+          l.equipment.name.toLowerCase().includes(needle),
+        )
+      );
+    });
+  }, [exerciseList, query, equipmentId]);
+
+  const counts: Record<TypeFilterValue, number> = {
+    all: pool.length,
+    strength: pool.filter((e) => e.exerciseType === "strength").length,
+    cardio: pool.filter((e) => e.exerciseType === "cardio").length,
+  };
+
+  const visible =
+    type === "all" ? pool : pool.filter((e) => e.exerciseType === type);
+  const groups = useMemo(() => groupExercises(visible), [visible]);
+
+  const isFiltered = query.trim() !== "" || type !== "all" || equipmentId !== "all";
+  const clearFilters = () => {
+    setQuery("");
+    setType("all");
+    setEquipmentId("all");
+  };
 
   return (
     <Page>
       <PageHeader
         title="Exercise Library"
         description={`${exerciseList.length} movement${exerciseList.length === 1 ? "" : "s"} across ${equipmentList.length} piece${equipmentList.length === 1 ? "" : "s"} of equipment.`}
+        actions={
+          <>
+            <EquipmentDialog
+              equipment={equipmentList}
+              trigger={
+                <Button variant="outline">
+                  <Settings2Icon aria-hidden="true" />
+                  Manage equipment
+                </Button>
+              }
+            />
+            <NewExerciseDialog
+              trigger={
+                <Button variant="brand">
+                  <PlusIcon aria-hidden="true" />
+                  New exercise
+                </Button>
+              }
+            />
+          </>
+        }
       />
-
-      {/* items-start: let each card take its natural height instead of the
-          shorter one stretching to match and leaving a void. */}
-      <div className="mt-(--section-gap) grid gap-4 lg:grid-cols-2 lg:items-start">
-        <Card>
-          <CardHeader>
-            <CardTitle>Equipment</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Add equipment you have, then link it to exercises below. An
-              exercise can use more than one — e.g. Standing Biceps Curl on
-              both the BowFlex and free weights.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {equipmentList.length > 0 ? (
-              <ul className="flex flex-wrap gap-2">
-                {equipmentList.map((eq) =>
-                  eq.userId === null ? (
-                    <li key={eq.id}>
-                      <Badge variant="outline" className="h-6">
-                        {eq.name}
-                      </Badge>
-                    </li>
-                  ) : (
-                    <li key={eq.id}>
-                      <form method="post" className="inline-flex">
-                        <input
-                          type="hidden"
-                          name="intent"
-                          value="deleteEquipment"
-                        />
-                        <input
-                          type="hidden"
-                          name="equipmentId"
-                          value={eq.id}
-                        />
-                        <Badge variant="secondary" className="h-6 gap-1 pr-1">
-                          {eq.name}
-                          {/* after:-inset-1 grows the hit area to 24px without
-                              growing the glyph (WCAG 2.5.8 target size). */}
-                          <button
-                            type="submit"
-                            className="relative flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--dur-fast) after:absolute after:-inset-1 after:content-[''] hover:bg-destructive/15 hover:text-destructive"
-                          >
-                            <XIcon className="size-3" aria-hidden="true" />
-                            <span className="sr-only">
-                              Remove {eq.name} equipment
-                            </span>
-                          </button>
-                        </Badge>
-                      </form>
-                    </li>
-                  ),
-                )}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No equipment yet. Add your first one below.
-              </p>
-            )}
-
-            <form method="post">
-              <input type="hidden" name="intent" value="addEquipment" />
-              <Field
-                label="Add equipment"
-                error={error}
-                className="sm:max-w-sm"
-                action={
-                  <SubmitButton
-                    match={{ intent: "addEquipment" }}
-                    pendingLabel="Adding equipment"
-                  >
-                    Add
-                  </SubmitButton>
-                }
-              >
-                <Input name="name" placeholder="Free Weights" required />
-              </Field>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>New exercise</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Equipment can be linked afterward from the exercise's Edit dialog
-              below.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <NewExerciseForm />
-          </CardContent>
-        </Card>
-      </div>
 
       {exerciseList.length === 0 ? (
         <div className="mt-(--section-gap)">
           <EmptyState
             icon={DumbbellIcon}
             title="No exercises yet"
-            description="Create your first movement with the form above."
+            description="Build the library one movement at a time — each one can be dropped into any template."
+            action={
+              <NewExerciseDialog
+                trigger={
+                  <Button variant="brand">
+                    <PlusIcon aria-hidden="true" />
+                    New exercise
+                  </Button>
+                }
+              />
+            }
           />
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-56 flex-1 sm:max-w-xs">
+              <SearchIcon
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search exercises…"
+                aria-label="Search exercises"
+                className="pl-9"
+              />
+            </div>
 
-      {["strength", "cardio"].map((type) => {
-        const list = byType.get(type) ?? [];
-        if (list.length === 0) return null;
-        return (
-          <Section
-            key={type}
-            title={typeLabels[type]}
-            description={`${list.length} exercise${list.length === 1 ? "" : "s"}`}
-          >
-            <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {list.map((exercise) => (
-                <li key={exercise.id}>
-                  <Card className="h-full">
-                    <CardHeader>
-                      <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
-                        {exercise.name}
-                        {exercise.userId === null ? (
-                          <Badge variant="outline">Sample</Badge>
-                        ) : exercise.forkedFromId !== null ? (
-                          <Badge variant="secondary">Customized</Badge>
-                        ) : null}
-                      </CardTitle>
-                      {exercise.muscleGroup ? (
-                        <p className="text-sm text-muted-foreground">
-                          {exercise.muscleGroup}
-                        </p>
-                      ) : null}
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col gap-4">
-                      {exercise.description ? (
-                        <p className="text-sm text-pretty text-muted-foreground">
-                          {exercise.description}
-                        </p>
-                      ) : null}
-                      <div className="mt-auto flex flex-col gap-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {exercise.equipmentLinks.map((link) => (
-                            <Badge key={link.equipment.id} variant="secondary">
-                              {link.equipment.name}
-                            </Badge>
-                          ))}
-                          {exercise.equipmentLinks.length === 0 ? (
-                            <span className="text-xs text-muted-foreground">
-                              No equipment linked
-                            </span>
-                          ) : null}
-                        </div>
-                        <ExerciseEditorDialog
-                          exercise={exercise}
-                          allEquipment={equipmentList}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
+            <TypeFilter value={type} onChange={setType} counts={counts} />
+
+            {equipmentList.length > 0 ? (
+              <Select value={equipmentId} onValueChange={setEquipmentId}>
+                <SelectTrigger
+                  aria-label="Filter by equipment"
+                  className="w-auto min-w-40"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All equipment</SelectItem>
+                  {equipmentList.map((eq) => (
+                    <SelectItem key={eq.id} value={eq.id}>
+                      {eq.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="mt-6">
+              <EmptyState
+                icon={SearchIcon}
+                title="No exercises match"
+                description="Try a different search, or widen the filters."
+                action={
+                  <Button variant="outline" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            /* CSS columns rather than a grid: muscle groups vary a lot in size
+               (legs has 10 movements, arms 4), and columns balance their
+               heights instead of leaving every grid row as tall as its tallest
+               group. Deliberately no `stagger` - a per-child transform is what
+               tips multicol into Chrome's mis-paint, and `Page` already
+               animates the whole view in on arrival. */
+            <div className="mt-6 gap-x-6 sm:columns-2 xl:columns-3">
+              {groups.map((group) => (
+                <section
+                  key={group.key}
+                  className="mb-8 flex break-inside-avoid flex-col gap-2"
+                >
+                  <h2 className="flex items-baseline gap-2 px-1 font-heading text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    {group.key}
+                    <span className="font-normal tabular-nums opacity-70">
+                      {group.exercises.length}
+                    </span>
+                  </h2>
+                  <ul className="divide-y divide-border/60 overflow-hidden rounded-xl bg-card shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 dark:shadow-black/20">
+                    {group.exercises.map((exercise) => (
+                      <ExerciseRow
+                        key={exercise.id}
+                        exercise={exercise}
+                        allEquipment={equipmentList}
+                      />
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
-          </Section>
-        );
-      })}
+            </div>
+          )}
+
+          {isFiltered ? (
+            <p className="mt-6 text-sm text-muted-foreground" role="status">
+              Showing {visible.length} of {exerciseList.length} exercises.{" "}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+              >
+                Clear filters
+              </button>
+            </p>
+          ) : null}
+        </>
+      )}
     </Page>
   );
 }
