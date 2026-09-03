@@ -152,13 +152,20 @@ role/permission system; all authorization is "does this row's
 `userId` match the current user" (see `loadOwnedRoutine`-style loaders
 that scope every query by `userId` before returning 404) plus the
 sample-data fork rule above. Azure Container Apps terminates TLS at
-its ingress and forwards plain HTTP, and `react-router-serve` never
-enables "trust proxy", so `request.url` in the OAuth callback route
-looks like `http://...` even for real `https://` requests;
-`app/routes/auth.google.callback.tsx` rebuilds the URL passed to
-`authorizationCodeGrant` from the `ORIGIN` env var instead of the raw
-`request.url` so the token exchange's `redirect_uri` matches what's
-registered with Google.
+its ingress and forwards plain HTTP with `X-Forwarded-*` headers, so
+the app is served by a custom `server.ts` (an Express server built on
+`@react-router/express`, replacing `react-router-serve`, which offers
+no way to configure this) that enables Express's "trust proxy" — and
+also copies `X-Forwarded-Host` onto the `Host` header before React
+Router sees the request, working around a bug in
+`@react-router/express`'s request-building where it falls back to the
+raw (proxy-internal) `Host` header's port whenever `X-Forwarded-Host`
+lacks one. Without both pieces, `request.url`'s origin wouldn't match
+the browser's `Origin` header on POSTs, which React Router's built-in
+CSRF check rejects with a 400, and `app/routes/auth.google.callback.tsx`
+rebuilds the URL passed to `authorizationCodeGrant` from the `ORIGIN`
+env var instead of trusting `request.url` so the token exchange's
+`redirect_uri` matches what's registered with Google.
 
 **UI.** shadcn/ui primitives (Radix + `class-variance-authority`) live
 in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
