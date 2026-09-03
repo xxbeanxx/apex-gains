@@ -2,7 +2,7 @@ import { RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Athlete } from "~/domain/athlete/athlete";
-import type { AthletesRepository } from "~/repositories/athletes-repository";
+import type { AthletesRepository } from "~/repositories/athletes-repository.server";
 import { mock } from "~/test/mock";
 
 const { findByIdMock, getSessionMock } = vi.hoisted(() => ({

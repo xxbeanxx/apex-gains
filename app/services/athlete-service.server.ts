@@ -1,6 +1,6 @@
 import type { Athlete } from "~/domain/athlete/athlete";
 import type { DistanceUnit, WeightUnit } from "~/domain/values/units";
-import type { AthletesRepository } from "~/repositories/athletes-repository";
+import type { AthletesRepository } from "~/repositories/athletes-repository.server";
 import { getAthletesRepository } from "~/repositories/athletes-repository.server";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";

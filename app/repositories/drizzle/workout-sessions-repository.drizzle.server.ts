@@ -12,7 +12,7 @@ import { WorkoutSession } from "~/domain/session/workout-session";
 import { DateOnly } from "~/domain/values/date-only";
 
 import { diffChildren } from "../shared/diff-children";
-import type { WorkoutSessionsRepository } from "../workout-sessions-repository";
+import type { WorkoutSessionsRepository } from "../workout-sessions-repository.server";
 
 type RowWithSets = WorkoutSessionRow & { sets: SessionSetRow[] };
 

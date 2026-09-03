@@ -3,7 +3,7 @@ import { Exercise, type ExerciseSnapshot } from "~/domain/exercise/exercise";
 import type {
   DeleteExerciseOutcome,
   ExercisesRepository,
-} from "../exercises-repository";
+} from "../exercises-repository.server";
 
 // Dev-convenience adapter - see exercises-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

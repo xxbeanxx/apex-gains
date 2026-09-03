@@ -2,13 +2,13 @@ import type { Athlete } from "~/domain/athlete/athlete";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import type { SessionPlan } from "~/domain/session/workout-session";
 import { DateOnly } from "~/domain/values/date-only";
-import type { ExercisesRepository } from "~/repositories/exercises-repository";
+import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { RoutinesRepository } from "~/repositories/routines-repository";
+import type { RoutinesRepository } from "~/repositories/routines-repository.server";
 import { getRoutinesRepository } from "~/repositories/routines-repository.server";
-import type { TemplatesRepository } from "~/repositories/templates-repository";
+import type { TemplatesRepository } from "~/repositories/templates-repository.server";
 import { getTemplatesRepository } from "~/repositories/templates-repository.server";
-import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository";
+import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 export type PlanItem = {

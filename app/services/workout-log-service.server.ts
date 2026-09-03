@@ -5,11 +5,11 @@ import { DateOnly } from "~/domain/values/date-only";
 import { Duration } from "~/domain/values/duration";
 import { Speed } from "~/domain/values/speed";
 import { Weight } from "~/domain/values/weight";
-import type { ExercisesRepository } from "~/repositories/exercises-repository";
+import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work";
+import type { UnitOfWork } from "~/repositories/unit-of-work.server";
 import { getUnitOfWork } from "~/repositories/unit-of-work.server";
-import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository";
+import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";

@@ -3,11 +3,11 @@ import { Equipment } from "~/domain/equipment/equipment";
 import { Exercise, type ExerciseDetails } from "~/domain/exercise/exercise";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import { err, ok, type Result } from "~/domain/shared/result";
-import type { EquipmentRepository } from "~/repositories/equipment-repository";
+import type { EquipmentRepository } from "~/repositories/equipment-repository.server";
 import { getEquipmentRepository } from "~/repositories/equipment-repository.server";
-import type { ExercisesRepository } from "~/repositories/exercises-repository";
+import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work";
+import type { UnitOfWork } from "~/repositories/unit-of-work.server";
 import { getUnitOfWork } from "~/repositories/unit-of-work.server";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";

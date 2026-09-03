@@ -21,7 +21,7 @@ import { Exercise } from "~/domain/exercise/exercise";
 import type {
   DeleteExerciseOutcome,
   ExercisesRepository,
-} from "../exercises-repository";
+} from "../exercises-repository.server";
 
 /**
  * Own rows, plus - when the athlete wants them - the samples they have not

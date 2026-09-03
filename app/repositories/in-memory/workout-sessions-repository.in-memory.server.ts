@@ -5,7 +5,7 @@ import {
 } from "~/domain/session/workout-session";
 import { DateOnly } from "~/domain/values/date-only";
 
-import type { WorkoutSessionsRepository } from "../workout-sessions-repository";
+import type { WorkoutSessionsRepository } from "../workout-sessions-repository.server";
 
 // Dev-convenience adapter - see workout-sessions-repository.server.ts for
 // when it's selected, and athletes-repository.in-memory.server.ts for why it

@@ -4,11 +4,11 @@ import { Routine } from "~/domain/routine/routine";
 import type { MoveDirection } from "~/domain/shared/ordered";
 import { err, ok, type Result } from "~/domain/shared/result";
 import { DateOnly } from "~/domain/values/date-only";
-import type { RoutinesRepository } from "~/repositories/routines-repository";
+import type { RoutinesRepository } from "~/repositories/routines-repository.server";
 import { getRoutinesRepository } from "~/repositories/routines-repository.server";
-import type { TemplatesRepository } from "~/repositories/templates-repository";
+import type { TemplatesRepository } from "~/repositories/templates-repository.server";
 import { getTemplatesRepository } from "~/repositories/templates-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work";
+import type { UnitOfWork } from "~/repositories/unit-of-work.server";
 import { getUnitOfWork } from "~/repositories/unit-of-work.server";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";

@@ -4,7 +4,7 @@ import { db, dbScope } from "~/db/index.server";
 import { users, type User } from "~/db/schema";
 import { Athlete, type NewAthlete } from "~/domain/athlete/athlete";
 
-import type { AthletesRepository } from "../athletes-repository";
+import type { AthletesRepository } from "../athletes-repository.server";
 
 function toAthlete(row: User): Athlete {
   return Athlete.fromSnapshot({

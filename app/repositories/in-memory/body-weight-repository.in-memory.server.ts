@@ -4,7 +4,7 @@ import {
 } from "~/domain/bodyweight/body-weight-entry";
 import type { DateOnly } from "~/domain/values/date-only";
 
-import type { BodyWeightRepository } from "../body-weight-repository";
+import type { BodyWeightRepository } from "../body-weight-repository.server";
 
 // Dev-convenience adapter - see body-weight-repository.server.ts for when
 // it's selected, and athletes-repository.in-memory.server.ts for why it

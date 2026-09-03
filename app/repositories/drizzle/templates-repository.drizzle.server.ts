@@ -25,7 +25,7 @@ import {
 
 import { diffChildren } from "../shared/diff-children";
 import { writePositions } from "../shared/write-positions";
-import type { TemplatesRepository } from "../templates-repository";
+import type { TemplatesRepository } from "../templates-repository.server";
 
 export function sampleOrOwnTemplatesWhere(
   userId: string,

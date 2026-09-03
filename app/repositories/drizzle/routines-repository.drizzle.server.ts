@@ -20,7 +20,7 @@ import {
 } from "~/db/schema";
 import { Routine } from "~/domain/routine/routine";
 
-import type { RoutinesRepository } from "../routines-repository";
+import type { RoutinesRepository } from "../routines-repository.server";
 import { diffChildren } from "../shared/diff-children";
 import { writePositions } from "../shared/write-positions";
 

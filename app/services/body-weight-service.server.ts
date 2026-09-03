@@ -3,9 +3,9 @@ import { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
 import { ok, type Result } from "~/domain/shared/result";
 import type { DateOnly } from "~/domain/values/date-only";
 import { Weight } from "~/domain/values/weight";
-import type { BodyWeightRepository } from "~/repositories/body-weight-repository";
+import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import { getBodyWeightRepository } from "~/repositories/body-weight-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work";
+import type { UnitOfWork } from "~/repositories/unit-of-work.server";
 import { getUnitOfWork } from "~/repositories/unit-of-work.server";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";

@@ -18,11 +18,11 @@ import { DateOnly } from "~/domain/values/date-only";
 import { Duration } from "~/domain/values/duration";
 import { Weight } from "~/domain/values/weight";
 import { formatMonthDay } from "~/lib/format";
-import type { BodyWeightRepository } from "~/repositories/body-weight-repository";
+import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import { getBodyWeightRepository } from "~/repositories/body-weight-repository.server";
-import type { ExercisesRepository } from "~/repositories/exercises-repository";
+import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository";
+import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import type {
