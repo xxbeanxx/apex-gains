@@ -19,6 +19,7 @@ export default [
     route("routines", "routes/routines.tsx"),
     route("routines/:routineId", "routes/routines.$routineId.tsx"),
     route("history", "routes/history.tsx"),
+    route("weight", "routes/weight.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),
 ] satisfies RouteConfig;

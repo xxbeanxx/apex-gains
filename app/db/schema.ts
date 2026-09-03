@@ -218,6 +218,24 @@ export const workoutSessions = pgTable(
   ],
 );
 
+export const bodyWeightLogs = pgTable(
+  "body_weight_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    weight: numeric("weight", { precision: 6, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("body_weight_logs_user_date_unique").on(table.userId, table.date),
+  ],
+);
+
 export const sessionSets = pgTable("session_sets", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id")
@@ -241,6 +259,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   templates: many(templates),
   routines: many(routines),
   workoutSessions: many(workoutSessions),
+  bodyWeightLogs: many(bodyWeightLogs),
 }));
 
 export const exercisesRelations = relations(exercises, ({ one, many }) => ({
@@ -365,6 +384,16 @@ export const sessionSetsRelations = relations(sessionSets, ({ one }) => ({
   }),
 }));
 
+export const bodyWeightLogsRelations = relations(
+  bodyWeightLogs,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [bodyWeightLogs.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
@@ -374,3 +403,4 @@ export type Routine = typeof routines.$inferSelect;
 export type RoutineSlot = typeof routineSlots.$inferSelect;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type SessionSet = typeof sessionSets.$inferSelect;
+export type BodyWeightLog = typeof bodyWeightLogs.$inferSelect;
