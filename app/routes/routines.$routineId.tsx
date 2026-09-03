@@ -84,7 +84,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     if (outcome.outcome === "sample-routine") {
       return data(
-        { error: "Sample routines can't be deleted." },
+        { error: "Sample routines can't be deleted.", intent: "delete" },
         { status: 400 },
       );
     }
@@ -100,7 +100,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       throw data("Routine not found", { status: 404 });
     }
     if (outcome.outcome === "nothing-to-revert") {
-      return data({ error: "Nothing to revert" }, { status: 400 });
+      return data(
+        { error: "Nothing to revert", intent: "revert" },
+        { status: 400 },
+      );
     }
     throw redirect(`/routines/${outcome.forkedFromId}`);
   }
@@ -108,7 +111,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   if (intent === "rename") {
     const result = renameSchema.safeParse({ name: formData.get("name") });
     if (!result.success) {
-      return data({ error: "Invalid name" }, { status: 400 });
+      return data(
+        { error: "Invalid name", intent: "rename" },
+        { status: 400 },
+      );
     }
     const outcome = await routinesRepository.rename(
       user.id,
@@ -129,7 +135,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       anchorDate: formData.get("anchorDate"),
     });
     if (!result.success) {
-      return data({ error: "Invalid date" }, { status: 400 });
+      return data(
+        { error: "Invalid date", intent: "reanchor" },
+        { status: 400 },
+      );
     }
     const outcome = await routinesRepository.reanchor(
       user.id,
@@ -178,7 +187,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       templateId: formData.get("templateId"),
     });
     if (!result.success) {
-      return data({ error: "Invalid slot" }, { status: 400 });
+      return data(
+        { error: "Invalid slot", intent: "addSlot" },
+        { status: 400 },
+      );
     }
     const outcome = await routinesRepository.addSlot(
       user.id,
@@ -228,15 +240,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return { ok: true };
   }
 
-  return data({ error: "Unknown action" }, { status: 400 });
+  return data({ error: "Unknown action", intent: "unknown" }, { status: 400 });
 }
 
-export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
+export default function RoutineDetail({
+  loaderData,
+  actionData,
+}: Route.ComponentProps) {
   const { routine, templates: templateList } = loaderData;
 
   const slotCount = routine.slots.length;
   const isSample = routine.userId === null;
   const isCustomized = routine.forkedFromId !== null;
+
+  const errorFor = (matchIntent: string) =>
+    actionData && "error" in actionData && actionData.intent === matchIntent
+      ? actionData.error
+      : undefined;
+  const deleteError = errorFor("delete");
+  const revertError = errorFor("revert");
+  const renameError = errorFor("rename");
+  const reanchorError = errorFor("reanchor");
+  const addSlotError = errorFor("addSlot");
 
   return (
     <Page width="narrow">
@@ -282,7 +307,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
               </SubmitButton>
             </form>
             {isSample ? null : isCustomized ? (
-              <form method="post">
+              <form method="post" className="flex flex-col items-end gap-1.5">
                 <input type="hidden" name="intent" value="revert" />
                 <SubmitButton
                   variant="outline"
@@ -293,9 +318,14 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
                   <RotateCcwIcon aria-hidden="true" />
                   Revert to sample
                 </SubmitButton>
+                {revertError ? (
+                  <p className="text-sm font-medium text-destructive">
+                    {revertError}
+                  </p>
+                ) : null}
               </form>
             ) : (
-              <form method="post">
+              <form method="post" className="flex flex-col items-end gap-1.5">
                 <input type="hidden" name="intent" value="delete" />
                 <SubmitButton
                   variant="destructive"
@@ -306,6 +336,11 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
                   <Trash2Icon aria-hidden="true" />
                   Delete routine
                 </SubmitButton>
+                {deleteError ? (
+                  <p className="text-sm font-medium text-destructive">
+                    {deleteError}
+                  </p>
+                ) : null}
               </form>
             )}
           </>
@@ -334,6 +369,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
               <input type="hidden" name="intent" value="rename" />
               <Field
                 label="Name"
+                error={renameError}
                 action={
                   <SubmitButton
                     match={{ intent: "rename" }}
@@ -359,6 +395,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
               <Field
                 label="Anchor date"
                 description={`Day 1 of the cycle falls on this date, and it repeats every ${slotCount || "N"} days from there.`}
+                error={reanchorError}
                 action={
                   <SubmitButton
                     match={{ intent: "reanchor" }}
@@ -488,6 +525,7 @@ export default function RoutineDetail({ loaderData }: Route.ComponentProps) {
               <input type="hidden" name="intent" value="addSlot" />
               <Field
                 label="Day type"
+                error={addSlotError}
                 action={
                   <SubmitButton
                     match={{ intent: "addSlot" }}

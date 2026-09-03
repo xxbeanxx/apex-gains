@@ -92,7 +92,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     if (outcome.outcome === "sample-template") {
       return data(
-        { error: "Sample templates can't be deleted." },
+        { error: "Sample templates can't be deleted.", intent: "delete" },
         { status: 400 },
       );
     }
@@ -108,7 +108,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       throw data("Template not found", { status: 404 });
     }
     if (outcome.outcome === "nothing-to-revert") {
-      return data({ error: "Nothing to revert" }, { status: 400 });
+      return data(
+        { error: "Nothing to revert", intent: "revert" },
+        { status: 400 },
+      );
     }
     throw redirect(`/templates/${outcome.forkedFromId}`);
   }
@@ -116,7 +119,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   if (intent === "rename") {
     const result = renameSchema.safeParse({ name: formData.get("name") });
     if (!result.success) {
-      return data({ error: "Invalid name" }, { status: 400 });
+      return data(
+        { error: "Invalid name", intent: "rename" },
+        { status: 400 },
+      );
     }
     const outcome = await templatesRepository.rename(
       user.id,
@@ -133,10 +139,18 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === "addExercise") {
-    const raw = Object.fromEntries(formData);
+    // Blank optional fields arrive as "", which z.coerce.number() reads as 0
+    // (failing .positive()) rather than as absent - drop them so they parse
+    // as undefined instead.
+    const raw = Object.fromEntries(
+      [...formData].filter(([, value]) => value !== ""),
+    );
     const result = addExerciseSchema.safeParse(raw);
     if (!result.success) {
-      return data({ error: "Invalid exercise" }, { status: 400 });
+      return data(
+        { error: "Invalid exercise", intent: "addExercise" },
+        { status: 400 },
+      );
     }
     const outcome = await templatesRepository.addExercise(user.id, templateId, {
       exerciseId: result.data.exerciseId,
@@ -153,7 +167,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       throw data("Template not found", { status: 404 });
     }
     if (outcome.outcome === "exercise-not-found") {
-      return data({ error: "Exercise not found" }, { status: 400 });
+      return data(
+        { error: "Exercise not found", intent: "addExercise" },
+        { status: 400 },
+      );
     }
     if (outcome.forkedTemplateId) {
       throw redirect(`/templates/${outcome.forkedTemplateId}`);
@@ -195,7 +212,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return { ok: true };
   }
 
-  return data({ error: "Unknown action" }, { status: 400 });
+  return data({ error: "Unknown action", intent: "unknown" }, { status: 400 });
 }
 
 function targetSummary(te: {
@@ -229,6 +246,8 @@ function AddExerciseForm({
   const selected = exerciseList.find((e) => e.id === exerciseId);
 
   const pending = fetcher.state !== "idle";
+  const error =
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-4">
@@ -304,6 +323,8 @@ function AddExerciseForm({
         </div>
       ) : null}
 
+      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+
       <SubmitButton
         pending={pending}
         pendingLabel="Adding exercise"
@@ -318,12 +339,28 @@ function AddExerciseForm({
   );
 }
 
-export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
+export default function TemplateDetail({
+  loaderData,
+  actionData,
+}: Route.ComponentProps) {
   const { template, exercises: exerciseList } = loaderData;
 
   const exerciseCount = template.templateExercises.length;
   const isSample = template.userId === null;
   const isCustomized = template.forkedFromId !== null;
+
+  const deleteError =
+    actionData && "error" in actionData && actionData.intent === "delete"
+      ? actionData.error
+      : undefined;
+  const revertError =
+    actionData && "error" in actionData && actionData.intent === "revert"
+      ? actionData.error
+      : undefined;
+  const renameError =
+    actionData && "error" in actionData && actionData.intent === "rename"
+      ? actionData.error
+      : undefined;
 
   return (
     <Page width="narrow">
@@ -339,7 +376,7 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
         description={`${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"} in this workout.`}
         actions={
           isSample ? null : isCustomized ? (
-            <form method="post">
+            <form method="post" className="flex flex-col items-end gap-1.5">
               <input type="hidden" name="intent" value="revert" />
               <SubmitButton
                 variant="outline"
@@ -350,9 +387,14 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
                 <RotateCcwIcon aria-hidden="true" />
                 Revert to sample
               </SubmitButton>
+              {revertError ? (
+                <p className="text-sm font-medium text-destructive">
+                  {revertError}
+                </p>
+              ) : null}
             </form>
           ) : (
-            <form method="post">
+            <form method="post" className="flex flex-col items-end gap-1.5">
               <input type="hidden" name="intent" value="delete" />
               <SubmitButton
                 variant="destructive"
@@ -363,6 +405,11 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
                 <Trash2Icon aria-hidden="true" />
                 Delete template
               </SubmitButton>
+              {deleteError ? (
+                <p className="text-sm font-medium text-destructive">
+                  {deleteError}
+                </p>
+              ) : null}
             </form>
           )
         }
@@ -389,6 +436,7 @@ export default function TemplateDetail({ loaderData }: Route.ComponentProps) {
             <input type="hidden" name="intent" value="rename" />
             <Field
               label="Name"
+              error={renameError}
               action={
                 <SubmitButton match={{ intent: "rename" }} pendingLabel="Saving">
                   Save
