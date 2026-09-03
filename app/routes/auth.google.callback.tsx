@@ -22,9 +22,24 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   }
 
   const config = await getGoogleConfig();
+
+  // openid-client derives the redirect_uri it validates against Google from
+  // this URL's origin (stripping query params), not from the redirect_uri
+  // passed below. request.url's origin can't be trusted for this: Azure
+  // Container Apps terminates TLS at its ingress and forwards plain HTTP to
+  // the container, and react-router-serve doesn't set Express's "trust
+  // proxy", so request.url shows http:// even though the real request was
+  // https://. Rebuild the origin from ORIGIN, which is the value actually
+  // registered with Google.
+  const requestUrl = new URL(request.url);
+  const currentUrl = new URL(
+    `${requestUrl.pathname}${requestUrl.search}`,
+    getOrigin(),
+  );
+
   const tokens = await client.authorizationCodeGrant(
     config,
-    new URL(request.url),
+    currentUrl,
     {
       pkceCodeVerifier: state.codeVerifier,
       expectedState: state.state,
