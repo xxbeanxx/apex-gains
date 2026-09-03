@@ -11,21 +11,6 @@ import {
   templates,
 } from "./schema";
 
-// Sample exercises previously seeded under a different name than the
-// official PR1000 owner's manual uses. Applied before the main upsert below
-// so an already-deployed database's rows are renamed in place (matched only
-// among sample rows, userId is null) rather than left behind as orphans
-// while a new row is created under the manual's name.
-const exerciseRenames: [oldName: string, newName: string][] = [
-  ["Chest Press", "Bench Press"],
-  ["Incline Chest Press", "Incline Bench Press"],
-  ["Seated Row", "Seated Lat Rows"],
-  ["Lat Pulldown", "Narrow Pulldowns"],
-  ["Shoulder Press", "Seated Shoulder Press"],
-  ["Bicep Curl", "Standing Biceps Curl"],
-  ["Tricep Pressdown", "Triceps Pushdown"],
-];
-
 const equipmentNames = [
   "BowFlex PR1000",
   "Rowing Machine",
@@ -440,13 +425,6 @@ async function seed() {
     .from(equipment)
     .where(inArray(equipment.name, equipmentNames));
   const equipmentIdByName = new Map(equipmentRows.map((e) => [e.name, e.id]));
-
-  for (const [oldName, newName] of exerciseRenames) {
-    await db
-      .update(exercises)
-      .set({ name: newName })
-      .where(and(isNull(exercises.userId), eq(exercises.name, oldName)));
-  }
 
   // Fills in name/type/muscle group/description for the seeded exercises,
   // without clobbering a description a user has since edited via the UI.
