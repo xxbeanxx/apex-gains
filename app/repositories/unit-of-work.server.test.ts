@@ -11,7 +11,7 @@ describe("getUnitOfWork", () => {
   it("resolves to the Drizzle adapter when DATABASE_URL is set", async () => {
     process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
     const { getUnitOfWork } = await import("./unit-of-work.server");
-    const { DrizzleUnitOfWork } = await import("./drizzle/unit-of-work.drizzle.server");
+    const { DrizzleUnitOfWork } = await import("./drizzle/unit-of-work.server");
 
     const resolved = await getUnitOfWork();
 
@@ -21,7 +21,7 @@ describe("getUnitOfWork", () => {
   it("resolves to the in-memory adapter when DATABASE_URL is unset", async () => {
     delete process.env.DATABASE_URL;
     const { getUnitOfWork } = await import("./unit-of-work.server");
-    const { InMemoryUnitOfWork } = await import("./in-memory/unit-of-work.in-memory.server");
+    const { InMemoryUnitOfWork } = await import("./in-memory/unit-of-work.server");
 
     const resolved = await getUnitOfWork();
 

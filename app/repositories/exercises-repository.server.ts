@@ -52,10 +52,10 @@ export async function getExercisesRepository(): Promise<ExercisesRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./drizzle/exercises-repository.drizzle.server")
+          await import("./drizzle/exercises-repository.server")
         ).DrizzleExercisesRepository()
       : new (
-          await import("./in-memory/exercises-repository.in-memory.server")
+          await import("./in-memory/exercises-repository.server")
         ).InMemoryExercisesRepository();
   }
   return repository;

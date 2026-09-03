@@ -8,11 +8,11 @@ import { sequentialIds } from "~/domain/shared/ids";
 import { SetTarget } from "~/domain/template/set-target";
 import { WorkoutTemplate } from "~/domain/template/workout-template";
 import { DateOnly } from "~/domain/values/date-only";
-import { InMemoryExercisesRepository } from "~/repositories/in-memory/exercises-repository.in-memory.server";
-import { InMemoryRoutinesRepository } from "~/repositories/in-memory/routines-repository.in-memory.server";
-import { InMemoryTemplatesRepository } from "~/repositories/in-memory/templates-repository.in-memory.server";
-import { InMemoryUnitOfWork } from "~/repositories/in-memory/unit-of-work.in-memory.server";
-import { InMemoryWorkoutSessionsRepository } from "~/repositories/in-memory/workout-sessions-repository.in-memory.server";
+import { InMemoryExercisesRepository } from "~/repositories/in-memory/exercises-repository.server";
+import { InMemoryRoutinesRepository } from "~/repositories/in-memory/routines-repository.server";
+import { InMemoryTemplatesRepository } from "~/repositories/in-memory/templates-repository.server";
+import { InMemoryUnitOfWork } from "~/repositories/in-memory/unit-of-work.server";
+import { InMemoryWorkoutSessionsRepository } from "~/repositories/in-memory/workout-sessions-repository.server";
 
 import { TrainingPlanService } from "./training-plan-service.server";
 import { WorkoutLogService } from "./workout-log-service.server";

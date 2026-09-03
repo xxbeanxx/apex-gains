@@ -11,7 +11,7 @@ describe("getBodyWeightRepository", () => {
   it("resolves to the Drizzle adapter when DATABASE_URL is set", async () => {
     process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
     const { getBodyWeightRepository } = await import("./body-weight-repository.server");
-    const { DrizzleBodyWeightRepository } = await import("./drizzle/body-weight-repository.drizzle.server");
+    const { DrizzleBodyWeightRepository } = await import("./drizzle/body-weight-repository.server");
 
     const resolved = await getBodyWeightRepository();
 
@@ -21,7 +21,7 @@ describe("getBodyWeightRepository", () => {
   it("resolves to the in-memory adapter when DATABASE_URL is unset", async () => {
     delete process.env.DATABASE_URL;
     const { getBodyWeightRepository } = await import("./body-weight-repository.server");
-    const { InMemoryBodyWeightRepository } = await import("./in-memory/body-weight-repository.in-memory.server");
+    const { InMemoryBodyWeightRepository } = await import("./in-memory/body-weight-repository.server");
 
     const resolved = await getBodyWeightRepository();
 

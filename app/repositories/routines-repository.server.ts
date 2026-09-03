@@ -27,10 +27,10 @@ export async function getRoutinesRepository(): Promise<RoutinesRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./drizzle/routines-repository.drizzle.server")
+          await import("./drizzle/routines-repository.server")
         ).DrizzleRoutinesRepository()
       : new (
-          await import("./in-memory/routines-repository.in-memory.server")
+          await import("./in-memory/routines-repository.server")
         ).InMemoryRoutinesRepository();
   }
   return repository;

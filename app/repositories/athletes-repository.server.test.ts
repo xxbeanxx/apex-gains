@@ -11,7 +11,7 @@ describe("getAthletesRepository", () => {
   it("resolves to the Drizzle adapter when DATABASE_URL is set", async () => {
     process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
     const { getAthletesRepository } = await import("./athletes-repository.server");
-    const { DrizzleAthletesRepository } = await import("./drizzle/athletes-repository.drizzle.server");
+    const { DrizzleAthletesRepository } = await import("./drizzle/athletes-repository.server");
 
     const resolved = await getAthletesRepository();
 
@@ -21,7 +21,7 @@ describe("getAthletesRepository", () => {
   it("resolves to the in-memory adapter when DATABASE_URL is unset", async () => {
     delete process.env.DATABASE_URL;
     const { getAthletesRepository } = await import("./athletes-repository.server");
-    const { InMemoryAthletesRepository } = await import("./in-memory/athletes-repository.in-memory.server");
+    const { InMemoryAthletesRepository } = await import("./in-memory/athletes-repository.server");
 
     const resolved = await getAthletesRepository();
 

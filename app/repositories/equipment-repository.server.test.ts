@@ -14,7 +14,7 @@ describe("getEquipmentRepository", () => {
       "./equipment-repository.server"
     );
     const { DrizzleEquipmentRepository } = await import(
-      "./drizzle/equipment-repository.drizzle.server"
+      "./drizzle/equipment-repository.server"
     );
 
     const repository = await getEquipmentRepository();
@@ -28,7 +28,7 @@ describe("getEquipmentRepository", () => {
       "./equipment-repository.server"
     );
     const { InMemoryEquipmentRepository } = await import(
-      "./in-memory/equipment-repository.in-memory.server"
+      "./in-memory/equipment-repository.server"
     );
 
     const repository = await getEquipmentRepository();

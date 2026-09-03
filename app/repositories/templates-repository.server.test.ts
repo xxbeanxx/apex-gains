@@ -14,7 +14,7 @@ describe("getTemplatesRepository", () => {
       "./templates-repository.server"
     );
     const { DrizzleTemplatesRepository } = await import(
-      "./drizzle/templates-repository.drizzle.server"
+      "./drizzle/templates-repository.server"
     );
 
     const repository = await getTemplatesRepository();
@@ -28,7 +28,7 @@ describe("getTemplatesRepository", () => {
       "./templates-repository.server"
     );
     const { InMemoryTemplatesRepository } = await import(
-      "./in-memory/templates-repository.in-memory.server"
+      "./in-memory/templates-repository.server"
     );
 
     const repository = await getTemplatesRepository();

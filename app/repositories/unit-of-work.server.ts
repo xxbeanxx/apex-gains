@@ -22,10 +22,10 @@ export async function getUnitOfWork(): Promise<UnitOfWork> {
   if (!unitOfWork) {
     unitOfWork = process.env.DATABASE_URL
       ? new (
-          await import("./drizzle/unit-of-work.drizzle.server")
+          await import("./drizzle/unit-of-work.server")
         ).DrizzleUnitOfWork()
       : new (
-          await import("./in-memory/unit-of-work.in-memory.server")
+          await import("./in-memory/unit-of-work.server")
         ).InMemoryUnitOfWork();
   }
   return unitOfWork;

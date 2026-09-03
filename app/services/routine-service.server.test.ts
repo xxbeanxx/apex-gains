@@ -5,9 +5,9 @@ import { Routine, type RoutineSnapshot } from "~/domain/routine/routine";
 import { fixedClock } from "~/domain/shared/clock";
 import { sequentialIds } from "~/domain/shared/ids";
 import { DateOnly } from "~/domain/values/date-only";
-import { InMemoryRoutinesRepository } from "~/repositories/in-memory/routines-repository.in-memory.server";
-import { InMemoryTemplatesRepository } from "~/repositories/in-memory/templates-repository.in-memory.server";
-import { InMemoryUnitOfWork } from "~/repositories/in-memory/unit-of-work.in-memory.server";
+import { InMemoryRoutinesRepository } from "~/repositories/in-memory/routines-repository.server";
+import { InMemoryTemplatesRepository } from "~/repositories/in-memory/templates-repository.server";
+import { InMemoryUnitOfWork } from "~/repositories/in-memory/unit-of-work.server";
 
 import { RoutineService } from "./routine-service.server";
 

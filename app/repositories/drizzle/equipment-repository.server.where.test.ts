@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { db } from "~/db/index.server";
 import { equipment } from "~/db/schema";
 
-import { sampleOrOwnEquipmentWhere } from "./equipment-repository.drizzle.server";
+import { sampleOrOwnEquipmentWhere } from "./equipment-repository.server";
 
 /**
  * sampleOrOwnEquipmentWhere returns a raw `SQL` fragment, so we can't
