@@ -460,8 +460,8 @@ export default function Exercises({
             <CardTitle>Equipment</CardTitle>
             <p className="text-sm text-muted-foreground">
               Add equipment you have, then link it to exercises below. An
-              exercise can use more than one — e.g. Bicep Curl on both the
-              BowFlex and free weights.
+              exercise can use more than one — e.g. Standing Biceps Curl on
+              both the BowFlex and free weights.
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">

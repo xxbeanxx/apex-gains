@@ -11,6 +11,21 @@ import {
   templates,
 } from "./schema";
 
+// Sample exercises previously seeded under a different name than the
+// official PR1000 owner's manual uses. Applied before the main upsert below
+// so an already-deployed database's rows are renamed in place (matched only
+// among sample rows, userId is null) rather than left behind as orphans
+// while a new row is created under the manual's name.
+const exerciseRenames: [oldName: string, newName: string][] = [
+  ["Chest Press", "Bench Press"],
+  ["Incline Chest Press", "Incline Bench Press"],
+  ["Seated Row", "Seated Lat Rows"],
+  ["Lat Pulldown", "Narrow Pulldowns"],
+  ["Shoulder Press", "Seated Shoulder Press"],
+  ["Bicep Curl", "Standing Biceps Curl"],
+  ["Tricep Pressdown", "Triceps Pushdown"],
+];
+
 const equipmentNames = [
   "BowFlex PR1000",
   "Rowing Machine",
@@ -25,7 +40,15 @@ type SeedExercise = typeof exercises.$inferInsert & {
 const seedExercises: SeedExercise[] = [
   // BowFlex PR1000
   {
-    name: "Chest Press",
+    name: "Aerobic Rowing",
+    exerciseType: "cardio",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "chest",
+    description:
+      "Push the handles away from your chest and return at a brisk, continuous pace to build cardio endurance.",
+  },
+  {
+    name: "Bench Press",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
     muscleGroup: "chest",
@@ -33,7 +56,15 @@ const seedExercises: SeedExercise[] = [
       "Press the handles forward from chest height until your arms are extended, then return with control.",
   },
   {
-    name: "Incline Chest Press",
+    name: "Decline Bench Press",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "chest",
+    description:
+      "Press the handles down and forward from a declined angle until your arms extend, then return with control.",
+  },
+  {
+    name: "Incline Bench Press",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
     muscleGroup: "chest",
@@ -49,36 +80,20 @@ const seedExercises: SeedExercise[] = [
       "With arms slightly bent, bring the handles together in a wide arcing motion in front of your chest.",
   },
   {
-    name: "Seated Row",
-    exerciseType: "strength",
-    equipment: ["BowFlex PR1000"],
-    muscleGroup: "back",
-    description:
-      "Pull the handles toward your torso while keeping your back straight, squeezing your shoulder blades together.",
-  },
-  {
-    name: "Lat Pulldown",
-    exerciseType: "strength",
-    equipment: ["BowFlex PR1000"],
-    muscleGroup: "back",
-    description:
-      "Pull the bar down toward your upper chest, then extend back up with control.",
-  },
-  {
-    name: "Deadlift",
-    exerciseType: "strength",
-    equipment: ["BowFlex PR1000"],
-    muscleGroup: "back",
-    description:
-      "Hinge at the hips to lower the handles toward the floor, then drive through your hips to stand back up.",
-  },
-  {
-    name: "Shoulder Press",
+    name: "Seated Shoulder Press",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
     muscleGroup: "shoulders",
     description:
       "Press the handles straight overhead from shoulder height, then lower with control.",
+  },
+  {
+    name: "Front Shoulder Raise",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "shoulders",
+    description:
+      "Raise the handles forward to shoulder height with arms extended, then lower with control.",
   },
   {
     name: "Lateral Raise",
@@ -89,6 +104,22 @@ const seedExercises: SeedExercise[] = [
       "Raise the handles out to your sides until your arms are roughly parallel to the floor.",
   },
   {
+    name: "Crossover Seated Rear Deltoid Rows",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "shoulders",
+    description:
+      "Pull the crossed cables back and apart toward your sides, squeezing your shoulder blades together.",
+  },
+  {
+    name: "Scapular Retraction",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "shoulders",
+    description:
+      "Without bending your arms, pull your shoulder blades together and back, then release with control.",
+  },
+  {
     name: "Upright Row",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
@@ -97,7 +128,55 @@ const seedExercises: SeedExercise[] = [
       "Pull the handles straight up along your body toward chin height, leading with your elbows.",
   },
   {
-    name: "Bicep Curl",
+    name: "Seated Lat Rows",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "Pull the handles toward your torso while keeping your back straight, squeezing your shoulder blades together.",
+  },
+  {
+    name: "Narrow Pulldowns",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "Pull the bar down toward your upper chest, then extend back up with control.",
+  },
+  {
+    name: "Stiff Arm Pulldowns",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "With arms straight, pull the bar down toward your thighs using your lats, then return with control.",
+  },
+  {
+    name: "Reverse Grip Pulldown",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "Using an underhand grip, pull the handles down toward your chest, then extend back up with control.",
+  },
+  {
+    name: "Seated Low Back Extension",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "With arms crossed and the hand grips looped over your forearms, pivot at the torso to pull back against the resistance, then return with control.",
+  },
+  {
+    name: "Deadlift",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "back",
+    description:
+      "Hinge at the hips to lower the handles toward the floor, then drive through your hips to stand back up.",
+  },
+  {
+    name: "Standing Biceps Curl",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
     muscleGroup: "arms",
@@ -105,12 +184,44 @@ const seedExercises: SeedExercise[] = [
       "Curl the weight up toward your shoulders, keeping elbows tucked at your sides.",
   },
   {
-    name: "Tricep Pressdown",
+    name: "Triceps Pushdown",
     exerciseType: "strength",
     equipment: ["BowFlex PR1000"],
     muscleGroup: "arms",
     description:
       "Extend your arms downward against the resistance, keeping elbows close to your body.",
+  },
+  {
+    name: "Lying Triceps Extension",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "arms",
+    description:
+      "Lying on the bench, extend your arms from a bent position until straight, then lower with control.",
+  },
+  {
+    name: "Standing Wrist Curl",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "arms",
+    description:
+      "Keeping your forearms still, curl your wrists up against the resistance, then lower with control.",
+  },
+  {
+    name: "Seated Abdominal Crunch",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "core",
+    description:
+      "Curl your torso forward against the resistance, then return to the starting position with control.",
+  },
+  {
+    name: "Trunk Rotation",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "core",
+    description:
+      "Keeping your hips still, rotate your torso against the resistance, then return with control.",
   },
   {
     name: "Leg Extension",
@@ -135,6 +246,38 @@ const seedExercises: SeedExercise[] = [
     muscleGroup: "legs",
     description:
       "Push the platform away by extending your legs, then return with control without locking your knees.",
+  },
+  {
+    name: "Calf Raise",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "legs",
+    description:
+      "Push through the balls of your feet to extend your ankles against the resistance, then lower with control.",
+  },
+  {
+    name: "Seated Hip Adduction",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "legs",
+    description:
+      "Pull your leg inward across your body against the resistance, then return with control.",
+  },
+  {
+    name: "Seated Hip Abduction",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "legs",
+    description:
+      "Push your leg outward away from your body against the resistance, then return with control.",
+  },
+  {
+    name: "Standing Leg Kickback",
+    exerciseType: "strength",
+    equipment: ["BowFlex PR1000"],
+    muscleGroup: "legs",
+    description:
+      "Holding the lat tower for support, extend one leg straight back against the resistance, then return with control.",
   },
   {
     name: "Squat",
@@ -227,18 +370,18 @@ const seedTemplates: { name: string; exercises: SeedTemplateExercise[] }[] = [
   {
     name: "Push Day",
     exercises: [
-      { exerciseName: "Chest Press", targetSets: 3, targetReps: 10 },
-      { exerciseName: "Incline Chest Press", targetSets: 3, targetReps: 10 },
-      { exerciseName: "Shoulder Press", targetSets: 3, targetReps: 10 },
-      { exerciseName: "Tricep Pressdown", targetSets: 3, targetReps: 12 },
+      { exerciseName: "Bench Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Incline Bench Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Seated Shoulder Press", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Triceps Pushdown", targetSets: 3, targetReps: 12 },
     ],
   },
   {
     name: "Pull Day",
     exercises: [
-      { exerciseName: "Seated Row", targetSets: 3, targetReps: 10 },
-      { exerciseName: "Lat Pulldown", targetSets: 3, targetReps: 10 },
-      { exerciseName: "Bicep Curl", targetSets: 3, targetReps: 12 },
+      { exerciseName: "Seated Lat Rows", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Narrow Pulldowns", targetSets: 3, targetReps: 10 },
+      { exerciseName: "Standing Biceps Curl", targetSets: 3, targetReps: 12 },
       { exerciseName: "Upright Row", targetSets: 3, targetReps: 10 },
     ],
   },
@@ -297,6 +440,13 @@ async function seed() {
     .from(equipment)
     .where(inArray(equipment.name, equipmentNames));
   const equipmentIdByName = new Map(equipmentRows.map((e) => [e.name, e.id]));
+
+  for (const [oldName, newName] of exerciseRenames) {
+    await db
+      .update(exercises)
+      .set({ name: newName })
+      .where(and(isNull(exercises.userId), eq(exercises.name, oldName)));
+  }
 
   // Fills in name/type/muscle group/description for the seeded exercises,
   // without clobbering a description a user has since edited via the UI.
