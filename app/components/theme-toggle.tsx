@@ -44,7 +44,14 @@ function ThemeToggle() {
 
   React.useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-    setTheme(stored ?? "system")
+    const resolved = stored ?? "system"
+    setTheme(resolved)
+    // Re-apply now, not just on future changes: on Android, matchMedia's
+    // prefers-color-scheme can briefly report a stale value on cold start
+    // (the OS theme signal arrives asynchronously) without ever firing a
+    // "change" event once it corrects itself, so the blocking head script's
+    // read can be wrong and nothing else would fix it.
+    applyTheme(resolved)
   }, [])
 
   // Follow the OS while the preference is "system".
