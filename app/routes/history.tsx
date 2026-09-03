@@ -23,6 +23,7 @@ import {
   computeWeeklySetCount,
   computeWeeklyTonnage,
 } from "~/lib/history-charts.server";
+import { getBodyWeightLogsRepository } from "~/repositories/body-weight-logs-repository.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import type { Route } from "./+types/history";
@@ -63,14 +64,38 @@ const TIMELINE_LIMIT = 90;
 const VOLUME_WEEKS = 12;
 const HEATMAP_WEEKS = 16;
 const MUSCLE_BALANCE_DAYS = 28;
+const BODY_WEIGHT_HISTORY_LIMIT = 180;
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
   const workoutSessionsRepository = await getWorkoutSessionsRepository();
-  const chartSessions = await workoutSessionsRepository.listRecentWithSetsForUser(
-    user.id,
-    CHART_HISTORY_LIMIT,
-  );
+  const bodyWeightLogsRepository = await getBodyWeightLogsRepository();
+  const [chartSessions, bodyWeightLogs] = await Promise.all([
+    workoutSessionsRepository.listRecentWithSetsForUser(
+      user.id,
+      CHART_HISTORY_LIMIT,
+    ),
+    bodyWeightLogsRepository.listRecentForUser(
+      user.id,
+      BODY_WEIGHT_HISTORY_LIMIT,
+    ),
+  ]);
+
+  // Oldest first for the trend line; logs arrive newest-first.
+  const ascendingWeightLogs = [...bodyWeightLogs].reverse();
+  const bodyWeight =
+    ascendingWeightLogs.length >= 2
+      ? {
+          exerciseId: "body-weight",
+          exerciseName: "Body weight",
+          metricLabel: "Body weight",
+          unit: user.weightUnit,
+          points: ascendingWeightLogs.map((log) => ({
+            date: log.date,
+            value: Number(log.weight),
+          })),
+        }
+      : null;
 
   return {
     sessions: chartSessions.slice(0, TIMELINE_LIMIT),
@@ -80,6 +105,7 @@ export async function loader({ context }: Route.LoaderArgs) {
     exerciseProgress: computeExerciseProgressSeries(chartSessions),
     muscleBalance: computeMuscleGroupBalance(chartSessions, MUSCLE_BALANCE_DAYS),
     personalRecords: computePersonalRecords(chartSessions),
+    bodyWeight,
   };
 }
 
@@ -92,10 +118,12 @@ export default function History({ loaderData }: Route.ComponentProps) {
     exerciseProgress,
     muscleBalance,
     personalRecords,
+    bodyWeight,
   } = loaderData;
 
   const totalSets = sessions.reduce((sum, s) => sum + s.sets.length, 0);
   const workoutCount = sessions.filter((s) => s.sets.length > 0).length;
+  const hasTrends = sessions.length > 0 || bodyWeight != null;
 
   // Group consecutive sessions under a month heading. Sessions arrive
   // newest-first, so a simple run-length pass is enough.
@@ -118,7 +146,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
         }
       />
 
-      {sessions.length > 0 ? (
+      {hasTrends ? (
         <Section title="Trends">
           <HistoryCharts
             heatmap={heatmap}
@@ -127,6 +155,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
             exerciseProgress={exerciseProgress}
             muscleBalance={muscleBalance}
             personalRecords={personalRecords}
+            bodyWeight={bodyWeight}
           />
         </Section>
       ) : null}

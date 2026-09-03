@@ -31,6 +31,7 @@ export function HistoryCharts({
   exerciseProgress,
   muscleBalance,
   personalRecords,
+  bodyWeight,
 }: {
   heatmap: HeatmapDay[];
   weeklySets: WeeklyMetricPoint[];
@@ -38,6 +39,7 @@ export function HistoryCharts({
   exerciseProgress: ExerciseProgressSeries[];
   muscleBalance: MuscleGroupBalancePoint[];
   personalRecords: PersonalRecord[];
+  bodyWeight: ExerciseProgressSeries | null;
 }) {
   return (
     <div className="stagger flex flex-col gap-4">
@@ -77,6 +79,17 @@ export function HistoryCharts({
           </CardContent>
         </Card>
       </div>
+
+      {bodyWeight ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Body weight</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExerciseProgressChart series={bodyWeight} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ExerciseProgressCard series={exerciseProgress} />
