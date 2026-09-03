@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { ClipboardListIcon } from "lucide-react";
 import { Link, data, redirect } from "react-router";
 import { z } from "zod";
@@ -16,10 +15,8 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { db } from "~/db/index.server";
-import { templates } from "~/db/schema";
 import { loggerContext } from "~/lib/logger.server";
-import { sampleOrOwnTemplatesWhere } from "~/lib/sample-data.server";
+import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 
 import type { Route } from "./+types/templates";
 
@@ -33,11 +30,11 @@ const createTemplateSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const visibleTemplates = await db.query.templates.findMany({
-    where: sampleOrOwnTemplatesWhere(user.id, user.showSampleData),
-    orderBy: desc(templates.updatedAt),
-    with: { templateExercises: true },
-  });
+  const templatesRepository = await getTemplatesRepository();
+  const visibleTemplates = await templatesRepository.listForUser(
+    user.id,
+    user.showSampleData,
+  );
   return { templates: visibleTemplates };
 }
 
@@ -55,10 +52,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  const [template] = await db
-    .insert(templates)
-    .values({ userId: user.id, name: result.data.name })
-    .returning();
+  const templatesRepository = await getTemplatesRepository();
+  const template = await templatesRepository.create(user.id, result.data.name);
 
   context
     .get(loggerContext)

@@ -1,4 +1,3 @@
-import { and, asc, eq } from "drizzle-orm";
 import {
   DumbbellIcon,
   PencilIcon,
@@ -40,13 +39,10 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
-import { db } from "~/db/index.server";
-import { equipment, exerciseEquipment, exercises } from "~/db/schema";
-import {
-  forkExerciseForUser,
-  sampleOrOwnEquipmentWhere,
-  sampleOrOwnExercisesWhere,
-} from "~/lib/sample-data.server";
+import type { Equipment } from "~/db/schema";
+import { getEquipmentRepository } from "~/repositories/equipment-repository.server";
+import type { ExerciseWithEquipment } from "~/repositories/exercises-repository";
+import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 
 import type { Route } from "./+types/exercises";
 
@@ -62,17 +58,17 @@ const typeLabels: Record<string, string> = {
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
 
-  const allEquipment = await db
-    .select()
-    .from(equipment)
-    .where(sampleOrOwnEquipmentWhere(user.id, user.showSampleData))
-    .orderBy(asc(equipment.name));
+  const equipmentRepository = await getEquipmentRepository();
+  const exercisesRepository = await getExercisesRepository();
 
-  const allExercises = await db.query.exercises.findMany({
-    where: sampleOrOwnExercisesWhere(user.id, user.showSampleData),
-    orderBy: asc(exercises.name),
-    with: { equipmentLinks: { with: { equipment: true } } },
-  });
+  const allEquipment = await equipmentRepository.listForUser(
+    user.id,
+    user.showSampleData,
+  );
+  const allExercises = await exercisesRepository.listWithEquipmentForUser(
+    user.id,
+    user.showSampleData,
+  );
 
   return { equipment: allEquipment, exercises: allExercises };
 }
@@ -109,6 +105,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
+  const equipmentRepository = await getEquipmentRepository();
+  const exercisesRepository = await getExercisesRepository();
+
   if (intent === "addEquipment") {
     const result = addEquipmentSchema.safeParse({ name: formData.get("name") });
     if (!result.success) {
@@ -117,18 +116,13 @@ export async function action({ request, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    await db
-      .insert(equipment)
-      .values({ userId: user.id, name: result.data.name })
-      .onConflictDoNothing({ target: equipment.name });
+    await equipmentRepository.add(user.id, result.data.name);
     return { ok: true };
   }
 
   if (intent === "deleteEquipment") {
     const id = String(formData.get("equipmentId"));
-    await db
-      .delete(equipment)
-      .where(and(eq(equipment.id, id), eq(equipment.userId, user.id)));
+    await equipmentRepository.remove(user.id, id);
     return { ok: true };
   }
 
@@ -138,35 +132,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid toggle" }, { status: 400 });
     }
-    const { equipmentId } = result.data;
-
-    await db.transaction(async (tx) => {
-      const exercise = await tx.query.exercises.findFirst({
-        where: eq(exercises.id, result.data.exerciseId),
-      });
-      if (!exercise) return;
-
-      const exerciseId =
-        exercise.userId === null
-          ? (await forkExerciseForUser(tx, exercise, user.id)).id
-          : exercise.id;
-
-      if (result.data.checked === "true") {
-        await tx
-          .insert(exerciseEquipment)
-          .values({ exerciseId, equipmentId })
-          .onConflictDoNothing();
-      } else {
-        await tx
-          .delete(exerciseEquipment)
-          .where(
-            and(
-              eq(exerciseEquipment.exerciseId, exerciseId),
-              eq(exerciseEquipment.equipmentId, equipmentId),
-            ),
-          );
-      }
-    });
+    await exercisesRepository.toggleEquipment(
+      user.id,
+      result.data.exerciseId,
+      result.data.equipmentId,
+      result.data.checked === "true",
+    );
     return { ok: true };
   }
 
@@ -179,25 +150,13 @@ export async function action({ request, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    const existing = await db.query.exercises.findFirst({
-      where: and(
-        eq(exercises.userId, user.id),
-        eq(exercises.name, result.data.name),
-      ),
-    });
-    if (existing) {
+    const outcome = await exercisesRepository.create(user.id, result.data);
+    if (outcome.outcome === "duplicate-name") {
       return data(
         { error: "An exercise with this name already exists" },
         { status: 400 },
       );
     }
-    await db.insert(exercises).values({
-      userId: user.id,
-      name: result.data.name,
-      exerciseType: result.data.exerciseType,
-      muscleGroup: result.data.muscleGroup ?? null,
-      description: result.data.description ?? null,
-    });
     return { ok: true };
   }
 
@@ -212,46 +171,18 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    const outcome = await db.transaction(async (tx) => {
-      const exercise = await tx.query.exercises.findFirst({
-        where: eq(exercises.id, exerciseId),
-      });
-      if (!exercise) return "not-found" as const;
-
-      const target =
-        exercise.userId === null
-          ? await forkExerciseForUser(tx, exercise, user.id)
-          : exercise;
-
-      const existing = await tx.query.exercises.findFirst({
-        where: and(
-          eq(exercises.userId, user.id),
-          eq(exercises.name, result.data.name),
-        ),
-      });
-      if (existing && existing.id !== target.id) {
-        return "conflict" as const;
-      }
-
-      await tx
-        .update(exercises)
-        .set({
-          name: result.data.name,
-          exerciseType: result.data.exerciseType,
-          muscleGroup: result.data.muscleGroup ?? null,
-          description: result.data.description ?? null,
-        })
-        .where(eq(exercises.id, target.id));
-      return "ok" as const;
-    });
-
-    if (outcome === "conflict") {
+    const outcome = await exercisesRepository.update(
+      user.id,
+      exerciseId,
+      result.data,
+    );
+    if (outcome.outcome === "duplicate-name") {
       return data(
         { error: "An exercise with this name already exists" },
         { status: 400 },
       );
     }
-    if (outcome === "not-found") {
+    if (outcome.outcome === "not-found") {
       return data({ error: "Exercise not found" }, { status: 404 });
     }
     return { ok: true };
@@ -259,15 +190,11 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   if (intent === "revertExercise") {
     const exerciseId = String(formData.get("exerciseId"));
-    const exercise = await db.query.exercises.findFirst({
-      where: and(eq(exercises.id, exerciseId), eq(exercises.userId, user.id)),
-    });
-    if (!exercise || !exercise.forkedFromId) {
+    const outcome = await exercisesRepository.revert(user.id, exerciseId);
+    if (outcome.outcome === "nothing-to-revert") {
       return data({ error: "Nothing to revert" }, { status: 400 });
     }
-    try {
-      await db.delete(exercises).where(eq(exercises.id, exercise.id));
-    } catch {
+    if (outcome.outcome === "in-use") {
       return data(
         {
           error:
@@ -281,18 +208,6 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   return data({ error: "Unknown action" }, { status: 400 });
 }
-
-type EquipmentOption = { id: string; name: string; userId: string | null };
-type ExerciseWithEquipment = {
-  id: string;
-  userId: string | null;
-  forkedFromId: string | null;
-  name: string;
-  exerciseType: string;
-  muscleGroup: string | null;
-  description: string | null;
-  equipmentLinks: { equipment: EquipmentOption }[];
-};
 
 function ExerciseDetailsFields({
   defaultValues,
@@ -359,7 +274,7 @@ function ExerciseEditorDialog({
   allEquipment,
 }: {
   exercise: ExerciseWithEquipment;
-  allEquipment: EquipmentOption[];
+  allEquipment: Equipment[];
 }) {
   const fetcher = useFetcher();
   const revertFetcher = useFetcher();

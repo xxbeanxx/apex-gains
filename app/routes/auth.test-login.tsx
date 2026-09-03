@@ -1,13 +1,18 @@
-import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
 
 import { isTestLoginEnabled } from "~/auth/env.server";
 import { commitSession, getSession } from "~/auth/session.server";
-import { db } from "~/db/index.server";
-import { users } from "~/db/schema";
+import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
+import { getUsersRepository } from "~/repositories/users-repository.server";
 
 import type { Route } from "./+types/auth.test-login";
+
+// No `default` export: this route only ever redirects on success. An
+// ErrorBoundary export is still required so React Router renders errors
+// through the normal styled document instead of treating this as a raw
+// resource route (see the loader below).
+export { ErrorPage as ErrorBoundary };
 
 // Test-only stand-in for the Google OAuth flow: e2e suites (Playwright)
 // can't drive Google's real consent screen, so this signs a request in
@@ -30,20 +35,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const name = url.searchParams.get("name") ?? email;
   const redirectTo = url.searchParams.get("redirectTo") ?? "/today";
 
-  const [existingUser] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const usersRepository = await getUsersRepository();
+  const existingUser = await usersRepository.findByEmail(email);
 
   const user =
     existingUser ??
-    (
-      await db
-        .insert(users)
-        .values({ googleSub: `test-login:${email}`, email, name })
-        .returning()
-    )[0];
+    (await usersRepository.create({
+      googleSub: `test-login:${email}`,
+      email,
+      name,
+    }));
 
   logger.info({ userId: user.id, newUser: !existingUser }, "test login used");
 

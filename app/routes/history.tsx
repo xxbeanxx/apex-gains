@@ -1,4 +1,3 @@
-import { desc, eq } from "drizzle-orm";
 import { HistoryIcon, MoonIcon, PlusIcon } from "lucide-react";
 import { Link } from "react-router";
 
@@ -14,9 +13,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { EmptyState } from "~/components/ui/empty-state";
-import { db } from "~/db/index.server";
-import { workoutSessions } from "~/db/schema";
 import { formatFullDate } from "~/lib/cycle";
+import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import type { Route } from "./+types/history";
 
@@ -53,17 +51,11 @@ function monthLabel(dateStr: string) {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const sessions = await db.query.workoutSessions.findMany({
-    where: eq(workoutSessions.userId, user.id),
-    orderBy: desc(workoutSessions.date),
-    limit: 90,
-    with: {
-      sets: {
-        with: { exercise: true },
-        orderBy: (s, { asc }) => asc(s.createdAt),
-      },
-    },
-  });
+  const workoutSessionsRepository = await getWorkoutSessionsRepository();
+  const sessions = await workoutSessionsRepository.listRecentWithSetsForUser(
+    user.id,
+    90,
+  );
   return { sessions };
 }
 

@@ -1,7 +1,5 @@
-import { and, eq, gte, inArray, lt } from "drizzle-orm";
-
-import { db } from "~/db/index.server";
-import { routineSlots, routines, sessionSets, templates, workoutSessions } from "~/db/schema";
+import { getRoutinesRepository } from "~/repositories/routines-repository.server";
+import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import { addDays, slotIndexForDate, todayDateString } from "./cycle";
 
@@ -17,39 +15,16 @@ export async function getUpcomingWeekPlan(
 ): Promise<WeekPlanDay[]> {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(fromDate, i));
 
-  const [activeRoutine] = await db
-    .select()
-    .from(routines)
-    .where(and(eq(routines.userId, userId), eq(routines.isActive, true)))
-    .limit(1);
+  const routinesRepository = await getRoutinesRepository();
+  const activeRoutine = await routinesRepository.findActiveForUser(userId);
   if (!activeRoutine) {
     return dates.map((date) => ({ date, type: "none" as const }));
   }
 
-  const slots = await db
-    .select()
-    .from(routineSlots)
-    .where(eq(routineSlots.routineId, activeRoutine.id))
-    .orderBy(routineSlots.position);
+  const slots = activeRoutine.slots;
   if (slots.length === 0) {
     return dates.map((date) => ({ date, type: "none" as const }));
   }
-
-  const templateIds = [
-    ...new Set(
-      slots
-        .map((s) => s.templateId)
-        .filter((id): id is string => id !== null),
-    ),
-  ];
-  const templateRows =
-    templateIds.length > 0
-      ? await db
-          .select({ id: templates.id, name: templates.name })
-          .from(templates)
-          .where(inArray(templates.id, templateIds))
-      : [];
-  const templateNameById = new Map(templateRows.map((t) => [t.id, t.name]));
 
   return dates.map((date) => {
     const slotIndex = slotIndexForDate(
@@ -62,7 +37,7 @@ export async function getUpcomingWeekPlan(
     return {
       date,
       type: "template" as const,
-      templateName: templateNameById.get(slot.templateId) ?? "Unknown",
+      templateName: slot.template?.name ?? "Unknown",
     };
   });
 }
@@ -82,31 +57,18 @@ export async function getPastWeekSummary(
   const startDate = addDays(throughDateExclusive, -7);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
-  const sessions = await db
-    .select()
-    .from(workoutSessions)
-    .where(
-      and(
-        eq(workoutSessions.userId, userId),
-        gte(workoutSessions.date, startDate),
-        lt(workoutSessions.date, throughDateExclusive),
-      ),
-    );
+  const workoutSessionsRepository = await getWorkoutSessionsRepository();
+  const sessions = await workoutSessionsRepository.listForDateRange(
+    userId,
+    startDate,
+    throughDateExclusive,
+  );
 
   const sets =
     sessions.length > 0
-      ? await db
-          .select({
-            sessionId: sessionSets.sessionId,
-            exerciseId: sessionSets.exerciseId,
-          })
-          .from(sessionSets)
-          .where(
-            inArray(
-              sessionSets.sessionId,
-              sessions.map((s) => s.id),
-            ),
-          )
+      ? await workoutSessionsRepository.listSetSessionExercisePairs(
+          sessions.map((s) => s.id),
+        )
       : [];
 
   const setsBySession = new Map<string, typeof sets>();

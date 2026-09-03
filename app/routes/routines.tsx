@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { RepeatIcon } from "lucide-react";
 import { Link, data, redirect } from "react-router";
 import { z } from "zod";
@@ -16,11 +15,9 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { db } from "~/db/index.server";
-import { routines } from "~/db/schema";
 import { todayDateString } from "~/lib/cycle";
 import { loggerContext } from "~/lib/logger.server";
-import { sampleOrOwnRoutinesWhere } from "~/lib/sample-data.server";
+import { getRoutinesRepository } from "~/repositories/routines-repository.server";
 
 import type { Route } from "./+types/routines";
 
@@ -34,11 +31,11 @@ const createRoutineSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const visibleRoutines = await db.query.routines.findMany({
-    where: sampleOrOwnRoutinesWhere(user.id, user.showSampleData),
-    orderBy: desc(routines.updatedAt),
-    with: { slots: true },
-  });
+  const routinesRepository = await getRoutinesRepository();
+  const visibleRoutines = await routinesRepository.listForUser(
+    user.id,
+    user.showSampleData,
+  );
   return { routines: visibleRoutines };
 }
 
@@ -56,14 +53,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  const [routine] = await db
-    .insert(routines)
-    .values({
-      userId: user.id,
-      name: result.data.name,
-      anchorDate: todayDateString(),
-    })
-    .returning();
+  const routinesRepository = await getRoutinesRepository();
+  const routine = await routinesRepository.create(
+    user.id,
+    result.data.name,
+    todayDateString(),
+  );
 
   context
     .get(loggerContext)

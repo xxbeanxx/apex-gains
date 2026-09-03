@@ -1,4 +1,3 @@
-import { and, asc, eq } from "drizzle-orm";
 import {
   CalendarIcon,
   CheckIcon,
@@ -35,8 +34,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { db } from "~/db/index.server";
-import { type Exercise, exercises, sessionSets } from "~/db/schema";
+import type { Exercise } from "~/db/schema";
 import {
   addDays,
   formatFullDate,
@@ -58,6 +56,8 @@ import {
   type WeekHistoryDay,
   type WeekPlanDay,
 } from "~/lib/week-summary.server";
+import { getExercisesRepository } from "~/repositories/exercises-repository.server";
+import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import type { Route } from "./+types/today";
 
@@ -110,18 +110,17 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const isToday = dateStr === todayStr;
   const plan = await getTodaysPlan(user.id, dateStr);
 
-  const session = await db.query.workoutSessions.findFirst({
-    where: (ws, { and, eq }) =>
-      and(eq(ws.userId, user.id), eq(ws.date, dateStr)),
-    with: {
-      sets: { with: { exercise: true }, orderBy: (s, { asc }) => asc(s.createdAt) },
-    },
-  });
+  const workoutSessionsRepository = await getWorkoutSessionsRepository();
+  const session = await workoutSessionsRepository.findWithSetsForDate(
+    user.id,
+    dateStr,
+  );
 
-  const allExercises = await db
-    .select()
-    .from(exercises)
-    .orderBy(asc(exercises.name));
+  const exercisesRepository = await getExercisesRepository();
+  const allExercises = await exercisesRepository.listWithEquipmentForUser(
+    user.id,
+    user.showSampleData,
+  );
 
   const [upcomingWeek, pastWeek] = await Promise.all([
     getUpcomingWeekPlan(user.id, todayStr),
@@ -179,40 +178,23 @@ export async function action({ request, context }: Route.ActionArgs) {
       context.get(loggerContext),
     );
 
-    const existingSets = await db
-      .select()
-      .from(sessionSets)
-      .where(
-        and(
-          eq(sessionSets.sessionId, session.id),
-          eq(sessionSets.exerciseId, result.data.exerciseId),
-        ),
-      );
-
-    await db.insert(sessionSets).values({
-      sessionId: session.id,
-      exerciseId: result.data.exerciseId,
-      setNumber: existingSets.length + 1,
-      reps: result.data.reps ?? null,
-      weight: result.data.weight?.toString() ?? null,
+    const workoutSessionsRepository = await getWorkoutSessionsRepository();
+    await workoutSessionsRepository.addSet(session.id, result.data.exerciseId, {
+      reps: result.data.reps,
+      weight: result.data.weight,
       durationSeconds: result.data.durationMinutes
         ? Math.round(result.data.durationMinutes * 60)
-        : null,
-      speed: result.data.speed?.toString() ?? null,
-      resistanceLevel: result.data.resistance ?? null,
+        : undefined,
+      speed: result.data.speed,
+      resistanceLevel: result.data.resistance,
     });
     return { ok: true };
   }
 
   if (intent === "removeSet") {
     const setId = String(formData.get("setId"));
-    const set = await db.query.sessionSets.findFirst({
-      where: eq(sessionSets.id, setId),
-      with: { session: true },
-    });
-    if (set && set.session.userId === user.id) {
-      await db.delete(sessionSets).where(eq(sessionSets.id, setId));
-    }
+    const workoutSessionsRepository = await getWorkoutSessionsRepository();
+    await workoutSessionsRepository.removeSetOwnedByUser(user.id, setId);
     return { ok: true };
   }
 

@@ -1,16 +1,21 @@
 import * as client from "openid-client";
-import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
 
 import { getOrigin } from "~/auth/env.server";
 import { clearOidcState, parseOidcState } from "~/auth/oidc-state.server";
 import { getGoogleConfig } from "~/auth/oidc.server";
 import { commitSession, getSession } from "~/auth/session.server";
-import { db } from "~/db/index.server";
-import { users } from "~/db/schema";
+import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
+import { getUsersRepository } from "~/repositories/users-repository.server";
 
 import type { Route } from "./+types/auth.google.callback";
+
+// No `default` export: this route only ever redirects on success. An
+// ErrorBoundary export is still required so React Router renders errors
+// through the normal styled document instead of treating this as a raw
+// resource route.
+export { ErrorPage as ErrorBoundary };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const logger = context.get(loggerContext);
@@ -60,26 +65,17 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     });
   }
 
-  const [existingUser] = await db
-    .select()
-    .from(users)
-    .where(eq(users.googleSub, claims.sub))
-    .limit(1);
+  const usersRepository = await getUsersRepository();
+  const existingUser = await usersRepository.findByGoogleSub(claims.sub);
 
   const user =
     existingUser ??
-    (
-      await db
-        .insert(users)
-        .values({
-          googleSub: claims.sub,
-          email: claims.email,
-          name: typeof claims.name === "string" ? claims.name : claims.email,
-          avatarUrl:
-            typeof claims.picture === "string" ? claims.picture : null,
-        })
-        .returning()
-    )[0];
+    (await usersRepository.create({
+      googleSub: claims.sub,
+      email: claims.email,
+      name: typeof claims.name === "string" ? claims.name : claims.email,
+      avatarUrl: typeof claims.picture === "string" ? claims.picture : null,
+    }));
 
   logger.info(
     { userId: user.id, newUser: !existingUser },

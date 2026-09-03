@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
 import type { MiddlewareFunction } from "react-router";
 
-import { db } from "~/db/index.server";
-import { users } from "~/db/schema";
+import { getUsersRepository } from "~/repositories/users-repository.server";
 
 import { getSession } from "./session.server";
 import { userContext } from "./user-context";
@@ -16,11 +14,8 @@ export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({
 
   if (!userId) { return; }
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+  const usersRepository = await getUsersRepository();
+  const user = await usersRepository.findById(userId);
 
   if (user) { context.set(userContext, user); }
 };

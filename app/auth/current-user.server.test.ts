@@ -2,16 +2,20 @@ import { RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { User } from "~/db/schema";
-import { dbChain } from "~/test/db-chain";
+import type { UsersRepository } from "~/repositories/users-repository";
 import { mock } from "~/test/mock";
 
-const { selectMock, getSessionMock } = vi.hoisted(() => ({
-  selectMock: vi.fn(),
+const { findByIdMock, getSessionMock } = vi.hoisted(() => ({
+  findByIdMock: vi.fn(),
   getSessionMock: vi.fn(),
 }));
 
-vi.mock("~/db/index.server", () => ({
-  db: mock<typeof import("~/db/index.server").db>({ select: selectMock }),
+vi.mock("~/repositories/users-repository.server", () => ({
+  getUsersRepository: vi
+    .fn()
+    .mockResolvedValue(
+      mock<UsersRepository>({ findById: findByIdMock }),
+    ),
 }));
 
 vi.mock("./session.server", () => ({
@@ -45,7 +49,7 @@ const noopNext = async () => undefined;
 
 describe("loadUserMiddleware", () => {
   beforeEach(() => {
-    selectMock.mockReset();
+    findByIdMock.mockReset();
     getSessionMock.mockReset();
   });
 
@@ -56,23 +60,24 @@ describe("loadUserMiddleware", () => {
     await loadUserMiddleware(args, noopNext);
 
     expect(context.get(userContext)).toBeNull();
-    expect(selectMock).not.toHaveBeenCalled();
+    expect(findByIdMock).not.toHaveBeenCalled();
   });
 
   it("sets the user in context when the session's userId resolves to a row", async () => {
     getSessionMock.mockResolvedValue(sessionWithUserId("user-1"));
     const user = mock<User>({ id: "user-1", email: "greg@example.com" });
-    selectMock.mockReturnValue(dbChain([user]));
+    findByIdMock.mockResolvedValue(user);
     const { args, context } = argsWithContext();
 
     await loadUserMiddleware(args, noopNext);
 
+    expect(findByIdMock).toHaveBeenCalledWith("user-1");
     expect(context.get(userContext)).toBe(user);
   });
 
   it("does not set a user when the session's userId has no matching row", async () => {
     getSessionMock.mockResolvedValue(sessionWithUserId("stale-user"));
-    selectMock.mockReturnValue(dbChain([]));
+    findByIdMock.mockResolvedValue(null);
     const { args, context } = argsWithContext();
 
     await loadUserMiddleware(args, noopNext);

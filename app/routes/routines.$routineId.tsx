@@ -1,4 +1,3 @@
-import { and, asc, eq, isNull, or } from "drizzle-orm";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -33,13 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { db } from "~/db/index.server";
-import { routineSlots, routines, templates } from "~/db/schema";
 import { loggerContext } from "~/lib/logger.server";
-import {
-  forkRoutineForUser,
-  sampleOrOwnTemplatesWhere,
-} from "~/lib/sample-data.server";
+import { getRoutinesRepository } from "~/repositories/routines-repository.server";
+import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 
 import type { Route } from "./+types/routines.$routineId";
 
@@ -49,33 +44,20 @@ export function meta({ loaderData }: Route.MetaArgs) {
   ];
 }
 
-async function loadVisibleRoutine(routineId: string, userId: string) {
-  const routine = await db.query.routines.findFirst({
-    where: and(
-      eq(routines.id, routineId),
-      or(eq(routines.userId, userId), isNull(routines.userId)),
-    ),
-    with: {
-      slots: {
-        orderBy: asc(routineSlots.position),
-        with: { template: true },
-      },
-    },
-  });
-  return routine ?? null;
-}
-
 export async function loader({ params, context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const routine = await loadVisibleRoutine(params.routineId, user.id);
+  const routinesRepository = await getRoutinesRepository();
+  const routine = await routinesRepository.findVisibleForUser(
+    user.id,
+    params.routineId,
+  );
   if (!routine) {
     throw data("Routine not found", { status: 404 });
   }
-  const visibleTemplates = await db
-    .select()
-    .from(templates)
-    .where(sampleOrOwnTemplatesWhere(user.id, user.showSampleData))
-    .orderBy(asc(templates.name));
+  const templatesRepository = await getTemplatesRepository();
+  const visibleTemplates = (
+    await templatesRepository.listForUser(user.id, user.showSampleData)
+  ).sort((a, b) => a.name.localeCompare(b.name));
   return { routine, templates: visibleTemplates };
 }
 
@@ -89,75 +71,38 @@ const addSlotSchema = z.object({
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
-  const routine = await loadVisibleRoutine(params.routineId, user.id);
-  if (!routine) {
-    throw data("Routine not found", { status: 404 });
-  }
+  const routineId = params.routineId;
+  const routinesRepository = await getRoutinesRepository();
 
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "delete") {
-    if (routine.userId === null) {
+    const outcome = await routinesRepository.delete(user.id, routineId);
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
+    if (outcome.outcome === "sample-routine") {
       return data(
         { error: "Sample routines can't be deleted." },
         { status: 400 },
       );
     }
-    await db.delete(routines).where(eq(routines.id, routine.id));
     context
       .get(loggerContext)
-      .info({ userId: user.id, routineId: routine.id }, "routine deleted");
+      .info({ userId: user.id, routineId }, "routine deleted");
     throw redirect("/routines");
   }
 
   if (intent === "revert") {
-    if (routine.userId !== user.id || !routine.forkedFromId) {
+    const outcome = await routinesRepository.revert(user.id, routineId);
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
+    if (outcome.outcome === "nothing-to-revert") {
       return data({ error: "Nothing to revert" }, { status: 400 });
     }
-    const forkedFromId = routine.forkedFromId;
-    await db.delete(routines).where(eq(routines.id, routine.id));
-    throw redirect(`/routines/${forkedFromId}`);
-  }
-
-  // Every remaining intent mutates the routine's own content, so editing a
-  // sample routine forks it into a personal copy first (fork-on-save) and
-  // the mutation below is applied to the fork instead of the sample.
-  const didFork = routine.userId === null;
-  let activeRoutineId = routine.id;
-  let activeSlots: { id: string; position: number }[] = routine.slots;
-
-  if (didFork) {
-    if (
-      intent !== "rename" &&
-      intent !== "reanchor" &&
-      intent !== "activate" &&
-      intent !== "deactivate" &&
-      intent !== "addSlot" &&
-      intent !== "removeSlot" &&
-      intent !== "move"
-    ) {
-      return data({ error: "Unknown action" }, { status: 400 });
-    }
-
-    const submittedSlotId = formData.get("slotId");
-    const originalPosition =
-      typeof submittedSlotId === "string"
-        ? routine.slots.find((s) => s.id === submittedSlotId)?.position
-        : undefined;
-
-    const { fork, forkedSlots } = await db.transaction((tx) =>
-      forkRoutineForUser(tx, routine, user.id),
-    );
-    activeRoutineId = fork.id;
-    activeSlots = forkedSlots;
-
-    if (originalPosition !== undefined) {
-      const forkedMatch = forkedSlots.find(
-        (s) => s.position === originalPosition,
-      );
-      if (forkedMatch) formData.set("slotId", forkedMatch.id);
-    }
+    throw redirect(`/routines/${outcome.forkedFromId}`);
   }
 
   if (intent === "rename") {
@@ -165,11 +110,17 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid name" }, { status: 400 });
     }
-    await db
-      .update(routines)
-      .set({ name: result.data.name, updatedAt: new Date() })
-      .where(eq(routines.id, activeRoutineId));
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+    const outcome = await routinesRepository.rename(
+      user.id,
+      routineId,
+      result.data.name,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
@@ -180,47 +131,45 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid date" }, { status: 400 });
     }
-    await db
-      .update(routines)
-      .set({ anchorDate: result.data.anchorDate, updatedAt: new Date() })
-      .where(eq(routines.id, activeRoutineId));
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+    const outcome = await routinesRepository.reanchor(
+      user.id,
+      routineId,
+      result.data.anchorDate,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "activate") {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(routines)
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(eq(routines.userId, user.id));
-      await tx
-        .update(routines)
-        .set({ isActive: true, updatedAt: new Date() })
-        .where(eq(routines.id, activeRoutineId));
-    });
+    const outcome = await routinesRepository.activate(user.id, routineId);
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
     context
       .get(loggerContext)
-      .info(
-        { userId: user.id, routineId: activeRoutineId },
-        "routine activated",
-      );
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+      .info({ userId: user.id, routineId }, "routine activated");
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "deactivate") {
-    await db
-      .update(routines)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(routines.id, activeRoutineId));
+    const outcome = await routinesRepository.deactivate(user.id, routineId);
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
     context
       .get(loggerContext)
-      .info(
-        { userId: user.id, routineId: activeRoutineId },
-        "routine deactivated",
-      );
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+      .info({ userId: user.id, routineId }, "routine deactivated");
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
@@ -231,70 +180,51 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid slot" }, { status: 400 });
     }
-    const nextPosition =
-      activeSlots.reduce((max, slot) => Math.max(max, slot.position), -1) + 1;
-    await db.insert(routineSlots).values({
-      routineId: activeRoutineId,
-      position: nextPosition,
-      templateId:
-        result.data.templateId === "rest" ? null : result.data.templateId,
-    });
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+    const outcome = await routinesRepository.addSlot(
+      user.id,
+      routineId,
+      result.data.templateId === "rest" ? null : result.data.templateId,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
+    }
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "removeSlot") {
     const slotId = String(formData.get("slotId"));
-    const removed = activeSlots.find((s) => s.id === slotId);
-    if (!removed) {
-      if (didFork) throw redirect(`/routines/${activeRoutineId}`);
-      return { ok: true };
+    const outcome = await routinesRepository.removeSlot(
+      user.id,
+      routineId,
+      slotId,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
     }
-
-    await db.transaction(async (tx) => {
-      await tx.delete(routineSlots).where(eq(routineSlots.id, slotId));
-      const toShift = activeSlots
-        .filter((s) => s.position > removed.position)
-        .sort((a, b) => a.position - b.position);
-      for (const slot of toShift) {
-        await tx
-          .update(routineSlots)
-          .set({ position: slot.position - 1 })
-          .where(eq(routineSlots.id, slot.id));
-      }
-    });
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "move") {
     const slotId = String(formData.get("slotId"));
-    const direction = formData.get("direction");
-    const sorted = [...activeSlots].sort((a, b) => a.position - b.position);
-    const index = sorted.findIndex((s) => s.id === slotId);
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) {
-      if (didFork) throw redirect(`/routines/${activeRoutineId}`);
-      return { ok: true };
+    const direction = formData.get("direction") === "up" ? "up" : "down";
+    const outcome = await routinesRepository.moveSlot(
+      user.id,
+      routineId,
+      slotId,
+      direction,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Routine not found", { status: 404 });
     }
-    const current = sorted[index];
-    const swap = sorted[swapIndex];
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(routineSlots)
-        .set({ position: -1 })
-        .where(eq(routineSlots.id, current.id));
-      await tx
-        .update(routineSlots)
-        .set({ position: current.position })
-        .where(eq(routineSlots.id, swap.id));
-      await tx
-        .update(routineSlots)
-        .set({ position: swap.position })
-        .where(eq(routineSlots.id, current.id));
-    });
-    if (didFork) throw redirect(`/routines/${activeRoutineId}`);
+    if (outcome.forkedRoutineId) {
+      throw redirect(`/routines/${outcome.forkedRoutineId}`);
+    }
     return { ok: true };
   }
 

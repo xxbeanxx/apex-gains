@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { CheckCircle2Icon } from "lucide-react";
 import { data } from "react-router";
 import { z } from "zod";
@@ -22,8 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { db } from "~/db/index.server";
-import { users } from "~/db/schema";
+import { getUsersRepository } from "~/repositories/users-repository.server";
 
 import type { Route } from "./+types/settings";
 
@@ -50,14 +48,13 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
+  const usersRepository = await getUsersRepository();
+
   if (intent === "updateSampleDataVisibility") {
-    await db
-      .update(users)
-      .set({
-        showSampleData: formData.get("showSampleData") === "true",
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
+    await usersRepository.updateShowSampleData(
+      user.id,
+      formData.get("showSampleData") === "true",
+    );
     return { ok: true, intent: "updateSampleDataVisibility" } as const;
   }
 
@@ -70,14 +67,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     return data({ error: "Invalid unit selection." }, { status: 400 });
   }
 
-  await db
-    .update(users)
-    .set({
-      weightUnit: result.data.weightUnit,
-      distanceUnit: result.data.distanceUnit,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, user.id));
+  await usersRepository.updatePreferences(user.id, result.data);
 
   return { ok: true, intent: "updateUnits" } as const;
 }

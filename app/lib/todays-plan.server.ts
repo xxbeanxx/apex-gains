@@ -1,16 +1,9 @@
-import { and, asc, eq } from "drizzle-orm";
 import type { Logger } from "pino";
 
-import { db } from "~/db/index.server";
-import {
-  type Exercise,
-  exercises,
-  routineSlots,
-  routines,
-  templateExercises,
-  templates,
-  workoutSessions,
-} from "~/db/schema";
+import type { Exercise } from "~/db/schema";
+import { getRoutinesRepository } from "~/repositories/routines-repository.server";
+import { getTemplatesRepository } from "~/repositories/templates-repository.server";
+import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import { slotIndexForDate, todayDateString } from "./cycle";
 import { logger as baseLogger } from "./logger.server";
@@ -40,18 +33,11 @@ export async function getTodaysPlan(
   userId: string,
   dateStr: string = todayDateString(),
 ): Promise<TodaysPlan> {
-  const [activeRoutine] = await db
-    .select()
-    .from(routines)
-    .where(and(eq(routines.userId, userId), eq(routines.isActive, true)))
-    .limit(1);
+  const routinesRepository = await getRoutinesRepository();
+  const activeRoutine = await routinesRepository.findActiveForUser(userId);
   if (!activeRoutine) return { type: "none" };
 
-  const slots = await db
-    .select()
-    .from(routineSlots)
-    .where(eq(routineSlots.routineId, activeRoutine.id))
-    .orderBy(asc(routineSlots.position));
+  const slots = activeRoutine.slots;
   if (slots.length === 0) return { type: "none" };
 
   const slotIndex = slotIndexForDate(
@@ -65,27 +51,22 @@ export async function getTodaysPlan(
     return { type: "rest", routineId: activeRoutine.id };
   }
 
-  const [template] = await db
-    .select()
-    .from(templates)
-    .where(eq(templates.id, todaysSlot.templateId))
-    .limit(1);
+  const templatesRepository = await getTemplatesRepository();
+  const template = await templatesRepository.findVisibleForUser(
+    userId,
+    todaysSlot.templateId,
+  );
   if (!template) return { type: "rest", routineId: activeRoutine.id };
 
-  const items = await db
-    .select({
-      exercise: exercises,
-      targetSets: templateExercises.targetSets,
-      targetReps: templateExercises.targetReps,
-      targetWeight: templateExercises.targetWeight,
-      targetDurationSeconds: templateExercises.targetDurationSeconds,
-      targetSpeed: templateExercises.targetSpeed,
-      targetResistance: templateExercises.targetResistance,
-    })
-    .from(templateExercises)
-    .innerJoin(exercises, eq(templateExercises.exerciseId, exercises.id))
-    .where(eq(templateExercises.templateId, template.id))
-    .orderBy(asc(templateExercises.position));
+  const items: TodaysPlanItem[] = template.templateExercises.map((te) => ({
+    exercise: te.exercise,
+    targetSets: te.targetSets,
+    targetReps: te.targetReps,
+    targetWeight: te.targetWeight,
+    targetDurationSeconds: te.targetDurationSeconds,
+    targetSpeed: te.targetSpeed,
+    targetResistance: te.targetResistance,
+  }));
 
   return {
     type: "template",
@@ -106,28 +87,19 @@ export async function getOrCreateSession(
   const templateId = plan.type === "template" ? plan.templateId : null;
   const isRestDay = plan.type === "rest";
 
-  const inserted = await db
-    .insert(workoutSessions)
-    .values({ userId, date: dateStr, routineId, templateId, isRestDay })
-    .onConflictDoNothing({
-      target: [workoutSessions.userId, workoutSessions.date],
-    })
-    .returning();
+  const workoutSessionsRepository = await getWorkoutSessionsRepository();
+  const { session, created } = await workoutSessionsRepository.getOrCreateForDate(
+    userId,
+    dateStr,
+    { routineId, templateId, isRestDay },
+  );
 
-  if (inserted.length > 0) {
+  if (created) {
     logger.info(
       { userId, date: dateStr, routineId, templateId, isRestDay },
       "workout session created",
     );
   }
-
-  const [session] = await db
-    .select()
-    .from(workoutSessions)
-    .where(
-      and(eq(workoutSessions.userId, userId), eq(workoutSessions.date, dateStr)),
-    )
-    .limit(1);
 
   return session;
 }

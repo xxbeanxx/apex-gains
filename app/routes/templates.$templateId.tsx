@@ -1,4 +1,3 @@
-import { and, asc, eq, isNull, or } from "drizzle-orm";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -33,13 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { db } from "~/db/index.server";
-import { type Exercise, exercises, templateExercises, templates } from "~/db/schema";
 import { loggerContext } from "~/lib/logger.server";
-import {
-  forkTemplateForUser,
-  sampleOrOwnExercisesWhere,
-} from "~/lib/sample-data.server";
+import { getExercisesRepository } from "~/repositories/exercises-repository.server";
+import type { ExerciseWithEquipment } from "~/repositories/exercises-repository";
+import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 
 import type { Route } from "./+types/templates.$templateId";
 
@@ -49,33 +45,21 @@ export function meta({ loaderData }: Route.MetaArgs) {
   ];
 }
 
-async function loadVisibleTemplate(templateId: string, userId: string) {
-  const template = await db.query.templates.findFirst({
-    where: and(
-      eq(templates.id, templateId),
-      or(eq(templates.userId, userId), isNull(templates.userId)),
-    ),
-    with: {
-      templateExercises: {
-        orderBy: asc(templateExercises.position),
-        with: { exercise: true },
-      },
-    },
-  });
-  return template ?? null;
-}
-
 export async function loader({ params, context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
-  const template = await loadVisibleTemplate(params.templateId, user.id);
+  const templatesRepository = await getTemplatesRepository();
+  const template = await templatesRepository.findVisibleForUser(
+    user.id,
+    params.templateId,
+  );
   if (!template) {
     throw data("Template not found", { status: 404 });
   }
-  const allExercises = await db
-    .select()
-    .from(exercises)
-    .where(sampleOrOwnExercisesWhere(user.id, user.showSampleData))
-    .orderBy(asc(exercises.name));
+  const exercisesRepository = await getExercisesRepository();
+  const allExercises = await exercisesRepository.listWithEquipmentForUser(
+    user.id,
+    user.showSampleData,
+  );
   return { template, exercises: allExercises };
 }
 
@@ -95,75 +79,38 @@ const addExerciseSchema = z.object({
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
-  const template = await loadVisibleTemplate(params.templateId, user.id);
-  if (!template) {
-    throw data("Template not found", { status: 404 });
-  }
+  const templateId = params.templateId;
+  const templatesRepository = await getTemplatesRepository();
 
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "delete") {
-    if (template.userId === null) {
+    const outcome = await templatesRepository.delete(user.id, templateId);
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
+    }
+    if (outcome.outcome === "sample-template") {
       return data(
         { error: "Sample templates can't be deleted." },
         { status: 400 },
       );
     }
-    await db.delete(templates).where(eq(templates.id, template.id));
     context
       .get(loggerContext)
-      .info({ userId: user.id, templateId: template.id }, "template deleted");
+      .info({ userId: user.id, templateId }, "template deleted");
     throw redirect("/templates");
   }
 
   if (intent === "revert") {
-    if (template.userId !== user.id || !template.forkedFromId) {
+    const outcome = await templatesRepository.revert(user.id, templateId);
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
+    }
+    if (outcome.outcome === "nothing-to-revert") {
       return data({ error: "Nothing to revert" }, { status: 400 });
     }
-    const forkedFromId = template.forkedFromId;
-    await db.delete(templates).where(eq(templates.id, template.id));
-    throw redirect(`/templates/${forkedFromId}`);
-  }
-
-  // Every remaining intent mutates the template's own content, so editing a
-  // sample template forks it into a personal copy first (fork-on-save) and
-  // the mutation below is applied to the fork instead of the sample.
-  const didFork = template.userId === null;
-  let activeTemplateId = template.id;
-  let activeTemplateExercises: { id: string; position: number }[] =
-    template.templateExercises;
-
-  if (didFork) {
-    if (
-      intent !== "rename" &&
-      intent !== "addExercise" &&
-      intent !== "removeExercise" &&
-      intent !== "move"
-    ) {
-      return data({ error: "Unknown action" }, { status: 400 });
-    }
-
-    const submittedTemplateExerciseId = formData.get("templateExerciseId");
-    const originalPosition =
-      typeof submittedTemplateExerciseId === "string"
-        ? template.templateExercises.find(
-            (te) => te.id === submittedTemplateExerciseId,
-          )?.position
-        : undefined;
-
-    const { fork, forkedTemplateExercises } = await db.transaction((tx) =>
-      forkTemplateForUser(tx, template, user.id),
-    );
-    activeTemplateId = fork.id;
-    activeTemplateExercises = forkedTemplateExercises;
-
-    if (originalPosition !== undefined) {
-      const forkedMatch = forkedTemplateExercises.find(
-        (te) => te.position === originalPosition,
-      );
-      if (forkedMatch) formData.set("templateExerciseId", forkedMatch.id);
-    }
+    throw redirect(`/templates/${outcome.forkedFromId}`);
   }
 
   if (intent === "rename") {
@@ -171,11 +118,17 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid name" }, { status: 400 });
     }
-    await db
-      .update(templates)
-      .set({ name: result.data.name, updatedAt: new Date() })
-      .where(eq(templates.id, activeTemplateId));
-    if (didFork) throw redirect(`/templates/${activeTemplateId}`);
+    const outcome = await templatesRepository.rename(
+      user.id,
+      templateId,
+      result.data.name,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
+    }
+    if (outcome.forkedTemplateId) {
+      throw redirect(`/templates/${outcome.forkedTemplateId}`);
+    }
     return { ok: true };
   }
 
@@ -185,80 +138,60 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!result.success) {
       return data({ error: "Invalid exercise" }, { status: 400 });
     }
-    const exercise = await db.query.exercises.findFirst({
-      where: eq(exercises.id, result.data.exerciseId),
-    });
-    if (!exercise) {
-      return data({ error: "Exercise not found" }, { status: 400 });
-    }
-
-    const nextPosition =
-      activeTemplateExercises.reduce(
-        (max, te) => Math.max(max, te.position),
-        -1,
-      ) + 1;
-
-    await db.insert(templateExercises).values({
-      templateId: activeTemplateId,
-      exerciseId: exercise.id,
-      position: nextPosition,
-      targetSets: result.data.targetSets ?? null,
-      targetReps: result.data.targetReps ?? null,
-      targetWeight: result.data.targetWeight?.toString() ?? null,
+    const outcome = await templatesRepository.addExercise(user.id, templateId, {
+      exerciseId: result.data.exerciseId,
+      targetSets: result.data.targetSets,
+      targetReps: result.data.targetReps,
+      targetWeight: result.data.targetWeight,
       targetDurationSeconds: result.data.targetDurationMinutes
         ? Math.round(result.data.targetDurationMinutes * 60)
-        : null,
-      targetSpeed: result.data.targetSpeed?.toString() ?? null,
-      targetResistance: result.data.targetResistance ?? null,
+        : undefined,
+      targetSpeed: result.data.targetSpeed,
+      targetResistance: result.data.targetResistance,
     });
-    if (didFork) throw redirect(`/templates/${activeTemplateId}`);
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
+    }
+    if (outcome.outcome === "exercise-not-found") {
+      return data({ error: "Exercise not found" }, { status: 400 });
+    }
+    if (outcome.forkedTemplateId) {
+      throw redirect(`/templates/${outcome.forkedTemplateId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "removeExercise") {
     const templateExerciseId = String(formData.get("templateExerciseId"));
-    await db
-      .delete(templateExercises)
-      .where(
-        and(
-          eq(templateExercises.id, templateExerciseId),
-          eq(templateExercises.templateId, activeTemplateId),
-        ),
-      );
-    if (didFork) throw redirect(`/templates/${activeTemplateId}`);
+    const outcome = await templatesRepository.removeExercise(
+      user.id,
+      templateId,
+      templateExerciseId,
+    );
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
+    }
+    if (outcome.forkedTemplateId) {
+      throw redirect(`/templates/${outcome.forkedTemplateId}`);
+    }
     return { ok: true };
   }
 
   if (intent === "move") {
     const templateExerciseId = String(formData.get("templateExerciseId"));
-    const direction = formData.get("direction");
-    const sorted = [...activeTemplateExercises].sort(
-      (a, b) => a.position - b.position,
+    const direction = formData.get("direction") === "up" ? "up" : "down";
+    const outcome = await templatesRepository.moveExercise(
+      user.id,
+      templateId,
+      templateExerciseId,
+      direction,
     );
-    const index = sorted.findIndex((te) => te.id === templateExerciseId);
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) {
-      if (didFork) throw redirect(`/templates/${activeTemplateId}`);
-      return { ok: true };
+    if (outcome.outcome === "not-found") {
+      throw data("Template not found", { status: 404 });
     }
-    const current = sorted[index];
-    const swap = sorted[swapIndex];
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(templateExercises)
-        .set({ position: -1 })
-        .where(eq(templateExercises.id, current.id));
-      await tx
-        .update(templateExercises)
-        .set({ position: current.position })
-        .where(eq(templateExercises.id, swap.id));
-      await tx
-        .update(templateExercises)
-        .set({ position: swap.position })
-        .where(eq(templateExercises.id, current.id));
-    });
-    if (didFork) throw redirect(`/templates/${activeTemplateId}`);
+    if (outcome.forkedTemplateId) {
+      throw redirect(`/templates/${outcome.forkedTemplateId}`);
+    }
     return { ok: true };
   }
 
@@ -286,7 +219,11 @@ function targetSummary(te: {
   return parts.length > 0 ? parts.join(", ") : "No target set";
 }
 
-function AddExerciseForm({ exerciseList }: { exerciseList: Exercise[] }) {
+function AddExerciseForm({
+  exerciseList,
+}: {
+  exerciseList: ExerciseWithEquipment[];
+}) {
   const fetcher = useFetcher();
   const [exerciseId, setExerciseId] = useState<string>("");
   const selected = exerciseList.find((e) => e.id === exerciseId);
