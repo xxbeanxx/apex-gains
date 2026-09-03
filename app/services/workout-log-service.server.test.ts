@@ -167,6 +167,54 @@ describe("logging a set", () => {
   });
 });
 
+describe("recent sets for an exercise", () => {
+  it("returns nothing for an exercise never logged", async () => {
+    expect(
+      await service.recentSetsFor(athleteWith(), await benchId(), 5),
+    ).toEqual([]);
+  });
+
+  it("returns newest first, across days", async () => {
+    const athlete = athleteWith();
+    const bench = await benchId();
+
+    await service.logSet(athlete, TODAY.minusDays(1), bench, {
+      reps: 8,
+      weight: 135,
+    });
+    await service.logSet(athlete, TODAY, bench, { reps: 6, weight: 145 });
+
+    const recent = await service.recentSetsFor(athlete, bench, 5);
+
+    expect(recent).toEqual([
+      { date: TODAY.value, summary: "145 lb x 6" },
+      { date: TODAY.minusDays(1).value, summary: "135 lb x 8" },
+    ]);
+  });
+
+  it("respects the limit", async () => {
+    const athlete = athleteWith();
+    const bench = await benchId();
+
+    await service.logSet(athlete, TODAY, bench, { reps: 10, weight: 100 });
+    await service.logSet(athlete, TODAY, bench, { reps: 8, weight: 110 });
+    await service.logSet(athlete, TODAY, bench, { reps: 6, weight: 120 });
+
+    expect(await service.recentSetsFor(athlete, bench, 2)).toHaveLength(2);
+  });
+
+  it("reads the set back in the requesting athlete's own units", async () => {
+    const athlete = athleteWith();
+    const bench = await benchId();
+    await service.logSet(athlete, TODAY, bench, { reps: 5, weight: 100 });
+
+    const metric = athleteWith({ weightUnit: "kg" });
+    const recent = await service.recentSetsFor(metric, bench, 5);
+
+    expect(recent[0].summary).toBe("45.4 kg x 5");
+  });
+});
+
 describe("removing a set", () => {
   it("takes the set back off the day", async () => {
     const athlete = athleteWith();

@@ -7,8 +7,9 @@ import {
   type SessionSet as SessionSetRow,
   type WorkoutSession as WorkoutSessionRow,
 } from "~/db/schema";
+import { LoggedSet } from "~/domain/session/logged-set";
 import { WorkoutSession } from "~/domain/session/workout-session";
-import type { DateOnly } from "~/domain/values/date-only";
+import { DateOnly } from "~/domain/values/date-only";
 
 import { diffChildren } from "./shared/diff-children";
 import type { WorkoutSessionsRepository } from "./workout-sessions-repository";
@@ -134,6 +135,41 @@ export class DrizzleWorkoutSessionsRepository
       with: withSets,
     });
     return rows.map(toSession);
+  }
+
+  async recentSetsForExercise(
+    userId: string,
+    exerciseId: string,
+    limit: number,
+  ): Promise<{ date: DateOnly; set: LoggedSet }[]> {
+    const rows = await dbScope
+      .select({
+        date: workoutSessions.date,
+        id: sessionSets.id,
+        exerciseId: sessionSets.exerciseId,
+        setNumber: sessionSets.setNumber,
+        reps: sessionSets.reps,
+        weight: sessionSets.weight,
+        durationSeconds: sessionSets.durationSeconds,
+        speed: sessionSets.speed,
+        resistanceLevel: sessionSets.resistanceLevel,
+        createdAt: sessionSets.createdAt,
+      })
+      .from(sessionSets)
+      .innerJoin(workoutSessions, eq(sessionSets.sessionId, workoutSessions.id))
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          eq(sessionSets.exerciseId, exerciseId),
+        ),
+      )
+      .orderBy(desc(workoutSessions.date), desc(sessionSets.createdAt))
+      .limit(limit);
+
+    return rows.map(({ date, ...set }) => ({
+      date: DateOnly.parse(date),
+      set: LoggedSet.fromSnapshot(set),
+    }));
   }
 
   /**

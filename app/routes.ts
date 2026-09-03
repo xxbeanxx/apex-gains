@@ -14,6 +14,10 @@ export default [
   layout("routes/_protected.tsx", [
     route("today", "routes/today.tsx"),
     route("exercises", "routes/exercises.tsx"),
+    route(
+      "exercises/:exerciseId/history",
+      "routes/exercises.$exerciseId.history.tsx",
+    ),
     route("templates", "routes/templates.tsx"),
     route("templates/:templateId", "routes/templates.$templateId.tsx"),
     route("routines", "routes/routines.tsx"),

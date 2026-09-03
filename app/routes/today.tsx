@@ -3,6 +3,7 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CircleHelpIcon,
   MoonIcon,
   PlusIcon,
   XIcon,
@@ -36,7 +37,12 @@ import {
 import { SubmitButton } from "~/components/ui/submit-button";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import { DateOnly } from "~/domain/values/date-only";
-import { formatFullDate, formatMonthDay, formatWeekday } from "~/lib/format";
+import {
+  formatFullDate,
+  formatMonthDay,
+  formatRelativeDate,
+  formatWeekday,
+} from "~/lib/format";
 import { loggerContext } from "~/lib/logger.server";
 import { cn } from "~/lib/utils";
 import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
@@ -48,6 +54,7 @@ import {
 import {
   getWorkoutLogService,
   type LoggedSetView,
+  type RecentSetView,
 } from "~/services/workout-log-service.server";
 
 import type { Route } from "./+types/today";
@@ -175,14 +182,102 @@ export async function action({ request, context }: Route.ActionArgs) {
   return data({ error: "Unknown action" }, { status: 400 });
 }
 
+/** Groups a newest-first flat set list into one entry per day it was logged. */
+function groupSetsByDate(
+  sets: RecentSetView[],
+): { date: string; summaries: string[] }[] {
+  const groups: { date: string; summaries: string[] }[] = [];
+  for (const set of sets) {
+    const current = groups.at(-1);
+    if (current && current.date === set.date) {
+      current.summaries.push(set.summary);
+    } else {
+      groups.push({ date: set.date, summaries: [set.summary] });
+    }
+  }
+  return groups;
+}
+
+/**
+ * A "?" that opens an overlay of the last few times this exercise was
+ * logged, so the reps/weight fields below don't have to be filled in blind.
+ * Fetched lazily on first open rather than up front for every exercise on
+ * the page.
+ */
+function ExerciseHistoryButton({
+  exerciseId,
+  exerciseName,
+  todayStr,
+}: {
+  exerciseId: string;
+  exerciseName: string;
+  todayStr: string;
+}) {
+  const fetcher = useFetcher<{ sets: RecentSetView[] }>();
+  const [open, setOpen] = useState(false);
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next && fetcher.state === "idle" && !fetcher.data) {
+      fetcher.load(`/exercises/${exerciseId}/history`);
+    }
+  }
+
+  const groups = fetcher.data ? groupSetsByDate(fetcher.data.sets) : [];
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground"
+          aria-label={`Show recent history for ${exerciseName}`}
+        >
+          <CircleHelpIcon aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          {exerciseName}: recent sets
+        </p>
+        {fetcher.state !== "idle" ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : groups.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {groups.map((group) => (
+              <li key={group.date} className="text-sm">
+                <span className="font-medium">
+                  {formatRelativeDate(group.date, todayStr)}
+                </span>
+                <span className="text-muted-foreground tabular-nums">
+                  {" "}
+                  · {group.summaries.join(", ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Nothing logged for this exercise yet.
+          </p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function LogSetForm({
   exercise,
   exerciseOptions,
   date,
+  todayStr,
 }: {
   exercise?: LoggableExercise;
   exerciseOptions?: LoggableExercise[];
   date: string;
+  todayStr: string;
 }) {
   const fetcher = useFetcher();
   const [selectedId, setSelectedId] = useState(exercise?.id ?? "");
@@ -199,7 +294,19 @@ function LogSetForm({
       {exercise ? (
         <input type="hidden" name="exerciseId" value={exercise.id} />
       ) : (
-        <Field label="Exercise" className="sm:max-w-xs">
+        <Field
+          label="Exercise"
+          className="sm:max-w-xs"
+          action={
+            active ? (
+              <ExerciseHistoryButton
+                exerciseId={active.id}
+                exerciseName={active.name}
+                todayStr={todayStr}
+              />
+            ) : null
+          }
+        >
           {({ id }) => (
             <Select
               name="exerciseId"
@@ -692,9 +799,16 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               return (
                 <Card key={item.exerciseId}>
                   <CardHeader>
-                    <CardTitle className="text-base">
-                      {item.exerciseName}
-                    </CardTitle>
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base">
+                        {item.exerciseName}
+                      </CardTitle>
+                      <ExerciseHistoryButton
+                        exerciseId={item.exerciseId}
+                        exerciseName={item.exerciseName}
+                        todayStr={todayStr}
+                      />
+                    </div>
                     {item.targetSummary ? (
                       <p className="text-sm text-muted-foreground tabular-nums">
                         Target: {item.targetSummary}
@@ -716,6 +830,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                         exerciseType: item.exerciseType,
                       }}
                       date={date}
+                      todayStr={todayStr}
                     />
                   </CardContent>
                 </Card>
@@ -737,7 +852,11 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       >
         <Card className="max-w-2xl">
           <CardContent>
-            <LogSetForm exerciseOptions={allExercises} date={date} />
+            <LogSetForm
+              exerciseOptions={allExercises}
+              date={date}
+              todayStr={todayStr}
+            />
           </CardContent>
         </Card>
       </Section>

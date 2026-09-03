@@ -27,6 +27,13 @@ export type LoggedSetView = {
   summary: string;
 };
 
+export type RecentSetView = {
+  /** `YYYY-MM-DD` the set was logged on. */
+  date: string;
+  /** Already formatted in the athlete's units. */
+  summary: string;
+};
+
 /** A set as the athlete entered it: their weight unit, their speed unit, minutes. */
 export type SetInput = {
   reps?: number | null;
@@ -62,6 +69,26 @@ export class WorkoutLogService {
       exerciseId: set.exerciseId,
       exerciseName: byId.get(set.exerciseId)?.name ?? "Unknown",
       setNumber: set.setNumber,
+      summary: set.format(athlete.preferences),
+    }));
+  }
+
+  /**
+   * The last few times this exercise was logged, newest first - what a "how
+   * did I do last time" prompt shows while today's fields are still blank.
+   */
+  async recentSetsFor(
+    athlete: Athlete,
+    exerciseId: string,
+    limit: number,
+  ): Promise<RecentSetView[]> {
+    const entries = await this.sessions.recentSetsForExercise(
+      athlete.id,
+      exerciseId,
+      limit,
+    );
+    return entries.map(({ date, set }) => ({
+      date: date.value,
       summary: set.format(athlete.preferences),
     }));
   }

@@ -1,8 +1,9 @@
+import { LoggedSet } from "~/domain/session/logged-set";
 import {
   WorkoutSession,
   type WorkoutSessionSnapshot,
 } from "~/domain/session/workout-session";
-import type { DateOnly } from "~/domain/values/date-only";
+import { DateOnly } from "~/domain/values/date-only";
 
 import type { WorkoutSessionsRepository } from "./workout-sessions-repository";
 
@@ -60,6 +61,33 @@ export class InMemoryWorkoutSessionsRepository
       )
       .sort((a, b) => (a.date < b.date ? -1 : 1))
       .map(WorkoutSession.fromSnapshot);
+  }
+
+  async recentSetsForExercise(
+    userId: string,
+    exerciseId: string,
+    limit: number,
+  ): Promise<{ date: DateOnly; set: LoggedSet }[]> {
+    const entries: { date: DateOnly; set: LoggedSet }[] = [];
+    for (const snapshot of this.byId.values()) {
+      if (snapshot.userId !== userId) continue;
+      for (const setSnapshot of snapshot.sets) {
+        if (setSnapshot.exerciseId !== exerciseId) continue;
+        entries.push({
+          date: DateOnly.parse(snapshot.date),
+          set: LoggedSet.fromSnapshot(setSnapshot),
+        });
+      }
+    }
+
+    entries.sort((a, b) => {
+      if (a.date.value !== b.date.value) {
+        return a.date.value < b.date.value ? 1 : -1;
+      }
+      return b.set.createdAt.getTime() - a.set.createdAt.getTime();
+    });
+
+    return entries.slice(0, limit);
   }
 
   async save(session: WorkoutSession): Promise<void> {
