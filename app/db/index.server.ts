@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import * as schema from "./schema";
+import { currentTransaction } from "./transaction.server";
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -31,3 +32,23 @@ export const db: Db = new Proxy({} as Db, {
 });
 
 export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * What repository adapters should query through: the transaction open for
+ * this request if there is one, otherwise the connection itself.
+ *
+ * Using `db` directly inside a `UnitOfWork.run` would issue the statement on
+ * a different connection and quietly escape the transaction, so adapters use
+ * this instead - the one exception being a query that must deliberately see
+ * committed state.
+ *
+ * A `Transaction` and the database expose the same query builders (both are
+ * a Drizzle `PgDatabase`); the cast only covers connection-level extras that
+ * adapters never touch.
+ */
+export const dbScope: Db = new Proxy({} as Db, {
+  get(_target, prop, receiver) {
+    const scope = currentTransaction() ?? getClient();
+    return Reflect.get(scope, prop, receiver);
+  },
+});

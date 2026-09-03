@@ -3,6 +3,7 @@ import {
   asc,
   desc,
   eq,
+  inArray,
   isNotNull,
   isNull,
   notInArray,
@@ -10,27 +11,21 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import { db, type Transaction } from "~/db/index.server";
+import { db, dbScope } from "~/db/index.server";
 import {
-  exercises,
   templateExercises,
   templates,
-  type Template,
-  type TemplateExercise,
+  type Template as TemplateRow,
+  type TemplateExercise as TemplateExerciseRow,
 } from "~/db/schema";
+import {
+  WorkoutTemplate,
+  type TemplateExerciseSnapshot,
+} from "~/domain/template/workout-template";
 
-import type {
-  AddTemplateExerciseInput,
-  AddTemplateExerciseOutcome,
-  DeleteTemplateOutcome,
-  MoveTemplateExerciseOutcome,
-  RemoveTemplateExerciseOutcome,
-  RenameTemplateOutcome,
-  RevertTemplateOutcome,
-  TemplateDetail,
-  TemplatesRepository,
-  TemplateWithExerciseCount,
-} from "./templates-repository";
+import { diffChildren } from "./shared/diff-children";
+import { writePositions } from "./shared/write-positions";
+import type { TemplatesRepository } from "./templates-repository";
 
 export function sampleOrOwnTemplatesWhere(
   userId: string,
@@ -57,318 +52,169 @@ function visibleToUserWhere(userId: string, templateId: string): SQL {
   )!;
 }
 
-type LoadedTemplate = Template & { templateExercises: TemplateExercise[] };
+type RowWithExercises = TemplateRow & {
+  templateExercises: TemplateExerciseRow[];
+};
 
-async function loadForMutation(
-  tx: Transaction,
-  userId: string,
-  templateId: string,
-): Promise<LoadedTemplate | undefined> {
-  return tx.query.templates.findFirst({
-    where: visibleToUserWhere(userId, templateId),
-    with: { templateExercises: { orderBy: asc(templateExercises.position) } },
+function toTemplate(row: RowWithExercises): WorkoutTemplate {
+  return WorkoutTemplate.fromSnapshot({
+    id: row.id,
+    userId: row.userId,
+    forkedFromId: row.forkedFromId,
+    name: row.name,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    exercises: row.templateExercises.map((entry) => ({
+      id: entry.id,
+      exerciseId: entry.exerciseId,
+      position: entry.position,
+      targetSets: entry.targetSets,
+      targetReps: entry.targetReps,
+      targetWeight: entry.targetWeight,
+      targetDurationSeconds: entry.targetDurationSeconds,
+      targetSpeed: entry.targetSpeed,
+      targetResistance: entry.targetResistance,
+    })),
   });
 }
 
-// A sample (userId null) template a user edits gets copied into a real,
-// per-user row, including its exercises - see CLAUDE.md's "Sample data and
-// fork-on-write". Must run inside the same transaction as whatever
-// mutation triggered the fork.
-async function forkTemplateForUser(
-  tx: Transaction,
-  sample: LoadedTemplate,
-  userId: string,
-): Promise<{ fork: Template; forkedTemplateExercises: TemplateExercise[] }> {
-  const existingFork = await tx.query.templates.findFirst({
-    where: and(
-      eq(templates.userId, userId),
-      eq(templates.forkedFromId, sample.id),
-    ),
-    with: {
-      templateExercises: { orderBy: asc(templateExercises.position) },
-    },
-  });
-  if (existingFork) {
-    return {
-      fork: existingFork,
-      forkedTemplateExercises: existingFork.templateExercises,
-    };
-  }
-
-  const [fork] = await tx
-    .insert(templates)
-    .values({ userId, forkedFromId: sample.id, name: sample.name })
-    .returning();
-
-  const sorted = [...sample.templateExercises].sort(
-    (a, b) => a.position - b.position,
-  );
-  const forkedTemplateExercises =
-    sorted.length > 0
-      ? await tx
-          .insert(templateExercises)
-          .values(
-            sorted.map((te) => ({
-              templateId: fork.id,
-              exerciseId: te.exerciseId,
-              position: te.position,
-              targetSets: te.targetSets,
-              targetReps: te.targetReps,
-              targetWeight: te.targetWeight,
-              targetDurationSeconds: te.targetDurationSeconds,
-              targetSpeed: te.targetSpeed,
-              targetResistance: te.targetResistance,
-            })),
-          )
-          .returning()
-      : [];
-
-  return { fork, forkedTemplateExercises };
-}
-
-// Every mutating method's first step: fork the template if it's still a
-// sample, and if a templateExerciseId was given, remap it onto the fork's
-// copy of the same slot (matched by position - the fork gets fresh ids).
-// If a remap can't find a match, the original id is kept, matching the
-// route's previous behavior of leaving the id untouched (some mutations
-// then simply no-op against the fork's rows).
-async function resolveActiveTemplate(
-  tx: Transaction,
-  template: LoadedTemplate,
-  userId: string,
-  templateExerciseId: string | undefined,
-): Promise<{
-  activeTemplateId: string;
-  forkedTemplateId: string | null;
-  activeTemplateExercises: TemplateExercise[];
-  remappedTemplateExerciseId: string | undefined;
-}> {
-  if (template.userId !== null) {
-    return {
-      activeTemplateId: template.id,
-      forkedTemplateId: null,
-      activeTemplateExercises: template.templateExercises,
-      remappedTemplateExerciseId: templateExerciseId,
-    };
-  }
-
-  const originalPosition = templateExerciseId
-    ? template.templateExercises.find((te) => te.id === templateExerciseId)
-        ?.position
-    : undefined;
-
-  const { fork, forkedTemplateExercises } = await forkTemplateForUser(
-    tx,
-    template,
-    userId,
-  );
-
-  const remappedTemplateExerciseId =
-    originalPosition !== undefined
-      ? (forkedTemplateExercises.find((te) => te.position === originalPosition)
-          ?.id ?? templateExerciseId)
-      : templateExerciseId;
-
+function toRow(templateId: string, entry: TemplateExerciseSnapshot) {
   return {
-    activeTemplateId: fork.id,
-    forkedTemplateId: fork.id,
-    activeTemplateExercises: forkedTemplateExercises,
-    remappedTemplateExerciseId,
+    id: entry.id,
+    templateId,
+    exerciseId: entry.exerciseId,
+    position: entry.position,
+    targetSets: entry.targetSets,
+    targetReps: entry.targetReps,
+    targetWeight: entry.targetWeight,
+    targetDurationSeconds: entry.targetDurationSeconds,
+    targetSpeed: entry.targetSpeed,
+    targetResistance: entry.targetResistance,
   };
 }
 
 export class DrizzleTemplatesRepository implements TemplatesRepository {
-  async listForUser(
+  async listFor(
     userId: string,
     showSampleData: boolean,
-  ): Promise<TemplateWithExerciseCount[]> {
-    return db.query.templates.findMany({
+  ): Promise<WorkoutTemplate[]> {
+    const rows = await dbScope.query.templates.findMany({
       where: sampleOrOwnTemplatesWhere(userId, showSampleData),
       orderBy: desc(templates.updatedAt),
-      with: { templateExercises: true },
-    });
-  }
-
-  async findVisibleForUser(
-    userId: string,
-    templateId: string,
-  ): Promise<TemplateDetail | null> {
-    const template = await db.query.templates.findFirst({
-      where: visibleToUserWhere(userId, templateId),
       with: {
-        templateExercises: {
-          orderBy: asc(templateExercises.position),
-          with: { exercise: true },
-        },
+        templateExercises: { orderBy: asc(templateExercises.position) },
       },
     });
-    return template ?? null;
+    return rows.map(toTemplate);
   }
 
-  async create(userId: string, name: string): Promise<Template> {
-    const [template] = await db
+  async findVisible(
+    userId: string,
+    templateId: string,
+  ): Promise<WorkoutTemplate | null> {
+    const row = await dbScope.query.templates.findFirst({
+      where: visibleToUserWhere(userId, templateId),
+      with: {
+        templateExercises: { orderBy: asc(templateExercises.position) },
+      },
+    });
+    return row ? toTemplate(row) : null;
+  }
+
+  async findForkOf(
+    userId: string,
+    sampleId: string,
+  ): Promise<WorkoutTemplate | null> {
+    const row = await dbScope.query.templates.findFirst({
+      where: and(
+        eq(templates.userId, userId),
+        eq(templates.forkedFromId, sampleId),
+      ),
+      with: {
+        templateExercises: { orderBy: asc(templateExercises.position) },
+      },
+    });
+    return row ? toTemplate(row) : null;
+  }
+
+  /**
+   * Writes the template and its exercise entries as one unit.
+   *
+   * The order matters, and it is the reason this reads as more than an
+   * upsert: removals free their positions first, then everything that moved
+   * is repositioned through negative scratch values (see
+   * shared/write-positions.ts), and only then are new entries inserted at
+   * their final positions. Any other order can transiently violate the
+   * `(templateId, position)` unique constraint.
+   *
+   * Callers run this inside a UnitOfWork, so the intermediate states are
+   * never visible to anyone else.
+   */
+  async save(template: WorkoutTemplate): Promise<void> {
+    const snapshot = template.toSnapshot();
+
+    await dbScope
       .insert(templates)
-      .values({ userId, name })
-      .returning();
-    return template;
-  }
-
-  async delete(
-    userId: string,
-    templateId: string,
-  ): Promise<DeleteTemplateOutcome> {
-    const template = await db.query.templates.findFirst({
-      where: visibleToUserWhere(userId, templateId),
-    });
-    if (!template) return { outcome: "not-found" };
-    if (template.userId === null) return { outcome: "sample-template" };
-
-    await db.delete(templates).where(eq(templates.id, template.id));
-    return { outcome: "deleted" };
-  }
-
-  async revert(
-    userId: string,
-    templateId: string,
-  ): Promise<RevertTemplateOutcome> {
-    const template = await db.query.templates.findFirst({
-      where: visibleToUserWhere(userId, templateId),
-    });
-    if (!template) return { outcome: "not-found" };
-    if (template.userId !== userId || !template.forkedFromId) {
-      return { outcome: "nothing-to-revert" };
-    }
-    await db.delete(templates).where(eq(templates.id, template.id));
-    return { outcome: "reverted", forkedFromId: template.forkedFromId };
-  }
-
-  async rename(
-    userId: string,
-    templateId: string,
-    name: string,
-  ): Promise<RenameTemplateOutcome> {
-    return db.transaction(async (tx) => {
-      const template = await loadForMutation(tx, userId, templateId);
-      if (!template) return { outcome: "not-found" };
-
-      const { activeTemplateId, forkedTemplateId } =
-        await resolveActiveTemplate(tx, template, userId, undefined);
-
-      await tx
-        .update(templates)
-        .set({ name, updatedAt: new Date() })
-        .where(eq(templates.id, activeTemplateId));
-
-      return { outcome: "renamed", forkedTemplateId };
-    });
-  }
-
-  async addExercise(
-    userId: string,
-    templateId: string,
-    input: AddTemplateExerciseInput,
-  ): Promise<AddTemplateExerciseOutcome> {
-    return db.transaction(async (tx) => {
-      const template = await loadForMutation(tx, userId, templateId);
-      if (!template) return { outcome: "not-found" };
-
-      const { activeTemplateId, forkedTemplateId, activeTemplateExercises } =
-        await resolveActiveTemplate(tx, template, userId, undefined);
-
-      const exercise = await tx.query.exercises.findFirst({
-        where: eq(exercises.id, input.exerciseId),
-      });
-      if (!exercise) return { outcome: "exercise-not-found" };
-
-      const nextPosition =
-        activeTemplateExercises.reduce(
-          (max, te) => Math.max(max, te.position),
-          -1,
-        ) + 1;
-
-      await tx.insert(templateExercises).values({
-        templateId: activeTemplateId,
-        exerciseId: exercise.id,
-        position: nextPosition,
-        targetSets: input.targetSets ?? null,
-        targetReps: input.targetReps ?? null,
-        targetWeight: input.targetWeight != null ? String(input.targetWeight) : null,
-        targetDurationSeconds: input.targetDurationSeconds ?? null,
-        targetSpeed: input.targetSpeed != null ? String(input.targetSpeed) : null,
-        targetResistance: input.targetResistance ?? null,
+      .values({
+        id: snapshot.id,
+        userId: snapshot.userId,
+        forkedFromId: snapshot.forkedFromId,
+        name: snapshot.name,
+        createdAt: snapshot.createdAt,
+        updatedAt: snapshot.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: templates.id,
+        set: { name: snapshot.name, updatedAt: snapshot.updatedAt },
       });
 
-      return { outcome: "added", forkedTemplateId };
-    });
-  }
+    const existing = await dbScope
+      .select()
+      .from(templateExercises)
+      .where(eq(templateExercises.templateId, snapshot.id));
 
-  async removeExercise(
-    userId: string,
-    templateId: string,
-    templateExerciseId: string,
-  ): Promise<RemoveTemplateExerciseOutcome> {
-    return db.transaction(async (tx) => {
-      const template = await loadForMutation(tx, userId, templateId);
-      if (!template) return { outcome: "not-found" };
+    const diff = diffChildren(existing, snapshot.exercises);
 
-      const { activeTemplateId, forkedTemplateId, remappedTemplateExerciseId } =
-        await resolveActiveTemplate(tx, template, userId, templateExerciseId);
-
-      await tx
+    if (diff.deletedIds.length > 0) {
+      await dbScope
         .delete(templateExercises)
-        .where(
-          and(
-            eq(templateExercises.id, remappedTemplateExerciseId!),
-            eq(templateExercises.templateId, activeTemplateId),
-          ),
-        );
+        .where(inArray(templateExercises.id, diff.deletedIds));
+    }
 
-      return { outcome: "removed", forkedTemplateId };
-    });
+    for (const entry of diff.updated) {
+      const row = toRow(snapshot.id, entry);
+      await dbScope
+        .update(templateExercises)
+        .set({
+          exerciseId: row.exerciseId,
+          targetSets: row.targetSets,
+          targetReps: row.targetReps,
+          targetWeight: row.targetWeight,
+          targetDurationSeconds: row.targetDurationSeconds,
+          targetSpeed: row.targetSpeed,
+          targetResistance: row.targetResistance,
+        })
+        .where(eq(templateExercises.id, row.id));
+    }
+
+    await writePositions(
+      new Map(existing.map((row) => [row.id, row.position])),
+      diff.updated,
+      (id, position) =>
+        dbScope
+          .update(templateExercises)
+          .set({ position })
+          .where(eq(templateExercises.id, id)),
+    );
+
+    if (diff.inserted.length > 0) {
+      await dbScope
+        .insert(templateExercises)
+        .values(diff.inserted.map((entry) => toRow(snapshot.id, entry)));
+    }
   }
 
-  async moveExercise(
-    userId: string,
-    templateId: string,
-    templateExerciseId: string,
-    direction: "up" | "down",
-  ): Promise<MoveTemplateExerciseOutcome> {
-    return db.transaction(async (tx) => {
-      const template = await loadForMutation(tx, userId, templateId);
-      if (!template) return { outcome: "not-found" };
-
-      const { forkedTemplateId, activeTemplateExercises, remappedTemplateExerciseId } =
-        await resolveActiveTemplate(tx, template, userId, templateExerciseId);
-
-      const sorted = [...activeTemplateExercises].sort(
-        (a, b) => a.position - b.position,
-      );
-      const index = sorted.findIndex(
-        (te) => te.id === remappedTemplateExerciseId,
-      );
-      const swapIndex = direction === "up" ? index - 1 : index + 1;
-      if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) {
-        return { outcome: "no-op", forkedTemplateId };
-      }
-      const current = sorted[index];
-      const swap = sorted[swapIndex];
-
-      // Swap through a scratch value (-1) to dodge the
-      // (templateId, position) unique constraint.
-      await tx
-        .update(templateExercises)
-        .set({ position: -1 })
-        .where(eq(templateExercises.id, current.id));
-      await tx
-        .update(templateExercises)
-        .set({ position: current.position })
-        .where(eq(templateExercises.id, swap.id));
-      await tx
-        .update(templateExercises)
-        .set({ position: swap.position })
-        .where(eq(templateExercises.id, current.id));
-
-      return { outcome: "moved", forkedTemplateId };
-    });
+  async delete(templateId: string): Promise<void> {
+    await dbScope.delete(templates).where(eq(templates.id, templateId));
   }
 }

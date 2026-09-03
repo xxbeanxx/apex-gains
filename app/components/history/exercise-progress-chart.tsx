@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 
-import { daysBetweenDateStrings, formatMonthDay } from "~/lib/cycle";
-import type { ExerciseProgressSeries } from "~/lib/history-charts.server";
+import { DateOnly } from "~/domain/values/date-only";
+import { formatMonthDay } from "~/lib/format";
+import type { ProgressSeriesView } from "~/services/progress-view";
 
 import { ChartTooltip } from "./chart-tooltip";
 import { formatMetricValue } from "./chart-utils";
@@ -12,14 +13,15 @@ const MARGIN = { top: 20, right: 50, bottom: 22, left: 34 };
 const CHART_W = VIEW_W - MARGIN.left - MARGIN.right;
 const CHART_H = VIEW_H - MARGIN.top - MARGIN.bottom;
 
-export function ExerciseProgressChart({ series }: { series: ExerciseProgressSeries }) {
+export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hovered, setHovered] = useState<number | null>(null);
 
   const { points } = series;
   const firstDate = points[0].date;
   const lastDate = points[points.length - 1].date;
-  const totalDays = Math.max(1, daysBetweenDateStrings(firstDate, lastDate));
+  const first = DateOnly.parse(firstDate);
+  const totalDays = Math.max(1, first.daysUntil(DateOnly.parse(lastDate)));
 
   const values = points.map((p) => p.value);
   const dataMin = Math.min(...values);
@@ -30,7 +32,7 @@ export function ExerciseProgressChart({ series }: { series: ExerciseProgressSeri
   const yMax = dataMax + pad;
 
   const xFor = (date: string) =>
-    MARGIN.left + (daysBetweenDateStrings(firstDate, date) / totalDays) * CHART_W;
+    MARGIN.left + (first.daysUntil(DateOnly.parse(date)) / totalDays) * CHART_W;
   const yFor = (value: number) =>
     MARGIN.top + CHART_H - ((value - yMin) / (yMax - yMin)) * CHART_H;
 

@@ -1,6 +1,6 @@
 import type { MiddlewareFunction } from "react-router";
 
-import { getUsersRepository } from "~/repositories/users-repository.server";
+import { getAthletesRepository } from "~/repositories/athletes-repository.server";
 
 import { getSession } from "./session.server";
 import { userContext } from "./user-context";
@@ -14,8 +14,8 @@ export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({
 
   if (!userId) { return; }
 
-  const usersRepository = await getUsersRepository();
-  const user = await usersRepository.findById(userId);
+  const athletesRepository = await getAthletesRepository();
+  const athlete = await athletesRepository.findById(userId);
 
-  if (user) { context.set(userContext, user); }
+  if (athlete) { context.set(userContext, athlete); }
 };

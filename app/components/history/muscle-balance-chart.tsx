@@ -1,4 +1,4 @@
-import type { MuscleGroupBalancePoint } from "~/lib/history-charts.server";
+import type { MuscleBalanceView } from "~/services/progress-view";
 
 import { niceAxisStep, roundedRightBarPath } from "./chart-utils";
 
@@ -7,7 +7,7 @@ const ROW_H = 30;
 const BAR_H = 18;
 const MARGIN = { top: 4, right: 40, bottom: 4, left: 96 };
 
-export function MuscleBalanceChart({ groups }: { groups: MuscleGroupBalancePoint[] }) {
+export function MuscleBalanceChart({ groups }: { groups: MuscleBalanceView[] }) {
   const chartW = VIEW_W - MARGIN.left - MARGIN.right;
   const viewH = MARGIN.top + MARGIN.bottom + groups.length * ROW_H;
 

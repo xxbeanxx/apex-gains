@@ -33,9 +33,9 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { loggerContext } from "~/lib/logger.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { ExerciseWithEquipment } from "~/repositories/exercises-repository";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
+import type { ExerciseView } from "~/services/exercise-library-service.server";
+import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
+import { getTemplateService } from "~/services/template-service.server";
 
 import type { Route } from "./+types/templates.$templateId";
 
@@ -46,21 +46,15 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const templatesRepository = await getTemplatesRepository();
-  const template = await templatesRepository.findVisibleForUser(
-    user.id,
-    params.templateId,
-  );
+  const athlete = context.get(userContext)!;
+  const templateService = await getTemplateService();
+  const template = await templateService.detail(athlete, params.templateId);
   if (!template) {
     throw data("Template not found", { status: 404 });
   }
-  const exercisesRepository = await getExercisesRepository();
-  const allExercises = await exercisesRepository.listWithEquipmentForUser(
-    user.id,
-    user.showSampleData,
-  );
-  return { template, exercises: allExercises };
+
+  const libraryService = await getExerciseLibraryService();
+  return { template, exercises: await libraryService.listExercises(athlete) };
 }
 
 const renameSchema = z.object({
@@ -77,20 +71,33 @@ const addExerciseSchema = z.object({
   targetResistance: z.coerce.number().int().positive().optional(),
 });
 
+/** See routines.$routineId.tsx's `settle` - same epilogue, same reasoning. */
+function settle(
+  outcome: { ok: true; value: { forkedId: string | null } } | { ok: false },
+) {
+  if (!outcome.ok) {
+    throw data("Template not found", { status: 404 });
+  }
+  if (outcome.value.forkedId) {
+    throw redirect(`/templates/${outcome.value.forkedId}`);
+  }
+  return { ok: true };
+}
+
 export async function action({ request, params, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
+  const athlete = context.get(userContext)!;
   const templateId = params.templateId;
-  const templatesRepository = await getTemplatesRepository();
+  const templateService = await getTemplateService();
 
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "delete") {
-    const outcome = await templatesRepository.delete(user.id, templateId);
-    if (outcome.outcome === "not-found") {
+    const outcome = await templateService.remove(athlete, templateId);
+    if (!outcome.ok && outcome.error === "not-found") {
       throw data("Template not found", { status: 404 });
     }
-    if (outcome.outcome === "sample-template") {
+    if (!outcome.ok) {
       return data(
         { error: "Sample templates can't be deleted.", intent: "delete" },
         { status: 400 },
@@ -98,44 +105,32 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     context
       .get(loggerContext)
-      .info({ userId: user.id, templateId }, "template deleted");
+      .info({ userId: athlete.id, templateId }, "template deleted");
     throw redirect("/templates");
   }
 
   if (intent === "revert") {
-    const outcome = await templatesRepository.revert(user.id, templateId);
-    if (outcome.outcome === "not-found") {
+    const outcome = await templateService.revert(athlete, templateId);
+    if (!outcome.ok && outcome.error === "not-found") {
       throw data("Template not found", { status: 404 });
     }
-    if (outcome.outcome === "nothing-to-revert") {
+    if (!outcome.ok) {
       return data(
         { error: "Nothing to revert", intent: "revert" },
         { status: 400 },
       );
     }
-    throw redirect(`/templates/${outcome.forkedFromId}`);
+    throw redirect(`/templates/${outcome.value.forkedFromId}`);
   }
 
   if (intent === "rename") {
     const result = renameSchema.safeParse({ name: formData.get("name") });
     if (!result.success) {
-      return data(
-        { error: "Invalid name", intent: "rename" },
-        { status: 400 },
-      );
+      return data({ error: "Invalid name", intent: "rename" }, { status: 400 });
     }
-    const outcome = await templatesRepository.rename(
-      user.id,
-      templateId,
-      result.data.name,
+    return settle(
+      await templateService.rename(athlete, templateId, result.data.name),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Template not found", { status: 404 });
-    }
-    if (outcome.forkedTemplateId) {
-      throw redirect(`/templates/${outcome.forkedTemplateId}`);
-    }
-    return { ok: true };
   }
 
   if (intent === "addExercise") {
@@ -152,94 +147,59 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    const outcome = await templatesRepository.addExercise(user.id, templateId, {
-      exerciseId: result.data.exerciseId,
-      targetSets: result.data.targetSets,
-      targetReps: result.data.targetReps,
-      targetWeight: result.data.targetWeight,
-      targetDurationSeconds: result.data.targetDurationMinutes
-        ? Math.round(result.data.targetDurationMinutes * 60)
-        : undefined,
-      targetSpeed: result.data.targetSpeed,
-      targetResistance: result.data.targetResistance,
-    });
-    if (outcome.outcome === "not-found") {
-      throw data("Template not found", { status: 404 });
-    }
-    if (outcome.outcome === "exercise-not-found") {
+
+    // Targets are in the athlete's own units; the service converts them.
+    const outcome = await templateService.addExercise(
+      athlete,
+      templateId,
+      result.data.exerciseId,
+      {
+        sets: result.data.targetSets,
+        reps: result.data.targetReps,
+        weight: result.data.targetWeight,
+        durationMinutes: result.data.targetDurationMinutes,
+        speed: result.data.targetSpeed,
+        resistance: result.data.targetResistance,
+      },
+    );
+    if (!outcome.ok && outcome.error === "exercise-not-found") {
       return data(
         { error: "Exercise not found", intent: "addExercise" },
         { status: 400 },
       );
     }
-    if (outcome.forkedTemplateId) {
-      throw redirect(`/templates/${outcome.forkedTemplateId}`);
-    }
-    return { ok: true };
+    return settle(outcome);
   }
 
   if (intent === "removeExercise") {
-    const templateExerciseId = String(formData.get("templateExerciseId"));
-    const outcome = await templatesRepository.removeExercise(
-      user.id,
-      templateId,
-      templateExerciseId,
+    return settle(
+      await templateService.removeExercise(
+        athlete,
+        templateId,
+        String(formData.get("templateExerciseId")),
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Template not found", { status: 404 });
-    }
-    if (outcome.forkedTemplateId) {
-      throw redirect(`/templates/${outcome.forkedTemplateId}`);
-    }
-    return { ok: true };
   }
 
   if (intent === "move") {
-    const templateExerciseId = String(formData.get("templateExerciseId"));
-    const direction = formData.get("direction") === "up" ? "up" : "down";
-    const outcome = await templatesRepository.moveExercise(
-      user.id,
-      templateId,
-      templateExerciseId,
-      direction,
+    return settle(
+      await templateService.moveExercise(
+        athlete,
+        templateId,
+        String(formData.get("templateExerciseId")),
+        formData.get("direction") === "up" ? "up" : "down",
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Template not found", { status: 404 });
-    }
-    if (outcome.forkedTemplateId) {
-      throw redirect(`/templates/${outcome.forkedTemplateId}`);
-    }
-    return { ok: true };
   }
 
   return data({ error: "Unknown action", intent: "unknown" }, { status: 400 });
 }
 
-function targetSummary(te: {
-  targetSets: number | null;
-  targetReps: number | null;
-  targetWeight: string | null;
-  targetDurationSeconds: number | null;
-  targetSpeed: string | null;
-  targetResistance: number | null;
-}) {
-  const parts: string[] = [];
-  if (te.targetSets && te.targetReps) {
-    parts.push(`${te.targetSets} x ${te.targetReps}`);
-  }
-  if (te.targetWeight) parts.push(`${te.targetWeight} lb`);
-  if (te.targetDurationSeconds) {
-    parts.push(`${Math.round(te.targetDurationSeconds / 60)} min`);
-  }
-  if (te.targetSpeed) parts.push(`${te.targetSpeed} speed`);
-  if (te.targetResistance) parts.push(`resistance ${te.targetResistance}`);
-  return parts.length > 0 ? parts.join(", ") : "No target set";
-}
 
 function AddExerciseForm({
   exerciseList,
 }: {
-  exerciseList: ExerciseWithEquipment[];
+  exerciseList: ExerciseView[];
 }) {
   const fetcher = useFetcher();
   const [exerciseId, setExerciseId] = useState<string>("");
@@ -345,9 +305,8 @@ export default function TemplateDetail({
 }: Route.ComponentProps) {
   const { template, exercises: exerciseList } = loaderData;
 
-  const exerciseCount = template.templateExercises.length;
-  const isSample = template.userId === null;
-  const isCustomized = template.forkedFromId !== null;
+  const exerciseCount = template.exercises.length;
+  const { isSample, isCustomized } = template;
 
   const deleteError =
     actionData && "error" in actionData && actionData.intent === "delete"
@@ -462,7 +421,7 @@ export default function TemplateDetail({
           />
         ) : (
           <ol className="grid gap-3 lg:grid-cols-2">
-            {template.templateExercises.map((te, index) => (
+            {template.exercises.map((te, index) => (
               <li
                 key={te.id}
                 className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm shadow-black/[0.03] transition-colors duration-(--dur) hover:border-ring/30 dark:shadow-black/20"
@@ -475,9 +434,9 @@ export default function TemplateDetail({
                     {index + 1}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{te.exercise.name}</p>
+                    <p className="truncate font-medium">{te.exerciseName}</p>
                     <p className="truncate text-sm text-muted-foreground tabular-nums">
-                      {targetSummary(te)}
+                      {te.targetSummary ?? "No target set"}
                     </p>
                   </div>
                 </div>
@@ -498,7 +457,7 @@ export default function TemplateDetail({
                     >
                       <ArrowUpIcon aria-hidden="true" />
                       <span className="sr-only">
-                        Move {te.exercise.name} up
+                        Move {te.exerciseName} up
                       </span>
                     </Button>
                   </form>
@@ -518,7 +477,7 @@ export default function TemplateDetail({
                     >
                       <ArrowDownIcon aria-hidden="true" />
                       <span className="sr-only">
-                        Move {te.exercise.name} down
+                        Move {te.exerciseName} down
                       </span>
                     </Button>
                   </form>
@@ -537,7 +496,7 @@ export default function TemplateDetail({
                     >
                       <XIcon aria-hidden="true" />
                       <span className="sr-only">
-                        Remove {te.exercise.name} from this template
+                        Remove {te.exerciseName} from this template
                       </span>
                     </Button>
                   </form>

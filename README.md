@@ -132,15 +132,29 @@ There's no separate staging slot or manual promotion step.
 
 ## Architecture notes
 
+- **A domain model owns the rules.** `app/domain/` is pure TypeScript
+  with no database, no framework and no I/O: aggregates (`Routine`,
+  `WorkoutTemplate`, `WorkoutSession`, ...) enforce their own
+  invariants, `app/services/` orchestrates them, and
+  `app/repositories/` only maps them to and from rows. Anything that
+  can be decided without asking the database is decided in
+  `app/domain/`, which is why most of the test suite runs without one.
 - **Routines are cycles, not weekdays.** A routine is an ordered list
   of day-slots (each a template or an explicit rest day). "Today's
   slot" = `(days since anchor date) mod (slot count)` - see
-  `app/lib/cycle.ts`. This is strict calendar-day math: it does not
-  pause for missed days, and a routine's anchor date can be set
-  independently of when it was activated.
+  `Routine.slotOn` in `app/domain/routine/routine.ts`. This is strict
+  calendar-day math: it does not pause for missed days, and a
+  routine's anchor date can be set independently of when it was
+  activated.
 - **Sets are logged individually**, not as one row per exercise, so
   pyramids/drop-sets are representable. Template "targets" pre-fill
   the logging form but every field is editable per set.
+- **Measurements are stored canonically** (pounds, km/h, seconds) and
+  converted to your chosen units at the edges, so the weight and
+  distance settings apply everywhere rather than to one chart label.
+  Values recorded before this was wired up are read as pounds and
+  km/h - which is what they were, unless you had switched units and
+  typed in the other one.
 - **Cardio fields differ by equipment**: treadmill logs
   duration + speed; rowing logs duration + resistance (no
   distance/pace for either - not reliably derivable from what's

@@ -2,6 +2,7 @@ import {
   and,
   asc,
   eq,
+  inArray,
   isNotNull,
   isNull,
   notInArray,
@@ -9,18 +10,24 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import { db, type Transaction } from "~/db/index.server";
-import { exerciseEquipment, exercises, type Exercise } from "~/db/schema";
+import { db, dbScope } from "~/db/index.server";
+import {
+  exerciseEquipment,
+  exercises,
+  type Exercise as ExerciseRow,
+} from "~/db/schema";
+import { Exercise } from "~/domain/exercise/exercise";
 
 import type {
-  CreateExerciseResult,
-  ExerciseDetails,
+  DeleteExerciseOutcome,
   ExercisesRepository,
-  ExerciseWithEquipment,
-  RevertExerciseResult,
-  UpdateExerciseResult,
 } from "./exercises-repository";
 
+/**
+ * Own rows, plus - when the athlete wants them - the samples they have not
+ * forked. A forked sample is excluded so the same logical exercise doesn't
+ * appear twice, once as the shared original and once as the personal copy.
+ */
 export function sampleOrOwnExercisesWhere(
   userId: string,
   showSampleData: boolean,
@@ -39,181 +46,149 @@ export function sampleOrOwnExercisesWhere(
   )!;
 }
 
-// A sample (userId null) exercise a user edits gets copied into a real,
-// per-user row - see CLAUDE.md's "Sample data and fork-on-write". Must run
-// inside the same transaction as whatever mutation triggered the fork.
-async function forkExerciseForUser(
-  tx: Transaction,
-  sample: Exercise,
-  userId: string,
-): Promise<Exercise> {
-  const existingFork = await tx.query.exercises.findFirst({
-    where: and(
-      eq(exercises.userId, userId),
-      eq(exercises.forkedFromId, sample.id),
-    ),
+function visibleToUserWhere(userId: string, exerciseId: string): SQL {
+  return and(
+    eq(exercises.id, exerciseId),
+    or(eq(exercises.userId, userId), isNull(exercises.userId)),
+  )!;
+}
+
+type RowWithLinks = ExerciseRow & {
+  equipmentLinks: { equipmentId: string }[];
+};
+
+function toExercise(row: RowWithLinks): Exercise {
+  return Exercise.fromSnapshot({
+    id: row.id,
+    userId: row.userId,
+    forkedFromId: row.forkedFromId,
+    name: row.name,
+    exerciseType: row.exerciseType,
+    muscleGroup: row.muscleGroup,
+    description: row.description,
+    createdAt: row.createdAt,
+    equipmentIds: row.equipmentLinks.map((link) => link.equipmentId),
   });
-  if (existingFork) return existingFork;
-
-  const [fork] = await tx
-    .insert(exercises)
-    .values({
-      userId,
-      forkedFromId: sample.id,
-      name: sample.name,
-      exerciseType: sample.exerciseType,
-      muscleGroup: sample.muscleGroup,
-      description: sample.description,
-    })
-    .returning();
-
-  const links = await tx.query.exerciseEquipment.findMany({
-    where: eq(exerciseEquipment.exerciseId, sample.id),
-  });
-  if (links.length > 0) {
-    await tx.insert(exerciseEquipment).values(
-      links.map((link) => ({
-        exerciseId: fork.id,
-        equipmentId: link.equipmentId,
-      })),
-    );
-  }
-
-  return fork;
 }
 
 export class DrizzleExercisesRepository implements ExercisesRepository {
-  async listWithEquipmentForUser(
+  async listFor(
     userId: string,
     showSampleData: boolean,
-  ): Promise<ExerciseWithEquipment[]> {
-    return db.query.exercises.findMany({
+  ): Promise<Exercise[]> {
+    const rows = await dbScope.query.exercises.findMany({
       where: sampleOrOwnExercisesWhere(userId, showSampleData),
       orderBy: asc(exercises.name),
-      with: { equipmentLinks: { with: { equipment: true } } },
+      with: { equipmentLinks: true },
     });
+    return rows.map(toExercise);
   }
 
-  async findById(exerciseId: string) {
-    const [row] = await db
-      .select()
-      .from(exercises)
-      .where(eq(exercises.id, exerciseId))
-      .limit(1);
-    return row ?? null;
+  async findById(exerciseId: string): Promise<Exercise | null> {
+    const row = await dbScope.query.exercises.findFirst({
+      where: eq(exercises.id, exerciseId),
+      with: { equipmentLinks: true },
+    });
+    return row ? toExercise(row) : null;
   }
 
-  async create(
+  async findManyByIds(exerciseIds: readonly string[]): Promise<Exercise[]> {
+    if (exerciseIds.length === 0) return [];
+    const rows = await dbScope.query.exercises.findMany({
+      where: inArray(exercises.id, [...exerciseIds]),
+      with: { equipmentLinks: true },
+    });
+    return rows.map(toExercise);
+  }
+
+  async findVisible(
     userId: string,
-    input: ExerciseDetails,
-  ): Promise<CreateExerciseResult> {
-    const existing = await db.query.exercises.findFirst({
-      where: and(eq(exercises.userId, userId), eq(exercises.name, input.name)),
+    exerciseId: string,
+  ): Promise<Exercise | null> {
+    const row = await dbScope.query.exercises.findFirst({
+      where: visibleToUserWhere(userId, exerciseId),
+      with: { equipmentLinks: true },
     });
-    if (existing) return { outcome: "duplicate-name" };
+    return row ? toExercise(row) : null;
+  }
 
-    const [exercise] = await db
+  async findOwnByName(userId: string, name: string): Promise<Exercise | null> {
+    const row = await dbScope.query.exercises.findFirst({
+      where: and(eq(exercises.userId, userId), eq(exercises.name, name)),
+      with: { equipmentLinks: true },
+    });
+    return row ? toExercise(row) : null;
+  }
+
+  async findForkOf(
+    userId: string,
+    sampleId: string,
+  ): Promise<Exercise | null> {
+    const row = await dbScope.query.exercises.findFirst({
+      where: and(
+        eq(exercises.userId, userId),
+        eq(exercises.forkedFromId, sampleId),
+      ),
+      with: { equipmentLinks: true },
+    });
+    return row ? toExercise(row) : null;
+  }
+
+  async save(exercise: Exercise): Promise<void> {
+    const snapshot = exercise.toSnapshot();
+
+    await dbScope
       .insert(exercises)
       .values({
-        userId,
-        name: input.name,
-        exerciseType: input.exerciseType,
-        muscleGroup: input.muscleGroup ?? null,
-        description: input.description ?? null,
+        id: snapshot.id,
+        userId: snapshot.userId,
+        forkedFromId: snapshot.forkedFromId,
+        name: snapshot.name,
+        exerciseType: snapshot.exerciseType,
+        muscleGroup: snapshot.muscleGroup,
+        description: snapshot.description,
+        createdAt: snapshot.createdAt,
       })
-      .returning();
-    return { outcome: "created", exercise };
-  }
-
-  async update(
-    userId: string,
-    exerciseId: string,
-    input: ExerciseDetails,
-  ): Promise<UpdateExerciseResult> {
-    return db.transaction(async (tx) => {
-      const exercise = await tx.query.exercises.findFirst({
-        where: eq(exercises.id, exerciseId),
+      .onConflictDoUpdate({
+        target: exercises.id,
+        set: {
+          name: snapshot.name,
+          exerciseType: snapshot.exerciseType,
+          muscleGroup: snapshot.muscleGroup,
+          description: snapshot.description,
+        },
       });
-      if (!exercise) return { outcome: "not-found" as const };
 
-      const target =
-        exercise.userId === null
-          ? await forkExerciseForUser(tx, exercise, userId)
-          : exercise;
+    // Equipment links are an unordered set with no identity of their own, so
+    // they are replaced wholesale rather than diffed - there is nothing a
+    // caller could be holding a reference to. Always inside the caller's
+    // transaction, so the exercise is never briefly unlinked.
+    await dbScope
+      .delete(exerciseEquipment)
+      .where(eq(exerciseEquipment.exerciseId, snapshot.id));
 
-      const existing = await tx.query.exercises.findFirst({
-        where: and(
-          eq(exercises.userId, userId),
-          eq(exercises.name, input.name),
-        ),
-      });
-      if (existing && existing.id !== target.id) {
-        return { outcome: "duplicate-name" as const };
-      }
-
-      await tx
-        .update(exercises)
-        .set({
-          name: input.name,
-          exerciseType: input.exerciseType,
-          muscleGroup: input.muscleGroup ?? null,
-          description: input.description ?? null,
-        })
-        .where(eq(exercises.id, target.id));
-      return { outcome: "updated" as const };
-    });
-  }
-
-  async toggleEquipment(
-    userId: string,
-    exerciseId: string,
-    equipmentId: string,
-    checked: boolean,
-  ): Promise<void> {
-    await db.transaction(async (tx) => {
-      const exercise = await tx.query.exercises.findFirst({
-        where: eq(exercises.id, exerciseId),
-      });
-      if (!exercise) return;
-
-      const targetExerciseId =
-        exercise.userId === null
-          ? (await forkExerciseForUser(tx, exercise, userId)).id
-          : exercise.id;
-
-      if (checked) {
-        await tx
-          .insert(exerciseEquipment)
-          .values({ exerciseId: targetExerciseId, equipmentId })
-          .onConflictDoNothing();
-      } else {
-        await tx
-          .delete(exerciseEquipment)
-          .where(
-            and(
-              eq(exerciseEquipment.exerciseId, targetExerciseId),
-              eq(exerciseEquipment.equipmentId, equipmentId),
-            ),
-          );
-      }
-    });
-  }
-
-  async revert(
-    userId: string,
-    exerciseId: string,
-  ): Promise<RevertExerciseResult> {
-    const exercise = await db.query.exercises.findFirst({
-      where: and(eq(exercises.id, exerciseId), eq(exercises.userId, userId)),
-    });
-    if (!exercise || !exercise.forkedFromId) {
-      return { outcome: "nothing-to-revert" };
+    if (snapshot.equipmentIds.length > 0) {
+      await dbScope.insert(exerciseEquipment).values(
+        snapshot.equipmentIds.map((equipmentId) => ({
+          exerciseId: snapshot.id,
+          equipmentId,
+        })),
+      );
     }
+  }
+
+  /**
+   * `on delete restrict` on the template and logged-set FKs means a movement
+   * still referenced by history refuses to go. That rejection is the answer,
+   * not an error to propagate - reverting a customisation that is still in
+   * use should tell the athlete why.
+   */
+  async delete(exerciseId: string): Promise<DeleteExerciseOutcome> {
     try {
-      await db.delete(exercises).where(eq(exercises.id, exercise.id));
+      await dbScope.delete(exercises).where(eq(exercises.id, exerciseId));
+      return "deleted";
     } catch {
-      return { outcome: "in-use" };
+      return "in-use";
     }
-    return { outcome: "reverted" };
   }
 }

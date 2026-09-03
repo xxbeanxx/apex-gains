@@ -37,10 +37,12 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
-import type { Equipment } from "~/db/schema";
-import { getEquipmentRepository } from "~/repositories/equipment-repository.server";
-import type { ExerciseWithEquipment } from "~/repositories/exercises-repository";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
+import { EXERCISE_TYPES } from "~/domain/exercise/exercise-type";
+import type {
+  EquipmentView,
+  ExerciseView,
+} from "~/services/exercise-library-service.server";
+import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
 
 import type { Route } from "./+types/exercises";
 
@@ -54,21 +56,9 @@ const typeLabels: Record<string, string> = {
 };
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-
-  const equipmentRepository = await getEquipmentRepository();
-  const exercisesRepository = await getExercisesRepository();
-
-  const allEquipment = await equipmentRepository.listForUser(
-    user.id,
-    user.showSampleData,
-  );
-  const allExercises = await exercisesRepository.listWithEquipmentForUser(
-    user.id,
-    user.showSampleData,
-  );
-
-  return { equipment: allEquipment, exercises: allExercises };
+  const athlete = context.get(userContext)!;
+  const libraryService = await getExerciseLibraryService();
+  return await libraryService.library(athlete);
 }
 
 const addEquipmentSchema = z.object({
@@ -83,7 +73,7 @@ const toggleSchema = z.object({
 
 const exerciseDetailsSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
-  exerciseType: z.enum(["strength", "cardio"]),
+  exerciseType: z.enum(EXERCISE_TYPES),
   muscleGroup: z
     .string()
     .trim()
@@ -99,12 +89,11 @@ const exerciseDetailsSchema = z.object({
 });
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
+  const athlete = context.get(userContext)!;
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const equipmentRepository = await getEquipmentRepository();
-  const exercisesRepository = await getExercisesRepository();
+  const libraryService = await getExerciseLibraryService();
 
   if (intent === "addEquipment") {
     const result = addEquipmentSchema.safeParse({ name: formData.get("name") });
@@ -114,24 +103,27 @@ export async function action({ request, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    await equipmentRepository.add(user.id, result.data.name);
+    await libraryService.addEquipment(athlete, result.data.name);
     return { ok: true };
   }
 
   if (intent === "deleteEquipment") {
-    const id = String(formData.get("equipmentId"));
-    await equipmentRepository.remove(user.id, id);
+    await libraryService.removeEquipment(
+      athlete,
+      String(formData.get("equipmentId")),
+    );
     return { ok: true };
   }
 
   if (intent === "toggleExerciseEquipment") {
-    const raw = Object.fromEntries(formData);
-    const result = toggleSchema.safeParse(raw);
+    const result = toggleSchema.safeParse(Object.fromEntries(formData));
     if (!result.success) {
       return data({ error: "Invalid toggle" }, { status: 400 });
     }
-    await exercisesRepository.toggleEquipment(
-      user.id,
+    // A toggle on a since-deleted exercise is ignored rather than surfaced -
+    // the list is about to revalidate and the row will be gone anyway.
+    await libraryService.setExerciseEquipment(
+      athlete,
       result.data.exerciseId,
       result.data.equipmentId,
       result.data.checked === "true",
@@ -140,16 +132,20 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "createExercise") {
-    const raw = Object.fromEntries(formData);
-    const result = exerciseDetailsSchema.safeParse(raw);
+    const result = exerciseDetailsSchema.safeParse(Object.fromEntries(formData));
     if (!result.success) {
       return data(
         { error: result.error.issues[0]?.message ?? "Invalid exercise" },
         { status: 400 },
       );
     }
-    const outcome = await exercisesRepository.create(user.id, result.data);
-    if (outcome.outcome === "duplicate-name") {
+    const outcome = await libraryService.createExercise(athlete, {
+      name: result.data.name,
+      exerciseType: result.data.exerciseType,
+      muscleGroup: result.data.muscleGroup ?? null,
+      description: result.data.description ?? null,
+    });
+    if (!outcome.ok) {
       return data(
         { error: "An exercise with this name already exists" },
         { status: 400 },
@@ -159,9 +155,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "updateExercise") {
-    const exerciseId = String(formData.get("exerciseId"));
-    const raw = Object.fromEntries(formData);
-    const result = exerciseDetailsSchema.safeParse(raw);
+    const result = exerciseDetailsSchema.safeParse(Object.fromEntries(formData));
     if (!result.success) {
       return data(
         { error: result.error.issues[0]?.message ?? "Invalid exercise" },
@@ -169,37 +163,42 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    const outcome = await exercisesRepository.update(
-      user.id,
-      exerciseId,
-      result.data,
+    const outcome = await libraryService.updateExercise(
+      athlete,
+      String(formData.get("exerciseId")),
+      {
+        name: result.data.name,
+        exerciseType: result.data.exerciseType,
+        muscleGroup: result.data.muscleGroup ?? null,
+        description: result.data.description ?? null,
+      },
     );
-    if (outcome.outcome === "duplicate-name") {
-      return data(
-        { error: "An exercise with this name already exists" },
-        { status: 400 },
-      );
-    }
-    if (outcome.outcome === "not-found") {
-      return data({ error: "Exercise not found" }, { status: 404 });
+    if (!outcome.ok) {
+      return outcome.error === "not-found"
+        ? data({ error: "Exercise not found" }, { status: 404 })
+        : data(
+            { error: "An exercise with this name already exists" },
+            { status: 400 },
+          );
     }
     return { ok: true };
   }
 
   if (intent === "revertExercise") {
-    const exerciseId = String(formData.get("exerciseId"));
-    const outcome = await exercisesRepository.revert(user.id, exerciseId);
-    if (outcome.outcome === "nothing-to-revert") {
-      return data({ error: "Nothing to revert" }, { status: 400 });
-    }
-    if (outcome.outcome === "in-use") {
-      return data(
-        {
-          error:
-            "This customization is used in a template or logged workout — remove it from those first.",
-        },
-        { status: 400 },
-      );
+    const outcome = await libraryService.revertExercise(
+      athlete,
+      String(formData.get("exerciseId")),
+    );
+    if (!outcome.ok) {
+      return outcome.error === "nothing-to-revert"
+        ? data({ error: "Nothing to revert" }, { status: 400 })
+        : data(
+            {
+              error:
+                "This customization is used in a template or logged workout — remove it from those first.",
+            },
+            { status: 400 },
+          );
     }
     return { ok: true };
   }
@@ -272,15 +271,15 @@ function ExerciseEditorDialog({
   allEquipment,
   children,
 }: {
-  exercise: ExerciseWithEquipment;
-  allEquipment: Equipment[];
+  exercise: ExerciseView;
+  allEquipment: EquipmentView[];
   /** The trigger. The whole library row is the control that opens this. */
   children: ReactNode;
 }) {
   const fetcher = useFetcher();
   const revertFetcher = useFetcher();
-  const linkedIds = new Set(exercise.equipmentLinks.map((l) => l.equipment.id));
-  const isCustomized = exercise.forkedFromId !== null;
+  const linkedIds = new Set(exercise.equipment.map((item) => item.id));
+  const isCustomized = exercise.canRevert;
 
   const error =
     fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
@@ -452,7 +451,7 @@ function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
   );
 }
 
-function EquipmentRow({ equipment }: { equipment: Equipment }) {
+function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
   const fetcher = useFetcher();
 
   return (
@@ -463,7 +462,7 @@ function EquipmentRow({ equipment }: { equipment: Equipment }) {
       hidden={fetcher.state !== "idle"}
     >
       <span className="min-w-0 flex-1 text-pretty">{equipment.name}</span>
-      {equipment.userId === null ? (
+      {equipment.isSample ? (
         <Badge variant="outline">Sample</Badge>
       ) : (
         <fetcher.Form method="post" className="flex">
@@ -483,7 +482,7 @@ function EquipmentDialog({
   equipment,
   trigger,
 }: {
-  equipment: Equipment[];
+  equipment: EquipmentView[];
   trigger: ReactNode;
 }) {
   const fetcher = useFetcher();
@@ -556,7 +555,7 @@ const muscleGroupOrder = ["chest", "back", "shoulders", "arms", "core", "legs"];
 const cardioGroup = "cardio";
 const ungroupedGroup = "other";
 
-function groupKeyFor(exercise: ExerciseWithEquipment) {
+function groupKeyFor(exercise: ExerciseView) {
   if (exercise.muscleGroup?.trim()) {
     return exercise.muscleGroup.trim().toLowerCase();
   }
@@ -570,8 +569,8 @@ function groupRank(key: string) {
   return index === -1 ? muscleGroupOrder.length : index;
 }
 
-function groupExercises(exercises: ExerciseWithEquipment[]) {
-  const groups = new Map<string, ExerciseWithEquipment[]>();
+function groupExercises(exercises: ExerciseView[]) {
+  const groups = new Map<string, ExerciseView[]>();
   for (const exercise of exercises) {
     const key = groupKeyFor(exercise);
     const list = groups.get(key);
@@ -627,8 +626,8 @@ function ExerciseRow({
   exercise,
   allEquipment,
 }: {
-  exercise: ExerciseWithEquipment;
-  allEquipment: Equipment[];
+  exercise: ExerciseView;
+  allEquipment: EquipmentView[];
 }) {
   return (
     <li>
@@ -640,7 +639,7 @@ function ExerciseRow({
           <span className="min-w-0 flex-1 font-medium text-pretty">
             {exercise.name}
           </span>
-          {exercise.userId === null ? null : exercise.forkedFromId !== null ? (
+          {exercise.isSample ? null : exercise.canRevert ? (
             <Badge variant="secondary">Customized</Badge>
           ) : (
             <Badge variant="brand-subtle">Yours</Badge>
@@ -671,7 +670,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
     return exerciseList.filter((exercise) => {
       if (
         equipmentId !== "all" &&
-        !exercise.equipmentLinks.some((l) => l.equipment.id === equipmentId)
+        !exercise.equipment.some((item) => item.id === equipmentId)
       ) {
         return false;
       }
@@ -679,8 +678,8 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
       return (
         exercise.name.toLowerCase().includes(needle) ||
         (exercise.muscleGroup ?? "").toLowerCase().includes(needle) ||
-        exercise.equipmentLinks.some((l) =>
-          l.equipment.name.toLowerCase().includes(needle),
+        exercise.equipment.some((item) =>
+          item.name.toLowerCase().includes(needle),
         )
       );
     });

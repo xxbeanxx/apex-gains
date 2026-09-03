@@ -1,11 +1,11 @@
 import { TrophyIcon } from "lucide-react";
 
-import { formatMonthDay } from "~/lib/cycle";
-import type { PersonalRecord } from "~/lib/history-charts.server";
+import { formatMonthDay } from "~/lib/format";
+import type { PersonalRecordView } from "~/services/progress-view";
 
 import { formatMetricValue } from "./chart-utils";
 
-export function PersonalRecordsList({ records }: { records: PersonalRecord[] }) {
+export function PersonalRecordsList({ records }: { records: PersonalRecordView[] }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
       {records.map((record) => (

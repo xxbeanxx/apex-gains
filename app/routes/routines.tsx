@@ -15,9 +15,9 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { todayDateString } from "~/lib/cycle";
+import { DateOnly } from "~/domain/values/date-only";
 import { loggerContext } from "~/lib/logger.server";
-import { getRoutinesRepository } from "~/repositories/routines-repository.server";
+import { getRoutineService } from "~/services/routine-service.server";
 
 import type { Route } from "./+types/routines";
 
@@ -30,13 +30,9 @@ const createRoutineSchema = z.object({
 });
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const routinesRepository = await getRoutinesRepository();
-  const visibleRoutines = await routinesRepository.listForUser(
-    user.id,
-    user.showSampleData,
-  );
-  return { routines: visibleRoutines };
+  const athlete = context.get(userContext)!;
+  const routineService = await getRoutineService();
+  return { routines: await routineService.list(athlete) };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -53,11 +49,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  const routinesRepository = await getRoutinesRepository();
-  const routine = await routinesRepository.create(
-    user.id,
+  // A new routine is anchored to today, so its first slot is today's - the
+  // athlete can re-anchor it afterwards.
+  const routineService = await getRoutineService();
+  const routine = await routineService.create(
+    user,
     result.data.name,
-    todayDateString(),
+    DateOnly.today(),
   );
 
   context
@@ -137,15 +135,15 @@ export default function Routines({
                       {routine.isActive ? (
                         <Badge variant="brand">Active</Badge>
                       ) : null}
-                      {routine.userId === null ? (
+                      {routine.isSample ? (
                         <Badge variant="outline">Sample</Badge>
-                      ) : routine.forkedFromId !== null ? (
+                      ) : routine.isCustomized ? (
                         <Badge variant="secondary">Customized</Badge>
                       ) : null}
                     </span>
                     <span className="text-sm text-muted-foreground tabular-nums">
-                      {routine.slots.length} day
-                      {routine.slots.length === 1 ? "" : "s"}
+                      {routine.slotCount} day
+                      {routine.slotCount === 1 ? "" : "s"}
                     </span>
                   </CardContent>
                 </Card>

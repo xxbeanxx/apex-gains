@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { formatFullDate } from "~/lib/cycle";
-import type { HeatmapDay } from "~/lib/history-charts.server";
+import { formatFullDate } from "~/lib/format";
+import type { HeatmapDayView } from "~/services/progress-view";
 
 import { ChartTooltip } from "./chart-tooltip";
 
@@ -31,7 +31,7 @@ function shortMonthLabel(dateStr: string): string {
   return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: "short" });
 }
 
-export function ConsistencyHeatmap({ days }: { days: HeatmapDay[] }) {
+export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const weeks = days.length / 7;
   const chartW = MARGIN.left + MARGIN.right + weeks * STEP - GAP;

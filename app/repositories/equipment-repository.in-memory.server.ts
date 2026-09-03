@@ -1,45 +1,56 @@
-import { randomUUID } from "node:crypto";
-
-import type { Equipment } from "~/db/schema";
+import { Equipment, type EquipmentSnapshot } from "~/domain/equipment/equipment";
 
 import type { EquipmentRepository } from "./equipment-repository";
 
-// Dev-convenience adapter for running the app without a database
-// configured (see equipment-repository.server.ts for the selection rule).
-// Data lives only for the life of the process.
+// Dev-convenience adapter - see equipment-repository.server.ts for when it's
+// selected, and athletes-repository.in-memory.server.ts for why it stores
+// snapshots rather than aggregates.
 export class InMemoryEquipmentRepository implements EquipmentRepository {
-  private readonly equipmentById = new Map<string, Equipment>();
+  private readonly byId = new Map<string, EquipmentSnapshot>();
 
-  async listForUser(userId: string, showSampleData: boolean) {
-    const rows = [...this.equipmentById.values()].filter(
-      (row) => row.userId === userId || (showSampleData && row.userId === null),
+  async listFor(
+    userId: string,
+    showSampleData: boolean,
+  ): Promise<Equipment[]> {
+    return [...this.byId.values()]
+      .filter(
+        (snapshot) =>
+          snapshot.userId === userId ||
+          (showSampleData && snapshot.userId === null),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(Equipment.fromSnapshot);
+  }
+
+  async findById(equipmentId: string): Promise<Equipment | null> {
+    const snapshot = this.byId.get(equipmentId);
+    return snapshot ? Equipment.fromSnapshot(snapshot) : null;
+  }
+
+  async findManyByIds(
+    equipmentIds: readonly string[],
+  ): Promise<Equipment[]> {
+    return equipmentIds
+      .map((id) => this.byId.get(id))
+      .filter(
+        (snapshot): snapshot is EquipmentSnapshot => snapshot !== undefined,
+      )
+      .map(Equipment.fromSnapshot);
+  }
+
+  async findByName(name: string): Promise<Equipment | null> {
+    const snapshot = [...this.byId.values()].find(
+      (candidate) => candidate.name === name,
     );
-    return rows.sort((a, b) => a.name.localeCompare(b.name));
+    return snapshot ? Equipment.fromSnapshot(snapshot) : null;
   }
 
-  async findById(equipmentId: string) {
-    return this.equipmentById.get(equipmentId) ?? null;
+  async save(item: Equipment): Promise<void> {
+    const snapshot = item.toSnapshot();
+    this.byId.set(snapshot.id, snapshot);
   }
 
-  async add(userId: string, name: string) {
-    const nameTaken = [...this.equipmentById.values()].some(
-      (row) => row.name === name,
-    );
-    if (nameTaken) return;
-
-    const equipment: Equipment = {
-      id: randomUUID(),
-      userId,
-      name,
-      createdAt: new Date(),
-    };
-    this.equipmentById.set(equipment.id, equipment);
-  }
-
-  async remove(userId: string, equipmentId: string) {
-    const row = this.equipmentById.get(equipmentId);
-    if (row?.userId === userId) {
-      this.equipmentById.delete(equipmentId);
-    }
+  async delete(equipmentId: string): Promise<void> {
+    this.byId.delete(equipmentId);
   }
 }

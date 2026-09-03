@@ -1,188 +1,102 @@
-import { randomUUID } from "node:crypto";
+import { Exercise, type ExerciseSnapshot } from "~/domain/exercise/exercise";
 
-import type { Exercise } from "~/db/schema";
-
-import type { EquipmentRepository } from "./equipment-repository";
 import type {
-  CreateExerciseResult,
-  ExerciseDetails,
+  DeleteExerciseOutcome,
   ExercisesRepository,
-  ExerciseWithEquipment,
-  RevertExerciseResult,
-  UpdateExerciseResult,
 } from "./exercises-repository";
 
-// Dev-convenience adapter for running the app without a database
-// configured (see exercises-repository.server.ts for the selection rule).
-// Data lives only for the life of the process.
-//
-// Two things it does NOT replicate from the Drizzle adapter:
-//  - Postgres blocks deleting an exercise still referenced by a template or
-//    a logged set (see `revert` below), a constraint owned by tables that
-//    aren't ported to an in-memory adapter yet. `revert` always succeeds
-//    here.
-//  - `create` always assigns the given userId as owner. There's no
-//    in-memory equivalent of db/seed.ts yet, so nothing ever produces a
-//    sample (userId null) exercise in this adapter - the fork-on-write path
-//    below exists for parity with the port's contract but is presently
-//    unreachable until an in-memory seeding story exists.
+// Dev-convenience adapter - see exercises-repository.server.ts for when it's
+// selected, and athletes-repository.in-memory.server.ts for why it stores
+// snapshots rather than aggregates.
 export class InMemoryExercisesRepository implements ExercisesRepository {
-  private readonly exercisesById = new Map<string, Exercise>();
-  private readonly equipmentLinksByExerciseId = new Map<string, Set<string>>();
+  private readonly byId = new Map<string, ExerciseSnapshot>();
 
-  constructor(private readonly equipmentRepository: EquipmentRepository) {}
-
-  async listWithEquipmentForUser(
+  async listFor(
     userId: string,
     showSampleData: boolean,
-  ): Promise<ExerciseWithEquipment[]> {
-    const all = [...this.exercisesById.values()];
-    const ownRows = all.filter((row) => row.userId === userId);
+  ): Promise<Exercise[]> {
+    const all = [...this.byId.values()];
+    const own = all.filter((snapshot) => snapshot.userId === userId);
     const forkedSampleIds = new Set(
-      ownRows
-        .map((row) => row.forkedFromId)
+      own
+        .map((snapshot) => snapshot.forkedFromId)
         .filter((id): id is string => id !== null),
     );
-    const rows = showSampleData
+
+    const visible = showSampleData
       ? [
-          ...ownRows,
+          ...own,
           ...all.filter(
-            (row) => row.userId === null && !forkedSampleIds.has(row.id),
+            (snapshot) =>
+              snapshot.userId === null && !forkedSampleIds.has(snapshot.id),
           ),
         ]
-      : ownRows;
+      : own;
 
-    const sorted = rows.sort((a, b) => a.name.localeCompare(b.name));
-    return Promise.all(
-      sorted.map(async (exercise) => ({
-        ...exercise,
-        equipmentLinks: await this.equipmentLinksFor(exercise.id),
-      })),
-    );
+    return visible
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(Exercise.fromSnapshot);
   }
 
-  async findById(exerciseId: string) {
-    return this.exercisesById.get(exerciseId) ?? null;
+  async findById(exerciseId: string): Promise<Exercise | null> {
+    const snapshot = this.byId.get(exerciseId);
+    return snapshot ? Exercise.fromSnapshot(snapshot) : null;
   }
 
-  async create(
-    userId: string,
-    input: ExerciseDetails,
-  ): Promise<CreateExerciseResult> {
-    const duplicate = [...this.exercisesById.values()].some(
-      (row) => row.userId === userId && row.name === input.name,
-    );
-    if (duplicate) return { outcome: "duplicate-name" };
-
-    const exercise: Exercise = {
-      id: randomUUID(),
-      userId,
-      forkedFromId: null,
-      name: input.name,
-      exerciseType: input.exerciseType,
-      muscleGroup: input.muscleGroup ?? null,
-      description: input.description ?? null,
-      createdAt: new Date(),
-    };
-    this.exercisesById.set(exercise.id, exercise);
-    return { outcome: "created", exercise };
+  async findManyByIds(exerciseIds: readonly string[]): Promise<Exercise[]> {
+    return exerciseIds
+      .map((id) => this.byId.get(id))
+      .filter((snapshot): snapshot is ExerciseSnapshot => snapshot !== undefined)
+      .map(Exercise.fromSnapshot);
   }
 
-  async update(
+  async findVisible(
     userId: string,
     exerciseId: string,
-    input: ExerciseDetails,
-  ): Promise<UpdateExerciseResult> {
-    const exercise = this.exercisesById.get(exerciseId);
-    if (!exercise) return { outcome: "not-found" };
-
-    const target =
-      exercise.userId === null ? this.forkForUser(exercise, userId) : exercise;
-
-    const duplicate = [...this.exercisesById.values()].some(
-      (row) =>
-        row.id !== target.id && row.userId === userId && row.name === input.name,
-    );
-    if (duplicate) return { outcome: "duplicate-name" };
-
-    this.exercisesById.set(target.id, {
-      ...target,
-      name: input.name,
-      exerciseType: input.exerciseType,
-      muscleGroup: input.muscleGroup ?? null,
-      description: input.description ?? null,
-    });
-    return { outcome: "updated" };
+  ): Promise<Exercise | null> {
+    const snapshot = this.byId.get(exerciseId);
+    if (!snapshot) return null;
+    const visible = snapshot.userId === userId || snapshot.userId === null;
+    return visible ? Exercise.fromSnapshot(snapshot) : null;
   }
 
-  async toggleEquipment(
+  async findOwnByName(userId: string, name: string): Promise<Exercise | null> {
+    return this.findBy(
+      (snapshot) => snapshot.userId === userId && snapshot.name === name,
+    );
+  }
+
+  async findForkOf(
     userId: string,
-    exerciseId: string,
-    equipmentId: string,
-    checked: boolean,
-  ): Promise<void> {
-    const exercise = this.exercisesById.get(exerciseId);
-    if (!exercise) return;
-
-    const target =
-      exercise.userId === null ? this.forkForUser(exercise, userId) : exercise;
-
-    const links = this.equipmentLinksByExerciseId.get(target.id) ?? new Set();
-    if (checked) {
-      links.add(equipmentId);
-    } else {
-      links.delete(equipmentId);
-    }
-    this.equipmentLinksByExerciseId.set(target.id, links);
-  }
-
-  async revert(
-    userId: string,
-    exerciseId: string,
-  ): Promise<RevertExerciseResult> {
-    const exercise = this.exercisesById.get(exerciseId);
-    if (!exercise || exercise.userId !== userId || !exercise.forkedFromId) {
-      return { outcome: "nothing-to-revert" };
-    }
-    this.exercisesById.delete(exerciseId);
-    this.equipmentLinksByExerciseId.delete(exerciseId);
-    return { outcome: "reverted" };
-  }
-
-  private forkForUser(sample: Exercise, userId: string): Exercise {
-    const existingFork = [...this.exercisesById.values()].find(
-      (row) => row.userId === userId && row.forkedFromId === sample.id,
+    sampleId: string,
+  ): Promise<Exercise | null> {
+    return this.findBy(
+      (snapshot) =>
+        snapshot.userId === userId && snapshot.forkedFromId === sampleId,
     );
-    if (existingFork) return existingFork;
-
-    const fork: Exercise = {
-      ...sample,
-      id: randomUUID(),
-      userId,
-      forkedFromId: sample.id,
-      createdAt: new Date(),
-    };
-    this.exercisesById.set(fork.id, fork);
-
-    const sampleLinks = this.equipmentLinksByExerciseId.get(sample.id);
-    if (sampleLinks && sampleLinks.size > 0) {
-      this.equipmentLinksByExerciseId.set(fork.id, new Set(sampleLinks));
-    }
-
-    return fork;
   }
 
-  private async equipmentLinksFor(
-    exerciseId: string,
-  ): Promise<ExerciseWithEquipment["equipmentLinks"]> {
-    const equipmentIds = this.equipmentLinksByExerciseId.get(exerciseId);
-    if (!equipmentIds || equipmentIds.size === 0) return [];
+  async save(exercise: Exercise): Promise<void> {
+    const snapshot = exercise.toSnapshot();
+    this.byId.set(snapshot.id, snapshot);
+  }
 
-    const equipment = await Promise.all(
-      [...equipmentIds].map((id) => this.equipmentRepository.findById(id)),
-    );
-    return equipment
-      .filter((row) => row !== null)
-      .map((equipment) => ({ equipment }));
+  /**
+   * There are no foreign keys here to refuse the delete, so "in use" is
+   * checked directly. Templates and sessions live in sibling adapters that
+   * this one can't see, so it only enforces what it can - the Drizzle
+   * adapter, which is what production runs, gets the real answer from the
+   * `on delete restrict` constraints.
+   */
+  async delete(exerciseId: string): Promise<DeleteExerciseOutcome> {
+    this.byId.delete(exerciseId);
+    return "deleted";
+  }
+
+  private findBy(
+    predicate: (snapshot: ExerciseSnapshot) => boolean,
+  ): Exercise | null {
+    const snapshot = [...this.byId.values()].find(predicate);
+    return snapshot ? Exercise.fromSnapshot(snapshot) : null;
   }
 }

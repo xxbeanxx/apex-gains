@@ -16,7 +16,7 @@ import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { loggerContext } from "~/lib/logger.server";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
+import { getTemplateService } from "~/services/template-service.server";
 
 import type { Route } from "./+types/templates";
 
@@ -29,13 +29,9 @@ const createTemplateSchema = z.object({
 });
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const templatesRepository = await getTemplatesRepository();
-  const visibleTemplates = await templatesRepository.listForUser(
-    user.id,
-    user.showSampleData,
-  );
-  return { templates: visibleTemplates };
+  const athlete = context.get(userContext)!;
+  const templateService = await getTemplateService();
+  return { templates: await templateService.list(athlete) };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -52,8 +48,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  const templatesRepository = await getTemplatesRepository();
-  const template = await templatesRepository.create(user.id, result.data.name);
+  const templateService = await getTemplateService();
+  const template = await templateService.create(user, result.data.name);
 
   context
     .get(loggerContext)
@@ -129,15 +125,15 @@ export default function Templates({
                       >
                         {template.name}
                       </Link>
-                      {template.userId === null ? (
+                      {template.isSample ? (
                         <Badge variant="outline">Sample</Badge>
-                      ) : template.forkedFromId !== null ? (
+                      ) : template.isCustomized ? (
                         <Badge variant="secondary">Customized</Badge>
                       ) : null}
                     </span>
                     <span className="text-sm text-muted-foreground tabular-nums">
-                      {template.templateExercises.length} exercise
-                      {template.templateExercises.length === 1 ? "" : "s"}
+                      {template.exerciseCount} exercise
+                      {template.exerciseCount === 1 ? "" : "s"}
                     </span>
                   </CardContent>
                 </Card>

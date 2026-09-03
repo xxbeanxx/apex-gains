@@ -1,152 +1,187 @@
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 
-import { db } from "~/db/index.server";
-import { sessionSets, workoutSessions } from "~/db/schema";
+import { dbScope } from "~/db/index.server";
+import {
+  sessionSets,
+  workoutSessions,
+  type SessionSet as SessionSetRow,
+  type WorkoutSession as WorkoutSessionRow,
+} from "~/db/schema";
+import { WorkoutSession } from "~/domain/session/workout-session";
+import type { DateOnly } from "~/domain/values/date-only";
 
-import type {
-  NewSessionSet,
-  RemoveSetOutcome,
-  SessionContext,
-  WorkoutSessionsRepository,
-  WorkoutSessionWithSets,
-} from "./workout-sessions-repository";
+import { diffChildren } from "./shared/diff-children";
+import type { WorkoutSessionsRepository } from "./workout-sessions-repository";
+
+type RowWithSets = WorkoutSessionRow & { sets: SessionSetRow[] };
+
+function toSession(row: RowWithSets): WorkoutSession {
+  return WorkoutSession.fromSnapshot({
+    id: row.id,
+    userId: row.userId,
+    date: row.date,
+    routineId: row.routineId,
+    templateId: row.templateId,
+    isRestDay: row.isRestDay,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    sets: row.sets.map((set) => ({
+      id: set.id,
+      exerciseId: set.exerciseId,
+      setNumber: set.setNumber,
+      reps: set.reps,
+      weight: set.weight,
+      durationSeconds: set.durationSeconds,
+      speed: set.speed,
+      resistanceLevel: set.resistanceLevel,
+      createdAt: set.createdAt,
+    })),
+  });
+}
+
+const withSets = {
+  sets: { orderBy: asc(sessionSets.createdAt) },
+} as const;
 
 export class DrizzleWorkoutSessionsRepository
   implements WorkoutSessionsRepository
 {
-  async getOrCreateForDate(
+  async findForDate(
     userId: string,
-    dateStr: string,
-    context: SessionContext,
-  ) {
-    const inserted = await db
+    date: DateOnly,
+  ): Promise<WorkoutSession | null> {
+    const row = await dbScope.query.workoutSessions.findFirst({
+      where: and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.date, date.value),
+      ),
+      with: withSets,
+    });
+    return row ? toSession(row) : null;
+  }
+
+  /**
+   * Inserting is the lock: the `(userId, date)` unique constraint means two
+   * requests opening the same day can't both win, so the loser reads back
+   * the winner's session instead of failing. A freshly opened session has no
+   * sets, hence the empty list on the insert path.
+   */
+  async add(session: WorkoutSession): Promise<WorkoutSession> {
+    const snapshot = session.toSnapshot();
+
+    const inserted = await dbScope
       .insert(workoutSessions)
       .values({
-        userId,
-        date: dateStr,
-        routineId: context.routineId,
-        templateId: context.templateId,
-        isRestDay: context.isRestDay,
+        id: snapshot.id,
+        userId: snapshot.userId,
+        date: snapshot.date,
+        routineId: snapshot.routineId,
+        templateId: snapshot.templateId,
+        isRestDay: snapshot.isRestDay,
+        createdAt: snapshot.createdAt,
+        updatedAt: snapshot.updatedAt,
       })
       .onConflictDoNothing({
         target: [workoutSessions.userId, workoutSessions.date],
       })
       .returning();
-    if (inserted.length > 0) return { session: inserted[0], created: true };
 
-    const [session] = await db
-      .select()
-      .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.userId, userId),
-          eq(workoutSessions.date, dateStr),
-        ),
-      )
-      .limit(1);
-    return { session, created: false };
-  }
+    if (inserted.length > 0) return toSession({ ...inserted[0], sets: [] });
 
-  async findWithSetsForDate(
-    userId: string,
-    dateStr: string,
-  ): Promise<WorkoutSessionWithSets | null> {
-    const session = await db.query.workoutSessions.findFirst({
-      where: (ws, { and, eq }) =>
-        and(eq(ws.userId, userId), eq(ws.date, dateStr)),
-      with: {
-        sets: {
-          with: { exercise: true },
-          orderBy: (s, { asc }) => asc(s.createdAt),
-        },
-      },
+    const existing = await dbScope.query.workoutSessions.findFirst({
+      where: and(
+        eq(workoutSessions.userId, snapshot.userId),
+        eq(workoutSessions.date, snapshot.date),
+      ),
+      with: withSets,
     });
-    return session ?? null;
+    if (!existing) {
+      // Neither inserted nor found: the row was deleted between the two
+      // statements. Nothing sensible to return, and silently inventing a
+      // session would hide a real problem.
+      throw new Error(
+        `Failed to open a workout session for ${snapshot.date}`,
+      );
+    }
+    return toSession(existing);
   }
 
-  async listRecentWithSetsForUser(
+  async listRecent(
     userId: string,
     limit: number,
-  ): Promise<WorkoutSessionWithSets[]> {
-    return db.query.workoutSessions.findMany({
+  ): Promise<WorkoutSession[]> {
+    const rows = await dbScope.query.workoutSessions.findMany({
       where: eq(workoutSessions.userId, userId),
       orderBy: desc(workoutSessions.date),
       limit,
-      with: {
-        sets: {
-          with: { exercise: true },
-          orderBy: (s, { asc }) => asc(s.createdAt),
-        },
-      },
+      with: withSets,
     });
+    return rows.map(toSession);
   }
 
   async listForDateRange(
     userId: string,
-    startDate: string,
-    endDateExclusive: string,
-  ) {
-    return db
-      .select()
-      .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.userId, userId),
-          gte(workoutSessions.date, startDate),
-          lt(workoutSessions.date, endDateExclusive),
-        ),
-      );
-  }
-
-  async listSetSessionExercisePairs(sessionIds: string[]) {
-    if (sessionIds.length === 0) return [];
-    return db
-      .select({
-        sessionId: sessionSets.sessionId,
-        exerciseId: sessionSets.exerciseId,
-      })
-      .from(sessionSets)
-      .where(inArray(sessionSets.sessionId, sessionIds));
-  }
-
-  async addSet(sessionId: string, exerciseId: string, input: NewSessionSet) {
-    const existingSets = await db
-      .select()
-      .from(sessionSets)
-      .where(
-        and(
-          eq(sessionSets.sessionId, sessionId),
-          eq(sessionSets.exerciseId, exerciseId),
-        ),
-      );
-
-    const [set] = await db
-      .insert(sessionSets)
-      .values({
-        sessionId,
-        exerciseId,
-        setNumber: existingSets.length + 1,
-        reps: input.reps ?? null,
-        weight: input.weight != null ? String(input.weight) : null,
-        durationSeconds: input.durationSeconds ?? null,
-        speed: input.speed != null ? String(input.speed) : null,
-        resistanceLevel: input.resistanceLevel ?? null,
-      })
-      .returning();
-    return set;
-  }
-
-  async removeSetOwnedByUser(
-    userId: string,
-    setId: string,
-  ): Promise<RemoveSetOutcome> {
-    const set = await db.query.sessionSets.findFirst({
-      where: eq(sessionSets.id, setId),
-      with: { session: true },
+    start: DateOnly,
+    endExclusive: DateOnly,
+  ): Promise<WorkoutSession[]> {
+    const rows = await dbScope.query.workoutSessions.findMany({
+      where: and(
+        eq(workoutSessions.userId, userId),
+        gte(workoutSessions.date, start.value),
+        lt(workoutSessions.date, endExclusive.value),
+      ),
+      orderBy: asc(workoutSessions.date),
+      with: withSets,
     });
-    if (!set || set.session.userId !== userId) return "not-found";
+    return rows.map(toSession);
+  }
 
-    await db.delete(sessionSets).where(eq(sessionSets.id, setId));
-    return "removed";
+  /**
+   * Only the root and the set collection change. A logged set is immutable
+   * once recorded - `LoggedSet` has no mutators - so retained sets are never
+   * updated, only added and removed.
+   */
+  async save(session: WorkoutSession): Promise<void> {
+    const snapshot = session.toSnapshot();
+
+    await dbScope
+      .update(workoutSessions)
+      .set({
+        routineId: snapshot.routineId,
+        templateId: snapshot.templateId,
+        isRestDay: snapshot.isRestDay,
+        updatedAt: snapshot.updatedAt,
+      })
+      .where(eq(workoutSessions.id, snapshot.id));
+
+    const existing = await dbScope
+      .select({ id: sessionSets.id })
+      .from(sessionSets)
+      .where(eq(sessionSets.sessionId, snapshot.id));
+
+    const diff = diffChildren(existing, snapshot.sets);
+
+    if (diff.deletedIds.length > 0) {
+      await dbScope
+        .delete(sessionSets)
+        .where(inArray(sessionSets.id, diff.deletedIds));
+    }
+
+    if (diff.inserted.length > 0) {
+      await dbScope.insert(sessionSets).values(
+        diff.inserted.map((set) => ({
+          id: set.id,
+          sessionId: snapshot.id,
+          exerciseId: set.exerciseId,
+          setNumber: set.setNumber,
+          reps: set.reps,
+          weight: set.weight,
+          durationSeconds: set.durationSeconds,
+          speed: set.speed,
+          resistanceLevel: set.resistanceLevel,
+          createdAt: set.createdAt,
+        })),
+      );
+    }
   }
 }

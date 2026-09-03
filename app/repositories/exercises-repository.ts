@@ -1,63 +1,44 @@
-import type { Equipment, Exercise } from "~/db/schema";
+import type { Exercise } from "~/domain/exercise/exercise";
 
-export type ExerciseDetails = {
-  name: string;
-  exerciseType: "strength" | "cardio";
-  muscleGroup?: string | null;
-  description?: string | null;
-};
-
-export type ExerciseWithEquipment = Exercise & {
-  equipmentLinks: { equipment: Equipment }[];
-};
-
-export type CreateExerciseResult =
-  | { outcome: "created"; exercise: Exercise }
-  | { outcome: "duplicate-name" };
-
-export type UpdateExerciseResult =
-  | { outcome: "updated" }
-  | { outcome: "duplicate-name" }
-  | { outcome: "not-found" };
-
-export type RevertExerciseResult =
-  | { outcome: "reverted" }
-  | { outcome: "nothing-to-revert" }
-  // The exercise is still referenced by a template or a logged set.
-  | { outcome: "in-use" };
+/**
+ * Deleting a personal exercise fails when a template or a logged set still
+ * points at it - the FKs are `on delete restrict` precisely so history can't
+ * be silently rewritten.
+ */
+export type DeleteExerciseOutcome = "deleted" | "in-use";
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
-// directly. See exercises-repository.server.ts for which adapter backs it
-// at runtime.
+// directly. See exercises-repository.server.ts for which adapter backs it at
+// runtime.
 //
-// Methods are shaped around the app's use cases (not raw CRUD) because
-// several of them are "fork the sample row on first edit, then mutate it"
-// as one atomic step - see CLAUDE.md's "Sample data and fork-on-write".
-// Each adapter is responsible for its own atomicity (a real transaction
-// for Drizzle, nothing extra needed for the single-threaded in-memory
-// adapter) rather than the port exposing a transaction concept.
+// Now a plain collection of `Exercise` aggregates: loading, saving and a few
+// lookups. The rules these methods used to carry - forking a sample on first
+// edit, copying its equipment links - moved onto the aggregate itself, so
+// they are stated once instead of once per adapter.
 export interface ExercisesRepository {
-  listWithEquipmentForUser(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<ExerciseWithEquipment[]>;
+  /** Own exercises plus, when asked for, samples the user hasn't forked. */
+  listFor(userId: string, showSampleData: boolean): Promise<Exercise[]>;
   findById(exerciseId: string): Promise<Exercise | null>;
-  create(
-    userId: string,
-    input: ExerciseDetails,
-  ): Promise<CreateExerciseResult>;
-  update(
-    userId: string,
-    exerciseId: string,
-    input: ExerciseDetails,
-  ): Promise<UpdateExerciseResult>;
-  // No-ops if exerciseId doesn't exist, matching the route's current
-  // behavior of silently ignoring a toggle on a since-deleted exercise.
-  toggleEquipment(
-    userId: string,
-    exerciseId: string,
-    equipmentId: string,
-    checked: boolean,
-  ): Promise<void>;
-  revert(userId: string, exerciseId: string): Promise<RevertExerciseResult>;
+  /**
+   * Exactly these exercises, ignoring visibility.
+   *
+   * History resolves the exercise behind every logged set, and a set can
+   * point at a sample the athlete has since forked away from - which
+   * `listFor` deliberately hides, because the fork now stands in for it in
+   * their library. Their past sets still belong to the original, so the
+   * charts look them up by id instead.
+   */
+  findManyByIds(exerciseIds: readonly string[]): Promise<Exercise[]>;
+  /** The user's own, or a sample - anything they're allowed to act on. */
+  findVisible(userId: string, exerciseId: string): Promise<Exercise | null>;
+  /** Backs the duplicate-name check; names are unique per user. */
+  findOwnByName(userId: string, name: string): Promise<Exercise | null>;
+  /**
+   * The user's existing fork of a sample, if they already have one. Forking
+   * is idempotent, and knowing whether a copy exists is a query, so it stays
+   * on this side of the boundary.
+   */
+  findForkOf(userId: string, sampleId: string): Promise<Exercise | null>;
+  save(exercise: Exercise): Promise<void>;
+  delete(exerciseId: string): Promise<DeleteExerciseOutcome>;
 }

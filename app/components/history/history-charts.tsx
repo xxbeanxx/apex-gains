@@ -11,12 +11,12 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import type {
-  ExerciseProgressSeries,
-  HeatmapDay,
-  MuscleGroupBalancePoint,
-  PersonalRecord,
-  WeeklyMetricPoint,
-} from "~/lib/history-charts.server";
+  ProgressSeriesView,
+  HeatmapDayView,
+  MuscleBalanceView,
+  PersonalRecordView,
+  WeeklyPointView,
+} from "~/services/progress-view";
 
 import { ConsistencyHeatmap } from "./consistency-heatmap";
 import { ExerciseProgressChart } from "./exercise-progress-chart";
@@ -33,13 +33,13 @@ export function HistoryCharts({
   personalRecords,
   bodyWeight,
 }: {
-  heatmap: HeatmapDay[];
-  weeklySets: WeeklyMetricPoint[];
-  weeklyTonnage: WeeklyMetricPoint[];
-  exerciseProgress: ExerciseProgressSeries[];
-  muscleBalance: MuscleGroupBalancePoint[];
-  personalRecords: PersonalRecord[];
-  bodyWeight: ExerciseProgressSeries | null;
+  heatmap: HeatmapDayView[];
+  weeklySets: WeeklyPointView[];
+  weeklyTonnage: WeeklyPointView[];
+  exerciseProgress: ProgressSeriesView[];
+  muscleBalance: MuscleBalanceView[];
+  personalRecords: PersonalRecordView[];
+  bodyWeight: ProgressSeriesView | null;
 }) {
   return (
     <div className="stagger flex flex-col gap-4">
@@ -117,7 +117,7 @@ export function HistoryCharts({
   );
 }
 
-function ExerciseProgressCard({ series }: { series: ExerciseProgressSeries[] }) {
+function ExerciseProgressCard({ series }: { series: ProgressSeriesView[] }) {
   const [selectedId, setSelectedId] = useState(series[0]?.exerciseId);
   const selected = series.find((s) => s.exerciseId === selectedId) ?? series[0];
 
@@ -163,7 +163,7 @@ function ExerciseProgressCard({ series }: { series: ExerciseProgressSeries[] }) 
   );
 }
 
-function MuscleBalanceCard({ groups }: { groups: MuscleGroupBalancePoint[] }) {
+function MuscleBalanceCard({ groups }: { groups: MuscleBalanceView[] }) {
   return (
     <Card>
       <CardHeader>

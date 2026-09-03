@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { getUsersRepository } from "~/repositories/users-repository.server";
+import { DISTANCE_UNITS, WEIGHT_UNITS } from "~/domain/values/units";
+import { getAthleteService } from "~/services/athlete-service.server";
 
 import type { Route } from "./+types/settings";
 
@@ -30,16 +31,16 @@ export function meta() {
 }
 
 const unitsSchema = z.object({
-  weightUnit: z.enum(["lb", "kg"]),
-  distanceUnit: z.enum(["km", "mi"]),
+  weightUnit: z.enum(WEIGHT_UNITS),
+  distanceUnit: z.enum(DISTANCE_UNITS),
 });
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
+  const { preferences } = context.get(userContext)!;
   return {
-    weightUnit: user.weightUnit,
-    distanceUnit: user.distanceUnit,
-    showSampleData: user.showSampleData,
+    weightUnit: preferences.weightUnit,
+    distanceUnit: preferences.distanceUnit,
+    showSampleData: preferences.showSampleData,
   };
 }
 
@@ -48,11 +49,11 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const usersRepository = await getUsersRepository();
+  const athleteService = await getAthleteService();
 
   if (intent === "updateSampleDataVisibility") {
-    await usersRepository.updateShowSampleData(
-      user.id,
+    await athleteService.changeSampleDataVisibility(
+      user,
       formData.get("showSampleData") === "true",
     );
     return { ok: true, intent: "updateSampleDataVisibility" } as const;
@@ -67,7 +68,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     return data({ error: "Invalid unit selection." }, { status: 400 });
   }
 
-  await usersRepository.updatePreferences(user.id, result.data);
+  await athleteService.changeUnits(
+    user,
+    result.data.weightUnit,
+    result.data.distanceUnit,
+  );
 
   return { ok: true, intent: "updateUnits" } as const;
 }

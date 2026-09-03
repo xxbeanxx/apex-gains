@@ -34,30 +34,21 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
-import type { Exercise } from "~/db/schema";
-import {
-  addDays,
-  formatFullDate,
-  formatMonthDay,
-  formatWeekday,
-  isValidDateString,
-  todayDateString,
-} from "~/lib/cycle";
+import type { ExerciseType } from "~/domain/exercise/exercise-type";
+import { DateOnly } from "~/domain/values/date-only";
+import { formatFullDate, formatMonthDay, formatWeekday } from "~/lib/format";
 import { loggerContext } from "~/lib/logger.server";
 import { cn } from "~/lib/utils";
+import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
 import {
-  getOrCreateSession,
-  getTodaysPlan,
-  type TodaysPlanItem,
-} from "~/lib/todays-plan.server";
-import {
-  getPastWeekSummary,
-  getUpcomingWeekPlan,
+  getTrainingPlanService,
   type WeekHistoryDay,
   type WeekPlanDay,
-} from "~/lib/week-summary.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
+} from "~/services/training-plan-service.server";
+import {
+  getWorkoutLogService,
+  type LoggedSetView,
+} from "~/services/workout-log-service.server";
 
 import type { Route } from "./+types/today";
 
@@ -65,74 +56,46 @@ export function meta() {
   return [{ title: "Today - Apex Gains" }];
 }
 
-function targetSummary(item: TodaysPlanItem) {
-  const parts: string[] = [];
-  if (item.targetSets && item.targetReps) {
-    parts.push(`${item.targetSets} x ${item.targetReps}`);
-  }
-  if (item.targetWeight) parts.push(`${item.targetWeight} lb`);
-  if (item.targetDurationSeconds) {
-    parts.push(`${Math.round(item.targetDurationSeconds / 60)} min`);
-  }
-  if (item.targetSpeed) parts.push(`${item.targetSpeed} speed`);
-  if (item.targetResistance) parts.push(`resistance ${item.targetResistance}`);
-  return parts.length > 0 ? `Target: ${parts.join(", ")}` : null;
-}
-
-function setSummary(set: {
-  reps: number | null;
-  weight: string | null;
-  durationSeconds: number | null;
-  speed: string | null;
-  resistanceLevel: number | null;
-}) {
-  const parts: string[] = [];
-  if (set.weight && set.reps) parts.push(`${set.weight} lb x ${set.reps}`);
-  else if (set.reps) parts.push(`${set.reps} reps`);
-  if (set.durationSeconds) {
-    parts.push(`${Math.round(set.durationSeconds / 60)} min`);
-  }
-  if (set.speed) parts.push(`${set.speed} speed`);
-  if (set.resistanceLevel) parts.push(`resistance ${set.resistanceLevel}`);
-  return parts.join(", ");
-}
+/**
+ * The minimum an exercise has to offer for the log form to render the right
+ * fields for it. Both the plan's items and the full library satisfy it.
+ */
+type LoggableExercise = {
+  id: string;
+  name: string;
+  exerciseType: ExerciseType;
+};
 
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const todayStr = todayDateString();
-  const requestedDate = new URL(request.url).searchParams.get("date");
-  const dateStr =
-    requestedDate &&
-    isValidDateString(requestedDate) &&
-    requestedDate <= todayStr
-      ? requestedDate
-      : todayStr;
-  const isToday = dateStr === todayStr;
-  const plan = await getTodaysPlan(user.id, dateStr);
+  const athlete = context.get(userContext)!;
+  const today = DateOnly.today();
 
-  const workoutSessionsRepository = await getWorkoutSessionsRepository();
-  const session = await workoutSessionsRepository.findWithSetsForDate(
-    user.id,
-    dateStr,
+  // An unparseable or future ?date falls back to today rather than erroring -
+  // there is nothing to log against a day that hasn't happened.
+  const requested = DateOnly.tryParse(
+    new URL(request.url).searchParams.get("date"),
   );
+  const date = requested?.isOnOrBefore(today) ? requested : today;
 
-  const exercisesRepository = await getExercisesRepository();
-  const allExercises = await exercisesRepository.listWithEquipmentForUser(
-    user.id,
-    user.showSampleData,
-  );
+  const planService = await getTrainingPlanService();
+  const logService = await getWorkoutLogService();
+  const libraryService = await getExerciseLibraryService();
 
-  const [upcomingWeek, pastWeek] = await Promise.all([
-    getUpcomingWeekPlan(user.id, todayStr),
-    getPastWeekSummary(user.id, todayStr),
-  ]);
+  const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] =
+    await Promise.all([
+      planService.planFor(athlete, date),
+      logService.loggedSetsFor(athlete, date),
+      libraryService.listExercises(athlete),
+      planService.upcomingWeek(athlete, today),
+      planService.pastWeek(athlete, today),
+    ]);
 
   return {
-    date: dateStr,
-    todayStr,
-    isToday,
+    date: date.value,
+    todayStr: today.value,
+    isToday: date.equals(today),
     plan,
-    loggedSets: session?.sets ?? [],
+    loggedSets,
     allExercises,
     upcomingWeek,
     pastWeek,
@@ -141,7 +104,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 const logSetSchema = z.object({
   exerciseId: z.uuid(),
-  date: z.string().refine(isValidDateString),
+  date: z.string().refine(DateOnly.isValid),
   reps: z.coerce.number().int().positive().optional(),
   weight: z.coerce.number().positive().optional(),
   durationMinutes: z.coerce.number().positive().optional(),
@@ -150,10 +113,12 @@ const logSetSchema = z.object({
 });
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
-  const todayStr = todayDateString();
+  const athlete = context.get(userContext)!;
+  const today = DateOnly.today();
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  const logService = await getWorkoutLogService();
 
   if (intent === "logSet") {
     // Blank optional fields arrive as "", which z.coerce.number() reads as 0
@@ -168,33 +133,42 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
     // Clamp instead of rejecting: a stale form (left open since yesterday)
     // should still log against today rather than fail outright.
-    const dateStr = result.data.date <= todayStr ? result.data.date : todayStr;
+    const date = DateOnly.parse(result.data.date).atMost(today);
 
-    const plan = await getTodaysPlan(user.id, dateStr);
-    const session = await getOrCreateSession(
-      user.id,
-      dateStr,
-      plan,
-      context.get(loggerContext),
+    // Measurements are in the athlete's own units; the service converts them.
+    const outcome = await logService.logSet(
+      athlete,
+      date,
+      result.data.exerciseId,
+      {
+        reps: result.data.reps,
+        weight: result.data.weight,
+        durationMinutes: result.data.durationMinutes,
+        speed: result.data.speed,
+        resistance: result.data.resistance,
+      },
     );
 
-    const workoutSessionsRepository = await getWorkoutSessionsRepository();
-    await workoutSessionsRepository.addSet(session.id, result.data.exerciseId, {
-      reps: result.data.reps,
-      weight: result.data.weight,
-      durationSeconds: result.data.durationMinutes
-        ? Math.round(result.data.durationMinutes * 60)
-        : undefined,
-      speed: result.data.speed,
-      resistanceLevel: result.data.resistance,
-    });
+    if (!outcome.ok) {
+      return data({ error: "Invalid set" }, { status: 400 });
+    }
+    if (outcome.value.sessionOpened) {
+      context
+        .get(loggerContext)
+        .info(
+          { userId: athlete.id, date: date.value },
+          "workout session created",
+        );
+    }
     return { ok: true };
   }
 
   if (intent === "removeSet") {
-    const setId = String(formData.get("setId"));
-    const workoutSessionsRepository = await getWorkoutSessionsRepository();
-    await workoutSessionsRepository.removeSetOwnedByUser(user.id, setId);
+    const date = DateOnly.tryParse(String(formData.get("date")));
+    if (!date) {
+      return data({ error: "Unknown set" }, { status: 400 });
+    }
+    await logService.removeSet(athlete, date, String(formData.get("setId")));
     return { ok: true };
   }
 
@@ -206,8 +180,8 @@ function LogSetForm({
   exerciseOptions,
   date,
 }: {
-  exercise?: Exercise;
-  exerciseOptions?: Exercise[];
+  exercise?: LoggableExercise;
+  exerciseOptions?: LoggableExercise[];
   date: string;
 }) {
   const fetcher = useFetcher();
@@ -317,15 +291,10 @@ function LogSetForm({
 
 function LoggedSetsList({
   sets,
+  date,
 }: {
-  sets: Array<{
-    id: string;
-    reps: number | null;
-    weight: string | null;
-    durationSeconds: number | null;
-    speed: string | null;
-    resistanceLevel: number | null;
-  }>;
+  sets: LoggedSetView[];
+  date: string;
 }) {
   if (sets.length === 0) return null;
   return (
@@ -343,10 +312,11 @@ function LoggedSetsList({
           </span>
           <span className="min-w-0 flex-1 truncate tabular-nums">
             <span className="sr-only">Set {index + 1}: </span>
-            {setSummary(set)}
+            {set.summary}
           </span>
           <form method="post" className="contents">
             <input type="hidden" name="intent" value="removeSet" />
+            <input type="hidden" name="date" value={date} />
             <input type="hidden" name="setId" value={set.id} />
             <button
               type="submit"
@@ -354,7 +324,7 @@ function LoggedSetsList({
             >
               <XIcon className="size-3.5" aria-hidden="true" />
               <span className="sr-only">
-                Remove set {index + 1}, {setSummary(set)}
+                Remove set {index + 1}, {set.summary}
               </span>
             </button>
           </form>
@@ -598,8 +568,8 @@ export default function Today({ loaderData }: Route.ComponentProps) {
     upcomingWeek,
     pastWeek,
   } = loaderData;
-  const prevDate = addDays(date, -1);
-  const nextDate = addDays(date, 1);
+  const prevDate = DateOnly.parse(date).minusDays(1).value;
+  const nextDate = DateOnly.parse(date).plusDays(1).value;
   const dayWord = isToday ? "today" : "that day";
   const navigate = useNavigate();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -619,7 +589,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
   // Exercises already shown by the template grid above, so the section at the
   // bottom can list only what that grid does not cover.
   const plannedExerciseIds = new Set(
-    plan.type === "template" ? plan.items.map((item) => item.exercise.id) : [],
+    plan.type === "template" ? plan.items.map((item) => item.exerciseId) : [],
   );
   const extraEntries = [...setsByExercise.entries()].filter(
     ([exerciseId]) => !plannedExerciseIds.has(exerciseId),
@@ -718,16 +688,16 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         >
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {plan.items.map((item) => {
-              const done = setsByExercise.get(item.exercise.id)?.length ?? 0;
+              const done = setsByExercise.get(item.exerciseId)?.length ?? 0;
               return (
-                <Card key={item.exercise.id}>
+                <Card key={item.exerciseId}>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      {item.exercise.name}
+                      {item.exerciseName}
                     </CardTitle>
-                    {targetSummary(item) ? (
+                    {item.targetSummary ? (
                       <p className="text-sm text-muted-foreground tabular-nums">
-                        {targetSummary(item)}
+                        Target: {item.targetSummary}
                       </p>
                     ) : null}
                   </CardHeader>
@@ -736,9 +706,17 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                       <SetProgress done={done} target={item.targetSets} />
                     ) : null}
                     <LoggedSetsList
-                      sets={setsByExercise.get(item.exercise.id) ?? []}
+                      sets={setsByExercise.get(item.exerciseId) ?? []}
+                      date={date}
                     />
-                    <LogSetForm exercise={item.exercise} date={date} />
+                    <LogSetForm
+                      exercise={{
+                        id: item.exerciseId,
+                        name: item.exerciseName,
+                        exerciseType: item.exerciseType,
+                      }}
+                      date={date}
+                    />
                   </CardContent>
                 </Card>
               );
@@ -788,11 +766,11 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                 <Card key={exerciseId}>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      {sets[0].exercise.name}
+                      {sets[0].exerciseName}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <LoggedSetsList sets={sets} />
+                    <LoggedSetsList sets={sets} date={date} />
                   </CardContent>
                 </Card>
               ))}

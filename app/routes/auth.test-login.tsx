@@ -4,7 +4,7 @@ import { isTestLoginEnabled } from "~/auth/env.server";
 import { commitSession, getSession } from "~/auth/session.server";
 import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
-import { getUsersRepository } from "~/repositories/users-repository.server";
+import { getAthletesRepository } from "~/repositories/athletes-repository.server";
 
 import type { Route } from "./+types/auth.test-login";
 
@@ -35,15 +35,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const name = url.searchParams.get("name") ?? email;
   const redirectTo = url.searchParams.get("redirectTo") ?? "/today";
 
-  const usersRepository = await getUsersRepository();
-  const existingUser = await usersRepository.findByEmail(email);
+  const athletesRepository = await getAthletesRepository();
+  const existingUser = await athletesRepository.findByEmail(email);
 
   const user =
     existingUser ??
-    (await usersRepository.create({
+    (await athletesRepository.create({
       googleSub: `test-login:${email}`,
       email,
       name,
+      avatarUrl: null,
     }));
 
   logger.info({ userId: user.id, newUser: !existingUser }, "test login used");

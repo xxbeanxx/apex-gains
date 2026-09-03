@@ -1,49 +1,87 @@
-import { and, asc, eq, isNull, or, type SQL } from "drizzle-orm";
+import { asc, eq, inArray, isNull, or, type SQL } from "drizzle-orm";
 
-import { db } from "~/db/index.server";
-import { equipment } from "~/db/schema";
+import { dbScope } from "~/db/index.server";
+import { equipment, type Equipment as EquipmentRow } from "~/db/schema";
+import { Equipment } from "~/domain/equipment/equipment";
 
 import type { EquipmentRepository } from "./equipment-repository";
 
-// Unlike exercises/templates/routines, equipment has no fork tracking -
-// every sample row is shown regardless of what the user has forked.
 export function sampleOrOwnEquipmentWhere(
   userId: string,
   showSampleData: boolean,
 ): SQL {
   const ownCondition = eq(equipment.userId, userId);
   if (!showSampleData) return ownCondition;
+  // Equipment has no fork-on-write rule (names are globally unique), so
+  // unlike the other libraries there are no forked samples to exclude.
   return or(ownCondition, isNull(equipment.userId))!;
 }
 
+function toEquipment(row: EquipmentRow): Equipment {
+  return Equipment.fromSnapshot({
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    createdAt: row.createdAt,
+  });
+}
+
 export class DrizzleEquipmentRepository implements EquipmentRepository {
-  async listForUser(userId: string, showSampleData: boolean) {
-    return db
+  async listFor(
+    userId: string,
+    showSampleData: boolean,
+  ): Promise<Equipment[]> {
+    const rows = await dbScope
       .select()
       .from(equipment)
       .where(sampleOrOwnEquipmentWhere(userId, showSampleData))
       .orderBy(asc(equipment.name));
+    return rows.map(toEquipment);
   }
 
-  async findById(equipmentId: string) {
-    const [row] = await db
+  async findById(equipmentId: string): Promise<Equipment | null> {
+    const row = await dbScope.query.equipment.findFirst({
+      where: eq(equipment.id, equipmentId),
+    });
+    return row ? toEquipment(row) : null;
+  }
+
+  async findManyByIds(
+    equipmentIds: readonly string[],
+  ): Promise<Equipment[]> {
+    if (equipmentIds.length === 0) return [];
+    const rows = await dbScope
       .select()
       .from(equipment)
-      .where(eq(equipment.id, equipmentId))
-      .limit(1);
-    return row ?? null;
+      .where(inArray(equipment.id, [...equipmentIds]));
+    return rows.map(toEquipment);
   }
 
-  async add(userId: string, name: string) {
-    await db
+  async findByName(name: string): Promise<Equipment | null> {
+    const row = await dbScope.query.equipment.findFirst({
+      where: eq(equipment.name, name),
+    });
+    return row ? toEquipment(row) : null;
+  }
+
+  async save(item: Equipment): Promise<void> {
+    const snapshot = item.toSnapshot();
+    await dbScope
       .insert(equipment)
-      .values({ userId, name })
-      .onConflictDoNothing({ target: equipment.name });
+      .values(snapshot)
+      .onConflictDoUpdate({
+        target: equipment.id,
+        set: { name: snapshot.name },
+      });
   }
 
-  async remove(userId: string, equipmentId: string) {
-    await db
-      .delete(equipment)
-      .where(and(eq(equipment.id, equipmentId), eq(equipment.userId, userId)));
+  /**
+   * Unscoped by design: whether this athlete may remove this item is
+   * `Equipment.isRemovableBy`, checked by the service inside the same unit
+   * of work. The rule is stated in the domain rather than smuggled into a
+   * where clause.
+   */
+  async delete(equipmentId: string): Promise<void> {
+    await dbScope.delete(equipment).where(eq(equipment.id, equipmentId));
   }
 }

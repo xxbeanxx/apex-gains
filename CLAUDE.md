@@ -31,10 +31,11 @@ There is no lint/format tooling configured in this repo — `typecheck`
 and `test` are the automated checks. Unit tests (vitest) live next to
 the code they cover as `*.test.ts`; `app/test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
-`as any`/`as Type` casts scattered through test bodies, and
-`app/test/db-chain.ts` exports `dbChain(result)` for stubbing a
-Drizzle query chain (`db.select().from().where()...`) that resolves to
-`result` however it's chained. Tests that touch `~/db/index.server` or
+`as any`/`as Type` casts scattered through test bodies. Most tests need
+neither: the domain layer is pure, so its tests construct real
+aggregates, and service tests wire real services to the in-memory
+repository adapters rather than mocking a database.
+Tests that touch `~/db/index.server` or
 `app/auth/*` rely on `vitest.config.ts` seeding dummy `DATABASE_URL`/
 `SESSION_SECRET`/etc. env vars — the postgres-js client and
 `createCookieSessionStorage` are both lazy, so nothing dials out.
@@ -75,31 +76,81 @@ under the `routes/_protected.tsx` layout, which sets
 `requireUserMiddleware` (`app/auth/require-user.server.ts`) to redirect
 anonymous requests to `/auth/google`. The current user is threaded
 through via React Router's context API: `app/auth/user-context.ts`
-defines `userContext`, populated by `loadUserMiddleware` (see Auth,
-below) and read in loaders/actions with `context.get(userContext)`.
+defines `userContext` — which holds the `Athlete` aggregate, not the raw
+`users` row, so loaders have the athlete's unit preferences and
+behaviour to hand — populated by `loadUserMiddleware` (see Auth, below)
+and read in loaders/actions with `context.get(userContext)`.
 Route modules import their generated types
 from `./+types/<route-file-name>`.
 
+**Layers.** Four, strictly one-directional — `app/domain/` depends on
+nothing, and nothing above it may be skipped:
+
+```
+app/domain/       pure TS. No Drizzle, no react-router, no I/O, no env.
+app/repositories/ ports speak aggregates; adapters do mapping only.
+app/services/     application services (use cases) + read models.
+app/routes/       parse form -> call service -> map result to HTTP.
+```
+
+**Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
+`WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
+`BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
+`Weight`, `Speed`, `Duration`, `SetTarget`, `Ownership`) stop raw
+strings and unitless numbers leaking upward. Aggregates never reach for
+identity or time — both arrive as ports (`IdGenerator`, `Clock`, bundled
+as `DomainDeps` in `app/services/shared/deps.server.ts`), which is what
+lets every rule be tested with no database and no mocks. Two shared
+pieces carry most of the weight: `shared/ordered.ts` (`OrderedChildren`)
+is the single implementation of append / remove-and-close-the-gap /
+swap, and `shared/forking.ts` is the shape every `editableCopyFor`
+returns. Cross-aggregate rules that belong to no single root are domain
+services — see `domain/routine/activation.ts`.
+
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
-(Postgres). Route loaders/actions talk to `app/db/index.server.ts`
-(`db`) directly — there is no repository/service layer. Non-trivial
-read queries that combine multiple tables (e.g. "what's today's
-workout") live in `app/lib/*.server.ts` (`todays-plan.server.ts`,
-`week-summary.server.ts`) rather than inline in routes.
+(Postgres). Repositories in `app/repositories/` are ports over
+*aggregates*, not rows: `load` / `save` / `delete` plus real queries,
+with a Drizzle adapter and an in-memory one each, selected per process by
+`*-repository.server.ts` on whether `DATABASE_URL` is set. Adapters map
+snapshots to rows and hold no rules. `save` receives the whole aggregate
+rather than a change list, so it reconstructs the delta with
+`shared/diff-children.ts`, and writes reordered children through
+`shared/write-positions.ts` — a two-pass negative-scratch write, because
+Postgres checks the `(parentId, position)` unique constraint per
+statement and any permutation would otherwise collide mid-update.
+Transactions are ambient: `UnitOfWork.run` publishes one via
+`AsyncLocalStorage` (`app/db/transaction.server.ts`) and adapters query
+through `dbScope`, never `db`, so writes stay inside it.
+
+**Services.** `app/services/*.server.ts` are the use cases routes call —
+`RoutineService`, `TemplateService`, `WorkoutLogService`,
+`ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
+`AthleteService`, `BodyWeightService`. They orchestrate (load → hand off
+to the aggregate → save) and own no rules themselves. **They return
+plain DTOs, never domain objects**: React Router serializes loader data,
+so anything with methods cannot cross that boundary. Chart view types
+live in `app/services/progress-view.ts` (no `.server` suffix) precisely
+so client components can import them.
 
 **Sample data and fork-on-write.** `exercises`, `templates`, and
 `routines` rows with a null `userId` are seeded sample/system data
-shared read-only by every account; `app/lib/sample-data.server.ts`
-exports the `sampleOrOwn*Where` query-condition helpers (own rows plus
-any not-yet-forked sample rows) and the `fork*ForUser` helpers, which
-copy a sample row (and its children — equipment links, template
-exercises, routine slots) into a real per-user row with `forkedFromId`
-pointing back at the sample the moment a user edits it; the sample
-original is then excluded from that user's view so the same logical
-item doesn't show twice. Because of this, "does this row's `userId`
-match the current user" isn't quite the whole authorization story —
-scoped loaders must also decide whether to include the null-`userId`
-sample rows via these helpers.
+shared read-only by every account — `Ownership` in
+`domain/shared/ownership.ts` is where that null is interpreted, once.
+Editing a sample copies it (with its children — equipment links,
+template exercises, routine slots) into a per-user row with
+`forkedFromId` pointing back at the sample; the original is then
+excluded from that user's view so the same logical item doesn't show
+twice. The copy is `aggregate.editableCopyFor(userId, deps)`; deciding
+*whether* to copy — reusing an existing fork instead of minting a second
+one — needs a query, so it lives in
+`app/services/shared/fork.server.ts` (`resolveEditableCopy`), which
+every mutating service goes through. Because a fork's children get new
+ids, an id that arrived on a form names a child of the *sample*; the
+returned `translateChildId` maps it onto the copy by position. The
+`sampleOrOwn*Where` query builders (in each Drizzle adapter) list own
+rows plus not-yet-forked samples. So "does this row's `userId` match the
+current user" isn't quite the whole authorization story — scoped loaders
+must also decide whether to include the null-`userId` sample rows.
 
 **Domain model shape**, roughly nested:
 `templates` (a named list of exercises with target sets/reps/weight or
@@ -117,13 +168,16 @@ resistance — no distance/pace, since neither is reliably derivable
 from what's tracked).
 
 **Routines are day-count cycles, not weekdays.** A routine's "today"
-slot is `(days since anchorDate) mod (slot count)` — see
-`app/lib/cycle.ts` (`slotIndexForDate`). This is strict calendar-day
-math done in UTC on `YYYY-MM-DD` strings: it does not pause for missed
-days, and a routine's `anchorDate` can be set independently of when it
-was activated or of what weekday it falls on. Only one routine per
-user may have `isActive = true` (enforced by a partial unique index in
-the schema); `getTodaysPlan` in `app/lib/todays-plan.server.ts` is the
+slot is `(days since anchorDate) mod (slot count)` — `Routine.slotOn`
+in `app/domain/routine/routine.ts`. This is strict calendar-day math
+done in UTC on `YYYY-MM-DD` strings (`DateOnly`): it does not pause for
+missed days, and a routine's `anchorDate` can be set independently of
+when it was activated or of what weekday it falls on. Only one routine
+per user may have `isActive = true`; that is a rule about a *set* of
+routines, so it lives in `domain/routine/activation.ts`
+(`activateRoutine`) rather than on the aggregate, with the schema's
+partial unique index as the backstop — the two routines it changes must
+be saved in one transaction. `TrainingPlanService.planFor` is the
 canonical read path from "active routine" to "today's exercises."
 
 **Route module action pattern.** Routes with multiple mutations use a
@@ -131,9 +185,10 @@ single `action` with an `intent` hidden field dispatched via
 if/else-if (see `app/routes/routines.$routineId.tsx` for the fullest
 example: rename, reanchor, activate/deactivate, addSlot, removeSlot,
 move, delete). Each branch validates its own `formData` with a local
-Zod schema. Reordering (`move`) uses a 3-step position swap through a
-scratch value (`-1`) inside a `db.transaction` to dodge the
-`(routineId, position)` unique constraint. Every mutating form is a
+Zod schema. Both detail routes share a `settle` helper that maps a
+service result onto HTTP: not-found becomes a 404, and a non-null
+`forkedId` becomes a redirect to the fork's own URL, since the edit
+would be invisible at the sample's. Every mutating form is a
 plain `<form method="post">` (no client-side fetchers for these), and
 `~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
 pending state from `useNavigation()` matched against a `match={{
@@ -166,6 +221,15 @@ CSRF check rejects with a 400, and `app/routes/auth.google.callback.tsx`
 rebuilds the URL passed to `authorizationCodeGrant` from the `ORIGIN`
 env var instead of trusting `request.url` so the token exchange's
 `redirect_uri` matches what's registered with Google.
+
+**Units.** Measurements are stored canonically — pounds for weight,
+km/h for speed, seconds for duration — and converted at the edges:
+`Weight.in(unit, n)` on the way in, `AthletePreferences.formatWeight` on
+the way out. The `numeric` columns carry no unit and postgres-js returns
+them as strings, so nothing above the domain should ever see a bare
+weight string or append a unit by hand. An athlete's `weightUnit` /
+`distanceUnit` from /settings is the only thing that decides how a
+number is rendered.
 
 **UI.** shadcn/ui primitives (Radix + `class-variance-authority`) live
 in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,

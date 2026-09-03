@@ -24,8 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { formatFullDate, isValidDateString, todayDateString } from "~/lib/cycle";
-import { getBodyWeightLogsRepository } from "~/repositories/body-weight-logs-repository.server";
+import { DateOnly } from "~/domain/values/date-only";
+import { formatFullDate } from "~/lib/format";
+import { getBodyWeightService } from "~/services/body-weight-service.server";
+import { getProgressService } from "~/services/progress-service.server";
 
 import type { Route } from "./+types/weight";
 
@@ -33,35 +35,31 @@ export function meta() {
   return [{ title: "Weight - Apex Gains" }];
 }
 
-const LOG_HISTORY_LIMIT = 180;
-
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const bodyWeightLogsRepository = await getBodyWeightLogsRepository();
-  const logs = await bodyWeightLogsRepository.listRecentForUser(
-    user.id,
-    LOG_HISTORY_LIMIT,
-  );
+  const athlete = context.get(userContext)!;
+  const progressService = await getProgressService();
+  const log = await progressService.bodyWeightLog(athlete);
 
   return {
-    weightUnit: user.weightUnit,
-    todayStr: todayDateString(),
-    logs,
+    weightUnit: log.unit,
+    todayStr: DateOnly.today().value,
+    logs: log.entries,
+    series: log.series,
   };
 }
 
 const logSchema = z.object({
-  date: z.string().refine(isValidDateString),
+  date: z.string().refine(DateOnly.isValid),
   weight: z.coerce.number().positive(),
 });
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
-  const todayStr = todayDateString();
+  const athlete = context.get(userContext)!;
+  const today = DateOnly.today();
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const bodyWeightLogsRepository = await getBodyWeightLogsRepository();
+  const bodyWeightService = await getBodyWeightService();
 
   if (intent === "log") {
     const result = logSchema.safeParse({
@@ -73,19 +71,24 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
     // Clamp instead of rejecting: a stale form (left open since yesterday)
     // should still log against today rather than fail outright.
-    const dateStr = result.data.date <= todayStr ? result.data.date : todayStr;
+    const date = DateOnly.parse(result.data.date).atMost(today);
 
-    await bodyWeightLogsRepository.logForDate(
-      user.id,
-      dateStr,
-      result.data.weight,
-    );
+    // The number is in whatever unit the athlete has chosen; the service
+    // converts it to canonical storage.
+    await bodyWeightService.record(athlete, date, result.data.weight);
     return { ok: true, intent: "log" } as const;
   }
 
   if (intent === "remove") {
-    const logId = String(formData.get("logId"));
-    await bodyWeightLogsRepository.removeOwnedByUser(user.id, logId);
+    const date = DateOnly.tryParse(String(formData.get("date")));
+    if (!date) {
+      return data({ error: "Unknown weigh-in" }, { status: 400 });
+    }
+    await bodyWeightService.remove(
+      athlete,
+      date,
+      String(formData.get("logId")),
+    );
     return { ok: true, intent: "remove" } as const;
   }
 
@@ -93,25 +96,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Weight({ loaderData, actionData }: Route.ComponentProps) {
-  const { weightUnit, todayStr, logs } = loaderData;
+  const { weightUnit, todayStr, logs, series } = loaderData;
   const error =
     actionData && "error" in actionData ? actionData.error : undefined;
-
-  // Oldest first for the trend line; `logs` arrives newest-first for the table.
-  const ascending = [...logs].reverse();
-  const series =
-    ascending.length >= 2
-      ? {
-          exerciseId: "body-weight",
-          exerciseName: "Body weight",
-          metricLabel: "Body weight",
-          unit: weightUnit,
-          points: ascending.map((log) => ({
-            date: log.date,
-            value: Number(log.weight),
-          })),
-        }
-      : null;
 
   return (
     <Page>
@@ -203,6 +190,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
                       <TableCell>
                         <form method="post">
                           <input type="hidden" name="intent" value="remove" />
+                          <input type="hidden" name="date" value={log.date} />
                           <input type="hidden" name="logId" value={log.id} />
                           <Button
                             type="submit"

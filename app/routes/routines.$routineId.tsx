@@ -32,9 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { DateOnly } from "~/domain/values/date-only";
 import { loggerContext } from "~/lib/logger.server";
-import { getRoutinesRepository } from "~/repositories/routines-repository.server";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
+import { getRoutineService } from "~/services/routine-service.server";
+import { getTemplateService } from "~/services/template-service.server";
 
 import type { Route } from "./+types/routines.$routineId";
 
@@ -45,44 +46,60 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const routinesRepository = await getRoutinesRepository();
-  const routine = await routinesRepository.findVisibleForUser(
-    user.id,
-    params.routineId,
-  );
+  const athlete = context.get(userContext)!;
+  const routineService = await getRoutineService();
+  const routine = await routineService.detail(athlete, params.routineId);
   if (!routine) {
     throw data("Routine not found", { status: 404 });
   }
-  const templatesRepository = await getTemplatesRepository();
-  const visibleTemplates = (
-    await templatesRepository.listForUser(user.id, user.showSampleData)
-  ).sort((a, b) => a.name.localeCompare(b.name));
-  return { routine, templates: visibleTemplates };
+
+  const templateService = await getTemplateService();
+  return {
+    routine,
+    templates: await templateService.listForPicker(athlete),
+  };
 }
 
 const renameSchema = z.object({ name: z.string().trim().min(1).max(100) });
 const reanchorSchema = z.object({
-  anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  anchorDate: z.string().refine(DateOnly.isValid),
 });
 const addSlotSchema = z.object({
   templateId: z.union([z.uuid(), z.literal("rest")]),
 });
 
+/**
+ * Every mutating intent shares an epilogue: a routine that isn't there is a
+ * 404, and an edit that forked a sample has landed on a new routine whose
+ * URL the browser needs to follow - staying put would show the untouched
+ * sample and look like the edit was lost.
+ */
+function settle(
+  outcome: { ok: true; value: { forkedId: string | null } } | { ok: false },
+) {
+  if (!outcome.ok) {
+    throw data("Routine not found", { status: 404 });
+  }
+  if (outcome.value.forkedId) {
+    throw redirect(`/routines/${outcome.value.forkedId}`);
+  }
+  return { ok: true };
+}
+
 export async function action({ request, params, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
+  const athlete = context.get(userContext)!;
   const routineId = params.routineId;
-  const routinesRepository = await getRoutinesRepository();
+  const routineService = await getRoutineService();
 
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "delete") {
-    const outcome = await routinesRepository.delete(user.id, routineId);
-    if (outcome.outcome === "not-found") {
+    const outcome = await routineService.remove(athlete, routineId);
+    if (!outcome.ok && outcome.error === "not-found") {
       throw data("Routine not found", { status: 404 });
     }
-    if (outcome.outcome === "sample-routine") {
+    if (!outcome.ok) {
       return data(
         { error: "Sample routines can't be deleted.", intent: "delete" },
         { status: 400 },
@@ -90,44 +107,32 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     context
       .get(loggerContext)
-      .info({ userId: user.id, routineId }, "routine deleted");
+      .info({ userId: athlete.id, routineId }, "routine deleted");
     throw redirect("/routines");
   }
 
   if (intent === "revert") {
-    const outcome = await routinesRepository.revert(user.id, routineId);
-    if (outcome.outcome === "not-found") {
+    const outcome = await routineService.revert(athlete, routineId);
+    if (!outcome.ok && outcome.error === "not-found") {
       throw data("Routine not found", { status: 404 });
     }
-    if (outcome.outcome === "nothing-to-revert") {
+    if (!outcome.ok) {
       return data(
         { error: "Nothing to revert", intent: "revert" },
         { status: 400 },
       );
     }
-    throw redirect(`/routines/${outcome.forkedFromId}`);
+    throw redirect(`/routines/${outcome.value.forkedFromId}`);
   }
 
   if (intent === "rename") {
     const result = renameSchema.safeParse({ name: formData.get("name") });
     if (!result.success) {
-      return data(
-        { error: "Invalid name", intent: "rename" },
-        { status: 400 },
-      );
+      return data({ error: "Invalid name", intent: "rename" }, { status: 400 });
     }
-    const outcome = await routinesRepository.rename(
-      user.id,
-      routineId,
-      result.data.name,
+    return settle(
+      await routineService.rename(athlete, routineId, result.data.name),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
   }
 
   if (intent === "reanchor") {
@@ -140,46 +145,27 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    const outcome = await routinesRepository.reanchor(
-      user.id,
-      routineId,
-      result.data.anchorDate,
+    return settle(
+      await routineService.reanchor(
+        athlete,
+        routineId,
+        DateOnly.parse(result.data.anchorDate),
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
   }
 
-  if (intent === "activate") {
-    const outcome = await routinesRepository.activate(user.id, routineId);
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    context
-      .get(loggerContext)
-      .info({ userId: user.id, routineId }, "routine activated");
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
-  }
+  if (intent === "activate" || intent === "deactivate") {
+    const outcome =
+      intent === "activate"
+        ? await routineService.activate(athlete, routineId)
+        : await routineService.deactivate(athlete, routineId);
 
-  if (intent === "deactivate") {
-    const outcome = await routinesRepository.deactivate(user.id, routineId);
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
+    if (outcome.ok) {
+      context
+        .get(loggerContext)
+        .info({ userId: athlete.id, routineId }, `routine ${intent}d`);
     }
-    context
-      .get(loggerContext)
-      .info({ userId: user.id, routineId }, "routine deactivated");
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
+    return settle(outcome);
   }
 
   if (intent === "addSlot") {
@@ -187,57 +173,36 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       templateId: formData.get("templateId"),
     });
     if (!result.success) {
-      return data(
-        { error: "Invalid slot", intent: "addSlot" },
-        { status: 400 },
-      );
+      return data({ error: "Invalid slot", intent: "addSlot" }, { status: 400 });
     }
-    const outcome = await routinesRepository.addSlot(
-      user.id,
-      routineId,
-      result.data.templateId === "rest" ? null : result.data.templateId,
+    return settle(
+      await routineService.addSlot(
+        athlete,
+        routineId,
+        result.data.templateId === "rest" ? null : result.data.templateId,
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
   }
 
   if (intent === "removeSlot") {
-    const slotId = String(formData.get("slotId"));
-    const outcome = await routinesRepository.removeSlot(
-      user.id,
-      routineId,
-      slotId,
+    return settle(
+      await routineService.removeSlot(
+        athlete,
+        routineId,
+        String(formData.get("slotId")),
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
   }
 
   if (intent === "move") {
-    const slotId = String(formData.get("slotId"));
-    const direction = formData.get("direction") === "up" ? "up" : "down";
-    const outcome = await routinesRepository.moveSlot(
-      user.id,
-      routineId,
-      slotId,
-      direction,
+    return settle(
+      await routineService.moveSlot(
+        athlete,
+        routineId,
+        String(formData.get("slotId")),
+        formData.get("direction") === "up" ? "up" : "down",
+      ),
     );
-    if (outcome.outcome === "not-found") {
-      throw data("Routine not found", { status: 404 });
-    }
-    if (outcome.forkedRoutineId) {
-      throw redirect(`/routines/${outcome.forkedRoutineId}`);
-    }
-    return { ok: true };
   }
 
   return data({ error: "Unknown action", intent: "unknown" }, { status: 400 });
@@ -250,8 +215,7 @@ export default function RoutineDetail({
   const { routine, templates: templateList } = loaderData;
 
   const slotCount = routine.slots.length;
-  const isSample = routine.userId === null;
-  const isCustomized = routine.forkedFromId !== null;
+  const { isSample, isCustomized } = routine;
 
   const errorFor = (matchIntent: string) =>
     actionData && "error" in actionData && actionData.intent === matchIntent
@@ -431,7 +395,7 @@ export default function RoutineDetail({
         ) : (
           <ol className="grid gap-3 lg:grid-cols-2">
             {routine.slots.map((slot, index) => {
-              const isRest = !slot.template;
+              const isRest = slot.isRestDay;
               return (
                 <li
                   key={slot.id}
@@ -458,7 +422,7 @@ export default function RoutineDetail({
                             Rest
                           </>
                         ) : (
-                          slot.template!.name
+                          slot.templateName
                         )}
                       </p>
                     </div>

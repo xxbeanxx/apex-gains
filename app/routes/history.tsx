@@ -14,17 +14,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { EmptyState } from "~/components/ui/empty-state";
-import { formatFullDate } from "~/lib/cycle";
-import {
-  computeConsistencyHeatmap,
-  computeExerciseProgressSeries,
-  computeMuscleGroupBalance,
-  computePersonalRecords,
-  computeWeeklySetCount,
-  computeWeeklyTonnage,
-} from "~/lib/history-charts.server";
-import { getBodyWeightLogsRepository } from "~/repositories/body-weight-logs-repository.server";
-import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
+import { formatFullDate, formatMonthYear } from "~/lib/format";
+import { getProgressService } from "~/services/progress-service.server";
 
 import type { Route } from "./+types/history";
 
@@ -32,86 +23,17 @@ export function meta() {
   return [{ title: "History - Apex Gains" }];
 }
 
-function setSummary(set: {
-  reps: number | null;
-  weight: string | null;
-  durationSeconds: number | null;
-  speed: string | null;
-  resistanceLevel: number | null;
-}) {
-  const parts: string[] = [];
-  if (set.weight && set.reps) parts.push(`${set.weight} lb x ${set.reps}`);
-  else if (set.reps) parts.push(`${set.reps} reps`);
-  if (set.durationSeconds) {
-    parts.push(`${Math.round(set.durationSeconds / 60)} min`);
-  }
-  if (set.speed) parts.push(`${set.speed} speed`);
-  if (set.resistanceLevel) parts.push(`resistance ${set.resistanceLevel}`);
-  return parts.join(", ");
-}
-
-/** "2026-09-02" -> "September 2026", for the timeline dividers. */
-function monthLabel(dateStr: string) {
-  const [year, month] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-}
-
-const CHART_HISTORY_LIMIT = 250;
-const TIMELINE_LIMIT = 90;
-const VOLUME_WEEKS = 12;
-const HEATMAP_WEEKS = 16;
-const MUSCLE_BALANCE_DAYS = 28;
-const BODY_WEIGHT_HISTORY_LIMIT = 180;
-
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext)!;
-  const workoutSessionsRepository = await getWorkoutSessionsRepository();
-  const bodyWeightLogsRepository = await getBodyWeightLogsRepository();
-  const [chartSessions, bodyWeightLogs] = await Promise.all([
-    workoutSessionsRepository.listRecentWithSetsForUser(
-      user.id,
-      CHART_HISTORY_LIMIT,
-    ),
-    bodyWeightLogsRepository.listRecentForUser(
-      user.id,
-      BODY_WEIGHT_HISTORY_LIMIT,
-    ),
-  ]);
-
-  // Oldest first for the trend line; logs arrive newest-first.
-  const ascendingWeightLogs = [...bodyWeightLogs].reverse();
-  const bodyWeight =
-    ascendingWeightLogs.length >= 2
-      ? {
-          exerciseId: "body-weight",
-          exerciseName: "Body weight",
-          metricLabel: "Body weight",
-          unit: user.weightUnit,
-          points: ascendingWeightLogs.map((log) => ({
-            date: log.date,
-            value: Number(log.weight),
-          })),
-        }
-      : null;
-
-  return {
-    sessions: chartSessions.slice(0, TIMELINE_LIMIT),
-    heatmap: computeConsistencyHeatmap(chartSessions, HEATMAP_WEEKS),
-    weeklySets: computeWeeklySetCount(chartSessions, VOLUME_WEEKS),
-    weeklyTonnage: computeWeeklyTonnage(chartSessions, VOLUME_WEEKS),
-    exerciseProgress: computeExerciseProgressSeries(chartSessions),
-    muscleBalance: computeMuscleGroupBalance(chartSessions, MUSCLE_BALANCE_DAYS),
-    personalRecords: computePersonalRecords(chartSessions),
-    bodyWeight,
-  };
+  const athlete = context.get(userContext)!;
+  const progressService = await getProgressService();
+  return await progressService.history(athlete);
 }
 
 export default function History({ loaderData }: Route.ComponentProps) {
   const {
-    sessions,
+    timeline,
+    totalSets,
+    workoutCount,
     heatmap,
     weeklySets,
     weeklyTonnage,
@@ -121,15 +43,13 @@ export default function History({ loaderData }: Route.ComponentProps) {
     bodyWeight,
   } = loaderData;
 
-  const totalSets = sessions.reduce((sum, s) => sum + s.sets.length, 0);
-  const workoutCount = sessions.filter((s) => s.sets.length > 0).length;
-  const hasTrends = sessions.length > 0 || bodyWeight != null;
+  const hasTrends = timeline.length > 0 || bodyWeight != null;
 
-  // Group consecutive sessions under a month heading. Sessions arrive
-  // newest-first, so a simple run-length pass is enough.
-  const groups: Array<{ month: string; sessions: typeof sessions }> = [];
-  for (const session of sessions) {
-    const month = monthLabel(session.date);
+  // Group consecutive days under a month heading. Days arrive newest-first,
+  // so a simple run-length pass is enough.
+  const groups: Array<{ month: string; sessions: typeof timeline }> = [];
+  for (const session of timeline) {
+    const month = formatMonthYear(session.date);
     const last = groups.at(-1);
     if (last?.month === month) last.sessions.push(session);
     else groups.push({ month, sessions: [session] });
@@ -140,8 +60,8 @@ export default function History({ loaderData }: Route.ComponentProps) {
       <PageHeader
         title="History"
         description={
-          sessions.length > 0
-            ? `${workoutCount} workout${workoutCount === 1 ? "" : "s"} and ${totalSets} set${totalSets === 1 ? "" : "s"} across ${sessions.length} recorded day${sessions.length === 1 ? "" : "s"}.`
+          timeline.length > 0
+            ? `${workoutCount} workout${workoutCount === 1 ? "" : "s"} and ${totalSets} set${totalSets === 1 ? "" : "s"} across ${timeline.length} recorded day${timeline.length === 1 ? "" : "s"}.`
             : "Every session you record shows up here, rest days included."
         }
       />
@@ -160,7 +80,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
         </Section>
       ) : null}
 
-      {sessions.length === 0 ? (
+      {timeline.length === 0 ? (
         <div className="mt-(--section-gap)">
           <EmptyState
             icon={HistoryIcon}
@@ -238,10 +158,10 @@ export default function History({ loaderData }: Route.ComponentProps) {
                           ([exerciseId, sets]) => (
                             <div key={exerciseId} className="flex flex-col">
                               <dt className="font-medium">
-                                {sets[0].exercise.name}
+                                {sets[0].exerciseName}
                               </dt>
                               <dd className="text-sm text-muted-foreground tabular-nums">
-                                {sets.map((s) => setSummary(s)).join(" · ")}
+                                {sets.map((s) => s.summary).join(" · ")}
                               </dd>
                             </div>
                           )

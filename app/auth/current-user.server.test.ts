@@ -1,8 +1,8 @@
 import { RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { User } from "~/db/schema";
-import type { UsersRepository } from "~/repositories/users-repository";
+import type { Athlete } from "~/domain/athlete/athlete";
+import type { AthletesRepository } from "~/repositories/athletes-repository";
 import { mock } from "~/test/mock";
 
 const { findByIdMock, getSessionMock } = vi.hoisted(() => ({
@@ -10,11 +10,11 @@ const { findByIdMock, getSessionMock } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
 }));
 
-vi.mock("~/repositories/users-repository.server", () => ({
-  getUsersRepository: vi
+vi.mock("~/repositories/athletes-repository.server", () => ({
+  getAthletesRepository: vi
     .fn()
     .mockResolvedValue(
-      mock<UsersRepository>({ findById: findByIdMock }),
+      mock<AthletesRepository>({ findById: findByIdMock }),
     ),
 }));
 
@@ -63,9 +63,9 @@ describe("loadUserMiddleware", () => {
     expect(findByIdMock).not.toHaveBeenCalled();
   });
 
-  it("sets the user in context when the session's userId resolves to a row", async () => {
+  it("sets the athlete in context when the session's userId resolves to a row", async () => {
     getSessionMock.mockResolvedValue(sessionWithUserId("user-1"));
-    const user = mock<User>({ id: "user-1", email: "greg@example.com" });
+    const user = mock<Athlete>({ id: "user-1", email: "greg@example.com" });
     findByIdMock.mockResolvedValue(user);
     const { args, context } = argsWithContext();
 

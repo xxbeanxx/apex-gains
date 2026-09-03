@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { cn } from "~/lib/utils";
-import type { WeeklyMetricPoint } from "~/lib/history-charts.server";
+import type { WeeklyPointView } from "~/services/progress-view";
 
 import { ChartTooltip } from "./chart-tooltip";
 import { axisTicks, niceAxisStep, roundedTopBarPath } from "./chart-utils";
@@ -17,7 +17,7 @@ export function WeeklyBarChart({
   formatValue,
   ariaLabel,
 }: {
-  points: WeeklyMetricPoint[];
+  points: WeeklyPointView[];
   /** Formats a value for the current-week direct label and the tooltip, e.g. "12 sets" or "4,250 lb". */
   formatValue: (value: number) => string;
   ariaLabel: string;

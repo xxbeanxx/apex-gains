@@ -1,7 +1,7 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
-import type { User } from "~/db/schema";
+import type { Athlete } from "~/domain/athlete/athlete";
 import { mock } from "~/test/mock";
 
 import { requireUserMiddleware } from "./require-user.server";
@@ -9,7 +9,7 @@ import { userContext } from "./user-context";
 
 type MiddlewareArgs = Parameters<typeof requireUserMiddleware>[0];
 
-function argsFor(url: string, user: User | null): MiddlewareArgs {
+function argsFor(url: string, user: Athlete | null): MiddlewareArgs {
   const context = new RouterContextProvider();
   if (user) context.set(userContext, user);
   return mock<MiddlewareArgs>({ request: new Request(url), context, params: {} });
@@ -21,7 +21,7 @@ describe("requireUserMiddleware", () => {
   it("does nothing when a user is present in context", async () => {
     const args = argsFor(
       "http://localhost/today",
-      mock<User>({ id: "user-1" }),
+      mock<Athlete>({ id: "user-1" }),
     );
 
     const result = await requireUserMiddleware(args, noopNext);

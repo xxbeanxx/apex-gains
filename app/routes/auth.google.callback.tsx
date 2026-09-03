@@ -7,7 +7,7 @@ import { getGoogleConfig } from "~/auth/oidc.server";
 import { commitSession, getSession } from "~/auth/session.server";
 import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
-import { getUsersRepository } from "~/repositories/users-repository.server";
+import { getAthletesRepository } from "~/repositories/athletes-repository.server";
 
 import type { Route } from "./+types/auth.google.callback";
 
@@ -63,12 +63,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     });
   }
 
-  const usersRepository = await getUsersRepository();
-  const existingUser = await usersRepository.findByGoogleSub(claims.sub);
+  const athletesRepository = await getAthletesRepository();
+  const existingUser = await athletesRepository.findByGoogleSub(claims.sub);
 
   const user =
     existingUser ??
-    (await usersRepository.create({
+    (await athletesRepository.create({
       googleSub: claims.sub,
       email: claims.email,
       name: typeof claims.name === "string" ? claims.name : claims.email,
