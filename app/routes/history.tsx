@@ -2,7 +2,8 @@ import { HistoryIcon, MoonIcon, PlusIcon } from "lucide-react";
 import { Link } from "react-router";
 
 import { userContext } from "~/auth/user-context";
-import { Page, PageHeader } from "~/components/layout/page";
+import { HistoryCharts } from "~/components/history/history-charts";
+import { Page, PageHeader, Section } from "~/components/layout/page";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -14,6 +15,10 @@ import {
 } from "~/components/ui/card";
 import { EmptyState } from "~/components/ui/empty-state";
 import { formatFullDate } from "~/lib/cycle";
+import {
+  computeExerciseProgressSeries,
+  computeWeeklyVolume,
+} from "~/lib/history-charts.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
 import type { Route } from "./+types/history";
@@ -49,18 +54,27 @@ function monthLabel(dateStr: string) {
   });
 }
 
+const CHART_HISTORY_LIMIT = 180;
+const TIMELINE_LIMIT = 90;
+const VOLUME_WEEKS = 12;
+
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
   const workoutSessionsRepository = await getWorkoutSessionsRepository();
-  const sessions = await workoutSessionsRepository.listRecentWithSetsForUser(
+  const chartSessions = await workoutSessionsRepository.listRecentWithSetsForUser(
     user.id,
-    90,
+    CHART_HISTORY_LIMIT,
   );
-  return { sessions };
+
+  return {
+    sessions: chartSessions.slice(0, TIMELINE_LIMIT),
+    weeklyVolume: computeWeeklyVolume(chartSessions, VOLUME_WEEKS),
+    exerciseProgress: computeExerciseProgressSeries(chartSessions),
+  };
 }
 
 export default function History({ loaderData }: Route.ComponentProps) {
-  const { sessions } = loaderData;
+  const { sessions, weeklyVolume, exerciseProgress } = loaderData;
 
   const totalSets = sessions.reduce((sum, s) => sum + s.sets.length, 0);
   const workoutCount = sessions.filter((s) => s.sets.length > 0).length;
@@ -85,6 +99,15 @@ export default function History({ loaderData }: Route.ComponentProps) {
             : "Every session you record shows up here, rest days included."
         }
       />
+
+      {sessions.length > 0 ? (
+        <Section title="Trends">
+          <HistoryCharts
+            weeklyVolume={weeklyVolume}
+            exerciseProgress={exerciseProgress}
+          />
+        </Section>
+      ) : null}
 
       {sessions.length === 0 ? (
         <div className="mt-(--section-gap)">
