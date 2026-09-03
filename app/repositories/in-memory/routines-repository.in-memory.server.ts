@@ -1,6 +1,6 @@
 import { Routine, type RoutineSnapshot } from "~/domain/routine/routine";
 
-import type { RoutinesRepository } from "./routines-repository";
+import type { RoutinesRepository } from "../routines-repository";
 
 // Dev-convenience adapter - see routines-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

@@ -14,7 +14,7 @@ describe("getExercisesRepository", () => {
       "./exercises-repository.server"
     );
     const { DrizzleExercisesRepository } = await import(
-      "./exercises-repository.drizzle.server"
+      "./drizzle/exercises-repository.drizzle.server"
     );
 
     const repository = await getExercisesRepository();
@@ -28,7 +28,7 @@ describe("getExercisesRepository", () => {
       "./exercises-repository.server"
     );
     const { InMemoryExercisesRepository } = await import(
-      "./exercises-repository.in-memory.server"
+      "./in-memory/exercises-repository.in-memory.server"
     );
 
     const repository = await getExercisesRepository();

@@ -4,7 +4,7 @@ import { dbScope } from "~/db/index.server";
 import { equipment, type Equipment as EquipmentRow } from "~/db/schema";
 import { Equipment } from "~/domain/equipment/equipment";
 
-import type { EquipmentRepository } from "./equipment-repository";
+import type { EquipmentRepository } from "../equipment-repository";
 
 export function sampleOrOwnEquipmentWhere(
   userId: string,

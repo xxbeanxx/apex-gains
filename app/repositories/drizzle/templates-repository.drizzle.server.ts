@@ -23,9 +23,9 @@ import {
   type TemplateExerciseSnapshot,
 } from "~/domain/template/workout-template";
 
-import { diffChildren } from "./shared/diff-children";
-import { writePositions } from "./shared/write-positions";
-import type { TemplatesRepository } from "./templates-repository";
+import { diffChildren } from "../shared/diff-children";
+import { writePositions } from "../shared/write-positions";
+import type { TemplatesRepository } from "../templates-repository";
 
 export function sampleOrOwnTemplatesWhere(
   userId: string,

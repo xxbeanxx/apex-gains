@@ -10,10 +10,10 @@ export async function getWorkoutSessionsRepository(): Promise<WorkoutSessionsRep
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./workout-sessions-repository.drizzle.server")
+          await import("./drizzle/workout-sessions-repository.drizzle.server")
         ).DrizzleWorkoutSessionsRepository()
       : new (
-          await import("./workout-sessions-repository.in-memory.server")
+          await import("./in-memory/workout-sessions-repository.in-memory.server")
         ).InMemoryWorkoutSessionsRepository();
   }
   return repository;

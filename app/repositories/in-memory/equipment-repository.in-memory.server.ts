@@ -1,6 +1,6 @@
 import { Equipment, type EquipmentSnapshot } from "~/domain/equipment/equipment";
 
-import type { EquipmentRepository } from "./equipment-repository";
+import type { EquipmentRepository } from "../equipment-repository";
 
 // Dev-convenience adapter - see equipment-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

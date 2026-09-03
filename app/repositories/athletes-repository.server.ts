@@ -12,10 +12,10 @@ export async function getAthletesRepository(): Promise<AthletesRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./athletes-repository.drizzle.server")
+          await import("./drizzle/athletes-repository.drizzle.server")
         ).DrizzleAthletesRepository()
       : new (
-          await import("./athletes-repository.in-memory.server")
+          await import("./in-memory/athletes-repository.in-memory.server")
         ).InMemoryAthletesRepository();
   }
   return repository;

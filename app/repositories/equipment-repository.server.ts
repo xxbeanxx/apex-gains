@@ -10,10 +10,10 @@ export async function getEquipmentRepository(): Promise<EquipmentRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./equipment-repository.drizzle.server")
+          await import("./drizzle/equipment-repository.drizzle.server")
         ).DrizzleEquipmentRepository()
       : new (
-          await import("./equipment-repository.in-memory.server")
+          await import("./in-memory/equipment-repository.in-memory.server")
         ).InMemoryEquipmentRepository();
   }
   return repository;

@@ -10,10 +10,10 @@ export async function getBodyWeightRepository(): Promise<BodyWeightRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./body-weight-repository.drizzle.server")
+          await import("./drizzle/body-weight-repository.drizzle.server")
         ).DrizzleBodyWeightRepository()
       : new (
-          await import("./body-weight-repository.in-memory.server")
+          await import("./in-memory/body-weight-repository.in-memory.server")
         ).InMemoryBodyWeightRepository();
   }
   return repository;

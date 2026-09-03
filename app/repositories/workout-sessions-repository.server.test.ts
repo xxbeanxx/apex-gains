@@ -14,7 +14,7 @@ describe("getWorkoutSessionsRepository", () => {
       "./workout-sessions-repository.server"
     );
     const { DrizzleWorkoutSessionsRepository } = await import(
-      "./workout-sessions-repository.drizzle.server"
+      "./drizzle/workout-sessions-repository.drizzle.server"
     );
 
     const repository = await getWorkoutSessionsRepository();
@@ -28,7 +28,7 @@ describe("getWorkoutSessionsRepository", () => {
       "./workout-sessions-repository.server"
     );
     const { InMemoryWorkoutSessionsRepository } = await import(
-      "./workout-sessions-repository.in-memory.server"
+      "./in-memory/workout-sessions-repository.in-memory.server"
     );
 
     const repository = await getWorkoutSessionsRepository();

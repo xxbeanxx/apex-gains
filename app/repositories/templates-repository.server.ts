@@ -10,10 +10,10 @@ export async function getTemplatesRepository(): Promise<TemplatesRepository> {
   if (!repository) {
     repository = process.env.DATABASE_URL
       ? new (
-          await import("./templates-repository.drizzle.server")
+          await import("./drizzle/templates-repository.drizzle.server")
         ).DrizzleTemplatesRepository()
       : new (
-          await import("./templates-repository.in-memory.server")
+          await import("./in-memory/templates-repository.in-memory.server")
         ).InMemoryTemplatesRepository();
   }
   return repository;

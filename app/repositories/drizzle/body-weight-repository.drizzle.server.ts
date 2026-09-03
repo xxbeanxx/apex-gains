@@ -5,7 +5,7 @@ import { bodyWeightLogs, type BodyWeightLog } from "~/db/schema";
 import { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
 import type { DateOnly } from "~/domain/values/date-only";
 
-import type { BodyWeightRepository } from "./body-weight-repository";
+import type { BodyWeightRepository } from "../body-weight-repository";
 
 function toEntry(row: BodyWeightLog): BodyWeightEntry {
   return BodyWeightEntry.fromSnapshot({

@@ -14,7 +14,7 @@ describe("getRoutinesRepository", () => {
       "./routines-repository.server"
     );
     const { DrizzleRoutinesRepository } = await import(
-      "./routines-repository.drizzle.server"
+      "./drizzle/routines-repository.drizzle.server"
     );
 
     const repository = await getRoutinesRepository();
@@ -28,7 +28,7 @@ describe("getRoutinesRepository", () => {
       "./routines-repository.server"
     );
     const { InMemoryRoutinesRepository } = await import(
-      "./routines-repository.in-memory.server"
+      "./in-memory/routines-repository.in-memory.server"
     );
 
     const repository = await getRoutinesRepository();

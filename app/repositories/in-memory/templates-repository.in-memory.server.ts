@@ -3,7 +3,7 @@ import {
   type TemplateSnapshot,
 } from "~/domain/template/workout-template";
 
-import type { TemplatesRepository } from "./templates-repository";
+import type { TemplatesRepository } from "../templates-repository";
 
 // Dev-convenience adapter - see templates-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

@@ -6,7 +6,7 @@ import {
   type NewAthlete,
 } from "~/domain/athlete/athlete";
 
-import type { AthletesRepository } from "./athletes-repository";
+import type { AthletesRepository } from "../athletes-repository";
 
 /**
  * Dev-convenience adapter for running the app without a database configured
