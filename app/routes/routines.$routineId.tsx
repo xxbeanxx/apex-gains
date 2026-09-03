@@ -35,6 +35,7 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { routineSlots, routines, templates } from "~/db/schema";
+import { loggerContext } from "~/lib/logger.server";
 import {
   forkRoutineForUser,
   sampleOrOwnTemplatesWhere,
@@ -104,6 +105,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       );
     }
     await db.delete(routines).where(eq(routines.id, routine.id));
+    context
+      .get(loggerContext)
+      .info({ userId: user.id, routineId: routine.id }, "routine deleted");
     throw redirect("/routines");
   }
 
@@ -195,6 +199,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         .set({ isActive: true, updatedAt: new Date() })
         .where(eq(routines.id, activeRoutineId));
     });
+    context
+      .get(loggerContext)
+      .info(
+        { userId: user.id, routineId: activeRoutineId },
+        "routine activated",
+      );
     if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }
@@ -204,6 +214,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       .update(routines)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(routines.id, activeRoutineId));
+    context
+      .get(loggerContext)
+      .info(
+        { userId: user.id, routineId: activeRoutineId },
+        "routine deactivated",
+      );
     if (didFork) throw redirect(`/routines/${activeRoutineId}`);
     return { ok: true };
   }

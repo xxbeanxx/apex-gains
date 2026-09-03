@@ -19,6 +19,7 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { routines } from "~/db/schema";
 import { todayDateString } from "~/lib/cycle";
+import { loggerContext } from "~/lib/logger.server";
 import { sampleOrOwnRoutinesWhere } from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/routines";
@@ -63,6 +64,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       anchorDate: todayDateString(),
     })
     .returning();
+
+  context
+    .get(loggerContext)
+    .info({ userId: user.id, routineId: routine.id }, "routine created");
 
   throw redirect(`/routines/${routine.id}`);
 }

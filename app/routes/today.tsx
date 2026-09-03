@@ -45,6 +45,7 @@ import {
   isValidDateString,
   todayDateString,
 } from "~/lib/cycle";
+import { loggerContext } from "~/lib/logger.server";
 import { cn } from "~/lib/utils";
 import {
   getOrCreateSession,
@@ -171,7 +172,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     const dateStr = result.data.date <= todayStr ? result.data.date : todayStr;
 
     const plan = await getTodaysPlan(user.id, dateStr);
-    const session = await getOrCreateSession(user.id, dateStr, plan);
+    const session = await getOrCreateSession(
+      user.id,
+      dateStr,
+      plan,
+      context.get(loggerContext),
+    );
 
     const existingSets = await db
       .select()

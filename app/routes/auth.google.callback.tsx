@@ -8,12 +8,16 @@ import { getGoogleConfig } from "~/auth/oidc.server";
 import { commitSession, getSession } from "~/auth/session.server";
 import { db } from "~/db/index.server";
 import { users } from "~/db/schema";
+import { loggerContext } from "~/lib/logger.server";
 
 import type { Route } from "./+types/auth.google.callback";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const logger = context.get(loggerContext);
+
   const state = await parseOidcState(request.headers.get("Cookie"));
   if (!state) {
+    logger.warn("google oauth callback with missing/expired state cookie");
     throw redirect("/auth/google");
   }
 
@@ -32,6 +36,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const claims = tokens.claims();
   if (!claims?.sub || typeof claims.email !== "string") {
+    logger.error(
+      { claims },
+      "google oauth callback missing expected profile claims",
+    );
     throw new Response("Google did not return the expected profile claims", {
       status: 400,
     });
@@ -57,6 +65,11 @@ export async function loader({ request }: Route.LoaderArgs) {
         })
         .returning()
     )[0];
+
+  logger.info(
+    { userId: user.id, newUser: !existingUser },
+    existingUser ? "user logged in" : "user signed up",
+  );
 
   const session = await getSession(request.headers.get("Cookie"));
   session.set("userId", user.id);

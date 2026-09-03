@@ -1,4 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
+import type { Logger } from "pino";
 
 import { db } from "~/db/index.server";
 import {
@@ -12,6 +13,7 @@ import {
 } from "~/db/schema";
 
 import { slotIndexForDate, todayDateString } from "./cycle";
+import { logger as baseLogger } from "./logger.server";
 
 export type TodaysPlanItem = {
   exercise: Exercise;
@@ -98,17 +100,26 @@ export async function getOrCreateSession(
   userId: string,
   dateStr: string,
   plan: TodaysPlan,
+  logger: Logger = baseLogger,
 ) {
   const routineId = plan.type === "none" ? null : plan.routineId;
   const templateId = plan.type === "template" ? plan.templateId : null;
   const isRestDay = plan.type === "rest";
 
-  await db
+  const inserted = await db
     .insert(workoutSessions)
     .values({ userId, date: dateStr, routineId, templateId, isRestDay })
     .onConflictDoNothing({
       target: [workoutSessions.userId, workoutSessions.date],
-    });
+    })
+    .returning();
+
+  if (inserted.length > 0) {
+    logger.info(
+      { userId, date: dateStr, routineId, templateId, isRestDay },
+      "workout session created",
+    );
+  }
 
   const [session] = await db
     .select()

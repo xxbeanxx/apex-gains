@@ -131,7 +131,7 @@ describe("getOrCreateSession", () => {
   beforeEach(() => {
     selectMock.mockReset();
     insertMock.mockReset();
-    insertMock.mockReturnValue(dbChain(undefined));
+    insertMock.mockReturnValue(dbChain([]));
   });
 
   it("inserts (ignoring conflicts) and returns the session row for the date", async () => {

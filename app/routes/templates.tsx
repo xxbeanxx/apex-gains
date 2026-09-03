@@ -18,6 +18,7 @@ import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/db/index.server";
 import { templates } from "~/db/schema";
+import { loggerContext } from "~/lib/logger.server";
 import { sampleOrOwnTemplatesWhere } from "~/lib/sample-data.server";
 
 import type { Route } from "./+types/templates";
@@ -58,6 +59,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     .insert(templates)
     .values({ userId: user.id, name: result.data.name })
     .returning();
+
+  context
+    .get(loggerContext)
+    .info({ userId: user.id, templateId: template.id }, "template created");
 
   throw redirect(`/templates/${template.id}`);
 }

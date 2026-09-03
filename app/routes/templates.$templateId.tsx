@@ -35,6 +35,7 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { type Exercise, exercises, templateExercises, templates } from "~/db/schema";
+import { loggerContext } from "~/lib/logger.server";
 import {
   forkTemplateForUser,
   sampleOrOwnExercisesWhere,
@@ -110,6 +111,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       );
     }
     await db.delete(templates).where(eq(templates.id, template.id));
+    context
+      .get(loggerContext)
+      .info({ userId: user.id, templateId: template.id }, "template deleted");
     throw redirect("/templates");
   }
 

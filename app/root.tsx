@@ -15,13 +15,17 @@ import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
 import { Button } from "~/components/ui/button";
 import { getBuildInfo } from "~/lib/build-info.server";
+import { requestLoggingMiddleware } from "~/lib/logger.server";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
-export const middleware: Route.MiddlewareFunction[] = [loadUserMiddleware];
+export const middleware: Route.MiddlewareFunction[] = [
+  requestLoggingMiddleware,
+  loadUserMiddleware,
+];
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext);
