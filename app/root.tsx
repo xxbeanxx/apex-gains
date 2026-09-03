@@ -10,6 +10,7 @@ import {
 } from "react-router";
 
 import { AppNav } from "~/components/app-nav";
+import { NavProgress } from "~/components/nav-progress";
 import { themeInitScript } from "~/components/theme-toggle";
 import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
@@ -65,6 +66,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <NavProgress />
       <AppNav user={user} />
       <Outlet />
       <footer className="border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground">

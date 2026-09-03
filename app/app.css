@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "nprogress/nprogress.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -370,4 +371,22 @@
     --dur: 1ms;
     --dur-slow: 1ms;
   }
+}
+
+/* Navigation progress bar (NavProgress / NProgress) uses the volt brand
+ * accent rather than NProgress's default blue. */
+#nprogress .bar {
+  background: var(--color-brand);
+  height: 3px;
+}
+
+#nprogress .peg {
+  box-shadow:
+    0 0 10px var(--color-brand),
+    0 0 5px var(--color-brand);
+}
+
+#nprogress .spinner-icon {
+  border-top-color: var(--color-brand);
+  border-left-color: var(--color-brand);
 }
