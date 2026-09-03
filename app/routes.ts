@@ -10,6 +10,7 @@ export default [
   route("auth/google", "routes/auth.google.tsx"),
   route("auth/google/callback", "routes/auth.google.callback.tsx"),
   route("auth/logout", "routes/auth.logout.tsx"),
+  route("auth/test-login", "routes/auth.test-login.tsx"),
   layout("routes/_protected.tsx", [
     route("today", "routes/today.tsx"),
     route("exercises", "routes/exercises.tsx"),

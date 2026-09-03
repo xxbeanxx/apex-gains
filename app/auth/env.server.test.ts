@@ -5,6 +5,7 @@ import {
   getGoogleClientSecret,
   getOrigin,
   getSessionSecret,
+  isTestLoginEnabled,
 } from "./env.server";
 
 describe("env.server", () => {
@@ -71,6 +72,23 @@ describe("env.server", () => {
       expect(() => getGoogleClientSecret()).toThrow(
         "GOOGLE_CLIENT_SECRET environment variable is not set",
       );
+    });
+  });
+
+  describe("isTestLoginEnabled", () => {
+    it("is false when unset", () => {
+      delete process.env.ENABLE_TEST_LOGIN;
+      expect(isTestLoginEnabled()).toBe(false);
+    });
+
+    it("is false for any value other than the exact string 'true'", () => {
+      process.env.ENABLE_TEST_LOGIN = "1";
+      expect(isTestLoginEnabled()).toBe(false);
+    });
+
+    it("is true when set to 'true'", () => {
+      process.env.ENABLE_TEST_LOGIN = "true";
+      expect(isTestLoginEnabled()).toBe(true);
     });
   });
 });

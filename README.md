@@ -72,6 +72,12 @@ convenience). The production `start` script does **not** - a container
 gets its environment from the runtime (pod/host), not a bundled `.env`
 file. See `.env.example` for the full list.
 
+`ENABLE_TEST_LOGIN=true` turns on `GET /auth/test-login?email=...`, which
+signs in as a user by email (creating it on first use) without going
+through Google - it exists so Playwright/e2e runs can authenticate without
+a real Google account. It 404s unless the flag is set, and the flag must
+never be set on the deployed app: it is an unauthenticated login backdoor.
+
 ## Containerization
 
 Built with `containerfile` (not `Dockerfile` - this project targets

@@ -21,3 +21,10 @@ export function getGoogleClientId(): string {
 export function getGoogleClientSecret(): string {
   return requireEnv("GOOGLE_CLIENT_SECRET");
 }
+
+// Off by default - only e2e/CI environments should ever set this. Unlike
+// the getters above, this has no "unset" failure mode: absence just means
+// disabled.
+export function isTestLoginEnabled(): boolean {
+  return process.env.ENABLE_TEST_LOGIN === "true";
+}
