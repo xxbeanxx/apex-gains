@@ -68,7 +68,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <AppNav user={user} />
       <Outlet />
       <footer className="border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground">
-        Build {loaderData?.buildInfo ?? "unknown"}
+        {loaderData?.buildInfo ?? "unknown"}
       </footer>
     </div>
   );
