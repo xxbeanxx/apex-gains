@@ -5,6 +5,8 @@ import { cn } from "~/lib/utils";
  * correctly with the SVG under it as long as the SVG uses
  * `preserveAspectRatio="none"` inside a container whose CSS aspect-ratio
  * matches the viewBox - see the two chart components for that pairing.
+ * Always anchors above `y` - every chart that uses this reserves enough
+ * headroom above its topmost point/row for that to clear the card's edge.
  */
 export function ChartTooltip({
   x,

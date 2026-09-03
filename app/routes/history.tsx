@@ -16,8 +16,12 @@ import {
 import { EmptyState } from "~/components/ui/empty-state";
 import { formatFullDate } from "~/lib/cycle";
 import {
+  computeConsistencyHeatmap,
   computeExerciseProgressSeries,
-  computeWeeklyVolume,
+  computeMuscleGroupBalance,
+  computePersonalRecords,
+  computeWeeklySetCount,
+  computeWeeklyTonnage,
 } from "~/lib/history-charts.server";
 import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
 
@@ -54,9 +58,11 @@ function monthLabel(dateStr: string) {
   });
 }
 
-const CHART_HISTORY_LIMIT = 180;
+const CHART_HISTORY_LIMIT = 250;
 const TIMELINE_LIMIT = 90;
 const VOLUME_WEEKS = 12;
+const HEATMAP_WEEKS = 16;
+const MUSCLE_BALANCE_DAYS = 28;
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext)!;
@@ -68,13 +74,25 @@ export async function loader({ context }: Route.LoaderArgs) {
 
   return {
     sessions: chartSessions.slice(0, TIMELINE_LIMIT),
-    weeklyVolume: computeWeeklyVolume(chartSessions, VOLUME_WEEKS),
+    heatmap: computeConsistencyHeatmap(chartSessions, HEATMAP_WEEKS),
+    weeklySets: computeWeeklySetCount(chartSessions, VOLUME_WEEKS),
+    weeklyTonnage: computeWeeklyTonnage(chartSessions, VOLUME_WEEKS),
     exerciseProgress: computeExerciseProgressSeries(chartSessions),
+    muscleBalance: computeMuscleGroupBalance(chartSessions, MUSCLE_BALANCE_DAYS),
+    personalRecords: computePersonalRecords(chartSessions),
   };
 }
 
 export default function History({ loaderData }: Route.ComponentProps) {
-  const { sessions, weeklyVolume, exerciseProgress } = loaderData;
+  const {
+    sessions,
+    heatmap,
+    weeklySets,
+    weeklyTonnage,
+    exerciseProgress,
+    muscleBalance,
+    personalRecords,
+  } = loaderData;
 
   const totalSets = sessions.reduce((sum, s) => sum + s.sets.length, 0);
   const workoutCount = sessions.filter((s) => s.sets.length > 0).length;
@@ -103,8 +121,12 @@ export default function History({ loaderData }: Route.ComponentProps) {
       {sessions.length > 0 ? (
         <Section title="Trends">
           <HistoryCharts
-            weeklyVolume={weeklyVolume}
+            heatmap={heatmap}
+            weeklySets={weeklySets}
+            weeklyTonnage={weeklyTonnage}
             exerciseProgress={exerciseProgress}
+            muscleBalance={muscleBalance}
+            personalRecords={personalRecords}
           />
         </Section>
       ) : null}

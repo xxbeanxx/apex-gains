@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { cn } from "~/lib/utils";
-import type { WeeklyVolumePoint } from "~/lib/history-charts.server";
+import type { WeeklyMetricPoint } from "~/lib/history-charts.server";
 
 import { ChartTooltip } from "./chart-tooltip";
 import { axisTicks, niceAxisStep, roundedTopBarPath } from "./chart-utils";
@@ -12,23 +12,32 @@ const MARGIN = { top: 24, right: 8, bottom: 24, left: 26 };
 const CHART_W = VIEW_W - MARGIN.left - MARGIN.right;
 const CHART_H = VIEW_H - MARGIN.top - MARGIN.bottom;
 
-export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
+export function WeeklyBarChart({
+  points,
+  formatValue,
+  ariaLabel,
+}: {
+  points: WeeklyMetricPoint[];
+  /** Formats a value for the current-week direct label and the tooltip, e.g. "12 sets" or "4,250 lb". */
+  formatValue: (value: number) => string;
+  ariaLabel: string;
+}) {
   const [hovered, setHovered] = useState<number | null>(null);
 
-  const maxCount = Math.max(0, ...weeks.map((w) => w.setCount));
-  const step = niceAxisStep(maxCount);
-  const axisMax = maxCount > 0 ? Math.ceil(maxCount / step) * step : step * 4;
+  const maxValue = Math.max(0, ...points.map((p) => p.value));
+  const step = niceAxisStep(maxValue);
+  const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step * 4;
   const ticks = axisTicks(axisMax, step);
 
-  const bandWidth = CHART_W / weeks.length;
+  const bandWidth = CHART_W / points.length;
   const barWidth = Math.min(24, bandWidth * 0.55);
-  const lastIndex = weeks.length - 1;
+  const lastIndex = points.length - 1;
 
   const yFor = (value: number) => MARGIN.top + CHART_H - (value / axisMax) * CHART_H;
 
-  const hoveredWeek = hovered != null ? weeks[hovered] : null;
+  const hoveredPoint = hovered != null ? points[hovered] : null;
   const tooltipX = hovered != null ? ((MARGIN.left + (hovered + 0.5) * bandWidth) / VIEW_W) * 100 : 0;
-  const tooltipY = hoveredWeek ? (yFor(hoveredWeek.setCount) / VIEW_H) * 100 : 0;
+  const tooltipY = hoveredPoint ? (yFor(hoveredPoint.value) / VIEW_H) * 100 : 0;
 
   return (
     <div
@@ -40,7 +49,7 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
         preserveAspectRatio="none"
         className="size-full overflow-visible"
         role="img"
-        aria-label={`Sets logged per week, from ${weeks[0]?.label} to ${weeks[lastIndex]?.label}`}
+        aria-label={ariaLabel}
       >
         {ticks.map((t) => (
           <g key={t}>
@@ -64,14 +73,14 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
           </g>
         ))}
 
-        {weeks.map((week, i) => {
+        {points.map((point, i) => {
           const x = MARGIN.left + i * bandWidth + (bandWidth - barWidth) / 2;
-          const height = (week.setCount / axisMax) * CHART_H;
+          const height = (point.value / axisMax) * CHART_H;
           const y = MARGIN.top + CHART_H - height;
-          const showLabel = weeks.length <= 8 || (lastIndex - i) % 2 === 0;
+          const showLabel = points.length <= 8 || (lastIndex - i) % 2 === 0;
 
           return (
-            <g key={week.weekStart}>
+            <g key={point.weekStart}>
               {/* Full-column hit target, taller than the bar itself. */}
               <rect
                 x={MARGIN.left + i * bandWidth}
@@ -85,9 +94,9 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
                 onBlur={() => setHovered((h) => (h === i ? null : h))}
                 tabIndex={0}
                 role="img"
-                aria-label={`Week of ${week.label}: ${week.setCount} set${week.setCount === 1 ? "" : "s"}`}
+                aria-label={`Week of ${point.label}: ${formatValue(point.value)}`}
               />
-              {week.setCount > 0 ? (
+              {point.value > 0 ? (
                 <path
                   d={roundedTopBarPath(x, y, barWidth, height, 4)}
                   className={cn(
@@ -96,14 +105,14 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
                   )}
                 />
               ) : null}
-              {week.isCurrentWeek && week.setCount > 0 ? (
+              {point.isCurrentWeek && point.value > 0 ? (
                 <text
                   x={x + barWidth / 2}
                   y={y - 6}
                   textAnchor="middle"
                   className="fill-foreground text-[10px] font-medium tabular-nums"
                 >
-                  {week.setCount}
+                  {formatValue(point.value)}
                 </text>
               ) : null}
               {showLabel ? (
@@ -113,10 +122,10 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
                   textAnchor="middle"
                   className={cn(
                     "text-[9px]",
-                    week.isCurrentWeek ? "fill-foreground font-medium" : "fill-muted-foreground"
+                    point.isCurrentWeek ? "fill-foreground font-medium" : "fill-muted-foreground"
                   )}
                 >
-                  {week.label}
+                  {point.label}
                 </text>
               ) : null}
             </g>
@@ -124,13 +133,11 @@ export function WeeklyVolumeChart({ weeks }: { weeks: WeeklyVolumePoint[] }) {
         })}
       </svg>
 
-      <ChartTooltip x={tooltipX} y={tooltipY} visible={hoveredWeek != null}>
-        {hoveredWeek ? (
+      <ChartTooltip x={tooltipX} y={tooltipY} visible={hoveredPoint != null}>
+        {hoveredPoint ? (
           <>
-            <div className="font-semibold tabular-nums">
-              {hoveredWeek.setCount} set{hoveredWeek.setCount === 1 ? "" : "s"}
-            </div>
-            <div className="text-muted-foreground">Week of {hoveredWeek.label}</div>
+            <div className="font-semibold tabular-nums">{formatValue(hoveredPoint.value)}</div>
+            <div className="text-muted-foreground">Week of {hoveredPoint.label}</div>
           </>
         ) : null}
       </ChartTooltip>

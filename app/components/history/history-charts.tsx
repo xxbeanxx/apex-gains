@@ -1,4 +1,4 @@
-import { TrendingUpIcon } from "lucide-react";
+import { ScaleIcon, TrendingUpIcon, TrophyIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -12,31 +12,94 @@ import {
 } from "~/components/ui/select";
 import type {
   ExerciseProgressSeries,
-  WeeklyVolumePoint,
+  HeatmapDay,
+  MuscleGroupBalancePoint,
+  PersonalRecord,
+  WeeklyMetricPoint,
 } from "~/lib/history-charts.server";
 
+import { ConsistencyHeatmap } from "./consistency-heatmap";
 import { ExerciseProgressChart } from "./exercise-progress-chart";
-import { WeeklyVolumeChart } from "./weekly-volume-chart";
+import { MuscleBalanceChart } from "./muscle-balance-chart";
+import { PersonalRecordsList } from "./personal-records-list";
+import { WeeklyBarChart } from "./weekly-bar-chart";
 
 export function HistoryCharts({
-  weeklyVolume,
+  heatmap,
+  weeklySets,
+  weeklyTonnage,
   exerciseProgress,
+  muscleBalance,
+  personalRecords,
 }: {
-  weeklyVolume: WeeklyVolumePoint[];
+  heatmap: HeatmapDay[];
+  weeklySets: WeeklyMetricPoint[];
+  weeklyTonnage: WeeklyMetricPoint[];
   exerciseProgress: ExerciseProgressSeries[];
+  muscleBalance: MuscleGroupBalancePoint[];
+  personalRecords: PersonalRecord[];
 }) {
   return (
-    <div className="stagger grid gap-4 lg:grid-cols-2">
+    <div className="stagger flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Weekly volume</CardTitle>
+          <CardTitle>Consistency</CardTitle>
         </CardHeader>
         <CardContent>
-          <WeeklyVolumeChart weeks={weeklyVolume} />
+          <ConsistencyHeatmap days={heatmap} />
         </CardContent>
       </Card>
 
-      <ExerciseProgressCard series={exerciseProgress} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly sets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WeeklyBarChart
+              points={weeklySets}
+              formatValue={(v) => `${v} set${v === 1 ? "" : "s"}`}
+              ariaLabel={`Sets logged per week, from ${weeklySets[0]?.label} to ${weeklySets.at(-1)?.label}`}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly tonnage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WeeklyBarChart
+              points={weeklyTonnage}
+              formatValue={(v) => `${Math.round(v).toLocaleString()} lb`}
+              ariaLabel={`Total weight lifted per week, from ${weeklyTonnage[0]?.label} to ${weeklyTonnage.at(-1)?.label}`}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ExerciseProgressCard series={exerciseProgress} />
+        <MuscleBalanceCard groups={muscleBalance} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Personal records</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {personalRecords.length > 0 ? (
+            <PersonalRecordsList records={personalRecords} />
+          ) : (
+            <EmptyState
+              compact
+              icon={TrophyIcon}
+              title="No records yet"
+              description="Log a set for any exercise and it'll show up here."
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -80,6 +143,28 @@ function ExerciseProgressCard({ series }: { series: ExerciseProgressSeries[] }) 
             icon={TrendingUpIcon}
             title="Not enough data yet"
             description="Log the same exercise on two or more days to see a progress trend."
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MuscleBalanceCard({ groups }: { groups: MuscleGroupBalancePoint[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Muscle balance</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {groups.length > 0 ? (
+          <MuscleBalanceChart groups={groups} />
+        ) : (
+          <EmptyState
+            compact
+            icon={ScaleIcon}
+            title="Nothing in the last 4 weeks"
+            description="Log a strength set and its muscle group will show up here."
           />
         )}
       </CardContent>
