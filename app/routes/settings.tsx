@@ -54,7 +54,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   const athleteService = context.get(athleteServiceContext);
 
   if (intent === 'updateSampleDataVisibility') {
-    const result = validateForm(UpdateSampleDataVisibilityDto, { showSampleData: formData.get('showSampleData') });
+    const result = validateForm(UpdateSampleDataVisibilityDto, {
+      // An unchecked checkbox is absent from the submission entirely - that
+      // absence is how a browser spells "false", and the only way this form
+      // ever turns sample data off.
+      showSampleData: formData.get('showSampleData') ?? 'false',
+    });
     if (!result.success) {
       return data({ error: result.message }, { status: 400 });
     }
