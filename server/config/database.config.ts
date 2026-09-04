@@ -1,5 +1,8 @@
+import { registerAs } from '@nestjs/config';
 import { Expose } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
+
+import { validateConfigSlice } from './validate';
 
 /**
  * `DATABASE_URL` is the one env var that's optional by design: unset, the
@@ -13,3 +16,5 @@ export class DatabaseConfig {
   @IsString({ message: 'DATABASE_URL must be a string' })
   readonly databaseUrl?: string;
 }
+
+export const databaseConfig = registerAs('databaseConfig', () => validateConfigSlice(DatabaseConfig, process.env));

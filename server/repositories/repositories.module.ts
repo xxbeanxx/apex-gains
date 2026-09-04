@@ -29,7 +29,7 @@ import {
   WORKOUT_SESSIONS_REPOSITORY,
 } from '~/repositories/tokens';
 
-import { databaseConfig } from '../config/app.config';
+import { databaseConfig } from '../config/database.config';
 
 type DatabaseConfig = ConfigType<typeof databaseConfig>;
 

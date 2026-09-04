@@ -16,12 +16,19 @@ export default defineConfig(({ command }) => ({
   environments: {
     ssr: {
       resolve: {
-        // Inline every dependency so the built server needs no `node_modules`
-        // at runtime. Build only: in dev the SSR environment must keep loading
-        // `react-router` from `node_modules`, the same copy `server/main.ts`
-        // loads under tsx - two copies would fail `handleRequest`'s
-        // `instanceof RouterContextProvider` check on every request.
-        noExternal: command === 'build' ? true : undefined,
+        // Build: inline every dependency so the built server needs no
+        // `node_modules` at runtime.
+        //
+        // Dev: `@react-router/express` specifically has to be inlined.
+        // `react-router` publishes `development` and `default` export
+        // conditions, and Vite's dev SSR picks `development` where plain node
+        // picks `default` - two module instances, two `RouterContextProvider`
+        // classes. Everything on the request path (the express adapter, the
+        // routes, and the load context `handler.ts` builds for them) has to
+        // agree on one, or `handleRequest`'s `instanceof RouterContextProvider`
+        // check rejects every request. Inlining pulls the adapter into Vite's
+        // graph, where it resolves `react-router` the same way the routes do.
+        noExternal: command === 'build' ? true : ['@react-router/express'],
       },
       build: {
         // The React Router plugin defaults this to the virtual server build.

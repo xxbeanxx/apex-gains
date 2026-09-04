@@ -2,7 +2,7 @@ import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import * as client from 'openid-client';
 
-import { googleOAuthConfig } from '../config/app.config';
+import { googleOAuthConfig } from '../config/google-oauth.config';
 import { OIDC_CLIENT_CONFIG } from './tokens';
 
 /**

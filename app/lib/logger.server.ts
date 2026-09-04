@@ -1,30 +1,21 @@
 import type { LoggerService } from '@nestjs/common';
-import { createContext, type MiddlewareFunction, type RouterContextProvider } from 'react-router';
+import type { MiddlewareFunction, RouterContextProvider } from 'react-router';
 
 import { userContext } from '~/auth/user-context';
 
-import { getNestLogger, nestLoggerContext } from './nest-bridge.server';
+import { nestLoggerContext } from './nest-bridge.server';
 
 /** The Nest logger context label every request-lifecycle line is filed under. */
 const REQUEST = 'Request';
 
 /**
- * The logger for the current request, set by `requestLoggingMiddleware`.
- *
- * Defaults to null rather than being left unset: middleware only runs for a
- * *matched* route, so an unmatched URL reaches `entry.server.tsx`'s
- * `handleError` with nothing here - and `context.get` throws on an unset
- * context with no default, which would turn a plain 404 into a 500. Read it
- * through `requestLogger` below rather than directly.
- */
-export const loggerContext = createContext<LoggerService | null>(null);
-
-/**
- * The request's logger, falling back to the process-wide one on the paths
- * that have no request context to carry it.
+ * The logger for the current request. Safe on every path, matched route or
+ * not: `nestLoadContext` populates `nestLoggerContext` when the load context
+ * is built, before routing - unlike a middleware, which only runs once a
+ * route has matched.
  */
 export function requestLogger(context: Readonly<RouterContextProvider>): LoggerService {
-  return context.get(loggerContext) ?? getNestLogger();
+  return context.get(nestLoggerContext);
 }
 
 /** "GET /today 200 in 12ms", plus the athlete once one is known. */
@@ -35,8 +26,7 @@ function describe(method: string, path: string, outcome: string, startedAt: numb
 }
 
 export const requestLoggingMiddleware: MiddlewareFunction<Response> = async ({ request, context }, next) => {
-  const logger = context.get(nestLoggerContext);
-  context.set(loggerContext, logger);
+  const logger = requestLogger(context);
 
   const { method } = request;
   const { pathname } = new URL(request.url);

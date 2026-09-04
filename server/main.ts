@@ -22,29 +22,31 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import compression from 'compression';
 import { static as serveStatic } from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
-import type { ServerBuild } from 'react-router';
+
+import type { NestSingletons } from '~/lib/nest-bridge.server';
 
 import { AppModule } from './app.module';
-import { coreConfig } from './config/app.config';
+import { coreConfig } from './config/core.config';
 import { LOGGER } from './logging/tokens';
-import { LoadContextProvider } from './react-router/load-context.provider';
+import { collectNestSingletons } from './react-router/singletons';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** Nest logger context label for the process-wide crash handlers below. */
+const PROCESS = 'Process';
+
 /**
  * Registers Vite middleware and the SSR fallback for `npm run dev`.
  *
- * Everything Vite-related is imported dynamically so it stays out of the
- * production bundle, and `@react-router/express`/`react-router` come from
- * `node_modules` - the same copy Vite hands the SSR-loaded server build, which
- * is what makes `getLoadContext`'s `RouterContextProvider` the instance
- * `handleRequest` expects.
+ * `handler.ts` is loaded *through Vite* rather than imported: it has to come
+ * from the same module graph as the routes, and it is re-loaded per request
+ * so an edit to a route or to the handler itself takes effect without a
+ * restart. Vite itself is imported dynamically so it stays out of the
+ * production bundle.
  */
-async function registerDevRoutes(server: Express): Promise<void> {
+async function registerDevRoutes(server: Express, singletons: NestSingletons): Promise<void> {
   const { createServer } = await import('vite');
-  const { createRequestHandler } = await import('@react-router/express');
-  const { RouterContextProvider } = await import('react-router');
 
   const vite = await createServer({
     appType: 'custom',
@@ -55,16 +57,11 @@ async function registerDevRoutes(server: Express): Promise<void> {
 
   server.use(async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const serverBuild = (await vite.ssrLoadModule('virtual:react-router/server-build')) as ServerBuild;
+      const { createHandler } = (await vite.ssrLoadModule(
+        '/server/react-router/handler.ts',
+      )) as typeof import('./react-router/handler');
 
-      return await createRequestHandler({
-        build: serverBuild,
-        mode: 'development',
-        // Load context arrives empty: `nestBridgeMiddleware` (registered first
-        // in `app/root.tsx`) is what populates it - see
-        // `app/lib/nest-bridge.server.ts`.
-        getLoadContext: () => new RouterContextProvider(),
-      })(req, res, next);
+      return await createHandler(singletons, 'development')(req, res, next);
     } catch (error) {
       vite.ssrFixStacktrace(error as Error);
       next(error);
@@ -75,16 +72,14 @@ async function registerDevRoutes(server: Express): Promise<void> {
 /**
  * Serves the production build's static assets and the SSR fallback.
  *
- * `index.js` - the React Router bundle - sits next to this file in
- * `build/server/`, and exports its request handler ready-made rather than a
- * bare `ServerBuild`; see `server/react-router/handler.ts` for why the handler
- * has to be constructed on that side of the bundle boundary. The import goes
- * through a computed path so no bundler tries to follow it: the module only
- * exists once `react-router build` has run.
+ * `index.js` - the React Router bundle, built from `handler.ts` - sits next
+ * to this file in `build/server/`. The import goes through a computed path so
+ * no bundler tries to follow it: the module only exists once
+ * `react-router build` has run.
  */
-async function registerProductionRoutes(server: Express): Promise<void> {
+async function registerProductionRoutes(server: Express, singletons: NestSingletons): Promise<void> {
   const handlerPath = path.resolve(__dirname, 'index.js');
-  const { assetsBuildDirectory, publicPath, requestHandler } = (await import(
+  const { assetsBuildDirectory, publicPath, createHandler } = (await import(
     url.pathToFileURL(handlerPath).href
   )) as typeof import('./react-router/handler');
 
@@ -105,7 +100,7 @@ async function registerProductionRoutes(server: Express): Promise<void> {
   // site-association) can only be exercised against a production build.
   server.use('/.well-known', serveStatic(path.join(assetsDirectory, '.well-known')));
 
-  server.use(requestHandler);
+  server.use(createHandler(singletons, 'production'));
 }
 
 async function bootstrap() {
@@ -120,8 +115,21 @@ async function bootstrap() {
     // needs a parsed body should opt in with `app.useBodyParser()`.
     bodyParser: false,
   });
-  app.useLogger(app.get(LOGGER));
+  const logger = app.get(LOGGER);
+  app.useLogger(logger);
   app.enableShutdownHooks();
+
+  // The process is the server, so its crash handlers belong here rather than
+  // anywhere under `app/`, where importing the module would hook them inside
+  // the vitest process too.
+  process.on('uncaughtException', (err) => {
+    logger.fatal('uncaught exception', err.stack, PROCESS);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled rejection', reason instanceof Error ? reason.stack : String(reason), PROCESS);
+  });
 
   const adapter = app.getHttpAdapter();
   const server = adapter.getInstance() as Express;
@@ -145,10 +153,7 @@ async function bootstrap() {
   });
 
   const core = app.get(coreConfig.KEY);
-
-  // Publishes every Nest-resolved singleton for `nestBridgeMiddleware` to
-  // pick up - must happen before any request can reach a route.
-  app.get(LoadContextProvider).register();
+  const singletons = collectNestSingletons(app);
 
   // This app's fallback is the React Router handler, not Nest's 404. Nest
   // registers its own catch-all during `init()` and skips it when the adapter
@@ -168,9 +173,9 @@ async function bootstrap() {
   await app.init();
 
   if (core.nodeEnv === 'production') {
-    await registerProductionRoutes(server);
+    await registerProductionRoutes(server, singletons);
   } else {
-    await registerDevRoutes(server);
+    await registerDevRoutes(server, singletons);
   }
 
   if (core.host) {

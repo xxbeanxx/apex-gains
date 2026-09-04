@@ -8,17 +8,16 @@ import { loadUserMiddleware } from '~/auth/current-user.server';
 import { userContext } from '~/auth/user-context';
 import { getBuildInfo } from '~/lib/build-info.server';
 import { requestLoggingMiddleware } from '~/lib/logger.server';
-import { nestBridgeMiddleware } from '~/lib/nest-bridge.server';
 
 import type { Route } from './+types/root';
 import './app.css';
 
 export const links: Route.LinksFunction = () => [];
 
-// nestBridgeMiddleware must run first: requestLoggingMiddleware reads
-// nestLoggerContext and loadUserMiddleware reads athleteServiceContext and
-// sessionStorageContext, all of which it populates.
-export const middleware: Route.MiddlewareFunction[] = [nestBridgeMiddleware, requestLoggingMiddleware, loadUserMiddleware];
+// requestLoggingMiddleware must run first: it is what times the request, so
+// anything it wraps (loadUserMiddleware included) counts towards the duration
+// it logs.
+export const middleware: Route.MiddlewareFunction[] = [requestLoggingMiddleware, loadUserMiddleware];
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext);

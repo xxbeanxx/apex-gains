@@ -1,7 +1,8 @@
+import { registerAs } from '@nestjs/config';
 import { Expose, Transform } from 'class-transformer';
 import { IsBoolean } from 'class-validator';
 
-import { toBoolean } from './app.config';
+import { toBoolean, validateConfigSlice } from './validate';
 
 /**
  * Off by default - only e2e/CI environments should ever set this. Unlike
@@ -13,3 +14,5 @@ export class TestLoginConfig {
   @IsBoolean({ message: 'ENABLE_TEST_LOGIN must be true or false' })
   readonly enableTestLogin: boolean = false;
 }
+
+export const testLoginConfig = registerAs('testLoginConfig', () => validateConfigSlice(TestLoginConfig, process.env));

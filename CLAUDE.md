@@ -171,8 +171,12 @@ which is why
 explicit token fails at DI-resolution time with a "Nest can't resolve
 dependencies" error, not a type error. Environment variables are
 validated once at boot with `class-validator`/`class-transformer`
-(`server/config/`, one schema class per concern: core, database,
-Google OAuth, session, test-login).
+(`server/config/`, one file per concern - core, database, Google
+OAuth, session, test-login - each holding its schema class and the
+`registerAs()` loader that validates it, with the shared
+`validateConfigSlice` helper in `config/validate.ts`). A loader only
+becomes an injectable token once it is listed in `AppModule`'s
+`ConfigModule.forRoot({ load })`.
 
 Two bootstrap invariants in `server/main.ts` are load-bearing and easy
 to undo: `app.init()` runs _before_ the React Router handler is
@@ -186,27 +190,36 @@ React Router's load context is the _only_ conduit from Nest to the app
 
 - every service and Nest-validated config value reaches a route via
   `context.get(...)`, the same `createContext()` pattern as
-  `userContext`/`loggerContext`. Repositories do not: nothing above the
-  service layer holds a port. That indirection exists because Nest and
-  the routes are always two separate module instances: in dev Nest runs
-  under `tsx`, outside Vite's module graph, while routes load through
-  Vite's SSR pipeline; in production the two are separate bundles (see
-  Build output, below). Either way a `createContext()` token created in
-  `server/` could never be `===` the token a route reads
-  (`RouterContextProvider` keys its map by token identity).
-  `app/lib/nest-bridge.server.ts` is where the tokens actually live -
-  inside the React Router graph, alongside `nestBridgeMiddleware`,
-  registered first in `root.tsx`'s `middleware` export. Nest hands over its
-  resolved singletons through `registerNestSingletons()`, which stashes
-  them on `globalThis` under a `Symbol.for(...)` key - stable across the
-  two separately-loaded copies of that module, unlike a plain `Symbol()` -
-  rather than trying to build the `RouterContextProvider` itself. That's
-  the one deliberate exception to "everything crosses via
-  `context.get(...)`": `app/entry.server.tsx`'s process-wide
-  `uncaughtException`/`unhandledRejection` handlers run at module load,
-  before any request (and so any load context) exists, so they call
-  `getNestLogger()` instead, reading the same registered singleton lazily
-  inside the handler body.
+  `userContext`. Repositories do not: nothing above the service layer
+  holds a port.
+
+The whole bridge is three pieces. `app/lib/nest-bridge.server.ts`
+declares one `contexts` map, and derives from it the exported tokens,
+the `NestSingletons` type, and `nestLoadContext(singletons)`, which
+builds a populated `RouterContextProvider`; adding a service is one
+edit there, and a missing one is a type error rather than an
+`undefined` at request time.
+`server/react-router/singletons.ts` pulls those values out of the DI
+container at bootstrap (`collectNestSingletons(app)`).
+`server/react-router/handler.ts` joins them: it is the React Router
+build's own entry point, so it calls `nestLoadContext` from inside
+`getLoadContext`.
+
+That last placement is the load-bearing part. Nest and the routes are
+always two separate module instances - in dev Nest runs under `tsx`,
+outside Vite's module graph, while routes load through Vite's SSR
+pipeline; in production the two are separate bundles (see Build
+output, below) - so a `createContext()` token minted in `server/`
+could never be `===` the token a route reads (`RouterContextProvider`
+keys its map by token identity), and a provider minted there would
+fail `handleRequest`'s `instanceof RouterContextProvider` check.
+`handler.ts` reaches the same copies the routes do, which is why both
+the tokens and the provider are built from there and `server/main.ts`
+only supplies values.
+
+Because the context is built before routing rather than by a
+middleware, every context is set on _every_ request - including an
+unmatched URL, which matches no route and so runs no middleware.
 
 **Build output.** `npm run build` runs two Vite builds, and both inline
 every dependency (`resolve.noExternal`), so `build/` is the entire
@@ -216,9 +229,9 @@ the container image ships no `node_modules`:
 - `react-router build` (`vite.config.ts`) writes `build/client/` and
   `build/server/index.js`. Its SSR entry is not the default virtual
   server build but `server/react-router/handler.ts`
-  (`environments.ssr.build.rollupOptions.input`), which wraps that
-  virtual module in a `createRequestHandler` and exports it, along with
-  `assetsBuildDirectory` and `publicPath`.
+  (`environments.ssr.build.rollupOptions.input`), which exports
+  `createHandler(singletons, mode)` over that virtual module, along
+  with `assetsBuildDirectory` and `publicPath`.
 - `vite.server.config.ts` writes `build/server/main.js` plus its
   `build/server/chunks/`, bundling `server/main.ts` and everything it
   reaches - Nest, Express, Drizzle, postgres-js, and a second copy of
@@ -233,9 +246,17 @@ minted from the runtime bundle's copy would fail every request with
 "Invalid `context` value provided to `handleRequest`". `main.ts`
 reaches `index.js` through a path computed at runtime, which is also
 what keeps either bundle from trying to resolve the other at build
-time. Only `vite` stays external: the dev branch of `main.ts` loads it
-(and `@react-router/express`) through dynamic imports that production
-never reaches.
+time. Only `vite` stays external: `main.ts`'s dev branch loads it
+through a dynamic import that production never reaches, and then loads
+`handler.ts` itself through `vite.ssrLoadModule` - the same module,
+from the same graph as the routes, in both modes.
+
+That instance check is also why `vite.config.ts` inlines
+`@react-router/express` into the dev SSR environment.
+`react-router` publishes `development` and `default` export
+conditions; Vite's dev SSR picks `development` where plain node picks
+`default`, so leaving the express adapter external would put the
+handler and the routes on two different copies of the class.
 
 **Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
 `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
@@ -418,15 +439,16 @@ against Nest's own names - `verbose`, `debug`, `log`, `warn`, `error`,
 unrecognised value stops the server at boot.
 
 The logger reaches the React Router app via `nestLoggerContext`
-(`app/lib/nest-bridge.server.ts` - see Server runtime, above);
-`app/lib/logger.server.ts`'s `requestLoggingMiddleware`, registered in
-`root.tsx`'s `middleware` export right after `nestBridgeMiddleware`,
-puts it on `loggerContext` and logs one line per request - `GET /today
-200 in 12ms for user <id>`. Route code reads it via
-`requestLogger(context)`, never `context.get(loggerContext)` directly,
-because middleware only runs for a _matched_ route and an unmatched
-URL would otherwise throw on the unset context, turning a 404 into a
-500; `requestLogger` falls back to the process-wide logger.
+(`app/lib/nest-bridge.server.ts` - see Server runtime, above), read
+through `requestLogger(context)` in `app/lib/logger.server.ts`. That
+is safe on every path, matched route or not, because the load context
+is built before routing. `requestLoggingMiddleware`, registered first
+in `root.tsx`'s `middleware` export so everything it wraps counts
+towards the duration it reports, logs one line per request - `GET
+/today 200 in 12ms for user <id>`. The process-wide
+`uncaughtException`/`unhandledRejection` handlers live in
+`server/main.ts`, which holds the logger directly; registering them
+anywhere under `app/` would hook them inside the vitest process too.
 
 Log lines are plain sentences with the values interpolated (`created
 routine <id> for user <id>`), and the second argument is Nest's

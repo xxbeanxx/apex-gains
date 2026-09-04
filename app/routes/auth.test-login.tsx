@@ -4,7 +4,7 @@ import { safeRedirect } from '~/auth/safe-redirect.server';
 import { ErrorPage } from '~/components/error-page';
 import { requestLogger } from '~/lib/logger.server';
 
-import { appConfigContext, athleteServiceContext, sessionStorageContext } from '~/lib/nest-bridge.server';
+import { athleteServiceContext, sessionStorageContext, testLoginConfigContext } from '~/lib/nest-bridge.server';
 
 import type { Route } from './+types/auth.test-login';
 
@@ -20,7 +20,7 @@ export { ErrorPage as ErrorBoundary };
 // callback does. Gated on ENABLE_TEST_LOGIN so it 404s unless explicitly
 // turned on - that flag must never be set on the deployed app.
 export async function loader({ request, context }: Route.LoaderArgs) {
-  if (!context.get(appConfigContext).enableTestLogin) {
+  if (!context.get(testLoginConfigContext).enableTestLogin) {
     throw new Response('Not Found', { status: 404 });
   }
 

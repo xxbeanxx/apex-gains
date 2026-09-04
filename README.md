@@ -199,8 +199,9 @@ There's no separate staging slot or manual promotion step.
 - **Server runtime and composition root.** `server/` is the NestJS
   composition root: it handles dependency injection for repositories,
   services, auth providers, and logging; wraps Express; and bridges
-  singletons into React Router via load context (`nestBridgeMiddleware`
-  in `app/root.tsx`). In dev, it runs Vite in middleware mode with HMR;
+  singletons into React Router via load context
+  (`app/lib/nest-bridge.server.ts`). In dev, it runs Vite in middleware
+  mode with HMR;
   in production, it serves static assets and dispatches SSR requests to
   the request handler `build/server/index.js` exports.
 - **Sample data uses fork-on-write.** Exercises, templates, and

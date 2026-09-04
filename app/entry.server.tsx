@@ -8,31 +8,11 @@ import type { RenderToPipeableStreamOptions } from 'react-dom/server';
 import { renderToPipeableStream } from 'react-dom/server';
 
 import { requestLogger } from '~/lib/logger.server';
-import { getNestLogger } from '~/lib/nest-bridge.server';
 
 export const streamTimeout = 5_000;
 
-/** Nest logger context labels for the lines this module emits. */
-const PROCESS = 'Process';
+/** Nest logger context label for the lines this module emits. */
 const REQUEST = 'Request';
-
-// Registered here (the server's actual bootstrap module) rather than in
-// logger.server.ts, so importing the logger from a route/lib module never
-// has the side effect of hooking process-wide crash handlers - that would
-// also fire inside the vitest process for any file under test.
-//
-// `getNestLogger()` reads the singleton lazily inside each handler body
-// (not at module scope, right here), so this is safe to register before
-// Nest has necessarily finished bootstrapping - it only matters that
-// registration has completed by the time a handler actually *fires*.
-process.on('uncaughtException', (err) => {
-  getNestLogger().fatal('uncaught exception', err.stack, PROCESS);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  getNestLogger().error('unhandled rejection', reason instanceof Error ? reason.stack : String(reason), PROCESS);
-});
 
 export default function handleRequest(
   request: Request,
@@ -118,10 +98,6 @@ type HandleErrorArgs = {
  * never reaches here; an `ErrorResponse` synthesized from a real Error does,
  * which includes the 404 for an unmatched URL - so this splits client faults
  * (4xx, logged as a warning) from ours (everything else, logged as an error).
- *
- * The logger is read through `requestLogger`: an unmatched URL matches no
- * route, so `root.tsx`'s middleware never ran and there is no request-scoped
- * logger to bind to.
  */
 export function handleError(error: unknown, { request, context }: HandleErrorArgs) {
   if (request.signal.aborted) return;

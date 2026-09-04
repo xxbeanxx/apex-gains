@@ -1,8 +1,9 @@
 import { LOG_LEVELS, type LogLevel } from '@nestjs/common';
+import { registerAs } from '@nestjs/config';
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-import { toNumber } from './app.config';
+import { toNumber, validateConfigSlice } from './validate';
 
 /**
  * General runtime config: which mode we're in, what port to listen on, and
@@ -39,3 +40,12 @@ export class CoreConfig {
   @IsString({ message: 'HOST must be a string' })
   readonly host?: string;
 }
+
+/**
+ * Each config slice is its own namespaced loader, so a module injects only
+ * the piece it needs - `RepositoriesModule` sees `databaseConfig.KEY` and
+ * has no reason to see session or OAuth secrets. Every loader listed here
+ * must also appear in `AppModule`'s `ConfigModule.forRoot({ load })`: that
+ * array is what turns a `registerAs()` factory into an injectable token.
+ */
+export const coreConfig = registerAs('coreConfig', () => validateConfigSlice(CoreConfig, process.env));
