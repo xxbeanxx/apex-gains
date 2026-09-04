@@ -9,15 +9,16 @@ PR1000, rowing machine, and treadmill; reusable workout templates;
 day-slot routines that cycle from an anchor date; per-set logging;
 history). Auth is Google OIDC with open signup.
 
-Stack: React Router v8 (Framework Mode), TypeScript, PostgreSQL
-(hosted on Supabase), Drizzle ORM, Tailwind v4 + shadcn/ui, Podman.
+Stack: React Router v8 (Framework Mode), NestJS (server runtime/DI),
+TypeScript, PostgreSQL (hosted on Supabase), Drizzle ORM, Tailwind v4 +
+shadcn/ui, Podman.
 
 ## Commands
 
 ```bash
-npm run dev           # dev server with HMR, http://localhost:5173
+npm run dev           # dev server with HMR, http://localhost:3000 (Nest + Vite middleware mode)
 npm run build          # production build
-npm run start           # serve a production build (build/server/index.js)
+npm run start           # serve the production build, still through server/main.ts
 npm run typecheck        # react-router typegen, then tsc
 npm run db:generate       # generate a Drizzle migration from app/db/schema.ts
 npm run db:migrate         # apply pending migrations
@@ -34,14 +35,19 @@ the code they cover as `*.test.ts`; `app/test/mock.ts` exports a
 `as any`/`as Type` casts scattered through test bodies. Most tests need
 neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
-repository adapters rather than mocking a database.
-Tests that touch `~/db/index.server` or
-`app/auth/*` rely on `vitest.config.ts` seeding dummy `DATABASE_URL`/
-`SESSION_SECRET`/etc. env vars — the postgres-js client and
-`createCookieSessionStorage` are both lazy, so nothing dials out.
-`dev` and `db:*` scripts load `.env` via `dotenv-cli`; `start` does
-not (a container gets its environment from the runtime, not a bundled
-`.env`).
+repository adapters rather than mocking a database - by constructing the
+service class directly (`new RoutineService(...)`), not through Nest's
+DI container, which tests never boot. `vitest.setup.ts` imports
+`reflect-metadata` before anything else, since every service and
+repository provider carries Nest decorators (`@Injectable()`/`@Inject()`)
+that call into it at class-definition time - see Server runtime, below.
+Tests that touch `~/db/index.server` rely on `vitest.config.ts` seeding
+a dummy `DATABASE_URL` - the postgres-js client is lazy, so nothing
+dials out. `dev` and `db:*` scripts load `.env` via `dotenv-cli`;
+`start` does not (a container gets its environment from the runtime,
+not a bundled `.env`) - though `tsx` also auto-loads `.env` on its own
+when one is present, which is a harmless no-op in the container image
+(it doesn't ship one) but means `start` picks it up locally too.
 
 Database: a hosted Supabase Postgres project (`DATABASE_URL` is its
 Session pooler connection string — IPv4-compatible and supports
@@ -93,6 +99,55 @@ app/services/     application services (use cases) + read models.
 app/routes/       parse form -> call service -> map result to HTTP.
 ```
 
+**Server runtime.** `server/` is the NestJS composition root: it decides
+which adapter backs each port, wires everything together, and hosts the
+actual HTTP server; it holds no business logic of its own (that stays in
+`app/`, per the layers above). `server/main.ts` bootstraps Nest, then
+either mounts Vite in middleware mode (dev) or serves the built
+`build/client` output (prod) - both funnel non-static requests to React
+Router's `createRequestHandler`, one process either way (this replaced a
+plain Express `server.ts` plus `react-router dev` running as two
+separate things). Repositories, `UnitOfWork`, and every
+`app/services/*.server.ts` class are Nest-managed `@Injectable()`
+providers; `server/repositories/repositories.module.ts` is the one place
+that picks Drizzle vs. in-memory per repository (on whether
+`databaseConfig.databaseUrl` is set), replacing what used to be a
+`get*Repository()` factory per port. Every `@Injectable()` constructor
+parameter is `@Inject(TOKEN)`-tagged explicitly rather than relying on
+implicit type-based DI: esbuild - used by both Vite and by `tsx`, which
+is what actually runs `server/`, unbundled, as source - never emits the
+`design:paramtypes` metadata Nest needs for that, even with
+`emitDecoratorMetadata` set in `tsconfig.json`; a class missing an
+explicit token fails at DI-resolution time with a "Nest can't resolve
+dependencies" error, not a type error. Environment variables are
+validated once at boot with `class-validator`/`class-transformer`
+(`server/config/`, one schema class per concern: core, database, Google
+OAuth, session, test-login), replacing the old ad hoc `requireEnv()`
+throws.
+
+React Router's load context is the *only* conduit from Nest to the
+app - every repository, service, and Nest-validated config value reaches
+a route via `context.get(...)`, the same `createContext()` pattern as
+`userContext`/`loggerContext`. That indirection exists because Nest runs
+directly under `tsx`, outside Vite's module graph, while every
+route/middleware always loads through Vite (dev's SSR pipeline, or the
+bundled prod server) - two separate module instances, so a
+`createContext()` token created in `server/` could never be `===` the
+token a route reads (`RouterContextProvider` keys its map by token
+identity). `app/lib/nest-bridge.server.ts` is where the tokens actually
+live - inside the Vite-loaded graph, alongside `nestBridgeMiddleware`,
+registered first in `root.tsx`'s `middleware` export. Nest hands over its
+resolved singletons through `registerNestSingletons()`, which stashes
+them on `globalThis` under a `Symbol.for(...)` key - stable across the
+two separately-loaded copies of that module, unlike a plain `Symbol()` -
+rather than trying to build the `RouterContextProvider` itself. That's
+the one deliberate exception to "everything crosses via
+`context.get(...)`": `app/entry.server.tsx`'s process-wide
+`uncaughtException`/`unhandledRejection` handlers run at module load,
+before any request (and so any load context) exists, so they call
+`getNestLogger()` instead, reading the same registered singleton lazily
+inside the handler body.
+
 **Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
 `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
@@ -110,8 +165,9 @@ services — see `domain/routine/activation.ts`.
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
 (Postgres). Repositories in `app/repositories/` are ports over
 *aggregates*, not rows: `load` / `save` / `delete` plus real queries,
-with a Drizzle adapter and an in-memory one each, selected per process by
-`*-repository.server.ts` on whether `DATABASE_URL` is set. Adapters map
+with a Drizzle adapter and an in-memory one each, selected once at Nest
+bootstrap by `server/repositories/repositories.module.ts` (see Server
+runtime, above) rather than by the port file itself. Adapters map
 snapshots to rows and hold no rules. `save` receives the whole aggregate
 rather than a change list, so it reconstructs the delta with
 `shared/diff-children.ts`, and writes reordered children through
@@ -126,11 +182,15 @@ through `dbScope`, never `db`, so writes stay inside it.
 `RoutineService`, `TemplateService`, `WorkoutLogService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
 `AthleteService`, `BodyWeightService`. They orchestrate (load → hand off
-to the aggregate → save) and own no rules themselves. **They return
-plain DTOs, never domain objects**: React Router serializes loader data,
-so anything with methods cannot cross that boundary. Chart view types
-live in `app/services/progress-view.ts` (no `.server` suffix) precisely
-so client components can import them.
+to the aggregate → save) and own no rules themselves. Each is a
+Nest-managed `@Injectable()` (see Server runtime, above); routes reach
+one via `context.get(xServiceContext)` (the tokens live in
+`app/lib/nest-bridge.server.ts`), never by importing the class or
+constructing it themselves. **They return plain DTOs, never domain
+objects**: React Router serializes loader data, so anything with methods
+cannot cross that boundary. Chart view types live in
+`app/services/progress-view.ts` (no `.server` suffix) precisely so client
+components can import them.
 
 **Sample data and fork-on-write.** `exercises`, `templates`, and
 `routines` rows with a null `userId` are seeded sample/system data
@@ -195,9 +255,19 @@ pending state from `useNavigation()` matched against a `match={{
 intent: "..." }}` prop — pass `match` whenever a page has more than
 one form, or every submit button on the page will spin together.
 
-**Auth.** Google OIDC via `openid-client` (`app/auth/oidc.server.ts`,
-`oidc-state.server.ts`), session stored as a signed httpOnly cookie
-(`app/auth/session.server.ts`). `loadUserMiddleware`
+**Auth.** Google OIDC via `openid-client`. The OIDC discovery
+`Configuration` and the PKCE/state cookie are both built by Nest
+providers (`server/auth/oidc-client.provider.ts`,
+`oidc-state-cookie.provider.ts`) and reached via context
+(`oidcConfigContext`, `oidcStateCookieContext`) - `oidc-client.provider.ts`
+wraps discovery in a memoizing `get()` rather than resolving it eagerly
+at Nest bootstrap, since it's a real network call to Google that
+shouldn't block every server start. `app/auth/oidc-state.server.ts`
+still holds the actual PKCE/state cookie serialize/parse logic, just
+taking the `Cookie` as a parameter now instead of building its own.
+Session storage is likewise a Nest provider
+(`server/auth/session-storage.provider.ts`, reached via
+`sessionStorageContext`). `loadUserMiddleware`
 (`app/auth/current-user.server.ts`) reads the session and populates
 `userContext` on every request (registered in `root.tsx`'s
 `middleware` export, ahead of `requireUserMiddleware` which only the
@@ -208,19 +278,19 @@ role/permission system; all authorization is "does this row's
 that scope every query by `userId` before returning 404) plus the
 sample-data fork rule above. Azure Container Apps terminates TLS at
 its ingress and forwards plain HTTP with `X-Forwarded-*` headers, so
-the app is served by a custom `server.ts` (an Express server built on
-`@react-router/express`, replacing `react-router-serve`, which offers
-no way to configure this) that enables Express's "trust proxy" — and
-also copies `X-Forwarded-Host` onto the `Host` header before React
-Router sees the request, working around a bug in
-`@react-router/express`'s request-building where it falls back to the
-raw (proxy-internal) `Host` header's port whenever `X-Forwarded-Host`
-lacks one. Without both pieces, `request.url`'s origin wouldn't match
-the browser's `Origin` header on POSTs, which React Router's built-in
-CSRF check rejects with a 400, and `app/routes/auth.google.callback.tsx`
-rebuilds the URL passed to `authorizationCodeGrant` from the `ORIGIN`
-env var instead of trusting `request.url` so the token exchange's
-`redirect_uri` matches what's registered with Google.
+`server/main.ts` (an Express server under Nest's `@nestjs/platform-express`
+adapter, built on `@react-router/express` - see Server runtime, above)
+enables Express's "trust proxy" — and also copies `X-Forwarded-Host`
+onto the `Host` header before React Router sees the request, working
+around a bug in `@react-router/express`'s request-building where it
+falls back to the raw (proxy-internal) `Host` header's port whenever
+`X-Forwarded-Host` lacks one. Without both pieces, `request.url`'s
+origin wouldn't match the browser's `Origin` header on POSTs, which
+React Router's built-in CSRF check rejects with a 400, and
+`app/routes/auth.google.callback.tsx` rebuilds the URL passed to
+`authorizationCodeGrant` from `context.get(appConfigContext).origin`
+(Nest-validated `ORIGIN`) instead of trusting `request.url` so the token
+exchange's `redirect_uri` matches what's registered with Google.
 
 **Units.** Measurements are stored canonically — pounds for weight,
 km/h for speed, seconds for duration — and converted at the edges:
@@ -238,20 +308,31 @@ in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
 volt accent for active states/focus rings/progress, dark mode via
 `.dark` class) are defined once in `app/app.css` — extend the token
 set there rather than hardcoding colors in components. Path alias `~/`
-maps to `app/` (see `tsconfig.json` and `components.json`).
+maps to `app/`, `~server/` to `server/` (see `tsconfig.json` and
+`components.json`).
 `app/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
-**Logging.** `app/lib/logger.server.ts` exports a base `pino` logger
-(JSON on stdout/stderr everywhere except `development`, where it pipes
-through `pino-pretty`; Azure Container Apps ships stdout JSON straight
-into Log Analytics) and `requestLoggingMiddleware`, registered first
-in `root.tsx`'s `middleware` export, which binds a per-request child
-logger (with a `requestId`) into `loggerContext` and logs one
-`"request completed"`/`"request failed"` line per request with
-method/path/status/duration/userId. Route code that wants request-
-scoped logging reads it via `context.get(loggerContext)` rather than
-importing the base `logger` directly.
+**Logging.** The root `pino` logger is built once by Nest
+(`server/logging/logger.provider.ts`; JSON on stdout/stderr everywhere
+except `development`, where it pipes through `pino-pretty`; Azure
+Container Apps ships stdout JSON straight into Log Analytics) and
+adapted to Nest's own `LoggerService` interface
+(`server/logging/nest-logger.service.ts`, wired up via `app.useLogger()`
+in `server/main.ts`) so Nest's *own* internal bootstrap logging
+(`[NestFactory]`, `[InstanceLoader]`, ...) goes through it too, instead
+of Nest's default console output. It reaches the React Router app via
+`nestLoggerContext` (`app/lib/nest-bridge.server.ts` - see Server
+runtime, above). `app/lib/logger.server.ts`'s `requestLoggingMiddleware`,
+registered in `root.tsx`'s `middleware` export right after
+`nestBridgeMiddleware` (which is what makes the root logger reachable in
+the first place), reads it and binds a per-request child logger (with a
+`requestId`) into `loggerContext`, logging one `"request completed"`/
+`"request failed"` line per request with method/path/status/duration/
+userId. Route code that wants request-scoped logging reads it via
+`context.get(loggerContext)` - using pino's own API (`logger.info(obj,
+msg)`), not Nest's `LoggerService` one, since Nest's interface has no
+equivalent to a pino child logger with bound structured fields.
 
 **Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as

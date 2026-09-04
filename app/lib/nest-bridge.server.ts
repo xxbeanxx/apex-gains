@@ -14,6 +14,7 @@ import type { WorkoutLogService } from "~/services/workout-log-service.server";
 import type { AppConfig } from "~server/config/app.config";
 import type { OidcClientProvider } from "~server/auth/oidc-client.provider";
 import type { AppSessionStorage } from "~server/auth/session-storage.provider";
+import type { AppLogger } from "~server/logging/logger.provider";
 
 /**
  * Everything Nest resolves and hands to the React Router app crosses the
@@ -53,6 +54,15 @@ export const oidcConfigContext = createContext<OidcClientProvider>();
 export const oidcStateCookieContext = createContext<Cookie>();
 export const appConfigContext = createContext<AppConfig>();
 
+/**
+ * The root pino instance (also what Nest's own internal logging goes
+ * through - see `server/logging/nest-logger.service.ts`).
+ * `requestLoggingMiddleware` (`app/lib/logger.server.ts`) reads this and
+ * `.child()`s it into the per-request logger it sets on `loggerContext`,
+ * rather than constructing its own pino instance.
+ */
+export const nestLoggerContext = createContext<AppLogger>();
+
 export type NestSingletons = {
   athletesRepository: AthletesRepository;
   athleteService: AthleteService;
@@ -67,6 +77,7 @@ export type NestSingletons = {
   oidcConfig: OidcClientProvider;
   oidcStateCookie: Cookie;
   appConfig: AppConfig;
+  logger: AppLogger;
 };
 
 const GLOBAL_KEY = Symbol.for("apex-gains.nest-singletons");
@@ -104,6 +115,18 @@ function requireNestSingletons(): NestSingletons {
 }
 
 /**
+ * The one sanctioned exception to "everything crosses via `context.get(...)`":
+ * `app/entry.server.tsx` installs process-wide `uncaughtException`/
+ * `unhandledRejection` handlers at module load time, before any request (and
+ * so any load context) exists. Reads the singleton lazily inside those
+ * handler bodies, not at module scope, so it only ever runs after Nest has
+ * actually registered it.
+ */
+export function getNestLogger(): AppLogger {
+  return requireNestSingletons().logger;
+}
+
+/**
  * Populates every context above from the singletons Nest registered at
  * bootstrap. Must run before any other middleware or loader that reads one
  * of these contexts - see `app/root.tsx`.
@@ -125,4 +148,5 @@ export const nestBridgeMiddleware: MiddlewareFunction<void | Response> = ({
   context.set(oidcConfigContext, s.oidcConfig);
   context.set(oidcStateCookieContext, s.oidcStateCookie);
   context.set(appConfigContext, s.appConfig);
+  context.set(nestLoggerContext, s.logger);
 };

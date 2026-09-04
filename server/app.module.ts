@@ -9,6 +9,7 @@ import {
   sessionConfig,
   testLoginConfig,
 } from "./config/app.config";
+import { LoggingModule } from "./logging/logging.module";
 import { ReactRouterModule } from "./react-router/react-router.module";
 
 @Module({
@@ -28,6 +29,7 @@ import { ReactRouterModule } from "./react-router/react-router.module";
         testLoginConfig,
       ],
     }),
+    LoggingModule,
     ReactRouterModule,
   ],
 })

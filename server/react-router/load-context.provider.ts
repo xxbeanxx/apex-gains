@@ -21,6 +21,8 @@ import {
   SESSION_STORAGE,
 } from "../auth/tokens";
 import { appConfig } from "../config/app.config";
+import type { AppLogger } from "../logging/logger.provider";
+import { LOGGER } from "../logging/tokens";
 import { ATHLETES_REPOSITORY } from "../repositories/tokens";
 
 /**
@@ -58,6 +60,7 @@ export class LoadContextProvider {
     @Inject(OIDC_STATE_COOKIE) private readonly oidcStateCookie: Cookie,
     @Inject(appConfig.KEY)
     private readonly appConfigValue: ConfigType<typeof appConfig>,
+    @Inject(LOGGER) private readonly logger: AppLogger,
   ) {}
 
   /** Call once during bootstrap, before the server starts accepting requests. */
@@ -76,6 +79,7 @@ export class LoadContextProvider {
       oidcConfig: this.oidcConfig,
       oidcStateCookie: this.oidcStateCookie,
       appConfig: this.appConfigValue,
+      logger: this.logger,
     });
   }
 }

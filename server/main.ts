@@ -26,6 +26,7 @@ import { RouterContextProvider, type ServerBuild } from "react-router";
 
 import { AppModule } from "./app.module";
 import { coreConfig } from "./config/app.config";
+import { NestPinoLogger } from "./logging/nest-logger.service";
 import { LoadContextProvider } from "./react-router/load-context.provider";
 
 const __filename = url.fileURLToPath(import.meta.url);
@@ -104,7 +105,14 @@ async function registerProductionRoutes(server: Express): Promise<void> {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // `bufferLogs: true` holds every log emitted during module
+  // initialization (before `useLogger` below runs) instead of dropping it
+  // or printing it through Nest's default logger, then flushes it through
+  // the real one once set.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(NestPinoLogger));
   app.enableShutdownHooks();
 
   const server = app.getHttpAdapter().getInstance() as Express;

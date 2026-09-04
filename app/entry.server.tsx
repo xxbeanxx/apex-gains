@@ -12,7 +12,8 @@ import { isbot } from "isbot";
 import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
 
-import { logger, loggerContext } from "~/lib/logger.server";
+import { loggerContext } from "~/lib/logger.server";
+import { getNestLogger } from "~/lib/nest-bridge.server";
 
 export const streamTimeout = 5_000;
 
@@ -20,13 +21,18 @@ export const streamTimeout = 5_000;
 // logger.server.ts, so importing the logger from a route/lib module never
 // has the side effect of hooking process-wide crash handlers - that would
 // also fire inside the vitest process for any file under test.
+//
+// `getNestLogger()` reads the singleton lazily inside each handler body
+// (not at module scope, right here), so this is safe to register before
+// Nest has necessarily finished bootstrapping - it only matters that
+// registration has completed by the time a handler actually *fires*.
 process.on("uncaughtException", (err) => {
-  logger.fatal({ err }, "uncaught exception");
+  getNestLogger().fatal({ err }, "uncaught exception");
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
-  logger.error({ err: reason }, "unhandled rejection");
+  getNestLogger().error({ err: reason }, "unhandled rejection");
 });
 
 export default function handleRequest(
