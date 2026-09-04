@@ -13,7 +13,8 @@ import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
-import { trim, validateForm } from '~/lib/validate-form.server';
+import { trim } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 
 import { routineServiceContext } from '~/lib/nest-bridge.server';
 

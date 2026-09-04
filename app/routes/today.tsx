@@ -34,7 +34,8 @@ import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
-import { IsDateOnly, toOptionalNumber, validateForm } from '~/lib/validate-form.server';
+import { IsDateOnly, toOptionalNumber } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
 import type { LoggedSetView, RecentSetView } from '~/services/workout-log-service.server';
 

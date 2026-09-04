@@ -19,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Textarea } from '~/components/ui/textarea';
 import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
 import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
-import { optionalTrim, trim, validateForm } from '~/lib/validate-form.server';
+import { optionalTrim, trim } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext } from '~/lib/nest-bridge.server';

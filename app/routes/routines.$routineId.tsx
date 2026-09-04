@@ -34,7 +34,8 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
-import { IsDateOnly, trim, validateForm } from '~/lib/validate-form.server';
+import { IsDateOnly, trim } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 
 import { routineServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
 

@@ -15,7 +15,8 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { DateOnly } from '~/domain/values/date-only';
 import { formatFullDate } from '~/lib/format';
-import { IsDateOnly, toNumber, validateForm } from '~/lib/validate-form.server';
+import { IsDateOnly, toNumber } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 
 import { bodyWeightServiceContext, progressServiceContext } from '~/lib/nest-bridge.server';
 

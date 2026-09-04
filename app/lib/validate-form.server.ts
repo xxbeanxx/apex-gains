@@ -1,15 +1,5 @@
-import type { TransformFnParams } from 'class-transformer';
 import { plainToInstance } from 'class-transformer';
-import {
-  registerDecorator,
-  validateSync,
-  ValidationError,
-  type ValidationOptions,
-  ValidatorConstraint,
-  type ValidatorConstraintInterface,
-} from 'class-validator';
-
-import { DateOnly } from '~/domain/values/date-only';
+import { validateSync, ValidationError } from 'class-validator';
 
 type Constructor<T> = new () => T;
 
@@ -25,6 +15,9 @@ function firstMessage(errors: ValidationError[]): string {
  * into an instance of the given class-validator DTO. Unlike `validateConfigSlice`
  * (which throws, appropriate for a boot-time failure), a bad form submission is
  * expected traffic, so this returns a result the caller turns into a 400.
+ *
+ * The decorators a DTO is declared with live in `validate-form.ts` instead,
+ * which has no `.server` suffix - see the note there.
  */
 export function validateForm<T extends object>(schema: Constructor<T>, source: Record<string, unknown>): FormValidation<T> {
   const instance = plainToInstance(schema, source, { excludeExtraneousValues: true });
@@ -36,53 +29,4 @@ export function validateForm<T extends object>(schema: Constructor<T>, source: R
   }
 
   return { success: true, data: instance };
-}
-
-/** Trims a string form value; leaves other values untouched. */
-export function trim(): (params: TransformFnParams) => unknown {
-  return ({ value }: TransformFnParams) => (typeof value === 'string' ? value.trim() : value);
-}
-
-/** Trims a string form value and maps a blank result to `undefined`, for optional free-text fields. */
-export function optionalTrim(): (params: TransformFnParams) => unknown {
-  return ({ value }: TransformFnParams) => {
-    const trimmed = typeof value === 'string' ? value.trim() : value;
-    return trimmed ? trimmed : undefined;
-  };
-}
-
-/** Coerces a form value to a number. */
-export function toNumber(): (params: TransformFnParams) => unknown {
-  return ({ value }: TransformFnParams) => Number(value);
-}
-
-/**
- * Coerces an optional numeric form value, mapping a blank field to `undefined`
- * rather than `Number('') === 0`.
- */
-export function toOptionalNumber(): (params: TransformFnParams) => unknown {
-  return ({ value }: TransformFnParams) => (value === '' || value === undefined || value === null ? undefined : Number(value));
-}
-
-@ValidatorConstraint({ name: 'isDateOnly' })
-class IsDateOnlyConstraint implements ValidatorConstraintInterface {
-  validate(value: unknown): boolean {
-    return typeof value === 'string' && DateOnly.isValid(value);
-  }
-
-  defaultMessage(): string {
-    return 'must be a valid date';
-  }
-}
-
-/** Validates a `YYYY-MM-DD` calendar-day string via `DateOnly.isValid`. */
-export function IsDateOnly(validationOptions?: ValidationOptions): PropertyDecorator {
-  return function (object: object, propertyName: string | symbol) {
-    registerDecorator({
-      target: object.constructor,
-      propertyName: propertyName as string,
-      options: validationOptions,
-      validator: IsDateOnlyConstraint,
-    });
-  };
 }

@@ -12,7 +12,8 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { requestLogger } from '~/lib/logger.server';
-import { trim, validateForm } from '~/lib/validate-form.server';
+import { trim } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 
 import { templateServiceContext } from '~/lib/nest-bridge.server';
 

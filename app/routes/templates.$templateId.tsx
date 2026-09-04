@@ -19,7 +19,8 @@ import { speedUnitLabel } from '~/domain/values/units';
 import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
-import { toOptionalNumber, trim, validateForm } from '~/lib/validate-form.server';
+import { toOptionalNumber, trim } from '~/lib/validate-form';
+import { validateForm } from '~/lib/validate-form.server';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
