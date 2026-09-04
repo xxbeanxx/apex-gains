@@ -14,6 +14,14 @@ export default defineConfig(({ command }) => ({
   resolve: {
     tsconfigPaths: true,
   },
+  optimizeDeps: {
+    // Nest serves the app, so there is no `index.html` for Vite's dependency
+    // scanner to crawl from and it would otherwise discover dependencies one
+    // route at a time - re-bundling mid-session and reloading the page to
+    // hand over the new URLs. Naming the real entry points gets that work
+    // done at startup instead.
+    entries: ['./app/root.tsx', './app/routes/**/*.tsx'],
+  },
   environments: {
     ssr: {
       resolve: {
