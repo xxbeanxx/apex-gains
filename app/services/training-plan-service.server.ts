@@ -1,14 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
+import type { CardioKind } from '~/domain/equipment/equipment';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import type { SessionPlan } from '~/domain/session/workout-session';
 import { DateOnly } from '~/domain/values/date-only';
+import type { EquipmentRepository } from '~/repositories/equipment-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
 import type { RoutinesRepository } from '~/repositories/routines-repository.server';
 import type { TemplatesRepository } from '~/repositories/templates-repository.server';
 import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
 import {
+  EQUIPMENT_REPOSITORY,
   EXERCISES_REPOSITORY,
   ROUTINES_REPOSITORY,
   TEMPLATES_REPOSITORY,
@@ -19,6 +22,8 @@ export type PlanItem = {
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
+  /** `cardioKind` of each linked equipment, for deciding which cardio fields apply - see `cardioFieldsFor`. */
+  equipmentCardioKinds: (CardioKind | null)[];
   /** Already formatted in the athlete's units. */
   targetSummary: string | null;
   /** Drives the "n of m sets" progress bar; null when nothing was targeted. */
@@ -68,6 +73,7 @@ export class TrainingPlanService {
     @Inject(ROUTINES_REPOSITORY) private readonly routines: RoutinesRepository,
     @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
     @Inject(WORKOUT_SESSIONS_REPOSITORY)
     private readonly sessions: WorkoutSessionsRepository,
   ) {}
@@ -91,6 +97,13 @@ export class TrainingPlanService {
     const exercises = await this.exercises.findManyByIds(template.exercises.map((entry) => entry.exerciseId));
     const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
+    const equipmentIds = new Set<string>();
+    for (const exercise of exercises) {
+      for (const id of exercise.equipmentIds) equipmentIds.add(id);
+    }
+    const equipment = await this.equipment.findManyByIds([...equipmentIds]);
+    const cardioKindById = new Map(equipment.map((item) => [item.id, item.cardioKind]));
+
     return {
       type: 'template',
       routineId: routine.id,
@@ -102,6 +115,7 @@ export class TrainingPlanService {
           exerciseId: entry.exerciseId,
           exerciseName: exercise?.name ?? 'Unknown',
           exerciseType: exercise?.exerciseType ?? 'strength',
+          equipmentCardioKinds: (exercise?.equipmentIds ?? []).map((id) => cardioKindById.get(id) ?? null),
           targetSummary: entry.target.format(athlete.preferences),
           targetSets: entry.target.sets,
         };

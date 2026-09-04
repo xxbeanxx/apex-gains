@@ -5,6 +5,18 @@ import { equipment, exerciseEquipment, exercises, routineSlots, routines, templa
 
 const equipmentNames = ['BowFlex PR1000', 'Rowing Machine', 'Treadmill', 'Bodyweight'] as const;
 
+/**
+ * Which cardio field applies on each piece of equipment - null for the
+ * BowFlex (used for both strength work and resistance-only rowing, so no
+ * single kind fits) and for Bodyweight (not cardio equipment at all).
+ */
+const cardioKindByEquipmentName: Record<(typeof equipmentNames)[number], 'speed' | 'resistance' | null> = {
+  'BowFlex PR1000': null,
+  'Rowing Machine': 'resistance',
+  Treadmill: 'speed',
+  Bodyweight: null,
+};
+
 type SeedExercise = typeof exercises.$inferInsert & {
   equipment: (typeof equipmentNames)[number][];
 };
@@ -367,8 +379,11 @@ const seedRoutine = {
 async function seed() {
   await db
     .insert(equipment)
-    .values(equipmentNames.map((name) => ({ name })))
-    .onConflictDoNothing({ target: equipment.name });
+    .values(equipmentNames.map((name) => ({ name, cardioKind: cardioKindByEquipmentName[name] })))
+    .onConflictDoUpdate({
+      target: equipment.name,
+      set: { cardioKind: sql`excluded.cardio_kind` },
+    });
 
   const equipmentRows = await db.select().from(equipment).where(inArray(equipment.name, equipmentNames));
   const equipmentIdByName = new Map(equipmentRows.map((e) => [e.name, e.id]));

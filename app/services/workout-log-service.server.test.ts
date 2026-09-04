@@ -8,6 +8,7 @@ import { sequentialIds } from '~/domain/shared/ids';
 import { SetTarget } from '~/domain/template/set-target';
 import { WorkoutTemplate } from '~/domain/template/workout-template';
 import { DateOnly } from '~/domain/values/date-only';
+import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemoryRoutinesRepository } from '~/repositories/in-memory/routines-repository.server';
 import { InMemoryTemplatesRepository } from '~/repositories/in-memory/templates-repository.server';
@@ -52,7 +53,7 @@ beforeEach(async () => {
   service = new WorkoutLogService(
     sessions,
     exercises,
-    new TrainingPlanService(routines, templates, exercises, sessions),
+    new TrainingPlanService(routines, templates, exercises, new InMemoryEquipmentRepository(), sessions),
     new InMemoryUnitOfWork(),
     deps,
   );

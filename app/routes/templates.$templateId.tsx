@@ -13,7 +13,11 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import { speedUnitLabel } from '~/domain/values/units';
+import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { requestLogger } from '~/lib/logger.server';
+import { cn } from '~/lib/utils';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
@@ -33,7 +37,12 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   }
 
   const libraryService = context.get(exerciseLibraryServiceContext);
-  return { template, exercises: await libraryService.listExercises(athlete) };
+  return {
+    template,
+    exercises: await libraryService.listExercises(athlete),
+    weightUnit: athlete.preferences.weightUnit,
+    distanceUnit: athlete.preferences.distanceUnit,
+  };
 }
 
 const renameSchema = z.object({
@@ -143,10 +152,19 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });
 }
 
-function AddExerciseForm({ exerciseList }: { exerciseList: ExerciseView[] }) {
+function AddExerciseForm({
+  exerciseList,
+  weightUnit,
+  distanceUnit,
+}: {
+  exerciseList: ExerciseView[];
+  weightUnit: WeightUnit;
+  distanceUnit: DistanceUnit;
+}) {
   const fetcher = useFetcher();
   const [exerciseId, setExerciseId] = useState<string>('');
   const selected = exerciseList.find((e) => e.id === exerciseId);
+  const { showSpeed, showResistance } = cardioFieldsFor(selected?.equipment.map((item) => item.cardioKind) ?? []);
 
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
@@ -174,28 +192,39 @@ function AddExerciseForm({ exerciseList }: { exerciseList: ExerciseView[] }) {
       {selected?.exerciseType === 'strength' ? (
         <div className="grid grid-cols-3 gap-3">
           <Field label="Sets">
-            <Input name="targetSets" type="number" min={1} inputMode="numeric" />
+            <Input name="targetSets" type="number" min={1} inputMode="numeric" placeholder="sets" />
           </Field>
           <Field label="Reps">
-            <Input name="targetReps" type="number" min={1} inputMode="numeric" />
+            <Input name="targetReps" type="number" min={1} inputMode="numeric" placeholder="reps" />
           </Field>
-          <Field label="Weight">
-            <Input name="targetWeight" type="number" min={0} step="0.5" inputMode="decimal" />
+          <Field label={`Weight (${weightUnit})`}>
+            <Input name="targetWeight" type="number" min={0} step="0.5" inputMode="decimal" placeholder={weightUnit} />
           </Field>
         </div>
       ) : null}
 
       {selected?.exerciseType === 'cardio' ? (
-        <div className="grid grid-cols-3 gap-3">
+        <div className={cn('grid gap-3', showSpeed && showResistance ? 'grid-cols-3' : 'grid-cols-2')}>
           <Field label="Minutes">
-            <Input name="targetDurationMinutes" type="number" min={1} inputMode="numeric" />
+            <Input name="targetDurationMinutes" type="number" min={1} inputMode="numeric" placeholder="min" />
           </Field>
-          <Field label="Speed">
-            <Input name="targetSpeed" type="number" min={0} step="0.1" inputMode="decimal" />
-          </Field>
-          <Field label="Resistance">
-            <Input name="targetResistance" type="number" min={1} inputMode="numeric" />
-          </Field>
+          {showSpeed ? (
+            <Field label={`Speed (${speedUnitLabel(distanceUnit)})`}>
+              <Input
+                name="targetSpeed"
+                type="number"
+                min={0}
+                step="0.1"
+                inputMode="decimal"
+                placeholder={speedUnitLabel(distanceUnit)}
+              />
+            </Field>
+          ) : null}
+          {showResistance ? (
+            <Field label="Resistance">
+              <Input name="targetResistance" type="number" min={1} inputMode="numeric" placeholder="level" />
+            </Field>
+          ) : null}
         </div>
       ) : null}
 
@@ -216,7 +245,7 @@ function AddExerciseForm({ exerciseList }: { exerciseList: ExerciseView[] }) {
 }
 
 export default function TemplateDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { template, exercises: exerciseList } = loaderData;
+  const { template, exercises: exerciseList, weightUnit, distanceUnit } = loaderData;
 
   const exerciseCount = template.exercises.length;
   const { isSample, isCustomized } = template;
@@ -364,7 +393,7 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
             <CardTitle>Add an exercise</CardTitle>
           </CardHeader>
           <CardContent>
-            <AddExerciseForm exerciseList={exerciseList} />
+            <AddExerciseForm exerciseList={exerciseList} weightUnit={weightUnit} distanceUnit={distanceUnit} />
           </CardContent>
         </Card>
       </Section>

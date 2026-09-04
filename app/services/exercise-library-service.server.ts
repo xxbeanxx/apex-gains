@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
-import { Equipment } from '~/domain/equipment/equipment';
+import { type CardioKind, Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseDetails } from '~/domain/exercise/exercise';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import { err, ok, type Result } from '~/domain/shared/result';
@@ -18,6 +18,7 @@ export type EquipmentView = {
   id: string;
   name: string;
   isSample: boolean;
+  cardioKind: CardioKind | null;
 };
 
 export type ExerciseView = {
@@ -59,6 +60,7 @@ function toEquipmentView(item: Equipment): EquipmentView {
     id: item.id,
     name: item.name,
     isSample: item.ownership.isSample,
+    cardioKind: item.cardioKind,
   };
 }
 
@@ -186,11 +188,11 @@ export class ExerciseLibraryService {
    * is a no-op rather than an error - the athlete ends up looking at the
    * same list either way.
    */
-  async addEquipment(athlete: Athlete, name: string): Promise<void> {
+  async addEquipment(athlete: Athlete, name: string, cardioKind: CardioKind | null = null): Promise<void> {
     await this.unitOfWork.run(async () => {
       const existing = await this.equipment.findByName(name);
       if (existing) return;
-      await this.equipment.save(Equipment.create(athlete.id, name, this.deps));
+      await this.equipment.save(Equipment.create(athlete.id, name, cardioKind, this.deps));
     });
   }
 
@@ -200,6 +202,16 @@ export class ExerciseLibraryService {
       const item = await this.equipment.findById(equipmentId);
       if (!item || !item.isRemovableBy(athlete.id)) return;
       await this.equipment.delete(item.id);
+    });
+  }
+
+  /** Silently ignores equipment the athlete doesn't own, samples included - see removeEquipment. */
+  async setEquipmentCardioKind(athlete: Athlete, equipmentId: string, cardioKind: CardioKind | null): Promise<void> {
+    await this.unitOfWork.run(async () => {
+      const item = await this.equipment.findById(equipmentId);
+      if (!item || !item.isRemovableBy(athlete.id)) return;
+      item.setCardioKind(cardioKind);
+      await this.equipment.save(item);
     });
   }
 

@@ -16,6 +16,7 @@ import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Textarea } from '~/components/ui/textarea';
+import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
 import { EXERCISE_TYPES } from '~/domain/exercise/exercise-type';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
 
@@ -32,6 +33,19 @@ const typeLabels: Record<string, string> = {
   cardio: 'Cardio',
 };
 
+/**
+ * Radix `Select` reserves the empty string for its own placeholder/clear
+ * state, so "no restriction" is spelled out as this sentinel on the wire and
+ * translated to `null` (the domain's actual "no restriction" value) at the
+ * schema boundary.
+ */
+const NO_CARDIO_KIND = 'none';
+const cardioKindOptionValues = [...CARDIO_KINDS, NO_CARDIO_KIND] as const;
+const cardioKindLabels: Record<CardioKind, string> = {
+  speed: 'Speed only',
+  resistance: 'Resistance only',
+};
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
   const libraryService = context.get(exerciseLibraryServiceContext);
@@ -40,6 +54,12 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 const addEquipmentSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100),
+  cardioKind: z.enum(cardioKindOptionValues).transform((v) => (v === NO_CARDIO_KIND ? null : v)),
+});
+
+const setCardioKindSchema = z.object({
+  equipmentId: z.uuid(),
+  cardioKind: z.enum(cardioKindOptionValues).transform((v) => (v === NO_CARDIO_KIND ? null : v)),
 });
 
 const toggleSchema = z.object({
@@ -73,16 +93,28 @@ export async function action({ request, context }: Route.ActionArgs) {
   const libraryService = context.get(exerciseLibraryServiceContext);
 
   if (intent === 'addEquipment') {
-    const result = addEquipmentSchema.safeParse({ name: formData.get('name') });
+    const result = addEquipmentSchema.safeParse({
+      name: formData.get('name'),
+      cardioKind: formData.get('cardioKind'),
+    });
     if (!result.success) {
       return data({ error: result.error.issues[0]?.message ?? 'Invalid name' }, { status: 400 });
     }
-    await libraryService.addEquipment(athlete, result.data.name);
+    await libraryService.addEquipment(athlete, result.data.name, result.data.cardioKind);
     return { ok: true };
   }
 
   if (intent === 'deleteEquipment') {
     await libraryService.removeEquipment(athlete, String(formData.get('equipmentId')));
+    return { ok: true };
+  }
+
+  if (intent === 'setEquipmentCardioKind') {
+    const result = setCardioKindSchema.safeParse(Object.fromEntries(formData));
+    if (!result.success) {
+      return data({ error: 'Invalid cardio fields' }, { status: 400 });
+    }
+    await libraryService.setEquipmentCardioKind(athlete, result.data.equipmentId, result.data.cardioKind);
     return { ok: true };
   }
 
@@ -370,24 +402,50 @@ function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
 }
 
 function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
-  const fetcher = useFetcher();
+  const deleteFetcher = useFetcher();
+  const cardioKindFetcher = useFetcher();
+  const [cardioKind, setCardioKind] = useState(equipment.cardioKind ?? NO_CARDIO_KIND);
 
   return (
     // Hidden while its own delete is in flight so the row goes away on click
     // rather than at the end of the revalidation round-trip.
-    <li className="flex items-center gap-2 px-3 py-2" hidden={fetcher.state !== 'idle'}>
+    <li className="flex items-center gap-2 px-3 py-2" hidden={deleteFetcher.state !== 'idle'}>
       <span className="min-w-0 flex-1 text-pretty">{equipment.name}</span>
       {equipment.isSample ? (
-        <Badge variant="outline">Sample</Badge>
+        <>
+          {equipment.cardioKind ? <Badge variant="outline">{cardioKindLabels[equipment.cardioKind]}</Badge> : null}
+          <Badge variant="outline">Sample</Badge>
+        </>
       ) : (
-        <fetcher.Form method="post" className="flex">
-          <input type="hidden" name="intent" value="deleteEquipment" />
-          <input type="hidden" name="equipmentId" value={equipment.id} />
-          <Button type="submit" variant="ghost" size="icon-sm">
-            <XIcon aria-hidden="true" />
-            <span className="sr-only">Remove {equipment.name}</span>
-          </Button>
-        </fetcher.Form>
+        <>
+          <Select
+            value={cardioKind}
+            onValueChange={(value) => {
+              setCardioKind(value);
+              cardioKindFetcher.submit(
+                { intent: 'setEquipmentCardioKind', equipmentId: equipment.id, cardioKind: value },
+                { method: 'post' },
+              );
+            }}
+          >
+            <SelectTrigger size="sm" aria-label={`Cardio fields for ${equipment.name}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_CARDIO_KIND}>Speed & resistance</SelectItem>
+              <SelectItem value="speed">Speed only</SelectItem>
+              <SelectItem value="resistance">Resistance only</SelectItem>
+            </SelectContent>
+          </Select>
+          <deleteFetcher.Form method="post" className="flex">
+            <input type="hidden" name="intent" value="deleteEquipment" />
+            <input type="hidden" name="equipmentId" value={equipment.id} />
+            <Button type="submit" variant="ghost" size="icon-sm">
+              <XIcon aria-hidden="true" />
+              <span className="sr-only">Remove {equipment.name}</span>
+            </Button>
+          </deleteFetcher.Form>
+        </>
       )}
     </li>
   );
@@ -427,19 +485,28 @@ function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; t
           <p className="text-sm text-muted-foreground">No equipment yet. Add your first one below.</p>
         )}
 
-        <fetcher.Form ref={formRef} method="post">
+        <fetcher.Form ref={formRef} method="post" className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="intent" value="addEquipment" />
-          <Field
-            label="Add equipment"
-            error={error}
-            action={
-              <SubmitButton pending={fetcher.state !== 'idle'} pendingLabel="Adding equipment">
-                Add
-              </SubmitButton>
-            }
-          >
+          <Field label="Add equipment" error={error} className="min-w-40 flex-1">
             <Input name="name" placeholder="Free Weights" required />
           </Field>
+          <Field label="Cardio fields" className="w-44">
+            {({ id }) => (
+              <Select name="cardioKind" defaultValue={NO_CARDIO_KIND}>
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_CARDIO_KIND}>Speed & resistance</SelectItem>
+                  <SelectItem value="speed">Speed only</SelectItem>
+                  <SelectItem value="resistance">Resistance only</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </Field>
+          <SubmitButton pending={fetcher.state !== 'idle'} pendingLabel="Adding equipment">
+            Add
+          </SubmitButton>
         </fetcher.Form>
       </DialogContent>
     </Dialog>

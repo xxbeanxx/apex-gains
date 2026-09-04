@@ -36,6 +36,13 @@
       "when": 1788460869881,
       "tag": "0004_wonderful_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788526771051,
+      "tag": "0005_dear_fenris",
+      "breakpoints": true
     }
   ]
 }

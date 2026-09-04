@@ -19,6 +19,7 @@ function toEquipment(row: EquipmentRow): Equipment {
     id: row.id,
     userId: row.userId,
     name: row.name,
+    cardioKind: row.cardioKind,
     createdAt: row.createdAt,
   });
 }
@@ -63,7 +64,7 @@ export class DrizzleEquipmentRepository implements EquipmentRepository {
       .values(snapshot)
       .onConflictDoUpdate({
         target: equipment.id,
-        set: { name: snapshot.name },
+        set: { name: snapshot.name, cardioKind: snapshot.cardioKind },
       });
   }
 

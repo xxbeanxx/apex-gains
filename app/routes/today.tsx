@@ -24,8 +24,12 @@ import { Input } from '~/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
+import type { CardioKind } from '~/domain/equipment/equipment';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import { DateOnly } from '~/domain/values/date-only';
+import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import { speedUnitLabel } from '~/domain/values/units';
+import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
@@ -48,6 +52,7 @@ type LoggableExercise = {
   id: string;
   name: string;
   exerciseType: ExerciseType;
+  equipmentCardioKinds: (CardioKind | null)[];
 };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -80,6 +85,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     allExercises,
     upcomingWeek,
     pastWeek,
+    weightUnit: athlete.preferences.weightUnit,
+    distanceUnit: athlete.preferences.distanceUnit,
   };
 }
 
@@ -224,17 +231,22 @@ function LogSetForm({
   exerciseOptions,
   date,
   todayStr,
+  weightUnit,
+  distanceUnit,
 }: {
   exercise?: LoggableExercise;
   exerciseOptions?: LoggableExercise[];
   date: string;
   todayStr: string;
+  weightUnit: WeightUnit;
+  distanceUnit: DistanceUnit;
 }) {
   const fetcher = useFetcher();
   const [selectedId, setSelectedId] = useState(exercise?.id ?? '');
   const active = exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
+  const { showSpeed, showResistance } = cardioFieldsFor(active?.equipmentCardioKinds ?? []);
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-3">
@@ -270,25 +282,41 @@ function LogSetForm({
       {active?.exerciseType === 'strength' ? (
         <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
           <Field label="Reps">
-            <Input name="reps" type="number" min={1} inputMode="numeric" />
+            <Input name="reps" type="number" min={1} inputMode="numeric" placeholder="reps" />
           </Field>
-          <Field label="Weight">
-            <Input name="weight" type="number" min={0} step="0.5" inputMode="decimal" />
+          <Field label={`Weight (${weightUnit})`}>
+            <Input name="weight" type="number" min={0} step="0.5" inputMode="decimal" placeholder={weightUnit} />
           </Field>
         </div>
       ) : null}
 
       {active?.exerciseType === 'cardio' ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:max-w-md">
+        <div
+          className={cn(
+            'grid grid-cols-2 gap-3 sm:max-w-md',
+            showSpeed && showResistance ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+          )}
+        >
           <Field label="Minutes">
-            <Input name="durationMinutes" type="number" min={1} inputMode="numeric" />
+            <Input name="durationMinutes" type="number" min={1} inputMode="numeric" placeholder="min" />
           </Field>
-          <Field label="Speed">
-            <Input name="speed" type="number" min={0} step="0.1" inputMode="decimal" />
-          </Field>
-          <Field label="Resistance">
-            <Input name="resistance" type="number" min={1} inputMode="numeric" />
-          </Field>
+          {showSpeed ? (
+            <Field label={`Speed (${speedUnitLabel(distanceUnit)})`}>
+              <Input
+                name="speed"
+                type="number"
+                min={0}
+                step="0.1"
+                inputMode="decimal"
+                placeholder={speedUnitLabel(distanceUnit)}
+              />
+            </Field>
+          ) : null}
+          {showResistance ? (
+            <Field label="Resistance">
+              <Input name="resistance" type="number" min={1} inputMode="numeric" placeholder="level" />
+            </Field>
+          ) : null}
         </div>
       ) : null}
 
@@ -539,7 +567,8 @@ function SetProgress({ done, target }: { done: number; target: number }) {
 }
 
 export default function Today({ loaderData }: Route.ComponentProps) {
-  const { date, todayStr, isToday, plan, loggedSets, allExercises, upcomingWeek, pastWeek } = loaderData;
+  const { date, todayStr, isToday, plan, loggedSets, allExercises, upcomingWeek, pastWeek, weightUnit, distanceUnit } =
+    loaderData;
   const prevDate = DateOnly.parse(date).minusDays(1).value;
   const nextDate = DateOnly.parse(date).plusDays(1).value;
   const dayWord = isToday ? 'today' : 'that day';
@@ -659,9 +688,12 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                         id: item.exerciseId,
                         name: item.exerciseName,
                         exerciseType: item.exerciseType,
+                        equipmentCardioKinds: item.equipmentCardioKinds,
                       }}
                       date={date}
                       todayStr={todayStr}
+                      weightUnit={weightUnit}
+                      distanceUnit={distanceUnit}
                     />
                   </CardContent>
                 </Card>
@@ -683,7 +715,18 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       >
         <Card className="max-w-2xl">
           <CardContent>
-            <LogSetForm exerciseOptions={allExercises} date={date} todayStr={todayStr} />
+            <LogSetForm
+              exerciseOptions={allExercises.map((e) => ({
+                id: e.id,
+                name: e.name,
+                exerciseType: e.exerciseType,
+                equipmentCardioKinds: e.equipment.map((item) => item.cardioKind),
+              }))}
+              date={date}
+              todayStr={todayStr}
+              weightUnit={weightUnit}
+              distanceUnit={distanceUnit}
+            />
           </CardContent>
         </Card>
       </Section>

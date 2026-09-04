@@ -15,7 +15,9 @@ describe('sampleOrOwnEquipmentWhere', () => {
   it("scopes to only the user's own rows when sample data is hidden", () => {
     const { sql, params } = db.select().from(equipment).where(sampleOrOwnEquipmentWhere('user-1', false)).toSQL();
 
-    expect(sql).toBe('select "id", "user_id", "name", "created_at" from "equipment" where "equipment"."user_id" = $1');
+    expect(sql).toBe(
+      'select "id", "user_id", "name", "cardio_kind", "created_at" from "equipment" where "equipment"."user_id" = $1',
+    );
     expect(params).toEqual(['user-1']);
   });
 

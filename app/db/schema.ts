@@ -18,6 +18,7 @@ import {
 export const weightUnitEnum = pgEnum('weight_unit', ['lb', 'kg']);
 export const distanceUnitEnum = pgEnum('distance_unit', ['km', 'mi']);
 export const exerciseTypeEnum = pgEnum('exercise_type', ['strength', 'cardio']);
+export const cardioKindEnum = pgEnum('cardio_kind', ['speed', 'resistance']);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -58,6 +59,7 @@ export const equipment = pgTable('equipment', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull().unique(),
+  cardioKind: cardioKindEnum('cardio_kind'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
