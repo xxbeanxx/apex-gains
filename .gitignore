@@ -100,3 +100,9 @@ build/
 supabase/.temp/
 
 tmp/
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/
+/.playwright/

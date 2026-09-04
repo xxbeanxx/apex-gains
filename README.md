@@ -70,9 +70,12 @@ App is at `http://localhost:3000/`.
 | `npm run dev`               | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
 | `npm run format:check`      | Check code formatting with Prettier                                     |
 | `npm run format:write`      | Format the repository with Prettier                                     |
+| `npm run preview`           | Build, then serve it - what the e2e suite runs against                  |
 | `npm run start`             | Serve a production build via `build/server/main.js`                     |
 | `npm run test:watch`        | Run Vitest in watch mode                                                |
 | `npm run test`              | Run the Vitest unit test suite once                                     |
+| `npm run test:e2e`          | Run the Playwright end-to-end suite (Chromium)                          |
+| `npm run test:e2e:ui`       | Run the Playwright suite in its interactive UI mode                     |
 | `npm run typecheck`         | Generate route types and run `tsc`                                      |
 
 ## Environment variables
@@ -100,6 +103,64 @@ Config values are validated at server startup using `class-validator`:
   without a real Google account. It 404s unless the flag is set, and the
   flag must never be set on the deployed app: it is an unauthenticated
   login backdoor.
+
+## End-to-end tests
+
+Playwright specs live in `e2e/`, configured by `playwright.config.ts` -
+its own file because Playwright's runner reads no other. The only thing
+`vite.config.ts` does for it is exclude `e2e/**` from the unit run.
+
+First-time setup, once per machine:
+
+```bash
+npx playwright install chromium
+```
+
+Then:
+
+```bash
+npm run test:e2e
+```
+
+`webServer` runs `npm run preview`, so the suite exercises a production
+build rather than the dev server: the same bundles that ship, and none of
+Vite's dev-only machinery able to perturb a page mid-assertion. It serves
+on port 3100, deliberately not 3000, so a `npm run dev` you already have
+running is left alone. The environment it passes:
+
+- `DATABASE_URL` blank, which is what selects the in-memory repository
+  adapter for every port (see `server/repositories/repositories.module.ts`).
+  Blank rather than absent, and that matters: `preview` passes node's
+  `--env-file-if-exists=./.env`, and node never overwrites a variable
+  already present in the environment - an empty string counting as
+  present - so a real connection string in `.env` cannot reach a run
+  meant to be in-memory.
+- `ENABLE_TEST_LOGIN=true`, which opens `/auth/test-login?email=...` so a
+  spec can sign in without Google's consent screen.
+- Placeholder session and Google credentials, which config validation
+  requires to boot but no spec exercises.
+
+`reuseExistingServer` is off. `preview` rebuilds before it serves, so
+adopting a server already on the port would silently test whatever was
+built last - and one left there by a manual `npm run preview` would have
+taken its `DATABASE_URL` from `.env`.
+
+Two consequences of running in memory follow from there. Nothing seeds the
+sample exercise library, so every spec starts from an empty account and
+builds what it needs through the UI - which makes `exercise library ›
+starts empty` a standing check that the suite is not talking to a real
+database, since that assertion cannot pass against a seeded one. And state
+lives for the life of the server process rather than per test, so isolation
+comes from identity: the `athlete` fixture signs each test in as a freshly
+generated user, and everything is scoped by `userId`. Equipment names are
+the exception - they are globally unique - so a spec creating equipment
+names it via `uniqueName`.
+
+Every page is server-rendered, which means a button is clickable a beat
+before React attaches to it. `e2e/fixtures.ts` folds a hydration wait into
+`page.goto`/`page.reload`, and `submitForm` in `e2e/helpers.ts` covers the
+other case, a plain `<form method="post">` submit that follows an earlier
+navigation.
 
 ## Build output
 

@@ -26,8 +26,11 @@ npm run db:studio    # open Drizzle Studio against the local database
 npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
 npm run format:check # check formatting without writing
 npm run format:write # format the repo with prettier
+npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
+npm run test:e2e     # run the Playwright end-to-end suite (chromium only)
+npm run test:e2e:ui  # Playwright's interactive UI mode
 npm run test:watch   # vitest in watch mode
 npm run typecheck    # react-router typegen, then tsc
 ```
@@ -35,8 +38,8 @@ npm run typecheck    # react-router typegen, then tsc
 Run `npm run format:write` on any file you edit before finishing a
 task - there is no lint tooling and no CI formatting check, so
 `format:write` is the only thing keeping the tree consistent.
-`typecheck` and `test` are the automated checks. Unit tests (vitest) live next to
-the code they cover as `*.test.ts`; `test/mock.ts` exports a
+`typecheck`, `test` and `test:e2e` are the automated checks. Unit tests
+(vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
 neither: the domain layer is pure, so its tests construct real
@@ -47,9 +50,29 @@ DI container, which tests never boot. `vitest.setup.ts` imports
 `reflect-metadata` before anything else, since every service and
 repository provider carries Nest decorators (`@Injectable()`/`@Inject()`)
 that call into it at class-definition time - see Server runtime, below.
-Tests that touch `~/db/index.server` rely on `vitest.config.ts` seeding
-a dummy `DATABASE_URL` - the postgres-js client is lazy, so nothing
-dials out. `dev` and `db:*` scripts load `.env` via `dotenv-cli`;
+Tests that touch `~/db/index.server` rely on `vite.config.ts`'s `test`
+block seeding a dummy `DATABASE_URL` - the postgres-js client is lazy,
+so nothing dials out. That same block excludes `e2e/**`, since
+Playwright specs are not vitest's to collect.
+
+End-to-end tests (Playwright, chromium only) live in `e2e/` under
+`playwright.config.ts` - a separate file because Playwright's runner
+reads no other. Its `webServer` runs `npm run preview`, so specs drive a
+production build rather than the dev server, on port 3100, with a blank
+`DATABASE_URL` (so every port resolves to its in-memory adapter) and
+`ENABLE_TEST_LOGIN=true` (so a spec signs in through `/auth/test-login`
+rather than Google). Blank, not absent: `preview` hands node
+`--env-file-if-exists=./.env`, and node leaves an already-set variable
+alone, so `.env`'s real connection string cannot reach the suite.
+Nothing seeds sample data in-memory, so specs build what they need
+through the UI - which is why `exercise library > starts empty` doubles
+as a check that no real database is in play. One server process
+outlives the suite, so isolation is per-athlete: the `athlete` fixture
+signs each test in as a fresh user. Every page is SSR'd, so anything
+driven by client JS has to wait for hydration - `e2e/fixtures.ts` builds
+that into `page.goto`/`page.reload`, and `submitForm` covers a
+plain-form submit that follows another navigation. See README.md
+"End-to-end tests". `dev` and `db:*` scripts load `.env` via `dotenv-cli`;
 `start` passes node's `--env-file-if-exists`, so it picks one up
 locally and shrugs in the container image, which ships no `.env` - a
 container gets its environment from the runtime.

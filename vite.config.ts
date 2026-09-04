@@ -3,6 +3,7 @@
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 
 /**
  * Builds the React Router application. `vite.server.config.ts` builds the Nest
@@ -46,6 +47,11 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
+    // Unit tests are `*.test.ts` beside the code they cover; `e2e/` holds
+    // Playwright specs, which need a browser and a running server and are
+    // configured separately in `playwright.config.ts`. Without this, vitest
+    // collects them and fails on the `@playwright/test` import.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     env: {
       // ~/db/index.server reads DATABASE_URL at import time (lazily, via a
       // Proxy - drizzle-orm/postgres-js never actually opens a connection
