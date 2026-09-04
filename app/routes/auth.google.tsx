@@ -6,7 +6,6 @@ import { safeRedirect } from "~/auth/safe-redirect.server";
 import { ErrorPage } from "~/components/error-page";
 
 import {
-  appConfigContext,
   oidcConfigContext,
   oidcStateCookieContext,
 } from "~/lib/nest-bridge.server";
@@ -21,7 +20,11 @@ export { ErrorPage as ErrorBoundary };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const config = await context.get(oidcConfigContext).get();
-  const origin = context.get(appConfigContext).origin;
+  // Relies on server/main.ts's "trust proxy" setting and Host-header
+  // normalization to report the externally-visible scheme and host, not
+  // Node's internal ones - this must match what's registered with Google
+  // as the OAuth client's redirect URI.
+  const origin = new URL(request.url).origin;
 
   const codeVerifier = client.randomPKCECodeVerifier();
   const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);

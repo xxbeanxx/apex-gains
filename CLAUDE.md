@@ -341,11 +341,11 @@ around a bug in `@react-router/express`'s request-building where it
 falls back to the raw (proxy-internal) `Host` header's port whenever
 `X-Forwarded-Host` lacks one. Without both pieces, `request.url`'s
 origin wouldn't match the browser's `Origin` header on POSTs, which
-React Router's built-in CSRF check rejects with a 400, and
-`app/routes/auth.google.callback.tsx` rebuilds the URL passed to
-`authorizationCodeGrant` from `context.get(appConfigContext).origin`
-(Nest-validated `ORIGIN`) instead of trusting `request.url` so the token
-exchange's `redirect_uri` matches what's registered with Google.
+React Router's built-in CSRF check rejects with a 400. The same two
+pieces are also what let `app/routes/auth.google.tsx` and
+`auth.google.callback.tsx` take `new URL(request.url).origin` as the
+app's externally-visible origin — used to build and validate the OIDC
+`redirect_uri` — rather than reading it from an env var.
 
 **Units.** Measurements are stored canonically — pounds for weight,
 km/h for speed, seconds for duration — and converted at the edges:

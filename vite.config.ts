@@ -21,7 +21,6 @@ export default defineConfig({
       // harmless to seed in case something still reads process.env.
       DATABASE_URL: "postgres://test:test@localhost:5432/test",
       SESSION_SECRET: "test-session-secret",
-      ORIGIN: "http://localhost:5173",
       GOOGLE_CLIENT_ID: "test-google-client-id",
       GOOGLE_CLIENT_SECRET: "test-google-client-secret",
     },

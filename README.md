@@ -31,8 +31,8 @@ Fill in:
 - `SESSION_SECRET` - generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - from an OAuth client at
   https://console.cloud.google.com/apis/credentials. Authorized redirect
-  URI must be `<ORIGIN>/auth/google/callback` (`http://localhost:5173/auth/google/callback`
-  for local dev).
+  URI must be `<the URL the app is served from>/auth/google/callback`
+  (`http://localhost:3000/auth/google/callback` for local dev).
 
 ### 2. Install dependencies, migrate, and seed
 
@@ -89,7 +89,7 @@ podman build -t apex-gains -f containerfile .
 ```
 
 The app container needs `DATABASE_URL`, `SESSION_SECRET`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `ORIGIN` set in its
+`GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` set in its
 environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
 manifest, or your host's secret store).
 
@@ -106,9 +106,13 @@ which still works directly too). The image is public on GHCR
 (`ghcr.io/xxbeanxx/apex-gains`), so the Container App pulls it without
 registry credentials. `DATABASE_URL`, `SESSION_SECRET`, and
 `GOOGLE_CLIENT_SECRET` are stored as Container App secrets;
-`GOOGLE_CLIENT_ID`, `PORT`, and `ORIGIN` are plain env vars (`ORIGIN`
-is `https://apex.atomic-nucleus.com`, since that's what Google's
-OAuth redirect URI is registered against).
+`GOOGLE_CLIENT_ID` and `PORT` are plain env vars. The app derives its
+own origin from the request rather than an env var (Express's "trust
+proxy" setting, since Azure's ingress terminates TLS and forwards
+plain HTTP - see `server/main.ts`), so Google's OAuth redirect URI
+(`https://apex.atomic-nucleus.com/auth/google/callback`) just needs to
+be registered once in the Google Cloud console; there's nothing to
+configure on the Container App for it.
 
 ## Database migrations and deployment in CI
 

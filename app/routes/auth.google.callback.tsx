@@ -7,7 +7,6 @@ import { ErrorPage } from "~/components/error-page";
 import { requestLogger } from "~/lib/logger.server";
 
 import {
-  appConfigContext,
   athleteServiceContext,
   oidcConfigContext,
   oidcStateCookieContext,
@@ -42,23 +41,19 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   }
 
   const config = await context.get(oidcConfigContext).get();
-  const origin = context.get(appConfigContext).origin;
 
   // openid-client derives the redirect_uri it validates against Google from
   // this URL's origin (stripping query params), not from the redirect_uri
-  // passed below. Rebuild the origin from ORIGIN rather than trusting
-  // request.url's, since ORIGIN is the exact value registered with Google
-  // and request.url's origin depends on how the deployed server derives it
-  // from forwarded headers (see server/main.ts).
+  // passed below - so it must match what's registered with Google. Trusting
+  // request.url's origin here relies on server/main.ts's "trust proxy"
+  // setting and Host-header normalization to report the externally-visible
+  // scheme and host rather than Node's internal ones.
   const requestUrl = new URL(request.url);
-  const currentUrl = new URL(
-    `${requestUrl.pathname}${requestUrl.search}`,
-    origin,
-  );
+  const origin = requestUrl.origin;
 
   const tokens = await client.authorizationCodeGrant(
     config,
-    currentUrl,
+    requestUrl,
     {
       pkceCodeVerifier: state.codeVerifier,
       expectedState: state.state,
