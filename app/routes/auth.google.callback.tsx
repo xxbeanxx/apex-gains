@@ -1,4 +1,3 @@
-import * as client from 'openid-client';
 import { redirect } from 'react-router';
 
 import { clearOidcState, parseOidcState } from '~/auth/oidc-state.server';
@@ -34,8 +33,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     throw redirect('/auth/google');
   }
 
-  const config = await context.get(oidcConfigContext).get();
-
   // openid-client derives the redirect_uri it validates against Google from
   // this URL's origin (stripping query params), not from the redirect_uri
   // passed below - so it must match what's registered with Google. Trusting
@@ -45,19 +42,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
 
-  const tokens = await client.authorizationCodeGrant(
-    config,
-    requestUrl,
-    {
-      pkceCodeVerifier: state.codeVerifier,
-      expectedState: state.state,
-    },
-    {
-      redirect_uri: `${origin}/auth/google/callback`,
-    },
-  );
+  const claims = await context.get(oidcConfigContext).authorizationCodeGrant({
+    currentUrl: requestUrl,
+    redirectUri: `${origin}/auth/google/callback`,
+    pkceCodeVerifier: state.codeVerifier,
+    expectedState: state.state,
+  });
 
-  const claims = tokens.claims();
   if (!claims?.sub || typeof claims.email !== 'string') {
     logger.error(
       'oauth callback did not return the expected profile claims ' +

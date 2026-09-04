@@ -16,7 +16,6 @@ import type { Route } from './+types/auth.google';
 export { ErrorPage as ErrorBoundary };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const config = await context.get(oidcConfigContext).get();
   // Relies on server/main.ts's "trust proxy" setting and Host-header
   // normalization to report the externally-visible scheme and host, not
   // Node's internal ones - this must match what's registered with Google
@@ -30,11 +29,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
 
-  const authorizationUrl = client.buildAuthorizationUrl(config, {
-    redirect_uri: `${origin}/auth/google/callback`,
-    scope: 'openid email profile',
-    code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
+  const authorizationUrl = await context.get(oidcConfigContext).buildAuthorizationUrl({
+    redirectUri: `${origin}/auth/google/callback`,
+    codeChallenge,
     state,
   });
 
