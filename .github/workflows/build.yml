@@ -84,7 +84,6 @@ jobs:
         id: tags
         env:
           REPOSITORY: ${{ github.repository }}
-          RUN_NUMBER: ${{ github.run_number }}
         run: |
           # 8-digit date in UTC (e.g. 20260901)
           DATE=$(date --utc +'%Y%m%d')
@@ -95,12 +94,12 @@ jobs:
           # Lowercase image repository name for GHCR
           IMAGE_NAME=$(echo "ghcr.io/${REPOSITORY}" | tr '[:upper:]' '[:lower:]')
 
-          # 8-character zero-padded hex build number (e.g. 0000002a)
-          # github.run_number is unique and monotonically increasing per
-          # workflow, so it needs no registry lookup and can't race.
-          BUILD_NUM=$(printf '%08x' "${RUN_NUMBER}")
+          # 8-character hex Unix timestamp (e.g. 66d5e2c0). Same width as
+          # the SHA segment, and sorts correctly as a string until the
+          # epoch exceeds 0xffffffff (year 2106).
+          BUILD_NUM=$(printf '%08x' "$(date -u +%s)")
 
-          # Tag format: date-sha-buildnum (e.g. 20260901-abcd1234-0000002a)
+          # Tag format: date-sha-timestamp (e.g. 20260901-abcd1234-66d5e2c0)
           VERSION_TAG="${DATE}-${SHA}-${BUILD_NUM}"
 
           echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"

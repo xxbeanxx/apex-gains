@@ -5,12 +5,12 @@
 # output" for why the final image ships only `build/` and `package.json`.
 #
 # Build arguments with default values for build metadata:
-#   - VERSION_TAG: date-sha-buildnum identifying the build (default: "dev").
+#   - VERSION_TAG: date-sha-timestamp identifying the build (default: "dev").
 #
 # Example build and run commands:
 #
 #   $ podman build . --tag apex-gains --file containerfile \
-#       --build-arg VERSION_TAG="$(date -u +%Y%m%d)-$(git rev-parse --short=8 HEAD)-00000001"
+#       --build-arg VERSION_TAG="$(date -u +%Y%m%d)-$(git rev-parse --short=8 HEAD)-$(printf '%08x' "$(date -u +%s)")"
 #
 #   $ podman run --rm --publish 3000:3000 \
 #       --env DATABASE_URL --env SESSION_SECRET \
