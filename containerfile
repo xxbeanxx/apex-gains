@@ -55,6 +55,14 @@ ARG IMAGE_DESCRIPTION="Apex Gains -- personal workout tracker"
 ARG IMAGE_TITLE="apex-gains"
 ARG IMAGE_URL="https://github.com/xxbeanxx/apex-gains"
 
+# .github/workflows/build.yaml builds with a registry --cache-from/--cache-to,
+# and that cache doesn't invalidate ENV/LABEL-only layers just because their
+# ARG value changed - without this RUN, a build can silently reuse a stale
+# VERSION_TAG baked by an earlier build. RUN's cache key does include the
+# resolved command text, so this forces every layer below to rebuild whenever
+# VERSION_TAG differs.
+RUN echo "Building version ${VERSION_TAG}"
+
 ENV VERSION_TAG=${VERSION_TAG}
 ENV NODE_ENV=production
 ENV PORT=3000
