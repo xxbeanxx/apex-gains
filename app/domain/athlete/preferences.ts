@@ -1,7 +1,7 @@
-import type { Duration } from "../values/duration";
-import type { Speed } from "../values/speed";
-import type { DistanceUnit, WeightUnit } from "../values/units";
-import type { Weight } from "../values/weight";
+import type { Duration } from '../values/duration';
+import type { Speed } from '../values/speed';
+import type { DistanceUnit, WeightUnit } from '../values/units';
+import type { Weight } from '../values/weight';
 
 /**
  * How an athlete wants their numbers shown, and whether they want the shared
@@ -20,26 +20,15 @@ export class AthletePreferences {
   ) {}
 
   static defaults(): AthletePreferences {
-    return new AthletePreferences("lb", "km", true);
+    return new AthletePreferences('lb', 'km', true);
   }
 
-  withUnits(
-    weightUnit: WeightUnit,
-    distanceUnit: DistanceUnit,
-  ): AthletePreferences {
-    return new AthletePreferences(
-      weightUnit,
-      distanceUnit,
-      this.showSampleData,
-    );
+  withUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit): AthletePreferences {
+    return new AthletePreferences(weightUnit, distanceUnit, this.showSampleData);
   }
 
   withSampleData(showSampleData: boolean): AthletePreferences {
-    return new AthletePreferences(
-      this.weightUnit,
-      this.distanceUnit,
-      showSampleData,
-    );
+    return new AthletePreferences(this.weightUnit, this.distanceUnit, showSampleData);
   }
 
   formatWeight(weight: Weight | null): string | null {

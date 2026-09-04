@@ -1,18 +1,18 @@
-import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
-import * as React from "react"
+import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
+import * as React from 'react';
 
-import { Button } from "~/components/ui/button"
+import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
+} from '~/components/ui/dropdown-menu';
 
-export type Theme = "light" | "dark" | "system"
+export type Theme = 'light' | 'dark' | 'system';
 
-const STORAGE_KEY = "theme"
+const STORAGE_KEY = 'theme';
 
 /**
  * Applied before first paint so there is no light-mode flash on a dark-mode
@@ -23,51 +23,48 @@ const STORAGE_KEY = "theme"
  * theme-agnostic markup and this script decides the class.
  */
 export const themeInitScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(
-  STORAGE_KEY
-)});var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light";}catch(_){}})();`
+  STORAGE_KEY,
+)});var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light";}catch(_){}})();`;
 
 function applyTheme(theme: Theme) {
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches)
-  const root = document.documentElement
-  root.classList.toggle("dark", isDark)
-  root.style.colorScheme = isDark ? "dark" : "light"
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const root = document.documentElement;
+  root.classList.toggle('dark', isDark);
+  root.style.colorScheme = isDark ? 'dark' : 'light';
 }
 
 function ThemeToggle() {
   // Starts null so the first client render matches the server's (no checkmark
   // rendered yet). The visible icon is driven by CSS, not by this state, so
   // the trigger is correct from the very first paint.
-  const [theme, setTheme] = React.useState<Theme | null>(null)
+  const [theme, setTheme] = React.useState<Theme | null>(null);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-    const resolved = stored ?? "system"
-    setTheme(resolved)
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const resolved = stored ?? 'system';
+    setTheme(resolved);
     // Re-apply now, not just on future changes: on Android, matchMedia's
     // prefers-color-scheme can briefly report a stale value on cold start
     // (the OS theme signal arrives asynchronously) without ever firing a
     // "change" event once it corrects itself, so the blocking head script's
     // read can be wrong and nothing else would fix it.
-    applyTheme(resolved)
-  }, [])
+    applyTheme(resolved);
+  }, []);
 
   // Follow the OS while the preference is "system".
   React.useEffect(() => {
-    if (theme !== "system") return
-    const media = window.matchMedia("(prefers-color-scheme: dark)")
-    const onChange = () => applyTheme("system")
-    media.addEventListener("change", onChange)
-    return () => media.removeEventListener("change", onChange)
-  }, [theme])
+    if (theme !== 'system') return;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyTheme('system');
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [theme]);
 
   function select(next: Theme) {
-    setTheme(next)
-    if (next === "system") localStorage.removeItem(STORAGE_KEY)
-    else localStorage.setItem(STORAGE_KEY, next)
-    applyTheme(next)
+    setTheme(next);
+    if (next === 'system') localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, next);
+    applyTheme(next);
   }
 
   return (
@@ -79,10 +76,7 @@ function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup
-          value={theme ?? undefined}
-          onValueChange={(value) => select(value as Theme)}
-        >
+        <DropdownMenuRadioGroup value={theme ?? undefined} onValueChange={(value) => select(value as Theme)}>
           <DropdownMenuRadioItem value="light">
             <SunIcon aria-hidden="true" />
             Light
@@ -98,7 +92,7 @@ function ThemeToggle() {
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-export { ThemeToggle }
+export { ThemeToggle };

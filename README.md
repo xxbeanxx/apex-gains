@@ -54,16 +54,16 @@ App is at `http://localhost:5173`.
 
 ## Scripts
 
-| Script              | Purpose                                             |
-| -------------------- | ---------------------------------------------------- |
-| `npm run dev`         | Dev server with HMR                                   |
-| `npm run build`       | Production build                                      |
-| `npm run start`       | Serve a production build (`build/server/index.js`)    |
-| `npm run typecheck`   | Generate route types and run `tsc`                     |
-| `npm run db:generate` | Generate a Drizzle migration from `app/db/schema.ts`   |
-| `npm run db:migrate`  | Apply pending migrations                               |
-| `npm run db:studio`   | Open Drizzle Studio against the local database         |
-| `npm run db:seed`     | Seed/refresh the exercise library                      |
+| Script                | Purpose                                              |
+| --------------------- | ---------------------------------------------------- |
+| `npm run dev`         | Dev server with HMR                                  |
+| `npm run build`       | Production build                                     |
+| `npm run start`       | Serve a production build (`build/server/index.js`)   |
+| `npm run typecheck`   | Generate route types and run `tsc`                   |
+| `npm run db:generate` | Generate a Drizzle migration from `app/db/schema.ts` |
+| `npm run db:migrate`  | Apply pending migrations                             |
+| `npm run db:studio`   | Open Drizzle Studio against the local database       |
+| `npm run db:seed`     | Seed/refresh the exercise library                    |
 
 ## Environment variables
 

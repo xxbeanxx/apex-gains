@@ -1,12 +1,8 @@
-import type { Clock } from "../shared/clock";
-import {
-  alreadyEditable,
-  type EditableCopy,
-  identityTranslation,
-} from "../shared/forking";
-import type { IdGenerator } from "../shared/ids";
-import { Ownership } from "../shared/ownership";
-import { type ExerciseType, type Metrics, metricsFor } from "./exercise-type";
+import type { Clock } from '../shared/clock';
+import { alreadyEditable, type EditableCopy, identityTranslation } from '../shared/forking';
+import type { IdGenerator } from '../shared/ids';
+import { Ownership } from '../shared/ownership';
+import { type ExerciseType, type Metrics, metricsFor } from './exercise-type';
 
 export type ExerciseDetails = {
   readonly name: string;
@@ -45,19 +41,8 @@ export class Exercise {
     private readonly equipment: Set<string>,
   ) {}
 
-  static create(
-    userId: string,
-    details: ExerciseDetails,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): Exercise {
-    return new Exercise(
-      deps.ids.next(),
-      Ownership.of(userId),
-      null,
-      details,
-      deps.clock.now(),
-      new Set(),
-    );
+  static create(userId: string, details: ExerciseDetails, deps: { ids: IdGenerator; clock: Clock }): Exercise {
+    return new Exercise(deps.ids.next(), Ownership.of(userId), null, details, deps.clock.now(), new Set());
   }
 
   static fromSnapshot(snapshot: ExerciseSnapshot): Exercise {
@@ -120,7 +105,7 @@ export class Exercise {
   }
 
   get isCardio(): boolean {
-    return this.details.exerciseType === "cardio";
+    return this.details.exerciseType === 'cardio';
   }
 
   /** A personal copy of a sample can be discarded to fall back on the original. */
@@ -146,10 +131,7 @@ export class Exercise {
    * owns is returned untouched; a sample is copied - carrying its details and
    * equipment links - so the shared original survives the edit.
    */
-  editableCopyFor(
-    userId: string,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): EditableCopy<Exercise> {
+  editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<Exercise> {
     if (!this.ownership.isSample) return alreadyEditable(this);
 
     const fork = new Exercise(

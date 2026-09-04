@@ -18,7 +18,7 @@ export type WeeklyPointView = {
 
 export type HeatmapDayView = {
   date: string;
-  status: "workout" | "rest" | "none";
+  status: 'workout' | 'rest' | 'none';
   setCount: number;
 };
 

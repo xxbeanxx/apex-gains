@@ -1,1 +1,1 @@
-export const LOGGER = Symbol("LOGGER");
+export const LOGGER = Symbol('LOGGER');

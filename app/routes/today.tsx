@@ -7,63 +7,37 @@ import {
   MoonIcon,
   PlusIcon,
   XIcon,
-} from "lucide-react";
-import { useState } from "react";
-import { data, Link, useFetcher, useNavigate } from "react-router";
-import { z } from "zod";
+} from 'lucide-react';
+import { useState } from 'react';
+import { data, Link, useFetcher, useNavigate } from 'react-router';
+import { z } from 'zod';
 
-import { userContext } from "~/auth/user-context";
-import { Page, PageHeader, Section } from "~/components/layout/page";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Calendar } from "~/components/ui/calendar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import { Field } from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { SubmitButton } from "~/components/ui/submit-button";
-import type { ExerciseType } from "~/domain/exercise/exercise-type";
-import { DateOnly } from "~/domain/values/date-only";
-import {
-  formatFullDate,
-  formatMonthDay,
-  formatRelativeDate,
-  formatWeekday,
-} from "~/lib/format";
-import { requestLogger } from "~/lib/logger.server";
-import { cn } from "~/lib/utils";
-import type {
-  WeekHistoryDay,
-  WeekPlanDay,
-} from "~/services/training-plan-service.server";
-import type {
-  LoggedSetView,
-  RecentSetView,
-} from "~/services/workout-log-service.server";
+import { userContext } from '~/auth/user-context';
+import { Page, PageHeader, Section } from '~/components/layout/page';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Calendar } from '~/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { SubmitButton } from '~/components/ui/submit-button';
+import type { ExerciseType } from '~/domain/exercise/exercise-type';
+import { DateOnly } from '~/domain/values/date-only';
+import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
+import { requestLogger } from '~/lib/logger.server';
+import { cn } from '~/lib/utils';
+import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
+import type { LoggedSetView, RecentSetView } from '~/services/workout-log-service.server';
 
-import {
-  exerciseLibraryServiceContext,
-  trainingPlanServiceContext,
-  workoutLogServiceContext,
-} from "~/lib/nest-bridge.server";
+import { exerciseLibraryServiceContext, trainingPlanServiceContext, workoutLogServiceContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/today";
+import type { Route } from './+types/today';
 
 export function meta() {
-  return [{ title: "Today - Apex Gains" }];
+  return [{ title: 'Today - Apex Gains' }];
 }
 
 /**
@@ -82,23 +56,20 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   // An unparseable or future ?date falls back to today rather than erroring -
   // there is nothing to log against a day that hasn't happened.
-  const requested = DateOnly.tryParse(
-    new URL(request.url).searchParams.get("date"),
-  );
+  const requested = DateOnly.tryParse(new URL(request.url).searchParams.get('date'));
   const date = requested?.isOnOrBefore(today) ? requested : today;
 
   const planService = context.get(trainingPlanServiceContext);
   const logService = context.get(workoutLogServiceContext);
   const libraryService = context.get(exerciseLibraryServiceContext);
 
-  const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] =
-    await Promise.all([
-      planService.planFor(athlete, date),
-      logService.loggedSetsFor(athlete, date),
-      libraryService.listExercises(athlete),
-      planService.upcomingWeek(athlete, today),
-      planService.pastWeek(athlete, today),
-    ]);
+  const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] = await Promise.all([
+    planService.planFor(athlete, date),
+    logService.loggedSetsFor(athlete, date),
+    libraryService.listExercises(athlete),
+    planService.upcomingWeek(athlete, today),
+    planService.pastWeek(athlete, today),
+  ]);
 
   return {
     date: date.value,
@@ -126,67 +97,55 @@ export async function action({ request, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
   const today = DateOnly.today();
   const formData = await request.formData();
-  const intent = formData.get("intent");
+  const intent = formData.get('intent');
 
   const logService = context.get(workoutLogServiceContext);
 
-  if (intent === "logSet") {
+  if (intent === 'logSet') {
     // Blank optional fields arrive as "", which z.coerce.number() reads as 0
     // (failing .positive()) rather than as absent - drop them so they parse
     // as undefined instead.
-    const raw = Object.fromEntries(
-      [...formData].filter(([, value]) => value !== ""),
-    );
+    const raw = Object.fromEntries([...formData].filter(([, value]) => value !== ''));
     const result = logSetSchema.safeParse(raw);
     if (!result.success) {
-      return data({ error: "Invalid set" }, { status: 400 });
+      return data({ error: 'Invalid set' }, { status: 400 });
     }
     // Clamp instead of rejecting: a stale form (left open since yesterday)
     // should still log against today rather than fail outright.
     const date = DateOnly.parse(result.data.date).atMost(today);
 
     // Measurements are in the athlete's own units; the service converts them.
-    const outcome = await logService.logSet(
-      athlete,
-      date,
-      result.data.exerciseId,
-      {
-        reps: result.data.reps,
-        weight: result.data.weight,
-        durationMinutes: result.data.durationMinutes,
-        speed: result.data.speed,
-        resistance: result.data.resistance,
-      },
-    );
+    const outcome = await logService.logSet(athlete, date, result.data.exerciseId, {
+      reps: result.data.reps,
+      weight: result.data.weight,
+      durationMinutes: result.data.durationMinutes,
+      speed: result.data.speed,
+      resistance: result.data.resistance,
+    });
 
     if (!outcome.ok) {
-      return data({ error: "Invalid set" }, { status: 400 });
+      return data({ error: 'Invalid set' }, { status: 400 });
     }
     if (outcome.value.sessionOpened) {
-      requestLogger(context).log(
-        `opened session on ${date.value} for user ${athlete.id}`,
-        "Today",
-      );
+      requestLogger(context).log(`opened session on ${date.value} for user ${athlete.id}`, 'Today');
     }
     return { ok: true };
   }
 
-  if (intent === "removeSet") {
-    const date = DateOnly.tryParse(String(formData.get("date")));
+  if (intent === 'removeSet') {
+    const date = DateOnly.tryParse(String(formData.get('date')));
     if (!date) {
-      return data({ error: "Unknown set" }, { status: 400 });
+      return data({ error: 'Unknown set' }, { status: 400 });
     }
-    await logService.removeSet(athlete, date, String(formData.get("setId")));
+    await logService.removeSet(athlete, date, String(formData.get('setId')));
     return { ok: true };
   }
 
-  return data({ error: "Unknown action" }, { status: 400 });
+  return data({ error: 'Unknown action' }, { status: 400 });
 }
 
 /** Groups a newest-first flat set list into one entry per day it was logged. */
-function groupSetsByDate(
-  sets: RecentSetView[],
-): { date: string; summaries: string[] }[] {
+function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: string[] }[] {
   const groups: { date: string; summaries: string[] }[] = [];
   for (const set of sets) {
     const current = groups.at(-1);
@@ -219,7 +178,7 @@ function ExerciseHistoryButton({
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (next && fetcher.state === "idle" && !fetcher.data) {
+    if (next && fetcher.state === 'idle' && !fetcher.data) {
       fetcher.load(`/exercises/${exerciseId}/history`);
     }
   }
@@ -240,29 +199,20 @@ function ExerciseHistoryButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72">
-        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          {exerciseName}: recent sets
-        </p>
-        {fetcher.state !== "idle" ? (
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{exerciseName}: recent sets</p>
+        {fetcher.state !== 'idle' ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : groups.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {groups.map((group) => (
               <li key={group.date} className="text-sm">
-                <span className="font-medium">
-                  {formatRelativeDate(group.date, todayStr)}
-                </span>
-                <span className="text-muted-foreground tabular-nums">
-                  {" "}
-                  · {group.summaries.join(", ")}
-                </span>
+                <span className="font-medium">{formatRelativeDate(group.date, todayStr)}</span>
+                <span className="text-muted-foreground tabular-nums"> · {group.summaries.join(', ')}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Nothing logged for this exercise yet.
-          </p>
+          <p className="text-sm text-muted-foreground">Nothing logged for this exercise yet.</p>
         )}
       </PopoverContent>
     </Popover>
@@ -281,12 +231,10 @@ function LogSetForm({
   todayStr: string;
 }) {
   const fetcher = useFetcher();
-  const [selectedId, setSelectedId] = useState(exercise?.id ?? "");
-  const active =
-    exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
-  const pending = fetcher.state !== "idle";
-  const error =
-    fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
+  const [selectedId, setSelectedId] = useState(exercise?.id ?? '');
+  const active = exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
+  const pending = fetcher.state !== 'idle';
+  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-3">
@@ -299,21 +247,11 @@ function LogSetForm({
           label="Exercise"
           className="sm:max-w-xs"
           action={
-            active ? (
-              <ExerciseHistoryButton
-                exerciseId={active.id}
-                exerciseName={active.name}
-                todayStr={todayStr}
-              />
-            ) : null
+            active ? <ExerciseHistoryButton exerciseId={active.id} exerciseName={active.name} todayStr={todayStr} /> : null
           }
         >
           {({ id }) => (
-            <Select
-              name="exerciseId"
-              value={selectedId}
-              onValueChange={setSelectedId}
-            >
+            <Select name="exerciseId" value={selectedId} onValueChange={setSelectedId}>
               <SelectTrigger id={id} className="w-full">
                 <SelectValue placeholder="Choose an exercise" />
               </SelectTrigger>
@@ -329,49 +267,27 @@ function LogSetForm({
         </Field>
       )}
 
-      {active?.exerciseType === "strength" ? (
+      {active?.exerciseType === 'strength' ? (
         <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
           <Field label="Reps">
             <Input name="reps" type="number" min={1} inputMode="numeric" />
           </Field>
           <Field label="Weight">
-            <Input
-              name="weight"
-              type="number"
-              min={0}
-              step="0.5"
-              inputMode="decimal"
-            />
+            <Input name="weight" type="number" min={0} step="0.5" inputMode="decimal" />
           </Field>
         </div>
       ) : null}
 
-      {active?.exerciseType === "cardio" ? (
+      {active?.exerciseType === 'cardio' ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:max-w-md">
           <Field label="Minutes">
-            <Input
-              name="durationMinutes"
-              type="number"
-              min={1}
-              inputMode="numeric"
-            />
+            <Input name="durationMinutes" type="number" min={1} inputMode="numeric" />
           </Field>
           <Field label="Speed">
-            <Input
-              name="speed"
-              type="number"
-              min={0}
-              step="0.1"
-              inputMode="decimal"
-            />
+            <Input name="speed" type="number" min={0} step="0.1" inputMode="decimal" />
           </Field>
           <Field label="Resistance">
-            <Input
-              name="resistance"
-              type="number"
-              min={1}
-              inputMode="numeric"
-            />
+            <Input name="resistance" type="number" min={1} inputMode="numeric" />
           </Field>
         </div>
       ) : null}
@@ -397,21 +313,12 @@ function LogSetForm({
   );
 }
 
-function LoggedSetsList({
-  sets,
-  date,
-}: {
-  sets: LoggedSetView[];
-  date: string;
-}) {
+function LoggedSetsList({ sets, date }: { sets: LoggedSetView[]; date: string }) {
   if (sets.length === 0) return null;
   return (
     <ol className="flex flex-col gap-1.5">
       {sets.map((set, index) => (
-        <li
-          key={set.id}
-          className="flex items-center gap-2.5 rounded-lg bg-muted/60 py-1.5 pr-1.5 pl-2.5 text-sm"
-        >
+        <li key={set.id} className="flex items-center gap-2.5 rounded-lg bg-muted/60 py-1.5 pr-1.5 pl-2.5 text-sm">
           <span
             aria-hidden="true"
             className="flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-muted text-[0.6875rem] font-semibold text-brand-strong tabular-nums"
@@ -459,34 +366,18 @@ function DayCell({
   children: React.ReactNode;
 }) {
   const cellClassName = cn(
-    "relative flex min-w-18 flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-(--dur)",
-    isToday ? "border-brand/40 bg-brand-muted" : "border-border bg-card/50",
-    to
-      ? "outline-none hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-      : null
+    'relative flex min-w-18 flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-(--dur)',
+    isToday ? 'border-brand/40 bg-brand-muted' : 'border-border bg-card/50',
+    to ? 'outline-none hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50' : null,
   );
 
   const content = (
     <>
-      {isToday ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-brand-strong"
-        />
-      ) : null}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "text-xs font-medium",
-          isToday ? "text-brand-strong" : "text-muted-foreground"
-        )}
-      >
+      {isToday ? <span aria-hidden="true" className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-brand-strong" /> : null}
+      <span aria-hidden="true" className={cn('text-xs font-medium', isToday ? 'text-brand-strong' : 'text-muted-foreground')}>
         {formatWeekday(date)}
       </span>
-      <span
-        aria-hidden="true"
-        className="text-[0.625rem] text-muted-foreground tabular-nums"
-      >
+      <span aria-hidden="true" className="text-[0.625rem] text-muted-foreground tabular-nums">
         {formatMonthDay(date)}
       </span>
       <div aria-hidden="true" className="mt-0.5 w-full">
@@ -513,49 +404,37 @@ function DayCell({
 }
 
 function WeekRail({ children }: { children: React.ReactNode }) {
-  return (
-    <ul className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-      {children}
-    </ul>
-  );
+  return <ul className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">{children}</ul>;
 }
 
 function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
-  const planned = days.filter((d) => d.type === "template").length;
+  const planned = days.filter((d) => d.type === 'template').length;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Next seven days</CardTitle>
         <p className="text-sm text-muted-foreground">
-          {planned} workout{planned === 1 ? "" : "s"} scheduled
+          {planned} workout{planned === 1 ? '' : 's'} scheduled
         </p>
       </CardHeader>
       <CardContent>
         <WeekRail>
           {days.map((day, index) => {
-            const what =
-              day.type === "template"
-                ? day.templateName
-                : day.type === "rest"
-                  ? "Rest day"
-                  : "Nothing scheduled";
+            const what = day.type === 'template' ? day.templateName : day.type === 'rest' ? 'Rest day' : 'Nothing scheduled';
             return (
               <DayCell
                 key={day.date}
                 date={day.date}
                 isToday={index === 0}
-                label={`${index === 0 ? "Today, " : ""}${formatFullDate(day.date)}: ${what}`}
+                label={`${index === 0 ? 'Today, ' : ''}${formatFullDate(day.date)}: ${what}`}
               >
-                {day.type === "rest" ? (
+                {day.type === 'rest' ? (
                   <Badge variant="secondary" className="text-[0.625rem]">
                     Rest
                   </Badge>
-                ) : day.type === "template" ? (
-                  <span
-                    className="block w-full truncate text-xs font-medium"
-                    title={day.templateName}
-                  >
+                ) : day.type === 'template' ? (
+                  <span className="block w-full truncate text-xs font-medium" title={day.templateName}>
                     {day.templateName}
                   </span>
                 ) : (
@@ -571,8 +450,8 @@ function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
 }
 
 function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
-  const workouts = days.filter((d) => d.status === "workout").length;
-  const rests = days.filter((d) => d.status === "rest").length;
+  const workouts = days.filter((d) => d.status === 'workout').length;
+  const rests = days.filter((d) => d.status === 'rest').length;
   const totalSets = days.reduce((sum, d) => sum + d.setCount, 0);
 
   return (
@@ -580,20 +459,19 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
       <CardHeader>
         <CardTitle>Last seven days</CardTitle>
         <p className="text-sm text-muted-foreground">
-          {workouts} workout{workouts === 1 ? "" : "s"}, {rests} rest day
-          {rests === 1 ? "" : "s"}, {totalSets} set{totalSets === 1 ? "" : "s"}{" "}
-          logged
+          {workouts} workout{workouts === 1 ? '' : 's'}, {rests} rest day
+          {rests === 1 ? '' : 's'}, {totalSets} set{totalSets === 1 ? '' : 's'} logged
         </p>
       </CardHeader>
       <CardContent>
         <WeekRail>
           {days.map((day) => {
             const what =
-              day.status === "workout"
-                ? `${day.setCount} set${day.setCount === 1 ? "" : "s"} logged`
-                : day.status === "rest"
-                  ? "Rest day"
-                  : "Nothing logged";
+              day.status === 'workout'
+                ? `${day.setCount} set${day.setCount === 1 ? '' : 's'} logged`
+                : day.status === 'rest'
+                  ? 'Rest day'
+                  : 'Nothing logged';
             return (
               <DayCell
                 key={day.date}
@@ -601,12 +479,12 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
                 to={`/today?date=${day.date}`}
                 label={`${formatFullDate(day.date)}: ${what}. Log a set for this day.`}
               >
-                {day.status === "workout" ? (
+                {day.status === 'workout' ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums">
                     <CheckIcon className="size-3 text-success" />
                     {day.setCount}
                   </span>
-                ) : day.status === "rest" ? (
+                ) : day.status === 'rest' ? (
                   <Badge variant="secondary" className="text-[0.625rem]">
                     Rest
                   </Badge>
@@ -630,12 +508,7 @@ function SetProgress({ done, target }: { done: number; target: number }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs">
-        <span
-          className={cn(
-            "font-medium tabular-nums",
-            complete ? "text-success" : "text-muted-foreground"
-          )}
-        >
+        <span className={cn('font-medium tabular-nums', complete ? 'text-success' : 'text-muted-foreground')}>
           {done} of {target} sets
         </span>
         {complete ? (
@@ -655,8 +528,8 @@ function SetProgress({ done, target }: { done: number; target: number }) {
       >
         <div
           className={cn(
-            "h-full rounded-full transition-[width] duration-(--dur-slow) ease-(--ease-quint)",
-            complete ? "bg-success" : "bg-brand-strong"
+            'h-full rounded-full transition-[width] duration-(--dur-slow) ease-(--ease-quint)',
+            complete ? 'bg-success' : 'bg-brand-strong',
           )}
           style={{ width: `${pct}%` }}
         />
@@ -666,25 +539,16 @@ function SetProgress({ done, target }: { done: number; target: number }) {
 }
 
 export default function Today({ loaderData }: Route.ComponentProps) {
-  const {
-    date,
-    todayStr,
-    isToday,
-    plan,
-    loggedSets,
-    allExercises,
-    upcomingWeek,
-    pastWeek,
-  } = loaderData;
+  const { date, todayStr, isToday, plan, loggedSets, allExercises, upcomingWeek, pastWeek } = loaderData;
   const prevDate = DateOnly.parse(date).minusDays(1).value;
   const nextDate = DateOnly.parse(date).plusDays(1).value;
-  const dayWord = isToday ? "today" : "that day";
+  const dayWord = isToday ? 'today' : 'that day';
   const navigate = useNavigate();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   function goToDate(dateStr: string) {
     setCalendarOpen(false);
-    navigate(dateStr === todayStr ? "/today" : `/today?date=${dateStr}`);
+    navigate(dateStr === todayStr ? '/today' : `/today?date=${dateStr}`);
   }
 
   const setsByExercise = new Map<string, typeof loggedSets>();
@@ -696,42 +560,30 @@ export default function Today({ loaderData }: Route.ComponentProps) {
 
   // Exercises already shown by the template grid above, so the section at the
   // bottom can list only what that grid does not cover.
-  const plannedExerciseIds = new Set(
-    plan.type === "template" ? plan.items.map((item) => item.exerciseId) : [],
-  );
-  const extraEntries = [...setsByExercise.entries()].filter(
-    ([exerciseId]) => !plannedExerciseIds.has(exerciseId),
-  );
+  const plannedExerciseIds = new Set(plan.type === 'template' ? plan.items.map((item) => item.exerciseId) : []);
+  const extraEntries = [...setsByExercise.entries()].filter(([exerciseId]) => !plannedExerciseIds.has(exerciseId));
 
-  const planLabel =
-    plan.type === "template"
-      ? plan.templateName
-      : plan.type === "rest"
-        ? "Rest day"
-        : "No active routine";
+  const planLabel = plan.type === 'template' ? plan.templateName : plan.type === 'rest' ? 'Rest day' : 'No active routine';
 
   return (
     <Page>
       <PageHeader
-        title={isToday ? "Today" : "Log a workout"}
+        title={isToday ? 'Today' : 'Log a workout'}
         description={formatFullDate(date)}
         badge={
-          plan.type === "rest" ? (
+          plan.type === 'rest' ? (
             <Badge variant="secondary">
               <MoonIcon aria-hidden="true" />
               Rest day
             </Badge>
-          ) : plan.type === "template" ? (
+          ) : plan.type === 'template' ? (
             <Badge variant="brand-subtle">{planLabel}</Badge>
           ) : null
         }
         actions={
           <div className="flex items-center gap-1.5">
             <Button asChild variant="outline" size="icon-sm">
-              <Link
-                to={`/today?date=${prevDate}`}
-                aria-label={`Go to ${formatFullDate(prevDate)}`}
-              >
+              <Link to={`/today?date=${prevDate}`} aria-label={`Go to ${formatFullDate(prevDate)}`}>
                 <ChevronLeftIcon aria-hidden="true" />
               </Link>
             </Button>
@@ -742,12 +594,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="center" className="w-auto">
-                <Calendar
-                  selected={date}
-                  today={todayStr}
-                  maxDate={todayStr}
-                  onSelect={goToDate}
-                />
+                <Calendar selected={date} today={todayStr} maxDate={todayStr} onSelect={goToDate} />
                 <div className="mt-3 border-t border-border pt-3">
                   <Button
                     variant="secondary"
@@ -762,20 +609,12 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               </PopoverContent>
             </Popover>
             {isToday ? (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                disabled
-                aria-label="No later days to show"
-              >
+              <Button variant="outline" size="icon-sm" disabled aria-label="No later days to show">
                 <ChevronRightIcon aria-hidden="true" />
               </Button>
             ) : (
               <Button asChild variant="outline" size="icon-sm">
-                <Link
-                  to={`/today?date=${nextDate}`}
-                  aria-label={`Go to ${formatFullDate(nextDate)}`}
-                >
+                <Link to={`/today?date=${nextDate}`} aria-label={`Go to ${formatFullDate(nextDate)}`}>
                   <ChevronRightIcon aria-hidden="true" />
                 </Link>
               </Button>
@@ -789,10 +628,10 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         <PastWeekCard days={pastWeek} />
       </div>
 
-      {plan.type === "template" ? (
+      {plan.type === 'template' ? (
         <Section
           title={isToday ? "Today's workout" : "That day's workout"}
-          description={`${plan.items.length} exercise${plan.items.length === 1 ? "" : "s"} in ${plan.templateName}.`}
+          description={`${plan.items.length} exercise${plan.items.length === 1 ? '' : 's'} in ${plan.templateName}.`}
         >
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {plan.items.map((item) => {
@@ -801,9 +640,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                 <Card key={item.exerciseId}>
                   <CardHeader>
                     <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-base">
-                        {item.exerciseName}
-                      </CardTitle>
+                      <CardTitle className="text-base">{item.exerciseName}</CardTitle>
                       <ExerciseHistoryButton
                         exerciseId={item.exerciseId}
                         exerciseName={item.exerciseName}
@@ -811,19 +648,12 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                       />
                     </div>
                     {item.targetSummary ? (
-                      <p className="text-sm text-muted-foreground tabular-nums">
-                        Target: {item.targetSummary}
-                      </p>
+                      <p className="text-sm text-muted-foreground tabular-nums">Target: {item.targetSummary}</p>
                     ) : null}
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
-                    {item.targetSets ? (
-                      <SetProgress done={done} target={item.targetSets} />
-                    ) : null}
-                    <LoggedSetsList
-                      sets={setsByExercise.get(item.exerciseId) ?? []}
-                      date={date}
-                    />
+                    {item.targetSets ? <SetProgress done={done} target={item.targetSets} /> : null}
+                    <LoggedSetsList sets={setsByExercise.get(item.exerciseId) ?? []} date={date} />
                     <LogSetForm
                       exercise={{
                         id: item.exerciseId,
@@ -842,22 +672,18 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       ) : null}
 
       <Section
-        title={plan.type === "rest" ? "Log a workout anyway" : "Log an exercise"}
+        title={plan.type === 'rest' ? 'Log a workout anyway' : 'Log an exercise'}
         description={
-          plan.type === "none"
+          plan.type === 'none'
             ? `No routine is active, so log whatever you like for ${dayWord}.`
-            : plan.type === "rest"
-              ? `${isToday ? "Today is" : "That day was"} scheduled as rest, but nothing stops you.`
+            : plan.type === 'rest'
+              ? `${isToday ? 'Today is' : 'That day was'} scheduled as rest, but nothing stops you.`
               : `Anything outside ${isToday ? "today's" : "that day's"} template goes here.`
         }
       >
         <Card className="max-w-2xl">
           <CardContent>
-            <LogSetForm
-              exerciseOptions={allExercises}
-              date={date}
-              todayStr={todayStr}
-            />
+            <LogSetForm exerciseOptions={allExercises} date={date} todayStr={todayStr} />
           </CardContent>
         </Card>
       </Section>
@@ -867,17 +693,11 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         this, sets for an off-template exercise were logged successfully and
         then displayed nowhere at all whenever a template was active.
       */}
-      {extraEntries.length > 0 || plan.type !== "template" ? (
+      {extraEntries.length > 0 || plan.type !== 'template' ? (
         <Section
-          title={
-            plan.type === "template"
-              ? `Also logged ${dayWord}`
-              : `Logged ${dayWord}`
-          }
+          title={plan.type === 'template' ? `Also logged ${dayWord}` : `Logged ${dayWord}`}
           description={
-            plan.type === "template"
-              ? `Sets you recorded outside ${isToday ? "today's" : "that day's"} template.`
-              : undefined
+            plan.type === 'template' ? `Sets you recorded outside ${isToday ? "today's" : "that day's"} template.` : undefined
           }
         >
           {extraEntries.length > 0 ? (
@@ -885,9 +705,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               {extraEntries.map(([exerciseId, sets]) => (
                 <Card key={exerciseId}>
                   <CardHeader>
-                    <CardTitle className="text-base">
-                      {sets[0].exerciseName}
-                    </CardTitle>
+                    <CardTitle className="text-base">{sets[0].exerciseName}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <LoggedSetsList sets={sets} date={date} />

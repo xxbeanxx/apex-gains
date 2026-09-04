@@ -1,18 +1,15 @@
-import { TrophyIcon } from "lucide-react";
+import { TrophyIcon } from 'lucide-react';
 
-import { formatMonthDay } from "~/lib/format";
-import type { PersonalRecordView } from "~/services/progress-view";
+import { formatMonthDay } from '~/lib/format';
+import type { PersonalRecordView } from '~/services/progress-view';
 
-import { formatMetricValue } from "./chart-utils";
+import { formatMetricValue } from './chart-utils';
 
 export function PersonalRecordsList({ records }: { records: PersonalRecordView[] }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
       {records.map((record) => (
-        <li
-          key={record.exerciseId}
-          className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-        >
+        <li key={record.exerciseId} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
           <div className="flex min-w-0 items-center gap-2.5">
             <span
               className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-muted text-brand-strong"

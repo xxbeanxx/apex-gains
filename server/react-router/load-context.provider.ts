@@ -1,27 +1,23 @@
-import { Inject, Injectable } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
-import type { Cookie } from "react-router";
+import { Inject, Injectable } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import type { Cookie } from 'react-router';
 
-import { registerNestSingletons } from "~/lib/nest-bridge.server";
-import { AthleteService } from "~/services/athlete-service.server";
-import { BodyWeightService } from "~/services/body-weight-service.server";
-import { ExerciseLibraryService } from "~/services/exercise-library-service.server";
-import { ProgressService } from "~/services/progress-service.server";
-import { RoutineService } from "~/services/routine-service.server";
-import { TemplateService } from "~/services/template-service.server";
-import { TrainingPlanService } from "~/services/training-plan-service.server";
-import { WorkoutLogService } from "~/services/workout-log-service.server";
+import { registerNestSingletons } from '~/lib/nest-bridge.server';
+import { AthleteService } from '~/services/athlete-service.server';
+import { BodyWeightService } from '~/services/body-weight-service.server';
+import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
+import { ProgressService } from '~/services/progress-service.server';
+import { RoutineService } from '~/services/routine-service.server';
+import { TemplateService } from '~/services/template-service.server';
+import { TrainingPlanService } from '~/services/training-plan-service.server';
+import { WorkoutLogService } from '~/services/workout-log-service.server';
 
-import type { OidcClientProvider } from "../auth/oidc-client.provider";
-import type { AppSessionStorage } from "../auth/session-storage.provider";
-import {
-  OIDC_CLIENT_CONFIG,
-  OIDC_STATE_COOKIE,
-  SESSION_STORAGE,
-} from "../auth/tokens";
-import { appConfig } from "../config/app.config";
-import type { AppLogger } from "../logging/logger.provider";
-import { LOGGER } from "../logging/tokens";
+import type { OidcClientProvider } from '../auth/oidc-client.provider';
+import type { AppSessionStorage } from '../auth/session-storage.provider';
+import { OIDC_CLIENT_CONFIG, OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
+import { appConfig } from '../config/app.config';
+import type { AppLogger } from '../logging/logger.provider';
+import { LOGGER } from '../logging/tokens';
 
 /**
  * Gathers every Nest-resolved singleton the React Router app needs and

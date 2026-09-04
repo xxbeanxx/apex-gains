@@ -1,4 +1,4 @@
-import type { Routine } from "./routine";
+import type { Routine } from './routine';
 
 /**
  * "Only one routine per user may be active" is an invariant across a set of
@@ -10,11 +10,7 @@ import type { Routine } from "./routine";
  * together in one transaction; the schema's partial unique index
  * (`routines_one_active_per_user`) is the backstop if that ever slips.
  */
-export function activateRoutine(
-  target: Routine,
-  currentlyActive: Routine | null,
-  now: Date,
-): Routine[] {
+export function activateRoutine(target: Routine, currentlyActive: Routine | null, now: Date): Routine[] {
   if (currentlyActive && currentlyActive.id === target.id) {
     // Already the active one. Still stamp it, so "activate" is idempotent
     // rather than silently doing nothing.

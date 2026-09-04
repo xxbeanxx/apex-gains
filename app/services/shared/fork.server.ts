@@ -1,12 +1,8 @@
-import {
-  alreadyEditable,
-  type EditableCopy,
-  forkedFrom,
-} from "~/domain/shared/forking";
-import type { Positioned } from "~/domain/shared/ordered";
-import type { Ownership } from "~/domain/shared/ownership";
+import { alreadyEditable, type EditableCopy, forkedFrom } from '~/domain/shared/forking';
+import type { Positioned } from '~/domain/shared/ordered';
+import type { Ownership } from '~/domain/shared/ownership';
 
-import type { DomainDeps } from "./deps.server";
+import type { DomainDeps } from './deps.server';
 
 /**
  * What an aggregate must offer to take part in fork-on-write. Exercises,
@@ -45,11 +41,7 @@ export async function resolveEditableCopy<A extends Forkable<A>>(
 
   const existingFork = await findExistingFork(aggregate.id);
   if (existingFork) {
-    return forkedFrom(
-      existingFork,
-      childrenOf(aggregate),
-      childrenOf(existingFork),
-    );
+    return forkedFrom(existingFork, childrenOf(aggregate), childrenOf(existingFork));
   }
 
   return aggregate.editableCopyFor(userId, deps);

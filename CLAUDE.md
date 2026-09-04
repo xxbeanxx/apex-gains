@@ -92,7 +92,7 @@ Never write:
 - how much a change consolidated: "six adapters each had their own
   check", "what used to be eight methods per adapter"
 - a justification aimed at a reviewer rather than a reader: why this
-  design was chosen *over the last one*, as opposed to what it now
+  design was chosen _over the last one_, as opposed to what it now
   guarantees
 
 Do write the thing a reader would otherwise have to rediscover, however
@@ -150,7 +150,7 @@ class are Nest-managed `@Injectable()` providers;
 picks Drizzle vs. in-memory per repository (on whether
 `databaseConfig.databaseUrl` is set) and the one place that calls
 `configureDatabase()` with the validated connection string. The DI
-*tokens*, though, live with the ports they name
+_tokens_, though, live with the ports they name
 (`app/repositories/tokens.ts`, `app/services/shared/tokens.ts`), not
 here - that is what keeps `app/services` free of any `~server/`
 import, so the application layer compiles and tests without its
@@ -159,7 +159,7 @@ composition root. Every `@Injectable()` constructor parameter is
 type-based DI: esbuild - used by both Vite and by `tsx`, which is what
 actually runs `server/`, unbundled, as source - never emits the
 `design:paramtypes` metadata Nest needs for that, which is why
-`tsconfig.json` deliberately does *not* set `emitDecoratorMetadata`
+`tsconfig.json` deliberately does _not_ set `emitDecoratorMetadata`
 (it would only imply a guarantee nothing honours); a class missing an
 explicit token fails at DI-resolution time with a "Nest can't resolve
 dependencies" error, not a type error. Environment variables are
@@ -168,36 +168,37 @@ validated once at boot with `class-validator`/`class-transformer`
 Google OAuth, session, test-login).
 
 Two bootstrap invariants in `server/main.ts` are load-bearing and easy
-to undo: `app.init()` runs *before* the React Router handler is
+to undo: `app.init()` runs _before_ the React Router handler is
 mounted (that is where Nest registers controllers, and the handler is
 a catch-all that would otherwise shadow them), which in turn requires
 suppressing Nest's own catch-all 404 and creating the app with
 `bodyParser: false` - React Router reads the raw request stream, so a
 Nest body parser ahead of it would leave every form submission empty.
 
-React Router's load context is the *only* conduit from Nest to the app
+React Router's load context is the _only_ conduit from Nest to the app
+
 - every service and Nest-validated config value reaches a route via
-`context.get(...)`, the same `createContext()` pattern as
-`userContext`/`loggerContext`. Repositories do not: nothing above the
-service layer holds a port. That indirection exists because Nest runs
-directly under `tsx`, outside Vite's module graph, while every
-route/middleware always loads through Vite (dev's SSR pipeline, or the
-bundled prod server) - two separate module instances, so a
-`createContext()` token created in `server/` could never be `===` the
-token a route reads (`RouterContextProvider` keys its map by token
-identity). `app/lib/nest-bridge.server.ts` is where the tokens actually
-live - inside the Vite-loaded graph, alongside `nestBridgeMiddleware`,
-registered first in `root.tsx`'s `middleware` export. Nest hands over its
-resolved singletons through `registerNestSingletons()`, which stashes
-them on `globalThis` under a `Symbol.for(...)` key - stable across the
-two separately-loaded copies of that module, unlike a plain `Symbol()` -
-rather than trying to build the `RouterContextProvider` itself. That's
-the one deliberate exception to "everything crosses via
-`context.get(...)`": `app/entry.server.tsx`'s process-wide
-`uncaughtException`/`unhandledRejection` handlers run at module load,
-before any request (and so any load context) exists, so they call
-`getNestLogger()` instead, reading the same registered singleton lazily
-inside the handler body.
+  `context.get(...)`, the same `createContext()` pattern as
+  `userContext`/`loggerContext`. Repositories do not: nothing above the
+  service layer holds a port. That indirection exists because Nest runs
+  directly under `tsx`, outside Vite's module graph, while every
+  route/middleware always loads through Vite (dev's SSR pipeline, or the
+  bundled prod server) - two separate module instances, so a
+  `createContext()` token created in `server/` could never be `===` the
+  token a route reads (`RouterContextProvider` keys its map by token
+  identity). `app/lib/nest-bridge.server.ts` is where the tokens actually
+  live - inside the Vite-loaded graph, alongside `nestBridgeMiddleware`,
+  registered first in `root.tsx`'s `middleware` export. Nest hands over its
+  resolved singletons through `registerNestSingletons()`, which stashes
+  them on `globalThis` under a `Symbol.for(...)` key - stable across the
+  two separately-loaded copies of that module, unlike a plain `Symbol()` -
+  rather than trying to build the `RouterContextProvider` itself. That's
+  the one deliberate exception to "everything crosses via
+  `context.get(...)`": `app/entry.server.tsx`'s process-wide
+  `uncaughtException`/`unhandledRejection` handlers run at module load,
+  before any request (and so any load context) exists, so they call
+  `getNestLogger()` instead, reading the same registered singleton lazily
+  inside the handler body.
 
 **Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
 `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
@@ -215,7 +216,7 @@ services — see `domain/routine/activation.ts`.
 
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
 (Postgres). Repositories in `app/repositories/` are ports over
-*aggregates*, not rows: `load` / `save` / `delete` plus real queries,
+_aggregates_, not rows: `load` / `save` / `delete` plus real queries,
 with a Drizzle adapter and an in-memory one each, selected once at Nest
 bootstrap by `server/repositories/repositories.module.ts` (see Server
 runtime, above) rather than by the port file itself. Adapters map
@@ -256,11 +257,11 @@ template exercises, routine slots) into a per-user row with
 `forkedFromId` pointing back at the sample; the original is then
 excluded from that user's view so the same logical item doesn't show
 twice. The copy is `aggregate.editableCopyFor(userId, deps)`; deciding
-*whether* to copy — reusing an existing fork instead of minting a second
+_whether_ to copy — reusing an existing fork instead of minting a second
 one — needs a query, so it lives in
 `app/services/shared/fork.server.ts` (`resolveEditableCopy`), which
 every mutating service goes through. Because a fork's children get new
-ids, an id that arrived on a form names a child of the *sample*; the
+ids, an id that arrived on a form names a child of the _sample_; the
 returned `translateChildId` maps it onto the copy by position. The
 `sampleOrOwn*Where` query builders (in each Drizzle adapter) list own
 rows plus not-yet-forked samples. So "does this row's `userId` match the
@@ -288,7 +289,7 @@ in `app/domain/routine/routine.ts`. This is strict calendar-day math
 done in UTC on `YYYY-MM-DD` strings (`DateOnly`): it does not pause for
 missed days, and a routine's `anchorDate` can be set independently of
 when it was activated or of what weekday it falls on. Only one routine
-per user may have `isActive = true`; that is a rule about a *set* of
+per user may have `isActive = true`; that is a rule about a _set_ of
 routines, so it lives in `domain/routine/activation.ts`
 (`activateRoutine`) rather than on the aggregate, with the schema's
 partial unique index as the backstop — the two routines it changes must
@@ -386,7 +387,7 @@ The logger reaches the React Router app via `nestLoggerContext`
 puts it on `loggerContext` and logs one line per request - `GET /today
 200 in 12ms for user <id>`. Route code reads it via
 `requestLogger(context)`, never `context.get(loggerContext)` directly,
-because middleware only runs for a *matched* route and an unmatched
+because middleware only runs for a _matched_ route and an unmatched
 URL would otherwise throw on the unset context, turning a 404 into a
 500; `requestLogger` falls back to the process-wide logger.
 

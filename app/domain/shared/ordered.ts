@@ -14,7 +14,7 @@ export interface Positioned {
   position: number;
 }
 
-export type MoveDirection = "up" | "down";
+export type MoveDirection = 'up' | 'down';
 
 export class OrderedChildren<T extends Positioned> {
   private readonly children: T[];
@@ -73,13 +73,10 @@ export class OrderedChildren<T extends Positioned> {
     const index = this.indexOf(id);
     if (index === -1) return false;
 
-    const target = direction === "up" ? index - 1 : index + 1;
+    const target = direction === 'up' ? index - 1 : index + 1;
     if (target < 0 || target >= this.children.length) return false;
 
-    [this.children[index], this.children[target]] = [
-      this.children[target],
-      this.children[index],
-    ];
+    [this.children[index], this.children[target]] = [this.children[target], this.children[index]];
     this.renumber();
     return true;
   }

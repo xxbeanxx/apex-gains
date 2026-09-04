@@ -1,19 +1,19 @@
-import type { Cookie, MiddlewareFunction, RouterContext } from "react-router";
-import { createContext } from "react-router";
+import type { Cookie, MiddlewareFunction, RouterContext } from 'react-router';
+import { createContext } from 'react-router';
 
-import type { AthleteService } from "~/services/athlete-service.server";
-import type { BodyWeightService } from "~/services/body-weight-service.server";
-import type { ExerciseLibraryService } from "~/services/exercise-library-service.server";
-import type { ProgressService } from "~/services/progress-service.server";
-import type { RoutineService } from "~/services/routine-service.server";
-import type { TemplateService } from "~/services/template-service.server";
-import type { TrainingPlanService } from "~/services/training-plan-service.server";
-import type { WorkoutLogService } from "~/services/workout-log-service.server";
+import type { AthleteService } from '~/services/athlete-service.server';
+import type { BodyWeightService } from '~/services/body-weight-service.server';
+import type { ExerciseLibraryService } from '~/services/exercise-library-service.server';
+import type { ProgressService } from '~/services/progress-service.server';
+import type { RoutineService } from '~/services/routine-service.server';
+import type { TemplateService } from '~/services/template-service.server';
+import type { TrainingPlanService } from '~/services/training-plan-service.server';
+import type { WorkoutLogService } from '~/services/workout-log-service.server';
 
-import type { AppConfig } from "~server/config/app.config";
-import type { OidcClientProvider } from "~server/auth/oidc-client.provider";
-import type { AppSessionStorage } from "~server/auth/session-storage.provider";
-import type { AppLogger } from "~server/logging/logger.provider";
+import type { AppConfig } from '~server/config/app.config';
+import type { OidcClientProvider } from '~server/auth/oidc-client.provider';
+import type { AppSessionStorage } from '~server/auth/session-storage.provider';
+import type { AppLogger } from '~server/logging/logger.provider';
 
 /**
  * The Nest -> React Router boundary.
@@ -87,14 +87,10 @@ export const {
  * value per context above, checked by the compiler on both sides.
  */
 export type NestSingletons = {
-  [K in keyof typeof contexts]: (typeof contexts)[K] extends RouterContext<
-    infer V
-  >
-    ? V
-    : never;
+  [K in keyof typeof contexts]: (typeof contexts)[K] extends RouterContext<infer V> ? V : never;
 };
 
-const GLOBAL_KEY = Symbol.for("apex-gains.nest-singletons");
+const GLOBAL_KEY = Symbol.for('apex-gains.nest-singletons');
 
 type GlobalWithSingletons = typeof globalThis & {
   [GLOBAL_KEY]?: NestSingletons;
@@ -113,8 +109,8 @@ function requireNestSingletons(): NestSingletons {
   const singletons = (globalThis as GlobalWithSingletons)[GLOBAL_KEY];
   if (!singletons) {
     throw new Error(
-      "Nest singletons were not registered before the first request - " +
-        "registerNestSingletons() must run during server bootstrap.",
+      'Nest singletons were not registered before the first request - ' +
+        'registerNestSingletons() must run during server bootstrap.',
     );
   }
   return singletons;
@@ -136,9 +132,7 @@ export function getNestLogger(): AppLogger {
  * bootstrap. Must run before any other middleware or loader that reads one
  * of these contexts - see `app/root.tsx`.
  */
-export const nestBridgeMiddleware: MiddlewareFunction<void | Response> = ({
-  context,
-}) => {
+export const nestBridgeMiddleware: MiddlewareFunction<void | Response> = ({ context }) => {
   const singletons = requireNestSingletons();
   for (const key of Object.keys(contexts) as (keyof typeof contexts)[]) {
     // `set` can't correlate context and value through a union key, so it is

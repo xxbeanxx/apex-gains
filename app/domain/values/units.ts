@@ -8,8 +8,8 @@
  * storage detail - the domain deals in these.
  */
 
-export const WEIGHT_UNITS = ["lb", "kg"] as const;
-export const DISTANCE_UNITS = ["km", "mi"] as const;
+export const WEIGHT_UNITS = ['lb', 'kg'] as const;
+export const DISTANCE_UNITS = ['km', 'mi'] as const;
 
 export type WeightUnit = (typeof WEIGHT_UNITS)[number];
 export type DistanceUnit = (typeof DISTANCE_UNITS)[number];
@@ -19,7 +19,7 @@ export type DistanceUnit = (typeof DISTANCE_UNITS)[number];
  * doesn't follow the "km"/"mi" spelling: nobody writes "mi/h".
  */
 export function speedUnitLabel(unit: DistanceUnit): string {
-  return unit === "km" ? "km/h" : "mph";
+  return unit === 'km' ? 'km/h' : 'mph';
 }
 
 /**

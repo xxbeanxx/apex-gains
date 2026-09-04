@@ -1,8 +1,4 @@
-import {
-  type DistanceUnit,
-  formatNumber,
-  speedUnitLabel,
-} from "./units";
+import { type DistanceUnit, formatNumber, speedUnitLabel } from './units';
 
 const MI_PER_KM = 0.621371;
 
@@ -26,11 +22,11 @@ export class Speed {
   }
 
   static in(unit: DistanceUnit, value: number): Speed {
-    return unit === "km" ? Speed.kmh(value) : Speed.mph(value);
+    return unit === 'km' ? Speed.kmh(value) : Speed.mph(value);
   }
 
   static fromStorage(value: string | null | undefined): Speed | null {
-    if (value == null || value === "") return null;
+    if (value == null || value === '') return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? new Speed(parsed) : null;
   }
@@ -44,7 +40,7 @@ export class Speed {
   }
 
   as(unit: DistanceUnit): number {
-    return unit === "km" ? this.inKmPerHour : this.inMilesPerHour;
+    return unit === 'km' ? this.inKmPerHour : this.inMilesPerHour;
   }
 
   /** `numeric(5, 2)`. */

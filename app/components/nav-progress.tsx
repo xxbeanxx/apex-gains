@@ -1,6 +1,6 @@
-import NProgress from "nprogress";
-import { useEffect } from "react";
-import { useNavigation } from "react-router";
+import NProgress from 'nprogress';
+import { useEffect } from 'react';
+import { useNavigation } from 'react-router';
 
 NProgress.configure({ showSpinner: false });
 
@@ -10,7 +10,7 @@ export function NavProgress() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    if (navigation.state === "idle") {
+    if (navigation.state === 'idle') {
       NProgress.done();
     } else {
       NProgress.start();

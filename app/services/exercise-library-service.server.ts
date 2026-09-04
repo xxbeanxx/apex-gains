@@ -1,22 +1,18 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import type { Athlete } from "~/domain/athlete/athlete";
-import { Equipment } from "~/domain/equipment/equipment";
-import { Exercise, type ExerciseDetails } from "~/domain/exercise/exercise";
-import type { ExerciseType } from "~/domain/exercise/exercise-type";
-import { err, ok, type Result } from "~/domain/shared/result";
-import type { EquipmentRepository } from "~/repositories/equipment-repository.server";
-import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import {
-  EQUIPMENT_REPOSITORY,
-  EXERCISES_REPOSITORY,
-  UNIT_OF_WORK,
-} from "~/repositories/tokens";
-import { DOMAIN_DEPS } from "~/services/shared/tokens";
+import type { Athlete } from '~/domain/athlete/athlete';
+import { Equipment } from '~/domain/equipment/equipment';
+import { Exercise, type ExerciseDetails } from '~/domain/exercise/exercise';
+import type { ExerciseType } from '~/domain/exercise/exercise-type';
+import { err, ok, type Result } from '~/domain/shared/result';
+import type { EquipmentRepository } from '~/repositories/equipment-repository.server';
+import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import { EQUIPMENT_REPOSITORY, EXERCISES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
-import type { DomainDeps } from "./shared/deps.server";
-import { resolveEditableCopy } from "./shared/fork.server";
+import type { DomainDeps } from './shared/deps.server';
+import { resolveEditableCopy } from './shared/fork.server';
 
 export type EquipmentView = {
   id: string;
@@ -41,15 +37,9 @@ export type LibraryView = {
   equipment: EquipmentView[];
 };
 
-export type ExerciseMutation = Result<
-  { forkedId: string | null },
-  "not-found" | "duplicate-name"
->;
+export type ExerciseMutation = Result<{ forkedId: string | null }, 'not-found' | 'duplicate-name'>;
 
-function toView(
-  exercise: Exercise,
-  equipmentById: ReadonlyMap<string, EquipmentView>,
-): ExerciseView {
+function toView(exercise: Exercise, equipmentById: ReadonlyMap<string, EquipmentView>): ExerciseView {
   return {
     id: exercise.id,
     name: exercise.name,
@@ -101,10 +91,7 @@ export class ExerciseLibraryService {
   }
 
   async listExercises(athlete: Athlete): Promise<ExerciseView[]> {
-    const exercises = await this.exercises.listFor(
-      athlete.id,
-      athlete.preferences.showSampleData,
-    );
+    const exercises = await this.exercises.listFor(athlete.id, athlete.preferences.showSampleData);
     return this.viewsFor(exercises);
   }
 
@@ -113,32 +100,22 @@ export class ExerciseLibraryService {
    * by id rather than by the athlete's visible list - an exercise can link
    * sample equipment that their preferences hide from the equipment list.
    */
-  private async viewsFor(
-    exercises: readonly Exercise[],
-  ): Promise<ExerciseView[]> {
+  private async viewsFor(exercises: readonly Exercise[]): Promise<ExerciseView[]> {
     const ids = new Set<string>();
     for (const exercise of exercises) {
       for (const id of exercise.equipmentIds) ids.add(id);
     }
 
     const equipment = await this.equipment.findManyByIds([...ids]);
-    const byId = new Map(
-      equipment.map((item) => [item.id, toEquipmentView(item)]),
-    );
+    const byId = new Map(equipment.map((item) => [item.id, toEquipmentView(item)]));
 
     return exercises.map((exercise) => toView(exercise, byId));
   }
 
-  async createExercise(
-    athlete: Athlete,
-    details: ExerciseDetails,
-  ): Promise<Result<{ id: string }, "duplicate-name">> {
+  async createExercise(athlete: Athlete, details: ExerciseDetails): Promise<Result<{ id: string }, 'duplicate-name'>> {
     return this.unitOfWork.run(async () => {
-      const clash = await this.exercises.findOwnByName(
-        athlete.id,
-        details.name,
-      );
-      if (clash) return err("duplicate-name" as const);
+      const clash = await this.exercises.findOwnByName(athlete.id, details.name);
+      if (clash) return err('duplicate-name' as const);
 
       const exercise = Exercise.create(athlete.id, details, this.deps);
       await this.exercises.save(exercise);
@@ -151,23 +128,16 @@ export class ExerciseLibraryService {
    * which is also why the duplicate-name check has to exclude the copy being
    * edited: renaming an exercise to what it is already called is not a clash.
    */
-  async updateExercise(
-    athlete: Athlete,
-    exerciseId: string,
-    details: ExerciseDetails,
-  ): Promise<ExerciseMutation> {
+  async updateExercise(athlete: Athlete, exerciseId: string, details: ExerciseDetails): Promise<ExerciseMutation> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
 
-      const clash = await this.exercises.findOwnByName(
-        athlete.id,
-        details.name,
-      );
+      const clash = await this.exercises.findOwnByName(athlete.id, details.name);
       if (clash && clash.id !== copy.editable.id) {
-        return err("duplicate-name" as const);
+        return err('duplicate-name' as const);
       }
 
       copy.editable.updateDetails(details);
@@ -181,10 +151,10 @@ export class ExerciseLibraryService {
     exerciseId: string,
     equipmentId: string,
     linked: boolean,
-  ): Promise<Result<{ forkedId: string | null }, "not-found">> {
+  ): Promise<Result<{ forkedId: string | null }, 'not-found'>> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
       copy.editable.setEquipment(equipmentId, linked);
@@ -199,18 +169,15 @@ export class ExerciseLibraryService {
    * FK is `on delete restrict` so that history can't be rewritten by a
    * revert.
    */
-  async revertExercise(
-    athlete: Athlete,
-    exerciseId: string,
-  ): Promise<Result<void, "nothing-to-revert" | "in-use">> {
+  async revertExercise(athlete: Athlete, exerciseId: string): Promise<Result<void, 'nothing-to-revert' | 'in-use'>> {
     return this.unitOfWork.run(async () => {
       const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
       if (!exercise || !exercise.canRevert) {
-        return err("nothing-to-revert" as const);
+        return err('nothing-to-revert' as const);
       }
 
       const outcome = await this.exercises.delete(exercise.id);
-      return outcome === "in-use" ? err("in-use" as const) : ok();
+      return outcome === 'in-use' ? err('in-use' as const) : ok();
     });
   }
 
@@ -223,17 +190,12 @@ export class ExerciseLibraryService {
     await this.unitOfWork.run(async () => {
       const existing = await this.equipment.findByName(name);
       if (existing) return;
-      await this.equipment.save(
-        Equipment.create(athlete.id, name, this.deps),
-      );
+      await this.equipment.save(Equipment.create(athlete.id, name, this.deps));
     });
   }
 
   /** Silently ignores equipment the athlete doesn't own, samples included. */
-  async removeEquipment(
-    athlete: Athlete,
-    equipmentId: string,
-  ): Promise<void> {
+  async removeEquipment(athlete: Athlete, equipmentId: string): Promise<void> {
     await this.unitOfWork.run(async () => {
       const item = await this.equipment.findById(equipmentId);
       if (!item || !item.isRemovableBy(athlete.id)) return;

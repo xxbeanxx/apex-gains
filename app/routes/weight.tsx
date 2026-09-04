@@ -1,41 +1,26 @@
-import { CheckCircle2Icon, ScaleIcon, XIcon } from "lucide-react";
-import { data } from "react-router";
-import { z } from "zod";
+import { CheckCircle2Icon, ScaleIcon, XIcon } from 'lucide-react';
+import { data } from 'react-router';
+import { z } from 'zod';
 
-import { userContext } from "~/auth/user-context";
-import { ExerciseProgressChart } from "~/components/history/exercise-progress-chart";
-import { Page, PageHeader, Section } from "~/components/layout/page";
-import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import { Field } from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { SubmitButton } from "~/components/ui/submit-button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
-import { DateOnly } from "~/domain/values/date-only";
-import { formatFullDate } from "~/lib/format";
+import { userContext } from '~/auth/user-context';
+import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
+import { Page, PageHeader, Section } from '~/components/layout/page';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
+import { SubmitButton } from '~/components/ui/submit-button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { DateOnly } from '~/domain/values/date-only';
+import { formatFullDate } from '~/lib/format';
 
-import {
-  bodyWeightServiceContext,
-  progressServiceContext,
-} from "~/lib/nest-bridge.server";
+import { bodyWeightServiceContext, progressServiceContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/weight";
+import type { Route } from './+types/weight';
 
 export function meta() {
-  return [{ title: "Weight - Apex Gains" }];
+  return [{ title: 'Weight - Apex Gains' }];
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -60,17 +45,17 @@ export async function action({ request, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
   const today = DateOnly.today();
   const formData = await request.formData();
-  const intent = formData.get("intent");
+  const intent = formData.get('intent');
 
   const bodyWeightService = context.get(bodyWeightServiceContext);
 
-  if (intent === "log") {
+  if (intent === 'log') {
     const result = logSchema.safeParse({
-      date: formData.get("date"),
-      weight: formData.get("weight"),
+      date: formData.get('date'),
+      weight: formData.get('weight'),
     });
     if (!result.success) {
-      return data({ error: "Enter a valid date and weight." }, { status: 400 });
+      return data({ error: 'Enter a valid date and weight.' }, { status: 400 });
     }
     // Clamp instead of rejecting: a stale form (left open since yesterday)
     // should still log against today rather than fail outright.
@@ -79,36 +64,28 @@ export async function action({ request, context }: Route.ActionArgs) {
     // The number is in whatever unit the athlete has chosen; the service
     // converts it to canonical storage.
     await bodyWeightService.record(athlete, date, result.data.weight);
-    return { ok: true, intent: "log" } as const;
+    return { ok: true, intent: 'log' } as const;
   }
 
-  if (intent === "remove") {
-    const date = DateOnly.tryParse(String(formData.get("date")));
+  if (intent === 'remove') {
+    const date = DateOnly.tryParse(String(formData.get('date')));
     if (!date) {
-      return data({ error: "Unknown weigh-in" }, { status: 400 });
+      return data({ error: 'Unknown weigh-in' }, { status: 400 });
     }
-    await bodyWeightService.remove(
-      athlete,
-      date,
-      String(formData.get("logId")),
-    );
-    return { ok: true, intent: "remove" } as const;
+    await bodyWeightService.remove(athlete, date, String(formData.get('logId')));
+    return { ok: true, intent: 'remove' } as const;
   }
 
-  return data({ error: "Unknown action" }, { status: 400 });
+  return data({ error: 'Unknown action' }, { status: 400 });
 }
 
 export default function Weight({ loaderData, actionData }: Route.ComponentProps) {
   const { weightUnit, todayStr, logs, series } = loaderData;
-  const error =
-    actionData && "error" in actionData ? actionData.error : undefined;
+  const error = actionData && 'error' in actionData ? actionData.error : undefined;
 
   return (
     <Page>
-      <PageHeader
-        title="Weight"
-        description="Log your body weight and watch the trend over time."
-      />
+      <PageHeader title="Weight" description="Log your body weight and watch the trend over time." />
 
       <Section title="Log weight">
         <Card>
@@ -128,20 +105,16 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
                   />
                 )}
               </Field>
-              <Field
-                label={`Weight (${weightUnit})`}
-                error={error}
-                className="w-40"
-              >
+              <Field label={`Weight (${weightUnit})`} error={error} className="w-40">
                 <Input name="weight" type="number" step="0.1" min="0" required />
               </Field>
-              <SubmitButton match={{ intent: "log" }} pendingLabel="Saving">
+              <SubmitButton match={{ intent: 'log' }} pendingLabel="Saving">
                 Save
               </SubmitButton>
             </form>
 
             <div aria-live="polite" className="empty:hidden">
-              {actionData && "ok" in actionData && actionData.intent === "log" ? (
+              {actionData && 'ok' in actionData && actionData.intent === 'log' ? (
                 <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
                   <CheckCircle2Icon className="size-4" aria-hidden="true" />
                   Saved.
@@ -167,11 +140,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
 
       <Section title="History">
         {logs.length === 0 ? (
-          <EmptyState
-            icon={ScaleIcon}
-            title="No weigh-ins yet"
-            description="Log your weight above and it will show up here."
-          />
+          <EmptyState icon={ScaleIcon} title="No weigh-ins yet" description="Log your weight above and it will show up here." />
         ) : (
           <Card>
             <CardContent>
@@ -202,9 +171,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
                             className="hover:bg-destructive/10 hover:text-destructive"
                           >
                             <XIcon aria-hidden="true" />
-                            <span className="sr-only">
-                              Remove weigh-in for {formatFullDate(log.date)}
-                            </span>
+                            <span className="sr-only">Remove weigh-in for {formatFullDate(log.date)}</span>
                           </Button>
                         </form>
                       </TableCell>

@@ -6,7 +6,7 @@
  * belongs to instead of against whatever the form happened to send.
  */
 
-export const EXERCISE_TYPES = ["strength", "cardio"] as const;
+export const EXERCISE_TYPES = ['strength', 'cardio'] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
@@ -39,5 +39,5 @@ const CARDIO_METRICS: Metrics = {
 };
 
 export function metricsFor(type: ExerciseType): Metrics {
-  return type === "strength" ? STRENGTH_METRICS : CARDIO_METRICS;
+  return type === 'strength' ? STRENGTH_METRICS : CARDIO_METRICS;
 }

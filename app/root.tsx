@@ -1,35 +1,29 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
-import { AppNav } from "~/components/app-nav";
-import { ErrorPage } from "~/components/error-page";
-import { NavProgress } from "~/components/nav-progress";
-import { themeInitScript } from "~/components/theme-toggle";
-import { loadUserMiddleware } from "~/auth/current-user.server";
-import { userContext } from "~/auth/user-context";
-import { getBuildInfo } from "~/lib/build-info.server";
-import { requestLoggingMiddleware } from "~/lib/logger.server";
-import { nestBridgeMiddleware } from "~/lib/nest-bridge.server";
+import { AppNav } from '~/components/app-nav';
+import { ErrorPage } from '~/components/error-page';
+import { NavProgress } from '~/components/nav-progress';
+import { themeInitScript } from '~/components/theme-toggle';
+import { loadUserMiddleware } from '~/auth/current-user.server';
+import { userContext } from '~/auth/user-context';
+import { getBuildInfo } from '~/lib/build-info.server';
+import { requestLoggingMiddleware } from '~/lib/logger.server';
+import { nestBridgeMiddleware } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/root";
-import "./app.css";
+import type { Route } from './+types/root';
+import './app.css';
 
 export const links: Route.LinksFunction = () => [];
 
 // nestBridgeMiddleware must run first: requestLoggingMiddleware reads
 // nestLoggerContext and loadUserMiddleware reads athleteServiceContext and
 // sessionStorageContext, all of which it populates.
-export const middleware: Route.MiddlewareFunction[] = [
-  nestBridgeMiddleware,
-  requestLoggingMiddleware,
-  loadUserMiddleware,
-];
+export const middleware: Route.MiddlewareFunction[] = [nestBridgeMiddleware, requestLoggingMiddleware, loadUserMiddleware];
 
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext);
   return {
-    user: user
-      ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl }
-      : null,
+    user: user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl } : null,
     buildInfo: getBuildInfo(),
   };
 }
@@ -66,7 +60,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <AppNav user={user} />
       <Outlet />
       <footer className="border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground">
-        {loaderData?.buildInfo ?? "unknown"}
+        {loaderData?.buildInfo ?? 'unknown'}
       </footer>
     </div>
   );

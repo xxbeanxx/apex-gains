@@ -1,4 +1,4 @@
-import type { WorkoutTemplate } from "~/domain/template/workout-template";
+import type { WorkoutTemplate } from '~/domain/template/workout-template';
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
 // directly. `server/repositories/repositories.module.ts` picks which
@@ -23,18 +23,9 @@ export interface TemplatesRepository {
    * slot to read one string is the kind of cost that only shows up once the
    * library is large. Callers that render a name go through this.
    */
-  listNamesFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<TemplateName[]>;
-  findVisible(
-    userId: string,
-    templateId: string,
-  ): Promise<WorkoutTemplate | null>;
-  findForkOf(
-    userId: string,
-    sampleId: string,
-  ): Promise<WorkoutTemplate | null>;
+  listNamesFor(userId: string, showSampleData: boolean): Promise<TemplateName[]>;
+  findVisible(userId: string, templateId: string): Promise<WorkoutTemplate | null>;
+  findForkOf(userId: string, sampleId: string): Promise<WorkoutTemplate | null>;
   save(template: WorkoutTemplate): Promise<void>;
   delete(templateId: string): Promise<void>;
 }

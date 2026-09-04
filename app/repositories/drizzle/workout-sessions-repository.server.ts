@@ -1,18 +1,18 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from 'drizzle-orm';
 
-import { dbScope } from "~/db/index.server";
+import { dbScope } from '~/db/index.server';
 import {
   sessionSets,
   workoutSessions,
   type SessionSet as SessionSetRow,
   type WorkoutSession as WorkoutSessionRow,
-} from "~/db/schema";
-import { LoggedSet } from "~/domain/session/logged-set";
-import { WorkoutSession } from "~/domain/session/workout-session";
-import { DateOnly } from "~/domain/values/date-only";
+} from '~/db/schema';
+import { LoggedSet } from '~/domain/session/logged-set';
+import { WorkoutSession } from '~/domain/session/workout-session';
+import { DateOnly } from '~/domain/values/date-only';
 
-import { diffChildren } from "../shared/diff-children";
-import type { WorkoutSessionsRepository } from "../workout-sessions-repository.server";
+import { diffChildren } from '../shared/diff-children';
+import type { WorkoutSessionsRepository } from '../workout-sessions-repository.server';
 
 type RowWithSets = WorkoutSessionRow & { sets: SessionSetRow[] };
 
@@ -44,18 +44,10 @@ const withSets = {
   sets: { orderBy: asc(sessionSets.createdAt) },
 } as const;
 
-export class DrizzleWorkoutSessionsRepository
-  implements WorkoutSessionsRepository
-{
-  async findForDate(
-    userId: string,
-    date: DateOnly,
-  ): Promise<WorkoutSession | null> {
+export class DrizzleWorkoutSessionsRepository implements WorkoutSessionsRepository {
+  async findForDate(userId: string, date: DateOnly): Promise<WorkoutSession | null> {
     const row = await dbScope.query.workoutSessions.findFirst({
-      where: and(
-        eq(workoutSessions.userId, userId),
-        eq(workoutSessions.date, date.value),
-      ),
+      where: and(eq(workoutSessions.userId, userId), eq(workoutSessions.date, date.value)),
       with: withSets,
     });
     return row ? toSession(row) : null;
@@ -90,27 +82,19 @@ export class DrizzleWorkoutSessionsRepository
     if (inserted.length > 0) return toSession({ ...inserted[0], sets: [] });
 
     const existing = await dbScope.query.workoutSessions.findFirst({
-      where: and(
-        eq(workoutSessions.userId, snapshot.userId),
-        eq(workoutSessions.date, snapshot.date),
-      ),
+      where: and(eq(workoutSessions.userId, snapshot.userId), eq(workoutSessions.date, snapshot.date)),
       with: withSets,
     });
     if (!existing) {
       // Neither inserted nor found: the row was deleted between the two
       // statements. Nothing sensible to return, and silently inventing a
       // session would hide a real problem.
-      throw new Error(
-        `Failed to open a workout session for ${snapshot.date}`,
-      );
+      throw new Error(`Failed to open a workout session for ${snapshot.date}`);
     }
     return toSession(existing);
   }
 
-  async listRecent(
-    userId: string,
-    limit: number,
-  ): Promise<WorkoutSession[]> {
+  async listRecent(userId: string, limit: number): Promise<WorkoutSession[]> {
     const rows = await dbScope.query.workoutSessions.findMany({
       where: eq(workoutSessions.userId, userId),
       orderBy: desc(workoutSessions.date),
@@ -120,11 +104,7 @@ export class DrizzleWorkoutSessionsRepository
     return rows.map(toSession);
   }
 
-  async listForDateRange(
-    userId: string,
-    start: DateOnly,
-    endExclusive: DateOnly,
-  ): Promise<WorkoutSession[]> {
+  async listForDateRange(userId: string, start: DateOnly, endExclusive: DateOnly): Promise<WorkoutSession[]> {
     const rows = await dbScope.query.workoutSessions.findMany({
       where: and(
         eq(workoutSessions.userId, userId),
@@ -157,12 +137,7 @@ export class DrizzleWorkoutSessionsRepository
       })
       .from(sessionSets)
       .innerJoin(workoutSessions, eq(sessionSets.sessionId, workoutSessions.id))
-      .where(
-        and(
-          eq(workoutSessions.userId, userId),
-          eq(sessionSets.exerciseId, exerciseId),
-        ),
-      )
+      .where(and(eq(workoutSessions.userId, userId), eq(sessionSets.exerciseId, exerciseId)))
       .orderBy(desc(workoutSessions.date), desc(sessionSets.createdAt))
       .limit(limit);
 
@@ -198,9 +173,7 @@ export class DrizzleWorkoutSessionsRepository
     const diff = diffChildren(existing, snapshot.sets);
 
     if (diff.deletedIds.length > 0) {
-      await dbScope
-        .delete(sessionSets)
-        .where(inArray(sessionSets.id, diff.deletedIds));
+      await dbScope.delete(sessionSets).where(inArray(sessionSets.id, diff.deletedIds));
     }
 
     if (diff.inserted.length > 0) {

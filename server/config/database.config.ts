@@ -1,5 +1,5 @@
-import { Expose } from "class-transformer";
-import { IsOptional, IsString } from "class-validator";
+import { Expose } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 /**
  * `DATABASE_URL` is the one env var that's optional by design: unset, the
@@ -8,8 +8,8 @@ import { IsOptional, IsString } from "class-validator";
  * what actually branches on `databaseUrl` being present.
  */
 export class DatabaseConfig {
-  @Expose({ name: "DATABASE_URL" })
+  @Expose({ name: 'DATABASE_URL' })
   @IsOptional()
-  @IsString({ message: "DATABASE_URL must be a string" })
+  @IsString({ message: 'DATABASE_URL must be a string' })
   readonly databaseUrl?: string;
 }

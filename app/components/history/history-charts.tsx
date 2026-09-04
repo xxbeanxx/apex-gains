@@ -1,28 +1,22 @@
-import { ScaleIcon, TrendingUpIcon, TrophyIcon } from "lucide-react";
-import { useState } from "react";
+import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
+import { useState } from 'react';
 
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import type {
   ProgressSeriesView,
   HeatmapDayView,
   MuscleBalanceView,
   PersonalRecordView,
   WeeklyPointView,
-} from "~/services/progress-view";
+} from '~/services/progress-view';
 
-import { ConsistencyHeatmap } from "./consistency-heatmap";
-import { ExerciseProgressChart } from "./exercise-progress-chart";
-import { MuscleBalanceChart } from "./muscle-balance-chart";
-import { PersonalRecordsList } from "./personal-records-list";
-import { WeeklyBarChart } from "./weekly-bar-chart";
+import { ConsistencyHeatmap } from './consistency-heatmap';
+import { ExerciseProgressChart } from './exercise-progress-chart';
+import { MuscleBalanceChart } from './muscle-balance-chart';
+import { PersonalRecordsList } from './personal-records-list';
+import { WeeklyBarChart } from './weekly-bar-chart';
 
 export function HistoryCharts({
   heatmap,
@@ -60,7 +54,7 @@ export function HistoryCharts({
           <CardContent>
             <WeeklyBarChart
               points={weeklySets}
-              formatValue={(v) => `${v} set${v === 1 ? "" : "s"}`}
+              formatValue={(v) => `${v} set${v === 1 ? '' : 's'}`}
               ariaLabel={`Sets logged per week, from ${weeklySets[0]?.label} to ${weeklySets.at(-1)?.label}`}
             />
           </CardContent>
@@ -145,9 +139,7 @@ function ExerciseProgressCard({ series }: { series: ProgressSeriesView[] }) {
       <CardContent>
         {selected ? (
           <>
-            <p className="mb-2 text-xs text-muted-foreground">
-              {selected.metricLabel}
-            </p>
+            <p className="mb-2 text-xs text-muted-foreground">{selected.metricLabel}</p>
             <ExerciseProgressChart series={selected} />
           </>
         ) : (

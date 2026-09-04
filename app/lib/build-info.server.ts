@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execSync } from 'node:child_process';
 
 /**
  * `VERSION_TAG` is baked into the container image at build time (see
@@ -13,8 +13,8 @@ export function getBuildInfo(): string {
   }
 
   try {
-    return execSync("git rev-parse --short=8 HEAD").toString().trim();
+    return execSync('git rev-parse --short=8 HEAD').toString().trim();
   } catch {
-    return "unknown";
+    return 'unknown';
   }
 }

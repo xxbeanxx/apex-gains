@@ -4,4 +4,4 @@
 // vitest never goes through Nest's bootstrap, so nothing else imports it.
 // Every `app/services/*.server.ts` file is decorated, so this has to load
 // before any test file that (transitively) imports one.
-import "reflect-metadata";
+import 'reflect-metadata';

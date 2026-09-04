@@ -46,9 +46,7 @@ export function forkedFrom<A extends { readonly id: string }>(
   copied: readonly { id: string; position: number }[],
 ): EditableCopy<A> {
   const byPosition = new Map(copied.map((child) => [child.position, child.id]));
-  const translation = new Map(
-    original.map((child) => [child.id, byPosition.get(child.position)]),
-  );
+  const translation = new Map(original.map((child) => [child.id, byPosition.get(child.position)]));
 
   return {
     editable: fork,

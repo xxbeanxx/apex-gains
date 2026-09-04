@@ -1,11 +1,11 @@
-import type { Exercise } from "~/domain/exercise/exercise";
+import type { Exercise } from '~/domain/exercise/exercise';
 
 /**
  * Deleting a personal exercise fails when a template or a logged set still
  * points at it - the FKs are `on delete restrict` precisely so history can't
  * be silently rewritten.
  */
-export type DeleteExerciseOutcome = "deleted" | "in-use";
+export type DeleteExerciseOutcome = 'deleted' | 'in-use';
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
 // directly. `server/repositories/repositories.module.ts` picks which

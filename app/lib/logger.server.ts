@@ -1,16 +1,12 @@
-import type { LoggerService } from "@nestjs/common";
-import {
-  createContext,
-  type MiddlewareFunction,
-  type RouterContextProvider,
-} from "react-router";
+import type { LoggerService } from '@nestjs/common';
+import { createContext, type MiddlewareFunction, type RouterContextProvider } from 'react-router';
 
-import { userContext } from "~/auth/user-context";
+import { userContext } from '~/auth/user-context';
 
-import { getNestLogger, nestLoggerContext } from "./nest-bridge.server";
+import { getNestLogger, nestLoggerContext } from './nest-bridge.server';
 
 /** The Nest logger context label every request-lifecycle line is filed under. */
-const REQUEST = "Request";
+const REQUEST = 'Request';
 
 /**
  * The logger for the current request, set by `requestLoggingMiddleware`.
@@ -27,29 +23,18 @@ export const loggerContext = createContext<LoggerService | null>(null);
  * The request's logger, falling back to the process-wide one on the paths
  * that have no request context to carry it.
  */
-export function requestLogger(
-  context: Readonly<RouterContextProvider>,
-): LoggerService {
+export function requestLogger(context: Readonly<RouterContextProvider>): LoggerService {
   return context.get(loggerContext) ?? getNestLogger();
 }
 
 /** "GET /today 200 in 12ms", plus the athlete once one is known. */
-function describe(
-  method: string,
-  path: string,
-  outcome: string,
-  startedAt: number,
-  userId: string | undefined,
-): string {
+function describe(method: string, path: string, outcome: string, startedAt: number, userId: string | undefined): string {
   const durationMs = Math.round(performance.now() - startedAt);
-  const who = userId ? ` for user ${userId}` : "";
+  const who = userId ? ` for user ${userId}` : '';
   return `${method} ${path} ${outcome} in ${durationMs}ms${who}`;
 }
 
-export const requestLoggingMiddleware: MiddlewareFunction<Response> = async (
-  { request, context },
-  next,
-) => {
+export const requestLoggingMiddleware: MiddlewareFunction<Response> = async ({ request, context }, next) => {
   const logger = context.get(nestLoggerContext);
   context.set(loggerContext, logger);
 
@@ -59,26 +44,11 @@ export const requestLoggingMiddleware: MiddlewareFunction<Response> = async (
 
   try {
     const response = await next();
-    logger.log(
-      describe(
-        method,
-        pathname,
-        String(response.status),
-        startedAt,
-        context.get(userContext)?.id,
-      ),
-      REQUEST,
-    );
+    logger.log(describe(method, pathname, String(response.status), startedAt, context.get(userContext)?.id), REQUEST);
     return response;
   } catch (err) {
     logger.error(
-      describe(
-        method,
-        pathname,
-        "failed",
-        startedAt,
-        context.get(userContext)?.id,
-      ),
+      describe(method, pathname, 'failed', startedAt, context.get(userContext)?.id),
       err instanceof Error ? err.stack : String(err),
       REQUEST,
     );

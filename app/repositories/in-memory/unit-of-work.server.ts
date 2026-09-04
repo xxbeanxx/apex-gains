@@ -1,4 +1,4 @@
-import type { UnitOfWork } from "../unit-of-work.server";
+import type { UnitOfWork } from '../unit-of-work.server';
 
 /**
  * Runs the work directly.

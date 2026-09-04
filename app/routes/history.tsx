@@ -1,27 +1,21 @@
-import { HistoryIcon, MoonIcon, PlusIcon } from "lucide-react";
-import { Link } from "react-router";
+import { HistoryIcon, MoonIcon, PlusIcon } from 'lucide-react';
+import { Link } from 'react-router';
 
-import { userContext } from "~/auth/user-context";
-import { HistoryCharts } from "~/components/history/history-charts";
-import { Page, PageHeader, Section } from "~/components/layout/page";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import { formatFullDate, formatMonthYear } from "~/lib/format";
+import { userContext } from '~/auth/user-context';
+import { HistoryCharts } from '~/components/history/history-charts';
+import { Page, PageHeader, Section } from '~/components/layout/page';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { formatFullDate, formatMonthYear } from '~/lib/format';
 
-import { progressServiceContext } from "~/lib/nest-bridge.server";
+import { progressServiceContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/history";
+import type { Route } from './+types/history';
 
 export function meta() {
-  return [{ title: "History - Apex Gains" }];
+  return [{ title: 'History - Apex Gains' }];
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -62,8 +56,8 @@ export default function History({ loaderData }: Route.ComponentProps) {
         title="History"
         description={
           timeline.length > 0
-            ? `${workoutCount} workout${workoutCount === 1 ? "" : "s"} and ${totalSets} set${totalSets === 1 ? "" : "s"} across ${timeline.length} recorded day${timeline.length === 1 ? "" : "s"}.`
-            : "Every session you record shows up here, rest days included."
+            ? `${workoutCount} workout${workoutCount === 1 ? '' : 's'} and ${totalSets} set${totalSets === 1 ? '' : 's'} across ${timeline.length} recorded day${timeline.length === 1 ? '' : 's'}.`
+            : 'Every session you record shows up here, rest days included.'
         }
       />
 
@@ -92,15 +86,9 @@ export default function History({ loaderData }: Route.ComponentProps) {
       ) : null}
 
       {groups.map((group) => (
-        <section
-          key={group.month}
-          aria-label={group.month}
-          className="mt-(--section-gap) flex flex-col gap-4"
-        >
+        <section key={group.month} aria-label={group.month} className="mt-(--section-gap) flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <h2 className="font-heading text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-              {group.month}
-            </h2>
+            <h2 className="font-heading text-sm font-semibold tracking-wide text-muted-foreground uppercase">{group.month}</h2>
             <span aria-hidden="true" className="h-px flex-1 bg-border" />
           </div>
 
@@ -112,8 +100,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
                 list.push(set);
                 setsByExercise.set(set.exerciseId, list);
               }
-              const isRest =
-                session.isRestDay && session.sets.length === 0;
+              const isRest = session.isRestDay && session.sets.length === 0;
 
               return (
                 <Card key={session.id}>
@@ -123,10 +110,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
                     </CardTitle>
                     <CardAction>
                       <Button asChild variant="ghost" size="icon-sm">
-                        <Link
-                          to={`/today?date=${session.date}`}
-                          aria-label={`Add sets for ${formatFullDate(session.date)}`}
-                        >
+                        <Link to={`/today?date=${session.date}`} aria-label={`Add sets for ${formatFullDate(session.date)}`}>
                           <PlusIcon aria-hidden="true" />
                         </Link>
                       </Button>
@@ -142,11 +126,11 @@ export default function History({ loaderData }: Route.ComponentProps) {
                         <>
                           <Badge variant="brand-subtle">
                             {session.sets.length} set
-                            {session.sets.length === 1 ? "" : "s"}
+                            {session.sets.length === 1 ? '' : 's'}
                           </Badge>
                           <Badge variant="outline">
                             {setsByExercise.size} exercise
-                            {setsByExercise.size === 1 ? "" : "s"}
+                            {setsByExercise.size === 1 ? '' : 's'}
                           </Badge>
                         </>
                       ) : null}
@@ -155,18 +139,14 @@ export default function History({ loaderData }: Route.ComponentProps) {
                   {setsByExercise.size > 0 ? (
                     <CardContent>
                       <dl className="flex flex-col gap-2.5">
-                        {[...setsByExercise.entries()].map(
-                          ([exerciseId, sets]) => (
-                            <div key={exerciseId} className="flex flex-col">
-                              <dt className="font-medium">
-                                {sets[0].exerciseName}
-                              </dt>
-                              <dd className="text-sm text-muted-foreground tabular-nums">
-                                {sets.map((s) => s.summary).join(" · ")}
-                              </dd>
-                            </div>
-                          )
-                        )}
+                        {[...setsByExercise.entries()].map(([exerciseId, sets]) => (
+                          <div key={exerciseId} className="flex flex-col">
+                            <dt className="font-medium">{sets[0].exerciseName}</dt>
+                            <dd className="text-sm text-muted-foreground tabular-nums">
+                              {sets.map((s) => s.summary).join(' · ')}
+                            </dd>
+                          </div>
+                        ))}
                       </dl>
                     </CardContent>
                   ) : null}

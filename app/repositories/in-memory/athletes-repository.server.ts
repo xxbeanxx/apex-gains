@@ -1,6 +1,6 @@
-import { Athlete, type AthleteSnapshot } from "~/domain/athlete/athlete";
+import { Athlete, type AthleteSnapshot } from '~/domain/athlete/athlete';
 
-import type { AthletesRepository } from "../athletes-repository.server";
+import type { AthletesRepository } from '../athletes-repository.server';
 
 /**
  * Dev-convenience adapter for running the app without a database configured
@@ -33,9 +33,7 @@ export class InMemoryAthletesRepository implements AthletesRepository {
     this.byId.set(snapshot.id, snapshot);
   }
 
-  private findBy(
-    predicate: (snapshot: AthleteSnapshot) => boolean,
-  ): Athlete | null {
+  private findBy(predicate: (snapshot: AthleteSnapshot) => boolean): Athlete | null {
     const snapshot = [...this.byId.values()].find(predicate);
     return snapshot ? Athlete.fromSnapshot(snapshot) : null;
   }

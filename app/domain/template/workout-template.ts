@@ -1,13 +1,9 @@
-import type { Clock } from "../shared/clock";
-import {
-  alreadyEditable,
-  type EditableCopy,
-  forkedFrom,
-} from "../shared/forking";
-import type { IdGenerator } from "../shared/ids";
-import { type MoveDirection, OrderedChildren } from "../shared/ordered";
-import { Ownership } from "../shared/ownership";
-import { SetTarget, type SetTargetSnapshot } from "./set-target";
+import type { Clock } from '../shared/clock';
+import { alreadyEditable, type EditableCopy, forkedFrom } from '../shared/forking';
+import type { IdGenerator } from '../shared/ids';
+import { type MoveDirection, OrderedChildren } from '../shared/ordered';
+import { Ownership } from '../shared/ownership';
+import { SetTarget, type SetTargetSnapshot } from './set-target';
 
 export type TemplateExerciseSnapshot = SetTargetSnapshot & {
   readonly id: string;
@@ -75,21 +71,9 @@ export class WorkoutTemplate {
     private readonly entries: OrderedChildren<TemplateExerciseEntry>,
   ) {}
 
-  static create(
-    userId: string,
-    name: string,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): WorkoutTemplate {
+  static create(userId: string, name: string, deps: { ids: IdGenerator; clock: Clock }): WorkoutTemplate {
     const now = deps.clock.now();
-    return new WorkoutTemplate(
-      deps.ids.next(),
-      Ownership.of(userId),
-      null,
-      name,
-      now,
-      now,
-      new OrderedChildren([]),
-    );
+    return new WorkoutTemplate(deps.ids.next(), Ownership.of(userId), null, name, now, now, new OrderedChildren([]));
   }
 
   static fromSnapshot(snapshot: TemplateSnapshot): WorkoutTemplate {
@@ -102,13 +86,7 @@ export class WorkoutTemplate {
       snapshot.updatedAt,
       new OrderedChildren(
         snapshot.exercises.map(
-          (entry) =>
-            new TemplateExerciseEntry(
-              entry.id,
-              entry.exerciseId,
-              entry.position,
-              SetTarget.fromSnapshot(entry),
-            ),
+          (entry) => new TemplateExerciseEntry(entry.id, entry.exerciseId, entry.position, SetTarget.fromSnapshot(entry)),
         ),
       ),
     );
@@ -160,17 +138,8 @@ export class WorkoutTemplate {
     this.touch(now);
   }
 
-  addExercise(
-    exerciseId: string,
-    target: SetTarget,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): TemplateExerciseEntry {
-    const entry = new TemplateExerciseEntry(
-      deps.ids.next(),
-      exerciseId,
-      this.entries.size,
-      target,
-    );
+  addExercise(exerciseId: string, target: SetTarget, deps: { ids: IdGenerator; clock: Clock }): TemplateExerciseEntry {
+    const entry = new TemplateExerciseEntry(deps.ids.next(), exerciseId, this.entries.size, target);
     this.entries.append(entry);
     this.touch(deps.clock.now());
     return entry;
@@ -196,21 +165,12 @@ export class WorkoutTemplate {
    * its exercises and targets. See `EditableCopy` for why the returned
    * translation matters when the caller holds an entry id.
    */
-  editableCopyFor(
-    userId: string,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): EditableCopy<WorkoutTemplate> {
+  editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<WorkoutTemplate> {
     if (!this.ownership.isSample) return alreadyEditable(this);
 
     const now = deps.clock.now();
     const copiedEntries = this.entries.map(
-      (entry) =>
-        new TemplateExerciseEntry(
-          deps.ids.next(),
-          entry.exerciseId,
-          entry.position,
-          entry.target,
-        ),
+      (entry) => new TemplateExerciseEntry(deps.ids.next(), entry.exerciseId, entry.position, entry.target),
     );
 
     const fork = new WorkoutTemplate(

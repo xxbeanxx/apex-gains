@@ -1,5 +1,5 @@
-import { systemClock, type Clock } from "~/domain/shared/clock";
-import { randomIds, type IdGenerator } from "~/domain/shared/ids";
+import { systemClock, type Clock } from '~/domain/shared/clock';
+import { randomIds, type IdGenerator } from '~/domain/shared/ids';
 
 /**
  * The two capabilities aggregates need but must not reach for themselves:

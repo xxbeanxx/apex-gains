@@ -1,13 +1,13 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import { Athlete, type NewAthlete } from "~/domain/athlete/athlete";
-import type { DistanceUnit, WeightUnit } from "~/domain/values/units";
-import type { AthletesRepository } from "~/repositories/athletes-repository.server";
-import { ATHLETES_REPOSITORY, UNIT_OF_WORK } from "~/repositories/tokens";
-import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { DOMAIN_DEPS } from "~/services/shared/tokens";
+import { Athlete, type NewAthlete } from '~/domain/athlete/athlete';
+import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import type { AthletesRepository } from '~/repositories/athletes-repository.server';
+import { ATHLETES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
-import type { DomainDeps } from "./shared/deps.server";
+import type { DomainDeps } from './shared/deps.server';
 
 /** Who signed in, and whether this was their first time. */
 export type SignIn = {
@@ -45,9 +45,7 @@ export class AthleteService {
    * loser's insert fails rather than producing a second athlete.
    */
   async signInWithGoogle(identity: NewAthlete): Promise<SignIn> {
-    return this.register(identity, () =>
-      this.athletes.findByGoogleSub(identity.googleSub),
-    );
+    return this.register(identity, () => this.athletes.findByGoogleSub(identity.googleSub));
   }
 
   /**
@@ -56,32 +54,20 @@ export class AthleteService {
    * ENABLE_TEST_LOGIN is set - see `app/routes/auth.test-login.tsx`.
    */
   async signInWithEmail(identity: NewAthlete): Promise<SignIn> {
-    return this.register(identity, () =>
-      this.athletes.findByEmail(identity.email),
-    );
+    return this.register(identity, () => this.athletes.findByEmail(identity.email));
   }
 
-  async changeUnits(
-    athlete: Athlete,
-    weightUnit: WeightUnit,
-    distanceUnit: DistanceUnit,
-  ): Promise<void> {
+  async changeUnits(athlete: Athlete, weightUnit: WeightUnit, distanceUnit: DistanceUnit): Promise<void> {
     athlete.changeUnits(weightUnit, distanceUnit, this.deps.clock.now());
     await this.athletes.save(athlete);
   }
 
-  async changeSampleDataVisibility(
-    athlete: Athlete,
-    showSampleData: boolean,
-  ): Promise<void> {
+  async changeSampleDataVisibility(athlete: Athlete, showSampleData: boolean): Promise<void> {
     athlete.changeSampleDataVisibility(showSampleData, this.deps.clock.now());
     await this.athletes.save(athlete);
   }
 
-  private async register(
-    identity: NewAthlete,
-    findExisting: () => Promise<Athlete | null>,
-  ): Promise<SignIn> {
+  private async register(identity: NewAthlete, findExisting: () => Promise<Athlete | null>): Promise<SignIn> {
     return this.unitOfWork.run(async () => {
       const existing = await findExisting();
       if (existing) return { athlete: existing, isNew: false };

@@ -1,7 +1,7 @@
-import type { Clock } from "../shared/clock";
-import type { IdGenerator } from "../shared/ids";
-import { DateOnly } from "../values/date-only";
-import { Weight } from "../values/weight";
+import type { Clock } from '../shared/clock';
+import type { IdGenerator } from '../shared/ids';
+import { DateOnly } from '../values/date-only';
+import { Weight } from '../values/weight';
 
 export type BodyWeightEntrySnapshot = {
   readonly id: string;
@@ -29,19 +29,8 @@ export class BodyWeightEntry {
     readonly createdAt: Date,
   ) {}
 
-  static record(
-    userId: string,
-    date: DateOnly,
-    weight: Weight,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): BodyWeightEntry {
-    return new BodyWeightEntry(
-      deps.ids.next(),
-      userId,
-      date,
-      weight,
-      deps.clock.now(),
-    );
+  static record(userId: string, date: DateOnly, weight: Weight, deps: { ids: IdGenerator; clock: Clock }): BodyWeightEntry {
+    return new BodyWeightEntry(deps.ids.next(), userId, date, weight, deps.clock.now());
   }
 
   static fromSnapshot(snapshot: BodyWeightEntrySnapshot): BodyWeightEntry {

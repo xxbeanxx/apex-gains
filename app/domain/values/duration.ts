@@ -1,4 +1,4 @@
-import { formatNumber } from "./units";
+import { formatNumber } from './units';
 
 /**
  * How long a cardio set ran. Stored in seconds, entered and displayed in

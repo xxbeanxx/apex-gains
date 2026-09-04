@@ -1,4 +1,4 @@
-import { formatNumber, type WeightUnit } from "./units";
+import { formatNumber, type WeightUnit } from './units';
 
 const KG_PER_LB = 0.45359237;
 
@@ -27,12 +27,12 @@ export class Weight {
 
   /** Reads a number the athlete typed, in whichever unit they have selected. */
   static in(unit: WeightUnit, value: number): Weight {
-    return unit === "lb" ? Weight.lb(value) : Weight.kg(value);
+    return unit === 'lb' ? Weight.lb(value) : Weight.kg(value);
   }
 
   /** Parses a `numeric` column. Null, empty and unparseable all read as absent. */
   static fromStorage(value: string | null | undefined): Weight | null {
-    if (value == null || value === "") return null;
+    if (value == null || value === '') return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? new Weight(parsed) : null;
   }
@@ -46,7 +46,7 @@ export class Weight {
   }
 
   as(unit: WeightUnit): number {
-    return unit === "lb" ? this.inPounds : this.inKilograms;
+    return unit === 'lb' ? this.inPounds : this.inKilograms;
   }
 
   /** `numeric(6, 2)` - two decimal places is the column's full precision. */

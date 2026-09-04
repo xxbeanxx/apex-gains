@@ -9,11 +9,11 @@ import {
   SettingsIcon,
   ClipboardListIcon,
   LogOutIcon,
-} from "lucide-react"
-import { Form, Link, NavLink, useSubmit } from "react-router"
+} from 'lucide-react';
+import { Form, Link, NavLink, useSubmit } from 'react-router';
 
-import { ThemeToggle } from "~/components/theme-toggle"
-import { Button } from "~/components/ui/button"
+import { ThemeToggle } from '~/components/theme-toggle';
+import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,37 +21,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
-import { cn } from "~/lib/utils"
+} from '~/components/ui/dropdown-menu';
+import { cn } from '~/lib/utils';
 
-type NavItem = { to: string; label: string; icon: LucideIcon }
+type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/today", label: "Today", icon: CalendarCheckIcon },
-  { to: "/exercises", label: "Exercises", icon: DumbbellIcon },
-  { to: "/templates", label: "Templates", icon: ClipboardListIcon },
-  { to: "/routines", label: "Routines", icon: RepeatIcon },
-  { to: "/history", label: "History", icon: HistoryIcon },
-  { to: "/weight", label: "Weight", icon: ScaleIcon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
-]
+  { to: '/today', label: 'Today', icon: CalendarCheckIcon },
+  { to: '/exercises', label: 'Exercises', icon: DumbbellIcon },
+  { to: '/templates', label: 'Templates', icon: ClipboardListIcon },
+  { to: '/routines', label: 'Routines', icon: RepeatIcon },
+  { to: '/history', label: 'History', icon: HistoryIcon },
+  { to: '/weight', label: 'Weight', icon: ScaleIcon },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+];
 
-type NavUser = { id: string; name: string | null; avatarUrl: string | null }
+type NavUser = { id: string; name: string | null; avatarUrl: string | null };
 
 /** First letter of the display name, for the avatar fallback. */
 function initial(name: string | null) {
-  return name?.trim()?.charAt(0)?.toUpperCase() || "?"
+  return name?.trim()?.charAt(0)?.toUpperCase() || '?';
 }
 
 function UserAvatar({ user }: { user: NavUser }) {
   return user.avatarUrl ? (
-    <img
-      src={user.avatarUrl}
-      alt=""
-      width={28}
-      height={28}
-      className="size-7 rounded-full object-cover ring-1 ring-border"
-    />
+    <img src={user.avatarUrl} alt="" width={28} height={28} className="size-7 rounded-full object-cover ring-1 ring-border" />
   ) : (
     <span
       aria-hidden="true"
@@ -59,7 +53,7 @@ function UserAvatar({ user }: { user: NavUser }) {
     >
       {initial(user.name)}
     </span>
-  )
+  );
 }
 
 function DesktopNav() {
@@ -72,10 +66,8 @@ function DesktopNav() {
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "relative flex h-(--header-h) items-center px-3 text-sm font-medium transition-colors duration-(--dur-fast)",
-                  isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                  'relative flex h-(--header-h) items-center px-3 text-sm font-medium transition-colors duration-(--dur-fast)',
+                  isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
                 )
               }
             >
@@ -88,8 +80,8 @@ function DesktopNav() {
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand-strong transition-[opacity,transform] duration-(--dur) ease-(--ease-quint)",
-                      isActive ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
+                      'absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand-strong transition-[opacity,transform] duration-(--dur) ease-(--ease-quint)',
+                      isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0',
                     )}
                   />
                 </>
@@ -99,56 +91,41 @@ function DesktopNav() {
         ))}
       </ul>
     </nav>
-  )
+  );
 }
 
 function MobileNav({ user }: { user: NavUser }) {
-  const submit = useSubmit()
+  const submit = useSubmit();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="md:hidden"
-          aria-label="Open menu"
-        >
+        <Button variant="outline" size="icon-sm" className="md:hidden" aria-label="Open menu">
           <MenuIcon />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
           <UserAvatar user={user} />
-          <span className="truncate">{user.name ?? "Signed in"}</span>
+          <span className="truncate">{user.name ?? 'Signed in'}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <DropdownMenuItem key={to} asChild>
-            <NavLink
-              to={to}
-              className={({ isActive }) =>
-                cn(isActive && "font-medium text-brand-strong")
-              }
-            >
+            <NavLink to={to} className={({ isActive }) => cn(isActive && 'font-medium text-brand-strong')}>
               <Icon aria-hidden="true" />
               {label}
             </NavLink>
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={() =>
-            submit(null, { method: "post", action: "/auth/logout" })
-          }
-        >
+        <DropdownMenuItem variant="destructive" onSelect={() => submit(null, { method: 'post', action: '/auth/logout' })}>
           <LogOutIcon aria-hidden="true" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
 function AppNav({ user }: { user: NavUser | null }) {
@@ -163,10 +140,7 @@ function AppNav({ user }: { user: NavUser | null }) {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/65">
         <div className="mx-auto flex h-(--header-h) max-w-(--content-max) items-center gap-2 px-(--page-px)">
-          <Link
-            to="/"
-            className="mr-1 flex items-center gap-2 font-heading text-base font-semibold tracking-tight"
-          >
+          <Link to="/" className="mr-1 flex items-center gap-2 font-heading text-base font-semibold tracking-tight">
             <span
               aria-hidden="true"
               className="flex size-7 items-center justify-center rounded-lg bg-brand text-brand-foreground"
@@ -204,7 +178,7 @@ function AppNav({ user }: { user: NavUser | null }) {
         </div>
       </header>
     </>
-  )
+  );
 }
 
-export { AppNav }
+export { AppNav };

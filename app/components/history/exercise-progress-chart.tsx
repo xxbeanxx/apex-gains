@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from 'react';
 
-import { DateOnly } from "~/domain/values/date-only";
-import { formatMonthDay } from "~/lib/format";
-import type { ProgressSeriesView } from "~/services/progress-view";
+import { DateOnly } from '~/domain/values/date-only';
+import { formatMonthDay } from '~/lib/format';
+import type { ProgressSeriesView } from '~/services/progress-view';
 
-import { ChartTooltip } from "./chart-tooltip";
-import { formatMetricValue } from "./chart-utils";
+import { ChartTooltip } from './chart-tooltip';
+import { formatMetricValue } from './chart-utils';
 
 const VIEW_W = 600;
 const VIEW_H = 220;
@@ -31,10 +31,8 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
   const yMin = Math.max(0, dataMin - pad);
   const yMax = dataMax + pad;
 
-  const xFor = (date: string) =>
-    MARGIN.left + (first.daysUntil(DateOnly.parse(date)) / totalDays) * CHART_W;
-  const yFor = (value: number) =>
-    MARGIN.top + CHART_H - ((value - yMin) / (yMax - yMin)) * CHART_H;
+  const xFor = (date: string) => MARGIN.left + (first.daysUntil(DateOnly.parse(date)) / totalDays) * CHART_W;
+  const yFor = (value: number) => MARGIN.top + CHART_H - ((value - yMin) / (yMax - yMin)) * CHART_H;
 
   const plotted = useMemo(
     () => points.map((p) => ({ ...p, x: xFor(p.date), y: yFor(p.value) })),
@@ -42,7 +40,7 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
     [points, yMin, yMax],
   );
 
-  const linePath = plotted.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const linePath = plotted.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
   const baselineY = MARGIN.top + CHART_H;
   const areaPath = `${linePath} L${plotted[plotted.length - 1].x},${baselineY} L${plotted[0].x},${baselineY} Z`;
 
@@ -139,12 +137,7 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
           </>
         ) : null}
 
-        <text
-          x={MARGIN.left}
-          y={VIEW_H - MARGIN.bottom + 14}
-          textAnchor="start"
-          className="fill-muted-foreground text-[9px]"
-        >
+        <text x={MARGIN.left} y={VIEW_H - MARGIN.bottom + 14} textAnchor="start" className="fill-muted-foreground text-[9px]">
           {formatMonthDay(firstDate)}
         </text>
         <text

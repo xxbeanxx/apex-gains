@@ -1,8 +1,8 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-import * as schema from "./schema";
-import { currentTransaction } from "./transaction.server";
+import * as schema from './schema';
+import { currentTransaction } from './transaction.server';
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -34,8 +34,7 @@ function getClient(): Db {
     const url = connectionString ?? process.env.DATABASE_URL;
     if (!url) {
       throw new Error(
-        "No database connection configured - set DATABASE_URL, or call " +
-          "configureDatabase() during server bootstrap.",
+        'No database connection configured - set DATABASE_URL, or call ' + 'configureDatabase() during server bootstrap.',
       );
     }
     client = drizzle(postgres(url), { schema });

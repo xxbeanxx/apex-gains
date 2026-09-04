@@ -1,4 +1,4 @@
-import type { Equipment } from "~/domain/equipment/equipment";
+import type { Equipment } from '~/domain/equipment/equipment';
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
 // directly. `server/repositories/repositories.module.ts` picks which

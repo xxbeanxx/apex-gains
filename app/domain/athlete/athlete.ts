@@ -1,7 +1,7 @@
-import type { Clock } from "../shared/clock";
-import type { IdGenerator } from "../shared/ids";
-import type { DistanceUnit, WeightUnit } from "../values/units";
-import { AthletePreferences } from "./preferences";
+import type { Clock } from '../shared/clock';
+import type { IdGenerator } from '../shared/ids';
+import type { DistanceUnit, WeightUnit } from '../values/units';
+import { AthletePreferences } from './preferences';
 
 export type AthleteSnapshot = {
   readonly id: string;
@@ -52,10 +52,7 @@ export class Athlete {
    * defaults as a backstop for rows inserted outside the app, but nothing
    * here depends on them.
    */
-  static register(
-    details: NewAthlete,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): Athlete {
+  static register(details: NewAthlete, deps: { ids: IdGenerator; clock: Clock }): Athlete {
     const now = deps.clock.now();
     return new Athlete(
       deps.ids.next(),
@@ -76,11 +73,7 @@ export class Athlete {
       snapshot.email,
       snapshot.name,
       snapshot.avatarUrl,
-      new AthletePreferences(
-        snapshot.weightUnit,
-        snapshot.distanceUnit,
-        snapshot.showSampleData,
-      ),
+      new AthletePreferences(snapshot.weightUnit, snapshot.distanceUnit, snapshot.showSampleData),
       snapshot.createdAt,
       snapshot.updatedAt,
     );
@@ -109,21 +102,13 @@ export class Athlete {
     return this.lastUpdatedAt;
   }
 
-  changeUnits(
-    weightUnit: WeightUnit,
-    distanceUnit: DistanceUnit,
-    now: Date,
-  ): void {
-    this.currentPreferences = this.currentPreferences.withUnits(
-      weightUnit,
-      distanceUnit,
-    );
+  changeUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit, now: Date): void {
+    this.currentPreferences = this.currentPreferences.withUnits(weightUnit, distanceUnit);
     this.lastUpdatedAt = now;
   }
 
   changeSampleDataVisibility(showSampleData: boolean, now: Date): void {
-    this.currentPreferences =
-      this.currentPreferences.withSampleData(showSampleData);
+    this.currentPreferences = this.currentPreferences.withSampleData(showSampleData);
     this.lastUpdatedAt = now;
   }
 }

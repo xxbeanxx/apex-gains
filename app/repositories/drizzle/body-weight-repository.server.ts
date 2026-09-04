@@ -1,11 +1,11 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq } from 'drizzle-orm';
 
-import { dbScope } from "~/db/index.server";
-import { bodyWeightLogs, type BodyWeightLog } from "~/db/schema";
-import { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
-import type { DateOnly } from "~/domain/values/date-only";
+import { dbScope } from '~/db/index.server';
+import { bodyWeightLogs, type BodyWeightLog } from '~/db/schema';
+import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import type { DateOnly } from '~/domain/values/date-only';
 
-import type { BodyWeightRepository } from "../body-weight-repository.server";
+import type { BodyWeightRepository } from '../body-weight-repository.server';
 
 function toEntry(row: BodyWeightLog): BodyWeightEntry {
   return BodyWeightEntry.fromSnapshot({
@@ -18,23 +18,14 @@ function toEntry(row: BodyWeightLog): BodyWeightEntry {
 }
 
 export class DrizzleBodyWeightRepository implements BodyWeightRepository {
-  async findForDate(
-    userId: string,
-    date: DateOnly,
-  ): Promise<BodyWeightEntry | null> {
+  async findForDate(userId: string, date: DateOnly): Promise<BodyWeightEntry | null> {
     const row = await dbScope.query.bodyWeightLogs.findFirst({
-      where: and(
-        eq(bodyWeightLogs.userId, userId),
-        eq(bodyWeightLogs.date, date.value),
-      ),
+      where: and(eq(bodyWeightLogs.userId, userId), eq(bodyWeightLogs.date, date.value)),
     });
     return row ? toEntry(row) : null;
   }
 
-  async listRecent(
-    userId: string,
-    limit: number,
-  ): Promise<BodyWeightEntry[]> {
+  async listRecent(userId: string, limit: number): Promise<BodyWeightEntry[]> {
     const rows = await dbScope
       .select()
       .from(bodyWeightLogs)
@@ -62,8 +53,6 @@ export class DrizzleBodyWeightRepository implements BodyWeightRepository {
   }
 
   async delete(entryId: string): Promise<void> {
-    await dbScope
-      .delete(bodyWeightLogs)
-      .where(eq(bodyWeightLogs.id, entryId));
+    await dbScope.delete(bodyWeightLogs).where(eq(bodyWeightLogs.id, entryId));
   }
 }

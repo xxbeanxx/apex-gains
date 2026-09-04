@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq } from 'drizzle-orm';
 
-import { dbScope } from "~/db/index.server";
-import { users, type User } from "~/db/schema";
-import { Athlete } from "~/domain/athlete/athlete";
+import { dbScope } from '~/db/index.server';
+import { users, type User } from '~/db/schema';
+import { Athlete } from '~/domain/athlete/athlete';
 
-import type { AthletesRepository } from "../athletes-repository.server";
+import type { AthletesRepository } from '../athletes-repository.server';
 
 function toAthlete(row: User): Athlete {
   return Athlete.fromSnapshot({

@@ -1,12 +1,12 @@
-import { Weight } from "../values/weight";
-import type { TrainingHistory } from "./training-history";
+import { Weight } from '../values/weight';
+import type { TrainingHistory } from './training-history';
 
 /**
  * Which single number stands for "getting better at this", per exercise.
  * Each exercise picks one for its whole history so values never mix units
  * mid-series.
  */
-export type ProgressMetricKind = "one-rep-max" | "reps" | "duration";
+export type ProgressMetricKind = 'one-rep-max' | 'reps' | 'duration';
 
 export type ExerciseProgress = {
   readonly exerciseId: string;
@@ -50,14 +50,9 @@ export function estimatedOneRepMax(weight: Weight, reps: number): Weight {
  * Shared by the trend lines and the all-time bests below - the two differ
  * only in how they filter and sort these same per-day bests.
  */
-export function exerciseProgress(
-  history: TrainingHistory,
-): ExerciseProgress[] {
+export function exerciseProgress(history: TrainingHistory): ExerciseProgress[] {
   type Raw = { date: string; weight: Weight | null; reps: number | null; seconds: number | null };
-  const collected = new Map<
-    string,
-    { name: string; isCardio: boolean; raw: Raw[] }
-  >();
+  const collected = new Map<string, { name: string; isCardio: boolean; raw: Raw[] }>();
 
   for (const { session, set } of history.entries()) {
     const exercise = history.exerciseFor(set.exerciseId);
@@ -80,14 +75,8 @@ export function exerciseProgress(
   for (const [exerciseId, group] of collected) {
     // An exercise that has ever been loaded is tracked by estimated 1RM for
     // its whole history; one only ever done bodyweight is tracked by reps.
-    const usesWeight = group.raw.some(
-      (entry) => entry.weight !== null && entry.reps !== null,
-    );
-    const kind: ProgressMetricKind = group.isCardio
-      ? "duration"
-      : usesWeight
-        ? "one-rep-max"
-        : "reps";
+    const usesWeight = group.raw.some((entry) => entry.weight !== null && entry.reps !== null);
+    const kind: ProgressMetricKind = group.isCardio ? 'duration' : usesWeight ? 'one-rep-max' : 'reps';
 
     const bestByDate = new Map<string, number>();
     for (const entry of group.raw) {
@@ -111,8 +100,8 @@ export function exerciseProgress(
   return progress;
 
   function valueFor(kind: ProgressMetricKind, entry: Raw): number | null {
-    if (kind === "duration") return entry.seconds;
-    if (kind === "reps") return entry.reps;
+    if (kind === 'duration') return entry.seconds;
+    if (kind === 'reps') return entry.reps;
     if (entry.weight === null || entry.reps === null) return null;
     return estimatedOneRepMax(entry.weight, entry.reps).inPounds;
   }
@@ -156,7 +145,5 @@ export function personalRecords(history: TrainingHistory): PersonalRecord[] {
     };
   });
 
-  return records.sort((a, b) =>
-    a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-  );
+  return records.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }

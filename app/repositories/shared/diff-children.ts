@@ -23,18 +23,13 @@ export type ChildDiff<T> = {
  * `previous` only has to supply ids, so an adapter that needs nothing else
  * from the old rows can select just the id column.
  */
-export function diffChildren<T extends { id: string }>(
-  previous: readonly { id: string }[],
-  next: readonly T[],
-): ChildDiff<T> {
+export function diffChildren<T extends { id: string }>(previous: readonly { id: string }[], next: readonly T[]): ChildDiff<T> {
   const previousIds = new Set(previous.map((child) => child.id));
   const nextIds = new Set(next.map((child) => child.id));
 
   return {
     inserted: next.filter((child) => !previousIds.has(child.id)),
     updated: next.filter((child) => previousIds.has(child.id)),
-    deletedIds: previous
-      .filter((child) => !nextIds.has(child.id))
-      .map((child) => child.id),
+    deletedIds: previous.filter((child) => !nextIds.has(child.id)).map((child) => child.id),
   };
 }

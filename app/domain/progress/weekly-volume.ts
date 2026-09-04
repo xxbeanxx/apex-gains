@@ -1,7 +1,7 @@
-import type { WorkoutSession } from "../session/workout-session";
-import { DateOnly } from "../values/date-only";
-import { Weight } from "../values/weight";
-import type { TrainingHistory } from "./training-history";
+import type { WorkoutSession } from '../session/workout-session';
+import { DateOnly } from '../values/date-only';
+import { Weight } from '../values/weight';
+import type { TrainingHistory } from './training-history';
 
 export type WeeklyPoint<T> = {
   readonly weekStart: DateOnly;
@@ -11,7 +11,7 @@ export type WeeklyPoint<T> = {
 
 export type ConsistencyDay = {
   readonly date: DateOnly;
-  readonly status: "workout" | "rest" | "none";
+  readonly status: 'workout' | 'rest' | 'none';
   readonly setCount: number;
 };
 
@@ -33,9 +33,7 @@ function weekly<T>(
   const currentWeekStart = today.startOfWeek();
   const values = new Map<string, T>();
 
-  const starts = Array.from({ length: weeks }, (_, i) =>
-    currentWeekStart.minusDays(7 * (weeks - 1 - i)),
-  );
+  const starts = Array.from({ length: weeks }, (_, i) => currentWeekStart.minusDays(7 * (weeks - 1 - i)));
   for (const start of starts) values.set(start.value, empty);
 
   for (const session of history.sessions) {
@@ -52,48 +50,26 @@ function weekly<T>(
 }
 
 /** Sets logged per week - the simplest "am I still showing up" measure. */
-export function weeklySetCount(
-  history: TrainingHistory,
-  weeks: number,
-  today: DateOnly,
-): WeeklyPoint<number>[] {
-  return weekly(
-    history,
-    weeks,
-    today,
-    0,
-    (running, session) => running + session.setCount,
-  );
+export function weeklySetCount(history: TrainingHistory, weeks: number, today: DateOnly): WeeklyPoint<number>[] {
+  return weekly(history, weeks, today, 0, (running, session) => running + session.setCount);
 }
 
 /** Weight moved per week. Sets without both a weight and a rep count add nothing. */
-export function weeklyTonnage(
-  history: TrainingHistory,
-  weeks: number,
-  today: DateOnly,
-): WeeklyPoint<Weight>[] {
-  return weekly(history, weeks, today, Weight.lb(0), (running, session) =>
-    running.plus(session.tonnage),
-  );
+export function weeklyTonnage(history: TrainingHistory, weeks: number, today: DateOnly): WeeklyPoint<Weight>[] {
+  return weekly(history, weeks, today, Weight.lb(0), (running, session) => running.plus(session.tonnage));
 }
 
 /**
  * One entry per day across the `weeks` weeks ending with the one containing
  * `today`, Monday-aligned so the caller can lay it out as a 7-row grid.
  */
-export function consistencyCalendar(
-  history: TrainingHistory,
-  weeks: number,
-  today: DateOnly,
-): ConsistencyDay[] {
+export function consistencyCalendar(history: TrainingHistory, weeks: number, today: DateOnly): ConsistencyDay[] {
   const start = today.startOfWeek().minusDays(7 * (weeks - 1));
-  const byDate = new Map(
-    history.sessions.map((session) => [session.date.value, session]),
-  );
+  const byDate = new Map(history.sessions.map((session) => [session.date.value, session]));
 
   return start.range(weeks * 7).map((date) => {
     const session = byDate.get(date.value);
-    if (!session) return { date, status: "none" as const, setCount: 0 };
+    if (!session) return { date, status: 'none' as const, setCount: 0 };
     return {
       date,
       status: session.status,

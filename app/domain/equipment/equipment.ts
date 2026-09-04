@@ -1,6 +1,6 @@
-import type { Clock } from "../shared/clock";
-import type { IdGenerator } from "../shared/ids";
-import { Ownership } from "../shared/ownership";
+import type { Clock } from '../shared/clock';
+import type { IdGenerator } from '../shared/ids';
+import { Ownership } from '../shared/ownership';
 
 export type EquipmentSnapshot = {
   readonly id: string;
@@ -24,26 +24,12 @@ export class Equipment {
     readonly createdAt: Date,
   ) {}
 
-  static create(
-    userId: string,
-    name: string,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): Equipment {
-    return new Equipment(
-      deps.ids.next(),
-      Ownership.of(userId),
-      name,
-      deps.clock.now(),
-    );
+  static create(userId: string, name: string, deps: { ids: IdGenerator; clock: Clock }): Equipment {
+    return new Equipment(deps.ids.next(), Ownership.of(userId), name, deps.clock.now());
   }
 
   static fromSnapshot(snapshot: EquipmentSnapshot): Equipment {
-    return new Equipment(
-      snapshot.id,
-      Ownership.fromUserId(snapshot.userId),
-      snapshot.name,
-      snapshot.createdAt,
-    );
+    return new Equipment(snapshot.id, Ownership.fromUserId(snapshot.userId), snapshot.name, snapshot.createdAt);
   }
 
   toSnapshot(): EquipmentSnapshot {

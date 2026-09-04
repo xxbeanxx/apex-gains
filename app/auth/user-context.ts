@@ -1,6 +1,6 @@
-import { createContext } from "react-router";
+import { createContext } from 'react-router';
 
-import type { Athlete } from "~/domain/athlete/athlete";
+import type { Athlete } from '~/domain/athlete/athlete';
 
 /**
  * The signed-in athlete, populated by `loadUserMiddleware` on every request

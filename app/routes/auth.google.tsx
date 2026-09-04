@@ -1,16 +1,13 @@
-import * as client from "openid-client";
-import { redirect } from "react-router";
+import * as client from 'openid-client';
+import { redirect } from 'react-router';
 
-import { serializeOidcState } from "~/auth/oidc-state.server";
-import { safeRedirect } from "~/auth/safe-redirect.server";
-import { ErrorPage } from "~/components/error-page";
+import { serializeOidcState } from '~/auth/oidc-state.server';
+import { safeRedirect } from '~/auth/safe-redirect.server';
+import { ErrorPage } from '~/components/error-page';
 
-import {
-  oidcConfigContext,
-  oidcStateCookieContext,
-} from "~/lib/nest-bridge.server";
+import { oidcConfigContext, oidcStateCookieContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/auth.google";
+import type { Route } from './+types/auth.google';
 
 // No `default` export: this route only ever redirects on success. An
 // ErrorBoundary export is still required so React Router renders errors
@@ -31,22 +28,19 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const state = client.randomState();
 
   const url = new URL(request.url);
-  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
+  const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
 
   const authorizationUrl = client.buildAuthorizationUrl(config, {
     redirect_uri: `${origin}/auth/google/callback`,
-    scope: "openid email profile",
+    scope: 'openid email profile',
     code_challenge: codeChallenge,
-    code_challenge_method: "S256",
+    code_challenge_method: 'S256',
     state,
   });
 
   return redirect(authorizationUrl.href, {
     headers: {
-      "Set-Cookie": await serializeOidcState(
-        context.get(oidcStateCookieContext),
-        { codeVerifier, state, redirectTo },
-      ),
+      'Set-Cookie': await serializeOidcState(context.get(oidcStateCookieContext), { codeVerifier, state, redirectTo }),
     },
   });
 }

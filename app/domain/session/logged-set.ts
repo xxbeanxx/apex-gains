@@ -1,7 +1,7 @@
-import type { AthletePreferences } from "../athlete/preferences";
-import { Duration } from "../values/duration";
-import { Speed } from "../values/speed";
-import { Weight } from "../values/weight";
+import type { AthletePreferences } from '../athlete/preferences';
+import { Duration } from '../values/duration';
+import { Speed } from '../values/speed';
+import { Weight } from '../values/weight';
 
 export type LoggedSetSnapshot = {
   readonly id: string;
@@ -100,6 +100,6 @@ export class LoggedSet {
       parts.push(`resistance ${this.resistanceLevel}`);
     }
 
-    return parts.join(", ");
+    return parts.join(', ');
   }
 }

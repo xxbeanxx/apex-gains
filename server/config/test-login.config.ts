@@ -1,7 +1,7 @@
-import { Expose, Transform } from "class-transformer";
-import { IsBoolean } from "class-validator";
+import { Expose, Transform } from 'class-transformer';
+import { IsBoolean } from 'class-validator';
 
-import { toBoolean } from "./app.config";
+import { toBoolean } from './app.config';
 
 /**
  * Off by default - only e2e/CI environments should ever set this. Unlike
@@ -9,7 +9,7 @@ import { toBoolean } from "./app.config";
  */
 export class TestLoginConfig {
   @Transform(toBoolean())
-  @Expose({ name: "ENABLE_TEST_LOGIN" })
-  @IsBoolean({ message: "ENABLE_TEST_LOGIN must be true or false" })
+  @Expose({ name: 'ENABLE_TEST_LOGIN' })
+  @IsBoolean({ message: 'ENABLE_TEST_LOGIN must be true or false' })
   readonly enableTestLogin: boolean = false;
 }

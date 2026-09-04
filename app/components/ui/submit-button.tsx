@@ -1,25 +1,25 @@
-import { Loader2Icon } from "lucide-react"
-import * as React from "react"
-import { useNavigation } from "react-router"
+import { Loader2Icon } from 'lucide-react';
+import * as React from 'react';
+import { useNavigation } from 'react-router';
 
-import { Button } from "~/components/ui/button"
-import { cn } from "~/lib/utils"
+import { Button } from '~/components/ui/button';
+import { cn } from '~/lib/utils';
 
 type SubmitButtonProps = React.ComponentProps<typeof Button> & {
   /**
    * Explicit pending flag. Use for `useFetcher` forms:
    * `pending={fetcher.state !== "idle"}`.
    */
-  pending?: boolean
+  pending?: boolean;
   /**
    * For plain `<form method="post">`, the hidden fields identifying *this*
    * form, e.g. `{ intent: "rename" }`. Without it a page with several forms
    * would spin every button on any submission.
    */
-  match?: Record<string, string>
+  match?: Record<string, string>;
   /** Announced to screen readers while pending. */
-  pendingLabel?: string
-}
+  pendingLabel?: string;
+};
 
 /**
  * A submit button that shows it is working. Purely presentational - the form
@@ -28,41 +28,36 @@ type SubmitButtonProps = React.ComponentProps<typeof Button> & {
 function SubmitButton({
   pending: pendingProp,
   match,
-  pendingLabel = "Working…",
+  pendingLabel = 'Working…',
   children,
   className,
   disabled,
   ...props
 }: SubmitButtonProps) {
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
   const matchesNavigation =
-    navigation.state === "submitting" &&
+    navigation.state === 'submitting' &&
     navigation.formData != null &&
-    (match === undefined ||
-      Object.entries(match).every(
-        ([key, value]) => navigation.formData?.get(key) === value
-      ))
+    (match === undefined || Object.entries(match).every(([key, value]) => navigation.formData?.get(key) === value));
 
-  const pending = pendingProp ?? matchesNavigation
+  const pending = pendingProp ?? matchesNavigation;
 
   return (
     <Button
       type="submit"
       aria-busy={pending || undefined}
       disabled={disabled || pending}
-      className={cn("relative", className)}
+      className={cn('relative', className)}
       {...props}
     >
-      {pending ? (
-        <Loader2Icon className="animate-spin" aria-hidden="true" />
-      ) : null}
+      {pending ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : null}
       {children}
       <span className="sr-only" aria-live="polite">
-        {pending ? pendingLabel : ""}
+        {pending ? pendingLabel : ''}
       </span>
     </Button>
-  )
+  );
 }
 
-export { SubmitButton }
+export { SubmitButton };

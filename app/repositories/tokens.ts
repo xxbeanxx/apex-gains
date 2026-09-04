@@ -7,13 +7,11 @@
  * the composition root's job and happens in exactly one place:
  * `server/repositories/repositories.module.ts`.
  */
-export const ATHLETES_REPOSITORY = Symbol("ATHLETES_REPOSITORY");
-export const BODY_WEIGHT_REPOSITORY = Symbol("BODY_WEIGHT_REPOSITORY");
-export const EQUIPMENT_REPOSITORY = Symbol("EQUIPMENT_REPOSITORY");
-export const EXERCISES_REPOSITORY = Symbol("EXERCISES_REPOSITORY");
-export const ROUTINES_REPOSITORY = Symbol("ROUTINES_REPOSITORY");
-export const TEMPLATES_REPOSITORY = Symbol("TEMPLATES_REPOSITORY");
-export const WORKOUT_SESSIONS_REPOSITORY = Symbol(
-  "WORKOUT_SESSIONS_REPOSITORY",
-);
-export const UNIT_OF_WORK = Symbol("UNIT_OF_WORK");
+export const ATHLETES_REPOSITORY = Symbol('ATHLETES_REPOSITORY');
+export const BODY_WEIGHT_REPOSITORY = Symbol('BODY_WEIGHT_REPOSITORY');
+export const EQUIPMENT_REPOSITORY = Symbol('EQUIPMENT_REPOSITORY');
+export const EXERCISES_REPOSITORY = Symbol('EXERCISES_REPOSITORY');
+export const ROUTINES_REPOSITORY = Symbol('ROUTINES_REPOSITORY');
+export const TEMPLATES_REPOSITORY = Symbol('TEMPLATES_REPOSITORY');
+export const WORKOUT_SESSIONS_REPOSITORY = Symbol('WORKOUT_SESSIONS_REPOSITORY');
+export const UNIT_OF_WORK = Symbol('UNIT_OF_WORK');

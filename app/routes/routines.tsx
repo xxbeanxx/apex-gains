@@ -1,33 +1,28 @@
-import { RepeatIcon } from "lucide-react";
-import { Link, data, redirect } from "react-router";
-import { z } from "zod";
+import { RepeatIcon } from 'lucide-react';
+import { Link, data, redirect } from 'react-router';
+import { z } from 'zod';
 
-import { userContext } from "~/auth/user-context";
-import { Page, PageHeader, Section } from "~/components/layout/page";
-import { Badge } from "~/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import { Field } from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { SubmitButton } from "~/components/ui/submit-button";
-import { DateOnly } from "~/domain/values/date-only";
-import { requestLogger } from "~/lib/logger.server";
+import { userContext } from '~/auth/user-context';
+import { Page, PageHeader, Section } from '~/components/layout/page';
+import { Badge } from '~/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
+import { SubmitButton } from '~/components/ui/submit-button';
+import { DateOnly } from '~/domain/values/date-only';
+import { requestLogger } from '~/lib/logger.server';
 
-import { routineServiceContext } from "~/lib/nest-bridge.server";
+import { routineServiceContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/routines";
+import type { Route } from './+types/routines';
 
 export function meta() {
-  return [{ title: "Routines - Apex Gains" }];
+  return [{ title: 'Routines - Apex Gains' }];
 }
 
 const createRoutineSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
+  name: z.string().trim().min(1, 'Name is required').max(100),
 });
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -40,39 +35,25 @@ export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
   const formData = await request.formData();
   const result = createRoutineSchema.safeParse({
-    name: formData.get("name"),
+    name: formData.get('name'),
   });
 
   if (!result.success) {
-    return data(
-      { error: result.error.issues[0]?.message ?? "Invalid name" },
-      { status: 400 },
-    );
+    return data({ error: result.error.issues[0]?.message ?? 'Invalid name' }, { status: 400 });
   }
 
   // A new routine is anchored to today, so its first slot is today's - the
   // athlete can re-anchor it afterwards.
   const routineService = context.get(routineServiceContext);
-  const routine = await routineService.create(
-    user,
-    result.data.name,
-    DateOnly.today(),
-  );
+  const routine = await routineService.create(user, result.data.name, DateOnly.today());
 
-  requestLogger(context).log(
-    `created routine ${routine.id} for user ${user.id}`,
-    "Routines",
-  );
+  requestLogger(context).log(`created routine ${routine.id} for user ${user.id}`, 'Routines');
 
   throw redirect(`/routines/${routine.id}`);
 }
 
-export default function Routines({
-  loaderData,
-  actionData,
-}: Route.ComponentProps) {
-  const error =
-    actionData && "error" in actionData ? actionData.error : undefined;
+export default function Routines({ loaderData, actionData }: Route.ComponentProps) {
+  const error = actionData && 'error' in actionData ? actionData.error : undefined;
   const { routines: routineList } = loaderData;
 
   return (
@@ -81,16 +62,14 @@ export default function Routines({
         title="Routines"
         description={
           <>
-            A routine is a repeating cycle of days — each day is either one of
-            your{" "}
+            A routine is a repeating cycle of days — each day is either one of your{' '}
             <Link
               to="/templates"
               className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
             >
               templates
-            </Link>{" "}
-            or a rest day. Only one routine can be active at a time; the active
-            routine drives what shows up on the Today page.
+            </Link>{' '}
+            or a rest day. Only one routine can be active at a time; the active routine drives what shows up on the Today page.
           </>
         }
       />
@@ -101,13 +80,7 @@ export default function Routines({
         </CardHeader>
         <CardContent>
           <form method="post">
-            <Field
-              label="Name"
-              error={error}
-              action={
-                <SubmitButton pendingLabel="Creating">Create</SubmitButton>
-              }
-            >
+            <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
               <Input name="name" placeholder="Push/Pull/Legs" required />
             </Field>
           </form>
@@ -134,9 +107,7 @@ export default function Routines({
                       >
                         {routine.name}
                       </Link>
-                      {routine.isActive ? (
-                        <Badge variant="brand">Active</Badge>
-                      ) : null}
+                      {routine.isActive ? <Badge variant="brand">Active</Badge> : null}
                       {routine.isSample ? (
                         <Badge variant="outline">Sample</Badge>
                       ) : routine.isCustomized ? (
@@ -145,7 +116,7 @@ export default function Routines({
                     </span>
                     <span className="text-sm text-muted-foreground tabular-nums">
                       {routine.slotCount} day
-                      {routine.slotCount === 1 ? "" : "s"}
+                      {routine.slotCount === 1 ? '' : 's'}
                     </span>
                   </CardContent>
                 </Card>

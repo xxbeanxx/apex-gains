@@ -1,25 +1,20 @@
-import { PassThrough } from "node:stream";
+import { PassThrough } from 'node:stream';
 
-import type {
-  ActionFunctionArgs,
-  EntryContext,
-  LoaderFunctionArgs,
-  RouterContextProvider,
-} from "react-router";
-import { createReadableStreamFromReadable } from "@react-router/node";
-import { isRouteErrorResponse, ServerRouter } from "react-router";
-import { isbot } from "isbot";
-import type { RenderToPipeableStreamOptions } from "react-dom/server";
-import { renderToPipeableStream } from "react-dom/server";
+import type { ActionFunctionArgs, EntryContext, LoaderFunctionArgs, RouterContextProvider } from 'react-router';
+import { createReadableStreamFromReadable } from '@react-router/node';
+import { isRouteErrorResponse, ServerRouter } from 'react-router';
+import { isbot } from 'isbot';
+import type { RenderToPipeableStreamOptions } from 'react-dom/server';
+import { renderToPipeableStream } from 'react-dom/server';
 
-import { requestLogger } from "~/lib/logger.server";
-import { getNestLogger } from "~/lib/nest-bridge.server";
+import { requestLogger } from '~/lib/logger.server';
+import { getNestLogger } from '~/lib/nest-bridge.server';
 
 export const streamTimeout = 5_000;
 
 /** Nest logger context labels for the lines this module emits. */
-const PROCESS = "Process";
-const REQUEST = "Request";
+const PROCESS = 'Process';
+const REQUEST = 'Request';
 
 // Registered here (the server's actual bootstrap module) rather than in
 // logger.server.ts, so importing the logger from a route/lib module never
@@ -30,17 +25,13 @@ const REQUEST = "Request";
 // (not at module scope, right here), so this is safe to register before
 // Nest has necessarily finished bootstrapping - it only matters that
 // registration has completed by the time a handler actually *fires*.
-process.on("uncaughtException", (err) => {
-  getNestLogger().fatal("uncaught exception", err.stack, PROCESS);
+process.on('uncaughtException', (err) => {
+  getNestLogger().fatal('uncaught exception', err.stack, PROCESS);
   process.exit(1);
 });
 
-process.on("unhandledRejection", (reason) => {
-  getNestLogger().error(
-    "unhandled rejection",
-    reason instanceof Error ? reason.stack : String(reason),
-    PROCESS,
-  );
+process.on('unhandledRejection', (reason) => {
+  getNestLogger().error('unhandled rejection', reason instanceof Error ? reason.stack : String(reason), PROCESS);
 });
 
 export default function handleRequest(
@@ -51,7 +42,7 @@ export default function handleRequest(
   loadContext: RouterContextProvider,
 ) {
   // https://httpwg.org/specs/rfc9110.html#HEAD
-  if (request.method.toUpperCase() === "HEAD") {
+  if (request.method.toUpperCase() === 'HEAD') {
     return new Response(null, {
       status: responseStatusCode,
       headers: responseHeaders,
@@ -60,73 +51,65 @@ export default function handleRequest(
 
   return new Promise((resolve, reject) => {
     let shellRendered = false;
-    let userAgent = request.headers.get("user-agent");
+    let userAgent = request.headers.get('user-agent');
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
     let readyOption: keyof RenderToPipeableStreamOptions =
-      (userAgent && isbot(userAgent)) || routerContext.isSpaMode
-        ? "onAllReady"
-        : "onShellReady";
+      (userAgent && isbot(userAgent)) || routerContext.isSpaMode ? 'onAllReady' : 'onShellReady';
 
     // Abort the rendering stream after the `streamTimeout` so it has time to
     // flush down the rejected boundaries
-    let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(
-      () => abort(),
-      streamTimeout + 1000,
-    );
+    let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(() => abort(), streamTimeout + 1000);
 
-    const { pipe, abort } = renderToPipeableStream(
-      <ServerRouter context={routerContext} url={request.url} />,
-      {
-        [readyOption]() {
-          shellRendered = true;
-          const body = new PassThrough({
-            final(callback) {
-              // Clear the timeout to prevent retaining the closure and memory leak
-              clearTimeout(timeoutId);
-              timeoutId = undefined;
-              callback();
-            },
-          });
-          const stream = createReadableStreamFromReadable(body);
+    const { pipe, abort } = renderToPipeableStream(<ServerRouter context={routerContext} url={request.url} />, {
+      [readyOption]() {
+        shellRendered = true;
+        const body = new PassThrough({
+          final(callback) {
+            // Clear the timeout to prevent retaining the closure and memory leak
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+            callback();
+          },
+        });
+        const stream = createReadableStreamFromReadable(body);
 
-          responseHeaders.set("Content-Type", "text/html");
+        responseHeaders.set('Content-Type', 'text/html');
 
-          pipe(body);
+        pipe(body);
 
-          resolve(
-            new Response(stream, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            }),
-          );
-        },
-        onShellError(error: unknown) {
-          reject(error);
-        },
-        onError(error: unknown) {
-          responseStatusCode = 500;
-          // Log streaming rendering errors from inside the shell. Don't log
-          // errors encountered during initial shell rendering since they'll
-          // reject and get logged via handleError below.
-          if (shellRendered) {
-            requestLogger(loadContext).error(
-              "streaming render error",
-              error instanceof Error ? error.stack : String(error),
-              REQUEST,
-            );
-          }
-        },
+        resolve(
+          new Response(stream, {
+            headers: responseHeaders,
+            status: responseStatusCode,
+          }),
+        );
       },
-    );
+      onShellError(error: unknown) {
+        reject(error);
+      },
+      onError(error: unknown) {
+        responseStatusCode = 500;
+        // Log streaming rendering errors from inside the shell. Don't log
+        // errors encountered during initial shell rendering since they'll
+        // reject and get logged via handleError below.
+        if (shellRendered) {
+          requestLogger(loadContext).error(
+            'streaming render error',
+            error instanceof Error ? error.stack : String(error),
+            REQUEST,
+          );
+        }
+      },
+    });
   });
 }
 
 type HandleErrorArgs = {
-  request: LoaderFunctionArgs["request"] | ActionFunctionArgs["request"];
-  context: LoaderFunctionArgs["context"] | ActionFunctionArgs["context"];
-  params: LoaderFunctionArgs["params"] | ActionFunctionArgs["params"];
+  request: LoaderFunctionArgs['request'] | ActionFunctionArgs['request'];
+  context: LoaderFunctionArgs['context'] | ActionFunctionArgs['context'];
+  params: LoaderFunctionArgs['params'] | ActionFunctionArgs['params'];
 };
 
 /**
@@ -140,10 +123,7 @@ type HandleErrorArgs = {
  * route, so `root.tsx`'s middleware never ran and there is no request-scoped
  * logger to bind to.
  */
-export function handleError(
-  error: unknown,
-  { request, context }: HandleErrorArgs,
-) {
+export function handleError(error: unknown, { request, context }: HandleErrorArgs) {
   if (request.signal.aborted) return;
 
   const logger = requestLogger(context);
@@ -163,12 +143,6 @@ export function handleError(
   // `ErrorResponseImpl.error` (the underlying thrown Error, when a Response
   // was synthesized from one) is private in react-router's public types, so
   // reach it structurally rather than through the nominal ErrorResponse type.
-  const cause = isRouteErrorResponse(error)
-    ? ((error as { error?: unknown }).error ?? error)
-    : error;
-  logger.error(
-    "unhandled server error",
-    cause instanceof Error ? cause.stack : String(cause),
-    REQUEST,
-  );
+  const cause = isRouteErrorResponse(error) ? ((error as { error?: unknown }).error ?? error) : error;
+  logger.error('unhandled server error', cause instanceof Error ? cause.stack : String(cause), REQUEST);
 }

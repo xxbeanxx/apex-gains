@@ -1,26 +1,22 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import type { Athlete } from "~/domain/athlete/athlete";
-import type { ExerciseType } from "~/domain/exercise/exercise-type";
-import type { MoveDirection } from "~/domain/shared/ordered";
-import { err, ok, type Result } from "~/domain/shared/result";
-import { SetTarget } from "~/domain/template/set-target";
-import { WorkoutTemplate } from "~/domain/template/workout-template";
-import { Duration } from "~/domain/values/duration";
-import { Speed } from "~/domain/values/speed";
-import { Weight } from "~/domain/values/weight";
-import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { TemplatesRepository } from "~/repositories/templates-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import {
-  EXERCISES_REPOSITORY,
-  TEMPLATES_REPOSITORY,
-  UNIT_OF_WORK,
-} from "~/repositories/tokens";
-import { DOMAIN_DEPS } from "~/services/shared/tokens";
+import type { Athlete } from '~/domain/athlete/athlete';
+import type { ExerciseType } from '~/domain/exercise/exercise-type';
+import type { MoveDirection } from '~/domain/shared/ordered';
+import { err, ok, type Result } from '~/domain/shared/result';
+import { SetTarget } from '~/domain/template/set-target';
+import { WorkoutTemplate } from '~/domain/template/workout-template';
+import { Duration } from '~/domain/values/duration';
+import { Speed } from '~/domain/values/speed';
+import { Weight } from '~/domain/values/weight';
+import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { TemplatesRepository } from '~/repositories/templates-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import { EXERCISES_REPOSITORY, TEMPLATES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
-import type { DomainDeps } from "./shared/deps.server";
-import { resolveEditableCopy } from "./shared/fork.server";
+import type { DomainDeps } from './shared/deps.server';
+import { resolveEditableCopy } from './shared/fork.server';
 
 export type TemplateSummary = {
   id: string;
@@ -61,10 +57,7 @@ export type TargetInput = {
   resistance?: number | null;
 };
 
-export type TemplateMutation = Result<
-  { forkedId: string | null },
-  "not-found"
->;
+export type TemplateMutation = Result<{ forkedId: string | null }, 'not-found'>;
 
 function toSummary(template: WorkoutTemplate): TemplateSummary {
   return {
@@ -87,32 +80,22 @@ export class TemplateService {
   ) {}
 
   async list(athlete: Athlete): Promise<TemplateSummary[]> {
-    const templates = await this.templates.listFor(
-      athlete.id,
-      athlete.preferences.showSampleData,
-    );
+    const templates = await this.templates.listFor(athlete.id, athlete.preferences.showSampleData);
     return templates.map(toSummary);
   }
 
   /** Sorted by name - what the routine editor's template picker offers. */
   async listForPicker(athlete: Athlete): Promise<TemplateSummary[]> {
-    return (await this.list(athlete)).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
+    return (await this.list(athlete)).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async detail(
-    athlete: Athlete,
-    templateId: string,
-  ): Promise<TemplateDetail | null> {
+  async detail(athlete: Athlete, templateId: string): Promise<TemplateDetail | null> {
     const template = await this.templates.findVisible(athlete.id, templateId);
     if (!template) return null;
 
     // By id rather than by the athlete's library: an entry can point at a
     // sample they have since forked away from, which their library hides.
-    const exercises = await this.exercises.findManyByIds(
-      template.exercises.map((entry) => entry.exerciseId),
-    );
+    const exercises = await this.exercises.findManyByIds(template.exercises.map((entry) => entry.exerciseId));
     const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
     return {
@@ -125,8 +108,8 @@ export class TemplateService {
           id: entry.id,
           position: entry.position,
           exerciseId: entry.exerciseId,
-          exerciseName: exercise?.name ?? "Unknown",
-          exerciseType: exercise?.exerciseType ?? "strength",
+          exerciseName: exercise?.name ?? 'Unknown',
+          exerciseType: exercise?.exerciseType ?? 'strength',
           targetSummary: entry.target.format(athlete.preferences),
         };
       }),
@@ -139,14 +122,8 @@ export class TemplateService {
     return toSummary(template);
   }
 
-  async rename(
-    athlete: Athlete,
-    templateId: string,
-    name: string,
-  ): Promise<TemplateMutation> {
-    return this.mutate(athlete, templateId, (template) =>
-      template.rename(name, this.deps.clock.now()),
-    );
+  async rename(athlete: Athlete, templateId: string, name: string): Promise<TemplateMutation> {
+    return this.mutate(athlete, templateId, (template) => template.rename(name, this.deps.clock.now()));
   }
 
   async addExercise(
@@ -154,33 +131,23 @@ export class TemplateService {
     templateId: string,
     exerciseId: string,
     input: TargetInput,
-  ): Promise<
-    Result<{ forkedId: string | null }, "not-found" | "exercise-not-found">
-  > {
+  ): Promise<Result<{ forkedId: string | null }, 'not-found' | 'exercise-not-found'>> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.templates.findVisible(athlete.id, templateId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!exercise) return err("exercise-not-found" as const);
+      if (!exercise) return err('exercise-not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
-      copy.editable.addExercise(
-        exerciseId,
-        this.toTarget(athlete, input),
-        this.deps,
-      );
+      copy.editable.addExercise(exerciseId, this.toTarget(athlete, input), this.deps);
       await this.templates.save(copy.editable);
 
       return ok({ forkedId: copy.forkedId });
     });
   }
 
-  async removeExercise(
-    athlete: Athlete,
-    templateId: string,
-    entryId: string,
-  ): Promise<TemplateMutation> {
+  async removeExercise(athlete: Athlete, templateId: string, entryId: string): Promise<TemplateMutation> {
     return this.mutate(athlete, templateId, (template, translate) =>
       template.removeExercise(translate(entryId), this.deps.clock.now()),
     );
@@ -193,22 +160,15 @@ export class TemplateService {
     direction: MoveDirection,
   ): Promise<TemplateMutation> {
     return this.mutate(athlete, templateId, (template, translate) =>
-      template.moveExercise(
-        translate(entryId),
-        direction,
-        this.deps.clock.now(),
-      ),
+      template.moveExercise(translate(entryId), direction, this.deps.clock.now()),
     );
   }
 
-  async remove(
-    athlete: Athlete,
-    templateId: string,
-  ): Promise<Result<void, "not-found" | "sample-template">> {
+  async remove(athlete: Athlete, templateId: string): Promise<Result<void, 'not-found' | 'sample-template'>> {
     return this.unitOfWork.run(async () => {
       const template = await this.templates.findVisible(athlete.id, templateId);
-      if (!template) return err("not-found" as const);
-      if (!template.isDeletable) return err("sample-template" as const);
+      if (!template) return err('not-found' as const);
+      if (!template.isDeletable) return err('sample-template' as const);
 
       await this.templates.delete(template.id);
       return ok();
@@ -218,14 +178,12 @@ export class TemplateService {
   async revert(
     athlete: Athlete,
     templateId: string,
-  ): Promise<
-    Result<{ forkedFromId: string }, "not-found" | "nothing-to-revert">
-  > {
+  ): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
     return this.unitOfWork.run(async () => {
       const template = await this.templates.findVisible(athlete.id, templateId);
-      if (!template) return err("not-found" as const);
+      if (!template) return err('not-found' as const);
       if (!template.canRevert || !template.forkedFromId) {
-        return err("nothing-to-revert" as const);
+        return err('nothing-to-revert' as const);
       }
 
       const forkedFromId = template.forkedFromId;
@@ -240,12 +198,8 @@ export class TemplateService {
     return SetTarget.of({
       sets: input.sets,
       reps: input.reps,
-      weight:
-        input.weight != null ? Weight.in(weightUnit, input.weight) : null,
-      duration:
-        input.durationMinutes != null
-          ? Duration.minutes(input.durationMinutes)
-          : null,
+      weight: input.weight != null ? Weight.in(weightUnit, input.weight) : null,
+      duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
       speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
       resistance: input.resistance,
     });
@@ -254,14 +208,11 @@ export class TemplateService {
   private async mutate(
     athlete: Athlete,
     templateId: string,
-    apply: (
-      template: WorkoutTemplate,
-      translate: (id: string) => string,
-    ) => void,
+    apply: (template: WorkoutTemplate, translate: (id: string) => string) => void,
   ): Promise<TemplateMutation> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.templates.findVisible(athlete.id, templateId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
       apply(copy.editable, copy.translateChildId);

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
-import { writePositions } from "./write-positions";
+import { writePositions } from './write-positions';
 
 /**
  * Replays the writes against a stand-in for the `(parentId, position)`
@@ -23,17 +23,17 @@ function applyTo(initial: Record<string, number>) {
   return { rows, collisions, update };
 }
 
-describe("writePositions", () => {
-  it("writes nothing when nothing moved", async () => {
+describe('writePositions', () => {
+  it('writes nothing when nothing moved', async () => {
     const writes: string[] = [];
     await writePositions(
       new Map([
-        ["a", 0],
-        ["b", 1],
+        ['a', 0],
+        ['b', 1],
       ]),
       [
-        { id: "a", position: 0 },
-        { id: "b", position: 1 },
+        { id: 'a', position: 0 },
+        { id: 'b', position: 1 },
       ],
       async (id, position) => writes.push(`${id}@${position}`),
     );
@@ -41,17 +41,17 @@ describe("writePositions", () => {
     expect(writes).toEqual([]);
   });
 
-  it("swaps two neighbours without colliding", async () => {
+  it('swaps two neighbours without colliding', async () => {
     const { rows, collisions, update } = applyTo({ a: 0, b: 1 });
 
     await writePositions(
       new Map([
-        ["a", 0],
-        ["b", 1],
+        ['a', 0],
+        ['b', 1],
       ]),
       [
-        { id: "b", position: 0 },
-        { id: "a", position: 1 },
+        { id: 'b', position: 0 },
+        { id: 'a', position: 1 },
       ],
       update,
     );
@@ -65,19 +65,19 @@ describe("writePositions", () => {
    * or a shift-down - which the old hardcoded single `-1` couldn't express -
    * lands on a position its neighbour still holds.
    */
-  it("shifts a run of rows down without colliding", async () => {
+  it('shifts a run of rows down without colliding', async () => {
     const { rows, collisions, update } = applyTo({ b: 1, c: 2, d: 3 });
 
     await writePositions(
       new Map([
-        ["b", 1],
-        ["c", 2],
-        ["d", 3],
+        ['b', 1],
+        ['c', 2],
+        ['d', 3],
       ]),
       [
-        { id: "b", position: 0 },
-        { id: "c", position: 1 },
-        { id: "d", position: 2 },
+        { id: 'b', position: 0 },
+        { id: 'c', position: 1 },
+        { id: 'd', position: 2 },
       ],
       update,
     );
@@ -86,21 +86,21 @@ describe("writePositions", () => {
     expect(Object.fromEntries(rows)).toEqual({ b: 0, c: 1, d: 2 });
   });
 
-  it("applies an arbitrary permutation without colliding", async () => {
+  it('applies an arbitrary permutation without colliding', async () => {
     const { rows, collisions, update } = applyTo({ a: 0, b: 1, c: 2, d: 3 });
 
     await writePositions(
       new Map([
-        ["a", 0],
-        ["b", 1],
-        ["c", 2],
-        ["d", 3],
+        ['a', 0],
+        ['b', 1],
+        ['c', 2],
+        ['d', 3],
       ]),
       [
-        { id: "d", position: 0 },
-        { id: "a", position: 1 },
-        { id: "b", position: 2 },
-        { id: "c", position: 3 },
+        { id: 'd', position: 0 },
+        { id: 'a', position: 1 },
+        { id: 'b', position: 2 },
+        { id: 'c', position: 3 },
       ],
       update,
     );
@@ -109,22 +109,22 @@ describe("writePositions", () => {
     expect(Object.fromEntries(rows)).toEqual({ a: 1, b: 2, c: 3, d: 0 });
   });
 
-  it("leaves untouched rows out of the writes entirely", async () => {
+  it('leaves untouched rows out of the writes entirely', async () => {
     const writes: string[] = [];
     await writePositions(
       new Map([
-        ["a", 0],
-        ["b", 1],
-        ["c", 2],
+        ['a', 0],
+        ['b', 1],
+        ['c', 2],
       ]),
       [
-        { id: "a", position: 0 },
-        { id: "c", position: 1 },
-        { id: "b", position: 2 },
+        { id: 'a', position: 0 },
+        { id: 'c', position: 1 },
+        { id: 'b', position: 2 },
       ],
       async (id, position) => writes.push(`${id}@${position}`),
     );
 
-    expect(writes.some((write) => write.startsWith("a@"))).toBe(false);
+    expect(writes.some((write) => write.startsWith('a@'))).toBe(false);
   });
 });

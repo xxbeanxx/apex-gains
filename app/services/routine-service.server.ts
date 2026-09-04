@@ -1,23 +1,19 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import type { Athlete } from "~/domain/athlete/athlete";
-import { activateRoutine } from "~/domain/routine/activation";
-import { Routine } from "~/domain/routine/routine";
-import type { MoveDirection } from "~/domain/shared/ordered";
-import { err, ok, type Result } from "~/domain/shared/result";
-import { DateOnly } from "~/domain/values/date-only";
-import type { RoutinesRepository } from "~/repositories/routines-repository.server";
-import type { TemplatesRepository } from "~/repositories/templates-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import {
-  ROUTINES_REPOSITORY,
-  TEMPLATES_REPOSITORY,
-  UNIT_OF_WORK,
-} from "~/repositories/tokens";
-import { DOMAIN_DEPS } from "~/services/shared/tokens";
+import type { Athlete } from '~/domain/athlete/athlete';
+import { activateRoutine } from '~/domain/routine/activation';
+import { Routine } from '~/domain/routine/routine';
+import type { MoveDirection } from '~/domain/shared/ordered';
+import { err, ok, type Result } from '~/domain/shared/result';
+import { DateOnly } from '~/domain/values/date-only';
+import type { RoutinesRepository } from '~/repositories/routines-repository.server';
+import type { TemplatesRepository } from '~/repositories/templates-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import { ROUTINES_REPOSITORY, TEMPLATES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
-import type { DomainDeps } from "./shared/deps.server";
-import { resolveEditableCopy } from "./shared/fork.server";
+import type { DomainDeps } from './shared/deps.server';
+import { resolveEditableCopy } from './shared/fork.server';
 
 export type RoutineSummary = {
   id: string;
@@ -50,7 +46,7 @@ export type RoutineDetail = RoutineSummary & {
  * means the route should redirect - the edit landed on a new routine with
  * its own URL, and would be invisible at the sample's.
  */
-export type RoutineMutation = Result<{ forkedId: string | null }, "not-found">;
+export type RoutineMutation = Result<{ forkedId: string | null }, 'not-found'>;
 
 function toSummary(routine: Routine): RoutineSummary {
   return {
@@ -83,10 +79,7 @@ export class RoutineService {
   ) {}
 
   async list(athlete: Athlete): Promise<RoutineSummary[]> {
-    const routines = await this.routines.listFor(
-      athlete.id,
-      athlete.preferences.showSampleData,
-    );
+    const routines = await this.routines.listFor(athlete.id, athlete.preferences.showSampleData);
     return routines.map(toSummary);
   }
 
@@ -97,10 +90,7 @@ export class RoutineService {
    * aggregates - so the name is joined in here for display rather than being
    * carried around inside the routine.
    */
-  async detail(
-    athlete: Athlete,
-    routineId: string,
-  ): Promise<RoutineDetail | null> {
+  async detail(athlete: Athlete, routineId: string): Promise<RoutineDetail | null> {
     const routine = await this.routines.findVisible(athlete.id, routineId);
     if (!routine) return null;
 
@@ -114,42 +104,24 @@ export class RoutineService {
         id: slot.id,
         position: slot.position,
         templateId: slot.templateId,
-        templateName: slot.templateId
-          ? (names.get(slot.templateId) ?? "Unknown")
-          : null,
+        templateName: slot.templateId ? (names.get(slot.templateId) ?? 'Unknown') : null,
         isRestDay: slot.isRestDay,
       })),
     };
   }
 
-  async create(
-    athlete: Athlete,
-    name: string,
-    anchorDate: DateOnly,
-  ): Promise<RoutineSummary> {
+  async create(athlete: Athlete, name: string, anchorDate: DateOnly): Promise<RoutineSummary> {
     const routine = Routine.create(athlete.id, name, anchorDate, this.deps);
     await this.unitOfWork.run(() => this.routines.save(routine));
     return toSummary(routine);
   }
 
-  async rename(
-    athlete: Athlete,
-    routineId: string,
-    name: string,
-  ): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) =>
-      routine.rename(name, this.deps.clock.now()),
-    );
+  async rename(athlete: Athlete, routineId: string, name: string): Promise<RoutineMutation> {
+    return this.mutate(athlete, routineId, (routine) => routine.rename(name, this.deps.clock.now()));
   }
 
-  async reanchor(
-    athlete: Athlete,
-    routineId: string,
-    anchorDate: DateOnly,
-  ): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) =>
-      routine.reanchor(anchorDate, this.deps.clock.now()),
-    );
+  async reanchor(athlete: Athlete, routineId: string, anchorDate: DateOnly): Promise<RoutineMutation> {
+    return this.mutate(athlete, routineId, (routine) => routine.reanchor(anchorDate, this.deps.clock.now()));
   }
 
   /**
@@ -158,22 +130,15 @@ export class RoutineService {
    * a partial unique index refuses two active rows for one athlete - so the
    * intermediate state must never be committed.
    */
-  async activate(
-    athlete: Athlete,
-    routineId: string,
-  ): Promise<RoutineMutation> {
+  async activate(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.routines.findVisible(athlete.id, routineId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
       const currentlyActive = await this.routines.findActive(athlete.id);
 
-      for (const routine of activateRoutine(
-        copy.editable,
-        currentlyActive,
-        this.deps.clock.now(),
-      )) {
+      for (const routine of activateRoutine(copy.editable, currentlyActive, this.deps.clock.now())) {
         await this.routines.save(routine);
       }
 
@@ -181,54 +146,31 @@ export class RoutineService {
     });
   }
 
-  async deactivate(
-    athlete: Athlete,
-    routineId: string,
-  ): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) =>
-      routine.deactivate(this.deps.clock.now()),
-    );
+  async deactivate(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
+    return this.mutate(athlete, routineId, (routine) => routine.deactivate(this.deps.clock.now()));
   }
 
-  async addSlot(
-    athlete: Athlete,
-    routineId: string,
-    templateId: string | null,
-  ): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) =>
-      routine.addSlot(templateId, this.deps),
-    );
+  async addSlot(athlete: Athlete, routineId: string, templateId: string | null): Promise<RoutineMutation> {
+    return this.mutate(athlete, routineId, (routine) => routine.addSlot(templateId, this.deps));
   }
 
-  async removeSlot(
-    athlete: Athlete,
-    routineId: string,
-    slotId: string,
-  ): Promise<RoutineMutation> {
+  async removeSlot(athlete: Athlete, routineId: string, slotId: string): Promise<RoutineMutation> {
     return this.mutate(athlete, routineId, (routine, translate) =>
       routine.removeSlot(translate(slotId), this.deps.clock.now()),
     );
   }
 
-  async moveSlot(
-    athlete: Athlete,
-    routineId: string,
-    slotId: string,
-    direction: MoveDirection,
-  ): Promise<RoutineMutation> {
+  async moveSlot(athlete: Athlete, routineId: string, slotId: string, direction: MoveDirection): Promise<RoutineMutation> {
     return this.mutate(athlete, routineId, (routine, translate) =>
       routine.moveSlot(translate(slotId), direction, this.deps.clock.now()),
     );
   }
 
-  async remove(
-    athlete: Athlete,
-    routineId: string,
-  ): Promise<Result<void, "not-found" | "sample-routine">> {
+  async remove(athlete: Athlete, routineId: string): Promise<Result<void, 'not-found' | 'sample-routine'>> {
     return this.unitOfWork.run(async () => {
       const routine = await this.routines.findVisible(athlete.id, routineId);
-      if (!routine) return err("not-found" as const);
-      if (!routine.isDeletable) return err("sample-routine" as const);
+      if (!routine) return err('not-found' as const);
+      if (!routine.isDeletable) return err('sample-routine' as const);
 
       await this.routines.delete(routine.id);
       return ok();
@@ -243,14 +185,12 @@ export class RoutineService {
   async revert(
     athlete: Athlete,
     routineId: string,
-  ): Promise<
-    Result<{ forkedFromId: string }, "not-found" | "nothing-to-revert">
-  > {
+  ): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
     return this.unitOfWork.run(async () => {
       const routine = await this.routines.findVisible(athlete.id, routineId);
-      if (!routine) return err("not-found" as const);
+      if (!routine) return err('not-found' as const);
       if (!routine.canRevert || !routine.forkedFromId) {
-        return err("nothing-to-revert" as const);
+        return err('nothing-to-revert' as const);
       }
 
       const forkedFromId = routine.forkedFromId;
@@ -266,7 +206,7 @@ export class RoutineService {
   ): Promise<RoutineMutation> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.routines.findVisible(athlete.id, routineId);
-      if (!loaded) return err("not-found" as const);
+      if (!loaded) return err('not-found' as const);
 
       const copy = await this.editableCopy(loaded, athlete);
       apply(copy.editable, copy.translateChildId);
@@ -286,13 +226,8 @@ export class RoutineService {
     );
   }
 
-  private async templateNames(
-    athlete: Athlete,
-  ): Promise<Map<string, string>> {
-    const templates = await this.templates.listNamesFor(
-      athlete.id,
-      athlete.preferences.showSampleData,
-    );
+  private async templateNames(athlete: Athlete): Promise<Map<string, string>> {
+    const templates = await this.templates.listNamesFor(athlete.id, athlete.preferences.showSampleData);
     return new Map(templates.map((template) => [template.id, template.name]));
   }
 }

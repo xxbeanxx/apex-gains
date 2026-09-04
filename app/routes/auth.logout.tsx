@@ -1,12 +1,12 @@
-import { redirect } from "react-router";
+import { redirect } from 'react-router';
 
-import { userContext } from "~/auth/user-context";
-import { ErrorPage } from "~/components/error-page";
-import { requestLogger } from "~/lib/logger.server";
+import { userContext } from '~/auth/user-context';
+import { ErrorPage } from '~/components/error-page';
+import { requestLogger } from '~/lib/logger.server';
 
-import { sessionStorageContext } from "~/lib/nest-bridge.server";
+import { sessionStorageContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/auth.logout";
+import type { Route } from './+types/auth.logout';
 
 // No `default` export: this route only ever redirects on success. An
 // ErrorBoundary export is still required so React Router renders errors
@@ -17,16 +17,14 @@ export { ErrorPage as ErrorBoundary };
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext);
   if (user) {
-    requestLogger(context).log(`user ${user.id} logged out`, "Auth");
+    requestLogger(context).log(`user ${user.id} logged out`, 'Auth');
   }
 
   const sessionStorage = context.get(sessionStorageContext);
-  const session = await sessionStorage.getSession(
-    request.headers.get("Cookie"),
-  );
-  return redirect("/", {
+  const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+  return redirect('/', {
     headers: {
-      "Set-Cookie": await sessionStorage.destroySession(session),
+      'Set-Cookie': await sessionStorage.destroySession(session),
     },
   });
 }

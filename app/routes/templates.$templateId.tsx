@@ -1,51 +1,27 @@
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ListPlusIcon,
-  PlusIcon,
-  RotateCcwIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
-import { useState } from "react";
-import { data, redirect, useFetcher } from "react-router";
-import { z } from "zod";
+import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, PlusIcon, RotateCcwIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { useState } from 'react';
+import { data, redirect, useFetcher } from 'react-router';
+import { z } from 'zod';
 
-import { userContext } from "~/auth/user-context";
-import { Page, PageHeader, Section } from "~/components/layout/page";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { EmptyState } from "~/components/ui/empty-state";
-import { Field } from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { SubmitButton } from "~/components/ui/submit-button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { requestLogger } from "~/lib/logger.server";
-import type { ExerciseView } from "~/services/exercise-library-service.server";
+import { userContext } from '~/auth/user-context';
+import { Page, PageHeader, Section } from '~/components/layout/page';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
+import { SubmitButton } from '~/components/ui/submit-button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { requestLogger } from '~/lib/logger.server';
+import type { ExerciseView } from '~/services/exercise-library-service.server';
 
-import {
-  exerciseLibraryServiceContext,
-  templateServiceContext,
-} from "~/lib/nest-bridge.server";
+import { exerciseLibraryServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/templates.$templateId";
+import type { Route } from './+types/templates.$templateId';
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  return [
-    { title: `${loaderData?.template.name ?? "Template"} - Apex Gains` },
-  ];
+  return [{ title: `${loaderData?.template.name ?? 'Template'} - Apex Gains` }];
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -53,7 +29,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const templateService = context.get(templateServiceContext);
   const template = await templateService.detail(athlete, params.templateId);
   if (!template) {
-    throw data("Template not found", { status: 404 });
+    throw data('Template not found', { status: 404 });
   }
 
   const libraryService = context.get(exerciseLibraryServiceContext);
@@ -75,11 +51,9 @@ const addExerciseSchema = z.object({
 });
 
 /** See routines.$routineId.tsx's `settle` - same epilogue, same reasoning. */
-function settle(
-  outcome: { ok: true; value: { forkedId: string | null } } | { ok: false },
-) {
+function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok: false }) {
   if (!outcome.ok) {
-    throw data("Template not found", { status: 404 });
+    throw data('Template not found', { status: 404 });
   }
   if (outcome.value.forkedId) {
     throw redirect(`/templates/${outcome.value.forkedId}`);
@@ -93,136 +67,96 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const templateService = context.get(templateServiceContext);
 
   const formData = await request.formData();
-  const intent = formData.get("intent");
+  const intent = formData.get('intent');
 
-  if (intent === "delete") {
+  if (intent === 'delete') {
     const outcome = await templateService.remove(athlete, templateId);
-    if (!outcome.ok && outcome.error === "not-found") {
-      throw data("Template not found", { status: 404 });
+    if (!outcome.ok && outcome.error === 'not-found') {
+      throw data('Template not found', { status: 404 });
     }
     if (!outcome.ok) {
-      return data(
-        { error: "Sample templates can't be deleted.", intent: "delete" },
-        { status: 400 },
-      );
+      return data({ error: "Sample templates can't be deleted.", intent: 'delete' }, { status: 400 });
     }
-    requestLogger(context).log(
-      `deleted template ${templateId} for user ${athlete.id}`,
-      "Templates",
-    );
-    throw redirect("/templates");
+    requestLogger(context).log(`deleted template ${templateId} for user ${athlete.id}`, 'Templates');
+    throw redirect('/templates');
   }
 
-  if (intent === "revert") {
+  if (intent === 'revert') {
     const outcome = await templateService.revert(athlete, templateId);
-    if (!outcome.ok && outcome.error === "not-found") {
-      throw data("Template not found", { status: 404 });
+    if (!outcome.ok && outcome.error === 'not-found') {
+      throw data('Template not found', { status: 404 });
     }
     if (!outcome.ok) {
-      return data(
-        { error: "Nothing to revert", intent: "revert" },
-        { status: 400 },
-      );
+      return data({ error: 'Nothing to revert', intent: 'revert' }, { status: 400 });
     }
     throw redirect(`/templates/${outcome.value.forkedFromId}`);
   }
 
-  if (intent === "rename") {
-    const result = renameSchema.safeParse({ name: formData.get("name") });
+  if (intent === 'rename') {
+    const result = renameSchema.safeParse({ name: formData.get('name') });
     if (!result.success) {
-      return data({ error: "Invalid name", intent: "rename" }, { status: 400 });
+      return data({ error: 'Invalid name', intent: 'rename' }, { status: 400 });
     }
-    return settle(
-      await templateService.rename(athlete, templateId, result.data.name),
-    );
+    return settle(await templateService.rename(athlete, templateId, result.data.name));
   }
 
-  if (intent === "addExercise") {
+  if (intent === 'addExercise') {
     // Blank optional fields arrive as "", which z.coerce.number() reads as 0
     // (failing .positive()) rather than as absent - drop them so they parse
     // as undefined instead.
-    const raw = Object.fromEntries(
-      [...formData].filter(([, value]) => value !== ""),
-    );
+    const raw = Object.fromEntries([...formData].filter(([, value]) => value !== ''));
     const result = addExerciseSchema.safeParse(raw);
     if (!result.success) {
-      return data(
-        { error: "Invalid exercise", intent: "addExercise" },
-        { status: 400 },
-      );
+      return data({ error: 'Invalid exercise', intent: 'addExercise' }, { status: 400 });
     }
 
     // Targets are in the athlete's own units; the service converts them.
-    const outcome = await templateService.addExercise(
-      athlete,
-      templateId,
-      result.data.exerciseId,
-      {
-        sets: result.data.targetSets,
-        reps: result.data.targetReps,
-        weight: result.data.targetWeight,
-        durationMinutes: result.data.targetDurationMinutes,
-        speed: result.data.targetSpeed,
-        resistance: result.data.targetResistance,
-      },
-    );
-    if (!outcome.ok && outcome.error === "exercise-not-found") {
-      return data(
-        { error: "Exercise not found", intent: "addExercise" },
-        { status: 400 },
-      );
+    const outcome = await templateService.addExercise(athlete, templateId, result.data.exerciseId, {
+      sets: result.data.targetSets,
+      reps: result.data.targetReps,
+      weight: result.data.targetWeight,
+      durationMinutes: result.data.targetDurationMinutes,
+      speed: result.data.targetSpeed,
+      resistance: result.data.targetResistance,
+    });
+    if (!outcome.ok && outcome.error === 'exercise-not-found') {
+      return data({ error: 'Exercise not found', intent: 'addExercise' }, { status: 400 });
     }
     return settle(outcome);
   }
 
-  if (intent === "removeExercise") {
-    return settle(
-      await templateService.removeExercise(
-        athlete,
-        templateId,
-        String(formData.get("templateExerciseId")),
-      ),
-    );
+  if (intent === 'removeExercise') {
+    return settle(await templateService.removeExercise(athlete, templateId, String(formData.get('templateExerciseId'))));
   }
 
-  if (intent === "move") {
+  if (intent === 'move') {
     return settle(
       await templateService.moveExercise(
         athlete,
         templateId,
-        String(formData.get("templateExerciseId")),
-        formData.get("direction") === "up" ? "up" : "down",
+        String(formData.get('templateExerciseId')),
+        formData.get('direction') === 'up' ? 'up' : 'down',
       ),
     );
   }
 
-  return data({ error: "Unknown action", intent: "unknown" }, { status: 400 });
+  return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });
 }
 
-
-function AddExerciseForm({
-  exerciseList,
-}: {
-  exerciseList: ExerciseView[];
-}) {
+function AddExerciseForm({ exerciseList }: { exerciseList: ExerciseView[] }) {
   const fetcher = useFetcher();
-  const [exerciseId, setExerciseId] = useState<string>("");
+  const [exerciseId, setExerciseId] = useState<string>('');
   const selected = exerciseList.find((e) => e.id === exerciseId);
 
-  const pending = fetcher.state !== "idle";
-  const error =
-    fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+  const pending = fetcher.state !== 'idle';
+  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-4">
       <input type="hidden" name="intent" value="addExercise" />
       <Field label="Exercise">
         {({ id }) => (
-          <Select
-            name="exerciseId"
-            value={exerciseId}
-            onValueChange={setExerciseId}
-          >
+          <Select name="exerciseId" value={exerciseId} onValueChange={setExerciseId}>
             <SelectTrigger id={id} className="w-full">
               <SelectValue placeholder="Choose an exercise" />
             </SelectTrigger>
@@ -237,7 +171,7 @@ function AddExerciseForm({
         )}
       </Field>
 
-      {selected?.exerciseType === "strength" ? (
+      {selected?.exerciseType === 'strength' ? (
         <div className="grid grid-cols-3 gap-3">
           <Field label="Sets">
             <Input name="targetSets" type="number" min={1} inputMode="numeric" />
@@ -246,43 +180,21 @@ function AddExerciseForm({
             <Input name="targetReps" type="number" min={1} inputMode="numeric" />
           </Field>
           <Field label="Weight">
-            <Input
-              name="targetWeight"
-              type="number"
-              min={0}
-              step="0.5"
-              inputMode="decimal"
-            />
+            <Input name="targetWeight" type="number" min={0} step="0.5" inputMode="decimal" />
           </Field>
         </div>
       ) : null}
 
-      {selected?.exerciseType === "cardio" ? (
+      {selected?.exerciseType === 'cardio' ? (
         <div className="grid grid-cols-3 gap-3">
           <Field label="Minutes">
-            <Input
-              name="targetDurationMinutes"
-              type="number"
-              min={1}
-              inputMode="numeric"
-            />
+            <Input name="targetDurationMinutes" type="number" min={1} inputMode="numeric" />
           </Field>
           <Field label="Speed">
-            <Input
-              name="targetSpeed"
-              type="number"
-              min={0}
-              step="0.1"
-              inputMode="decimal"
-            />
+            <Input name="targetSpeed" type="number" min={0} step="0.1" inputMode="decimal" />
           </Field>
           <Field label="Resistance">
-            <Input
-              name="targetResistance"
-              type="number"
-              min={1}
-              inputMode="numeric"
-            />
+            <Input name="targetResistance" type="number" min={1} inputMode="numeric" />
           </Field>
         </div>
       ) : null}
@@ -303,27 +215,15 @@ function AddExerciseForm({
   );
 }
 
-export default function TemplateDetail({
-  loaderData,
-  actionData,
-}: Route.ComponentProps) {
+export default function TemplateDetail({ loaderData, actionData }: Route.ComponentProps) {
   const { template, exercises: exerciseList } = loaderData;
 
   const exerciseCount = template.exercises.length;
   const { isSample, isCustomized } = template;
 
-  const deleteError =
-    actionData && "error" in actionData && actionData.intent === "delete"
-      ? actionData.error
-      : undefined;
-  const revertError =
-    actionData && "error" in actionData && actionData.intent === "revert"
-      ? actionData.error
-      : undefined;
-  const renameError =
-    actionData && "error" in actionData && actionData.intent === "rename"
-      ? actionData.error
-      : undefined;
+  const deleteError = actionData && 'error' in actionData && actionData.intent === 'delete' ? actionData.error : undefined;
+  const revertError = actionData && 'error' in actionData && actionData.intent === 'revert' ? actionData.error : undefined;
+  const renameError = actionData && 'error' in actionData && actionData.intent === 'rename' ? actionData.error : undefined;
 
   return (
     <Page width="narrow">
@@ -336,43 +236,25 @@ export default function TemplateDetail({
             <Badge variant="secondary">Customized</Badge>
           ) : null
         }
-        description={`${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"} in this workout.`}
+        description={`${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'} in this workout.`}
         actions={
           isSample ? null : isCustomized ? (
             <form method="post" className="flex flex-col items-end gap-1.5">
               <input type="hidden" name="intent" value="revert" />
-              <SubmitButton
-                variant="outline"
-                size="sm"
-                match={{ intent: "revert" }}
-                pendingLabel="Reverting"
-              >
+              <SubmitButton variant="outline" size="sm" match={{ intent: 'revert' }} pendingLabel="Reverting">
                 <RotateCcwIcon aria-hidden="true" />
                 Revert to sample
               </SubmitButton>
-              {revertError ? (
-                <p className="text-sm font-medium text-destructive">
-                  {revertError}
-                </p>
-              ) : null}
+              {revertError ? <p className="text-sm font-medium text-destructive">{revertError}</p> : null}
             </form>
           ) : (
             <form method="post" className="flex flex-col items-end gap-1.5">
               <input type="hidden" name="intent" value="delete" />
-              <SubmitButton
-                variant="destructive"
-                size="sm"
-                match={{ intent: "delete" }}
-                pendingLabel="Deleting template"
-              >
+              <SubmitButton variant="destructive" size="sm" match={{ intent: 'delete' }} pendingLabel="Deleting template">
                 <Trash2Icon aria-hidden="true" />
                 Delete template
               </SubmitButton>
-              {deleteError ? (
-                <p className="text-sm font-medium text-destructive">
-                  {deleteError}
-                </p>
-              ) : null}
+              {deleteError ? <p className="text-sm font-medium text-destructive">{deleteError}</p> : null}
             </form>
           )
         }
@@ -380,8 +262,7 @@ export default function TemplateDetail({
 
       {isCustomized ? (
         <p className="mt-(--section-gap) text-sm text-muted-foreground">
-          This is your customized copy of a sample template. The original
-          sample is unaffected.
+          This is your customized copy of a sample template. The original sample is unaffected.
         </p>
       ) : null}
 
@@ -389,9 +270,7 @@ export default function TemplateDetail({
         <CardHeader>
           <CardTitle>Rename</CardTitle>
           {isSample ? (
-            <p className="text-sm text-muted-foreground">
-              Renaming a sample template creates your own customized copy.
-            </p>
+            <p className="text-sm text-muted-foreground">Renaming a sample template creates your own customized copy.</p>
           ) : null}
         </CardHeader>
         <CardContent>
@@ -401,7 +280,7 @@ export default function TemplateDetail({
               label="Name"
               error={renameError}
               action={
-                <SubmitButton match={{ intent: "rename" }} pendingLabel="Saving">
+                <SubmitButton match={{ intent: 'rename' }} pendingLabel="Saving">
                   Save
                 </SubmitButton>
               }
@@ -439,59 +318,31 @@ export default function TemplateDetail({
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-medium">{te.exerciseName}</p>
-                    <p className="truncate text-sm text-muted-foreground tabular-nums">
-                      {te.targetSummary ?? "No target set"}
-                    </p>
+                    <p className="truncate text-sm text-muted-foreground tabular-nums">{te.targetSummary ?? 'No target set'}</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
                   <form method="post">
                     <input type="hidden" name="intent" value="move" />
-                    <input
-                      type="hidden"
-                      name="templateExerciseId"
-                      value={te.id}
-                    />
+                    <input type="hidden" name="templateExerciseId" value={te.id} />
                     <input type="hidden" name="direction" value="up" />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={index === 0}
-                    >
+                    <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
                       <ArrowUpIcon aria-hidden="true" />
-                      <span className="sr-only">
-                        Move {te.exerciseName} up
-                      </span>
+                      <span className="sr-only">Move {te.exerciseName} up</span>
                     </Button>
                   </form>
                   <form method="post">
                     <input type="hidden" name="intent" value="move" />
-                    <input
-                      type="hidden"
-                      name="templateExerciseId"
-                      value={te.id}
-                    />
+                    <input type="hidden" name="templateExerciseId" value={te.id} />
                     <input type="hidden" name="direction" value="down" />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={index === exerciseCount - 1}
-                    >
+                    <Button type="submit" variant="ghost" size="icon-sm" disabled={index === exerciseCount - 1}>
                       <ArrowDownIcon aria-hidden="true" />
-                      <span className="sr-only">
-                        Move {te.exerciseName} down
-                      </span>
+                      <span className="sr-only">Move {te.exerciseName} down</span>
                     </Button>
                   </form>
                   <form method="post">
                     <input type="hidden" name="intent" value="removeExercise" />
-                    <input
-                      type="hidden"
-                      name="templateExerciseId"
-                      value={te.id}
-                    />
+                    <input type="hidden" name="templateExerciseId" value={te.id} />
                     <Button
                       type="submit"
                       variant="ghost"
@@ -499,9 +350,7 @@ export default function TemplateDetail({
                       className="hover:bg-destructive/10 hover:text-destructive"
                     >
                       <XIcon aria-hidden="true" />
-                      <span className="sr-only">
-                        Remove {te.exerciseName} from this template
-                      </span>
+                      <span className="sr-only">Remove {te.exerciseName} from this template</span>
                     </Button>
                   </form>
                 </div>

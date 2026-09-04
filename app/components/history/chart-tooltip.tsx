@@ -1,4 +1,4 @@
-import { cn } from "~/lib/utils";
+import { cn } from '~/lib/utils';
 
 /**
  * Positioned by percentage (`x`/`y` of the chart's viewBox), which lines up
@@ -24,8 +24,8 @@ export function ChartTooltip({
       role="status"
       aria-hidden={!visible}
       className={cn(
-        "pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-popover px-2.5 py-1.5 text-xs whitespace-nowrap text-popover-foreground shadow-md ring-1 ring-foreground/10 transition-opacity duration-(--dur-fast) ease-(--ease-quint)",
-        visible ? "opacity-100" : "opacity-0"
+        'pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-popover px-2.5 py-1.5 text-xs whitespace-nowrap text-popover-foreground shadow-md ring-1 ring-foreground/10 transition-opacity duration-(--dur-fast) ease-(--ease-quint)',
+        visible ? 'opacity-100' : 'opacity-0',
       )}
       style={{ left: `${x}%`, top: `${y}%`, marginTop: -10 }}
     >

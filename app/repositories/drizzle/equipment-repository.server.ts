@@ -1,15 +1,12 @@
-import { asc, eq, inArray, isNull, or, type SQL } from "drizzle-orm";
+import { asc, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 
-import { dbScope } from "~/db/index.server";
-import { equipment, type Equipment as EquipmentRow } from "~/db/schema";
-import { Equipment } from "~/domain/equipment/equipment";
+import { dbScope } from '~/db/index.server';
+import { equipment, type Equipment as EquipmentRow } from '~/db/schema';
+import { Equipment } from '~/domain/equipment/equipment';
 
-import type { EquipmentRepository } from "../equipment-repository.server";
+import type { EquipmentRepository } from '../equipment-repository.server';
 
-export function sampleOrOwnEquipmentWhere(
-  userId: string,
-  showSampleData: boolean,
-): SQL {
+export function sampleOrOwnEquipmentWhere(userId: string, showSampleData: boolean): SQL {
   const ownCondition = eq(equipment.userId, userId);
   if (!showSampleData) return ownCondition;
   // Equipment has no fork-on-write rule (names are globally unique), so
@@ -27,10 +24,7 @@ function toEquipment(row: EquipmentRow): Equipment {
 }
 
 export class DrizzleEquipmentRepository implements EquipmentRepository {
-  async listFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<Equipment[]> {
+  async listFor(userId: string, showSampleData: boolean): Promise<Equipment[]> {
     const rows = await dbScope
       .select()
       .from(equipment)
@@ -46,9 +40,7 @@ export class DrizzleEquipmentRepository implements EquipmentRepository {
     return row ? toEquipment(row) : null;
   }
 
-  async findManyByIds(
-    equipmentIds: readonly string[],
-  ): Promise<Equipment[]> {
+  async findManyByIds(equipmentIds: readonly string[]): Promise<Equipment[]> {
     if (equipmentIds.length === 0) return [];
     const rows = await dbScope
       .select()

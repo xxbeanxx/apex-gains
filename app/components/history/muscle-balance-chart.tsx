@@ -1,6 +1,6 @@
-import type { MuscleBalanceView } from "~/services/progress-view";
+import type { MuscleBalanceView } from '~/services/progress-view';
 
-import { niceAxisStep, roundedRightBarPath } from "./chart-utils";
+import { niceAxisStep, roundedRightBarPath } from './chart-utils';
 
 const VIEW_W = 600;
 const ROW_H = 30;
@@ -22,7 +22,7 @@ export function MuscleBalanceChart({ groups }: { groups: MuscleBalanceView[] }) 
         preserveAspectRatio="none"
         className="size-full overflow-visible"
         role="img"
-        aria-label={`Sets by muscle group, most trained first: ${groups.map((g) => `${g.muscleGroup} ${g.setCount}`).join(", ")}`}
+        aria-label={`Sets by muscle group, most trained first: ${groups.map((g) => `${g.muscleGroup} ${g.setCount}`).join(', ')}`}
       >
         {groups.map((group, i) => {
           const rowY = MARGIN.top + i * ROW_H;
@@ -41,10 +41,7 @@ export function MuscleBalanceChart({ groups }: { groups: MuscleBalanceView[] }) 
                 {group.muscleGroup}
               </text>
               {width > 0 ? (
-                <path
-                  d={roundedRightBarPath(MARGIN.left, barY, width, BAR_H, 4)}
-                  className="fill-brand-strong"
-                />
+                <path d={roundedRightBarPath(MARGIN.left, barY, width, BAR_H, 4)} className="fill-brand-strong" />
               ) : null}
               <text
                 x={MARGIN.left + width + 6}

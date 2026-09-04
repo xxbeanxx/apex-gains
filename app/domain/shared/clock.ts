@@ -13,6 +13,6 @@ export const systemClock: Clock = {
 };
 
 export function fixedClock(at: Date | string): Clock {
-  const instant = typeof at === "string" ? new Date(at) : at;
+  const instant = typeof at === 'string' ? new Date(at) : at;
   return { now: () => new Date(instant) };
 }

@@ -1,12 +1,12 @@
-import { registerAs, type ConfigType } from "@nestjs/config";
-import { plainToInstance, type TransformFnParams } from "class-transformer";
-import { validateSync, ValidationError } from "class-validator";
+import { registerAs, type ConfigType } from '@nestjs/config';
+import { plainToInstance, type TransformFnParams } from 'class-transformer';
+import { validateSync, ValidationError } from 'class-validator';
 
-import { CoreConfig } from "./core.config";
-import { DatabaseConfig } from "./database.config";
-import { GoogleOAuthConfig } from "./google-oauth.config";
-import { SessionConfig } from "./session.config";
-import { TestLoginConfig } from "./test-login.config";
+import { CoreConfig } from './core.config';
+import { DatabaseConfig } from './database.config';
+import { GoogleOAuthConfig } from './google-oauth.config';
+import { SessionConfig } from './session.config';
+import { TestLoginConfig } from './test-login.config';
 
 /**
  * Per-slice namespaced loaders (`registerAs`), so a module can request only
@@ -14,21 +14,11 @@ import { TestLoginConfig } from "./test-login.config";
  * ever injects `databaseConfig.KEY`, it has no reason to see session or
  * OAuth secrets.
  */
-export const coreConfig = registerAs("coreConfig", () =>
-  validateConfigSlice(CoreConfig, process.env),
-);
-export const databaseConfig = registerAs("databaseConfig", () =>
-  validateConfigSlice(DatabaseConfig, process.env),
-);
-export const googleOAuthConfig = registerAs("googleOAuthConfig", () =>
-  validateConfigSlice(GoogleOAuthConfig, process.env),
-);
-export const sessionConfig = registerAs("sessionConfig", () =>
-  validateConfigSlice(SessionConfig, process.env),
-);
-export const testLoginConfig = registerAs("testLoginConfig", () =>
-  validateConfigSlice(TestLoginConfig, process.env),
-);
+export const coreConfig = registerAs('coreConfig', () => validateConfigSlice(CoreConfig, process.env));
+export const databaseConfig = registerAs('databaseConfig', () => validateConfigSlice(DatabaseConfig, process.env));
+export const googleOAuthConfig = registerAs('googleOAuthConfig', () => validateConfigSlice(GoogleOAuthConfig, process.env));
+export const sessionConfig = registerAs('sessionConfig', () => validateConfigSlice(SessionConfig, process.env));
+export const testLoginConfig = registerAs('testLoginConfig', () => validateConfigSlice(TestLoginConfig, process.env));
 
 /**
  * Typed access to the merged `appConfig` namespace. This is the shape
@@ -44,7 +34,7 @@ export type AppConfig = Readonly<ConfigType<typeof appConfig>>;
  * evaluating - see the comment on `toBoolean`/`toNumber` for why that
  * matters for the circular import between this file and the slice files.
  */
-export const appConfig = registerAs("appConfig", () => {
+export const appConfig = registerAs('appConfig', () => {
   return {
     ...validateConfigSlice(CoreConfig, process.env),
     ...validateConfigSlice(DatabaseConfig, process.env),
@@ -66,7 +56,7 @@ export const appConfig = registerAs("appConfig", () => {
  */
 export function toBoolean(): (params: TransformFnParams) => boolean {
   return ({ value }: TransformFnParams) => {
-    return String(value).toLowerCase() === "true";
+    return String(value).toLowerCase() === 'true';
   };
 }
 
@@ -85,12 +75,10 @@ type Constructor<T> = new () => T;
 function formatValidationErrors(errors: ValidationError[]): string {
   return errors
     .map((error) => {
-      const constraints = error.constraints
-        ? Object.values(error.constraints).join(", ")
-        : "invalid value";
+      const constraints = error.constraints ? Object.values(error.constraints).join(', ') : 'invalid value';
       return `${error.property}: ${constraints}`;
     })
-    .join("; ");
+    .join('; ');
 }
 
 /**
@@ -116,9 +104,7 @@ export function validateConfigSlice<TSchema extends object>(
   });
 
   if (errors.length > 0) {
-    throw new Error(
-      `Invalid environment variables: ${formatValidationErrors(errors)}`,
-    );
+    throw new Error(`Invalid environment variables: ${formatValidationErrors(errors)}`);
   }
 
   return instance;

@@ -1,6 +1,6 @@
-import { Equipment, type EquipmentSnapshot } from "~/domain/equipment/equipment";
+import { Equipment, type EquipmentSnapshot } from '~/domain/equipment/equipment';
 
-import type { EquipmentRepository } from "../equipment-repository.server";
+import type { EquipmentRepository } from '../equipment-repository.server';
 
 // Dev-convenience adapter - see equipment-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
@@ -8,16 +8,9 @@ import type { EquipmentRepository } from "../equipment-repository.server";
 export class InMemoryEquipmentRepository implements EquipmentRepository {
   private readonly byId = new Map<string, EquipmentSnapshot>();
 
-  async listFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<Equipment[]> {
+  async listFor(userId: string, showSampleData: boolean): Promise<Equipment[]> {
     return [...this.byId.values()]
-      .filter(
-        (snapshot) =>
-          snapshot.userId === userId ||
-          (showSampleData && snapshot.userId === null),
-      )
+      .filter((snapshot) => snapshot.userId === userId || (showSampleData && snapshot.userId === null))
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(Equipment.fromSnapshot);
   }
@@ -27,21 +20,15 @@ export class InMemoryEquipmentRepository implements EquipmentRepository {
     return snapshot ? Equipment.fromSnapshot(snapshot) : null;
   }
 
-  async findManyByIds(
-    equipmentIds: readonly string[],
-  ): Promise<Equipment[]> {
+  async findManyByIds(equipmentIds: readonly string[]): Promise<Equipment[]> {
     return equipmentIds
       .map((id) => this.byId.get(id))
-      .filter(
-        (snapshot): snapshot is EquipmentSnapshot => snapshot !== undefined,
-      )
+      .filter((snapshot): snapshot is EquipmentSnapshot => snapshot !== undefined)
       .map(Equipment.fromSnapshot);
   }
 
   async findByName(name: string): Promise<Equipment | null> {
-    const snapshot = [...this.byId.values()].find(
-      (candidate) => candidate.name === name,
-    );
+    const snapshot = [...this.byId.values()].find((candidate) => candidate.name === name);
     return snapshot ? Equipment.fromSnapshot(snapshot) : null;
   }
 

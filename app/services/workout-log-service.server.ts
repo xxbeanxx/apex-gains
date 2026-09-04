@@ -1,24 +1,20 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import type { Athlete } from "~/domain/athlete/athlete";
-import { WorkoutSession } from "~/domain/session/workout-session";
-import { err, ok, type Result } from "~/domain/shared/result";
-import { DateOnly } from "~/domain/values/date-only";
-import { Duration } from "~/domain/values/duration";
-import { Speed } from "~/domain/values/speed";
-import { Weight } from "~/domain/values/weight";
-import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-import {
-  EXERCISES_REPOSITORY,
-  UNIT_OF_WORK,
-  WORKOUT_SESSIONS_REPOSITORY,
-} from "~/repositories/tokens";
-import { DOMAIN_DEPS } from "~/services/shared/tokens";
+import type { Athlete } from '~/domain/athlete/athlete';
+import { WorkoutSession } from '~/domain/session/workout-session';
+import { err, ok, type Result } from '~/domain/shared/result';
+import { DateOnly } from '~/domain/values/date-only';
+import { Duration } from '~/domain/values/duration';
+import { Speed } from '~/domain/values/speed';
+import { Weight } from '~/domain/values/weight';
+import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
+import { EXERCISES_REPOSITORY, UNIT_OF_WORK, WORKOUT_SESSIONS_REPOSITORY } from '~/repositories/tokens';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
-import type { DomainDeps } from "./shared/deps.server";
-import { TrainingPlanService } from "./training-plan-service.server";
+import type { DomainDeps } from './shared/deps.server';
+import { TrainingPlanService } from './training-plan-service.server';
 
 export type LoggedSetView = {
   id: string;
@@ -56,22 +52,17 @@ export class WorkoutLogService {
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 
-  async loggedSetsFor(
-    athlete: Athlete,
-    date: DateOnly,
-  ): Promise<LoggedSetView[]> {
+  async loggedSetsFor(athlete: Athlete, date: DateOnly): Promise<LoggedSetView[]> {
     const session = await this.sessions.findForDate(athlete.id, date);
     if (!session) return [];
 
-    const exercises = await this.exercises.findManyByIds(
-      session.sets.map((set) => set.exerciseId),
-    );
+    const exercises = await this.exercises.findManyByIds(session.sets.map((set) => set.exerciseId));
     const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
     return session.sets.map((set) => ({
       id: set.id,
       exerciseId: set.exerciseId,
-      exerciseName: byId.get(set.exerciseId)?.name ?? "Unknown",
+      exerciseName: byId.get(set.exerciseId)?.name ?? 'Unknown',
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
     }));
@@ -81,16 +72,8 @@ export class WorkoutLogService {
    * The last few times this exercise was logged, newest first - what a "how
    * did I do last time" prompt shows while today's fields are still blank.
    */
-  async recentSetsFor(
-    athlete: Athlete,
-    exerciseId: string,
-    limit: number,
-  ): Promise<RecentSetView[]> {
-    const entries = await this.sessions.recentSetsForExercise(
-      athlete.id,
-      exerciseId,
-      limit,
-    );
+  async recentSetsFor(athlete: Athlete, exerciseId: string, limit: number): Promise<RecentSetView[]> {
+    const entries = await this.sessions.recentSetsForExercise(athlete.id, exerciseId, limit);
     return entries.map(({ date, set }) => ({
       date: date.value,
       summary: set.format(athlete.preferences),
@@ -113,11 +96,9 @@ export class WorkoutLogService {
     date: DateOnly,
     exerciseId: string,
     input: SetInput,
-  ): Promise<
-    Result<{ sessionOpened: boolean }, "exercise-not-found">
-  > {
+  ): Promise<Result<{ sessionOpened: boolean }, 'exercise-not-found'>> {
     const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
-    if (!exercise) return err("exercise-not-found" as const);
+    if (!exercise) return err('exercise-not-found' as const);
 
     const plan = await this.plans.planFor(athlete, date);
 
@@ -125,28 +106,16 @@ export class WorkoutLogService {
       const existing = await this.sessions.findForDate(athlete.id, date);
       const session =
         existing ??
-        (await this.sessions.add(
-          WorkoutSession.open(
-            athlete.id,
-            date,
-            TrainingPlanService.sessionPlanFrom(plan),
-            this.deps,
-          ),
-        ));
+        (await this.sessions.add(WorkoutSession.open(athlete.id, date, TrainingPlanService.sessionPlanFrom(plan), this.deps)));
 
       const { weightUnit, distanceUnit } = athlete.preferences;
       session.logSet(
         exerciseId,
         {
           reps: input.reps,
-          weight:
-            input.weight != null ? Weight.in(weightUnit, input.weight) : null,
-          duration:
-            input.durationMinutes != null
-              ? Duration.minutes(input.durationMinutes)
-              : null,
-          speed:
-            input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
+          weight: input.weight != null ? Weight.in(weightUnit, input.weight) : null,
+          duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
+          speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
           resistance: input.resistance,
         },
         this.deps,
@@ -161,17 +130,13 @@ export class WorkoutLogService {
    * Takes a set back off a day. Scoped by athlete and date, so a set id from
    * someone else's session simply isn't found.
    */
-  async removeSet(
-    athlete: Athlete,
-    date: DateOnly,
-    setId: string,
-  ): Promise<Result<void, "not-found">> {
+  async removeSet(athlete: Athlete, date: DateOnly, setId: string): Promise<Result<void, 'not-found'>> {
     return this.unitOfWork.run(async () => {
       const session = await this.sessions.findForDate(athlete.id, date);
-      if (!session) return err("not-found" as const);
+      if (!session) return err('not-found' as const);
 
       if (!session.removeSet(setId, this.deps.clock.now())) {
-        return err("not-found" as const);
+        return err('not-found' as const);
       }
 
       await this.sessions.save(session);

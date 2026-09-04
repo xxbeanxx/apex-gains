@@ -19,32 +19,20 @@ export function axisTicks(axisMax: number, step: number): number[] {
 }
 
 /** An SVG path for a bar: square baseline, rounded top corners. */
-export function roundedTopBarPath(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-): string {
+export function roundedTopBarPath(x: number, y: number, width: number, height: number, radius: number): string {
   const r = Math.max(0, Math.min(radius, width / 2, height));
   const bottom = y + height;
   return `M${x},${bottom} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + width - r},${y} Q${x + width},${y} ${x + width},${y + r} L${x + width},${bottom} Z`;
 }
 
 /** An SVG path for a horizontal bar: square left (baseline) end, rounded right (data) end. */
-export function roundedRightBarPath(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-): string {
+export function roundedRightBarPath(x: number, y: number, width: number, height: number, radius: number): string {
   const r = Math.max(0, Math.min(radius, height / 2, width));
   const right = x + width;
   return `M${x},${y} L${right - r},${y} Q${right},${y} ${right},${y + r} L${right},${y + height - r} Q${right},${y + height} ${right - r},${y + height} L${x},${y + height} Z`;
 }
 
 export function formatMetricValue(value: number, unit: string): string {
-  const rounded = unit === "lb" ? Math.round(value) : Math.round(value * 10) / 10;
+  const rounded = unit === 'lb' ? Math.round(value) : Math.round(value * 10) / 10;
   return rounded.toLocaleString();
 }

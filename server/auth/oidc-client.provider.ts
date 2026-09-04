@@ -1,9 +1,9 @@
-import type { Provider } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
-import * as client from "openid-client";
+import type { Provider } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import * as client from 'openid-client';
 
-import { googleOAuthConfig } from "../config/app.config";
-import { OIDC_CLIENT_CONFIG } from "./tokens";
+import { googleOAuthConfig } from '../config/app.config';
+import { OIDC_CLIENT_CONFIG } from './tokens';
 
 /**
  * Discovery hits Google over the network, so it must stay lazy - deferred
@@ -22,15 +22,13 @@ export type OidcClientProvider = {
 export const oidcClientConfigProvider: Provider = {
   provide: OIDC_CLIENT_CONFIG,
   inject: [googleOAuthConfig.KEY],
-  useFactory: (
-    google: ConfigType<typeof googleOAuthConfig>,
-  ): OidcClientProvider => {
+  useFactory: (google: ConfigType<typeof googleOAuthConfig>): OidcClientProvider => {
     let configPromise: Promise<client.Configuration> | null = null;
     return {
       get(): Promise<client.Configuration> {
         if (!configPromise) {
           configPromise = client.discovery(
-            new URL("https://accounts.google.com"),
+            new URL('https://accounts.google.com'),
             google.googleClientId,
             google.googleClientSecret,
           );

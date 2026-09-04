@@ -1,56 +1,28 @@
-import {
-  and,
-  asc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  notInArray,
-  or,
-  type SQL,
-} from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
 
-import { db, dbScope } from "~/db/index.server";
-import {
-  exerciseEquipment,
-  exercises,
-  type Exercise as ExerciseRow,
-} from "~/db/schema";
-import { Exercise } from "~/domain/exercise/exercise";
+import { db, dbScope } from '~/db/index.server';
+import { exerciseEquipment, exercises, type Exercise as ExerciseRow } from '~/db/schema';
+import { Exercise } from '~/domain/exercise/exercise';
 
-import type {
-  DeleteExerciseOutcome,
-  ExercisesRepository,
-} from "../exercises-repository.server";
+import type { DeleteExerciseOutcome, ExercisesRepository } from '../exercises-repository.server';
 
 /**
  * Own rows, plus - when the athlete wants them - the samples they have not
  * forked. A forked sample is excluded so the same logical exercise doesn't
  * appear twice, once as the shared original and once as the personal copy.
  */
-export function sampleOrOwnExercisesWhere(
-  userId: string,
-  showSampleData: boolean,
-): SQL {
+export function sampleOrOwnExercisesWhere(userId: string, showSampleData: boolean): SQL {
   const ownCondition = eq(exercises.userId, userId);
   if (!showSampleData) return ownCondition;
   const forkedSampleIds = db
     .select({ id: exercises.forkedFromId })
     .from(exercises)
-    .where(
-      and(eq(exercises.userId, userId), isNotNull(exercises.forkedFromId)),
-    );
-  return or(
-    ownCondition,
-    and(isNull(exercises.userId), notInArray(exercises.id, forkedSampleIds)),
-  )!;
+    .where(and(eq(exercises.userId, userId), isNotNull(exercises.forkedFromId)));
+  return or(ownCondition, and(isNull(exercises.userId), notInArray(exercises.id, forkedSampleIds)))!;
 }
 
 function visibleToUserWhere(userId: string, exerciseId: string): SQL {
-  return and(
-    eq(exercises.id, exerciseId),
-    or(eq(exercises.userId, userId), isNull(exercises.userId)),
-  )!;
+  return and(eq(exercises.id, exerciseId), or(eq(exercises.userId, userId), isNull(exercises.userId)))!;
 }
 
 type RowWithLinks = ExerciseRow & {
@@ -72,10 +44,7 @@ function toExercise(row: RowWithLinks): Exercise {
 }
 
 export class DrizzleExercisesRepository implements ExercisesRepository {
-  async listFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<Exercise[]> {
+  async listFor(userId: string, showSampleData: boolean): Promise<Exercise[]> {
     const rows = await dbScope.query.exercises.findMany({
       where: sampleOrOwnExercisesWhere(userId, showSampleData),
       orderBy: asc(exercises.name),
@@ -101,10 +70,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
     return rows.map(toExercise);
   }
 
-  async findVisible(
-    userId: string,
-    exerciseId: string,
-  ): Promise<Exercise | null> {
+  async findVisible(userId: string, exerciseId: string): Promise<Exercise | null> {
     const row = await dbScope.query.exercises.findFirst({
       where: visibleToUserWhere(userId, exerciseId),
       with: { equipmentLinks: true },
@@ -120,15 +86,9 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
     return row ? toExercise(row) : null;
   }
 
-  async findForkOf(
-    userId: string,
-    sampleId: string,
-  ): Promise<Exercise | null> {
+  async findForkOf(userId: string, sampleId: string): Promise<Exercise | null> {
     const row = await dbScope.query.exercises.findFirst({
-      where: and(
-        eq(exercises.userId, userId),
-        eq(exercises.forkedFromId, sampleId),
-      ),
+      where: and(eq(exercises.userId, userId), eq(exercises.forkedFromId, sampleId)),
       with: { equipmentLinks: true },
     });
     return row ? toExercise(row) : null;
@@ -163,9 +123,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
     // they are replaced wholesale rather than diffed - there is nothing a
     // caller could be holding a reference to. Always inside the caller's
     // transaction, so the exercise is never briefly unlinked.
-    await dbScope
-      .delete(exerciseEquipment)
-      .where(eq(exerciseEquipment.exerciseId, snapshot.id));
+    await dbScope.delete(exerciseEquipment).where(eq(exerciseEquipment.exerciseId, snapshot.id));
 
     if (snapshot.equipmentIds.length > 0) {
       await dbScope.insert(exerciseEquipment).values(
@@ -186,9 +144,9 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
   async delete(exerciseId: string): Promise<DeleteExerciseOutcome> {
     try {
       await dbScope.delete(exercises).where(eq(exercises.id, exerciseId));
-      return "deleted";
+      return 'deleted';
     } catch {
-      return "in-use";
+      return 'in-use';
     }
   }
 }

@@ -1,58 +1,30 @@
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  notInArray,
-  or,
-  type SQL,
-} from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
 
-import { db, dbScope } from "~/db/index.server";
+import { db, dbScope } from '~/db/index.server';
 import {
   templateExercises,
   templates,
   type Template as TemplateRow,
   type TemplateExercise as TemplateExerciseRow,
-} from "~/db/schema";
-import {
-  WorkoutTemplate,
-  type TemplateExerciseSnapshot,
-} from "~/domain/template/workout-template";
+} from '~/db/schema';
+import { WorkoutTemplate, type TemplateExerciseSnapshot } from '~/domain/template/workout-template';
 
-import { diffChildren } from "../shared/diff-children";
-import { writePositions } from "../shared/write-positions";
-import type {
-  TemplateName,
-  TemplatesRepository,
-} from "../templates-repository.server";
+import { diffChildren } from '../shared/diff-children';
+import { writePositions } from '../shared/write-positions';
+import type { TemplateName, TemplatesRepository } from '../templates-repository.server';
 
-export function sampleOrOwnTemplatesWhere(
-  userId: string,
-  showSampleData: boolean,
-): SQL {
+export function sampleOrOwnTemplatesWhere(userId: string, showSampleData: boolean): SQL {
   const ownCondition = eq(templates.userId, userId);
   if (!showSampleData) return ownCondition;
   const forkedSampleIds = db
     .select({ id: templates.forkedFromId })
     .from(templates)
-    .where(
-      and(eq(templates.userId, userId), isNotNull(templates.forkedFromId)),
-    );
-  return or(
-    ownCondition,
-    and(isNull(templates.userId), notInArray(templates.id, forkedSampleIds)),
-  )!;
+    .where(and(eq(templates.userId, userId), isNotNull(templates.forkedFromId)));
+  return or(ownCondition, and(isNull(templates.userId), notInArray(templates.id, forkedSampleIds)))!;
 }
 
 function visibleToUserWhere(userId: string, templateId: string): SQL {
-  return and(
-    eq(templates.id, templateId),
-    or(eq(templates.userId, userId), isNull(templates.userId)),
-  )!;
+  return and(eq(templates.id, templateId), or(eq(templates.userId, userId), isNull(templates.userId)))!;
 }
 
 type RowWithExercises = TemplateRow & {
@@ -97,10 +69,7 @@ function toRow(templateId: string, entry: TemplateExerciseSnapshot) {
 }
 
 export class DrizzleTemplatesRepository implements TemplatesRepository {
-  async listFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<WorkoutTemplate[]> {
+  async listFor(userId: string, showSampleData: boolean): Promise<WorkoutTemplate[]> {
     const rows = await dbScope.query.templates.findMany({
       where: sampleOrOwnTemplatesWhere(userId, showSampleData),
       orderBy: desc(templates.updatedAt),
@@ -112,10 +81,7 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
   }
 
   /** Two columns, no child join - see the port for why this exists. */
-  async listNamesFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<TemplateName[]> {
+  async listNamesFor(userId: string, showSampleData: boolean): Promise<TemplateName[]> {
     return dbScope
       .select({ id: templates.id, name: templates.name })
       .from(templates)
@@ -123,10 +89,7 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
       .orderBy(desc(templates.updatedAt));
   }
 
-  async findVisible(
-    userId: string,
-    templateId: string,
-  ): Promise<WorkoutTemplate | null> {
+  async findVisible(userId: string, templateId: string): Promise<WorkoutTemplate | null> {
     const row = await dbScope.query.templates.findFirst({
       where: visibleToUserWhere(userId, templateId),
       with: {
@@ -136,15 +99,9 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
     return row ? toTemplate(row) : null;
   }
 
-  async findForkOf(
-    userId: string,
-    sampleId: string,
-  ): Promise<WorkoutTemplate | null> {
+  async findForkOf(userId: string, sampleId: string): Promise<WorkoutTemplate | null> {
     const row = await dbScope.query.templates.findFirst({
-      where: and(
-        eq(templates.userId, userId),
-        eq(templates.forkedFromId, sampleId),
-      ),
+      where: and(eq(templates.userId, userId), eq(templates.forkedFromId, sampleId)),
       with: {
         templateExercises: { orderBy: asc(templateExercises.position) },
       },
@@ -183,17 +140,12 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
         set: { name: snapshot.name, updatedAt: snapshot.updatedAt },
       });
 
-    const existing = await dbScope
-      .select()
-      .from(templateExercises)
-      .where(eq(templateExercises.templateId, snapshot.id));
+    const existing = await dbScope.select().from(templateExercises).where(eq(templateExercises.templateId, snapshot.id));
 
     const diff = diffChildren(existing, snapshot.exercises);
 
     if (diff.deletedIds.length > 0) {
-      await dbScope
-        .delete(templateExercises)
-        .where(inArray(templateExercises.id, diff.deletedIds));
+      await dbScope.delete(templateExercises).where(inArray(templateExercises.id, diff.deletedIds));
     }
 
     for (const entry of diff.updated) {
@@ -212,20 +164,12 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
         .where(eq(templateExercises.id, row.id));
     }
 
-    await writePositions(
-      new Map(existing.map((row) => [row.id, row.position])),
-      diff.updated,
-      (id, position) =>
-        dbScope
-          .update(templateExercises)
-          .set({ position })
-          .where(eq(templateExercises.id, id)),
+    await writePositions(new Map(existing.map((row) => [row.id, row.position])), diff.updated, (id, position) =>
+      dbScope.update(templateExercises).set({ position }).where(eq(templateExercises.id, id)),
     );
 
     if (diff.inserted.length > 0) {
-      await dbScope
-        .insert(templateExercises)
-        .values(diff.inserted.map((entry) => toRow(snapshot.id, entry)));
+      await dbScope.insert(templateExercises).values(diff.inserted.map((entry) => toRow(snapshot.id, entry)));
     }
   }
 

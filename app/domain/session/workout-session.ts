@@ -1,12 +1,8 @@
-import type { Clock } from "../shared/clock";
-import type { IdGenerator } from "../shared/ids";
-import { DateOnly } from "../values/date-only";
-import { Weight } from "../values/weight";
-import {
-  LoggedSet,
-  type LoggedSetSnapshot,
-  type SetMeasurements,
-} from "./logged-set";
+import type { Clock } from '../shared/clock';
+import type { IdGenerator } from '../shared/ids';
+import { DateOnly } from '../values/date-only';
+import { Weight } from '../values/weight';
+import { LoggedSet, type LoggedSetSnapshot, type SetMeasurements } from './logged-set';
 
 export type WorkoutSessionSnapshot = {
   readonly id: string;
@@ -52,22 +48,9 @@ export class WorkoutSession {
     private readonly loggedSets: LoggedSet[],
   ) {}
 
-  static open(
-    userId: string,
-    date: DateOnly,
-    plan: SessionPlan,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): WorkoutSession {
+  static open(userId: string, date: DateOnly, plan: SessionPlan, deps: { ids: IdGenerator; clock: Clock }): WorkoutSession {
     const now = deps.clock.now();
-    return new WorkoutSession(
-      deps.ids.next(),
-      userId,
-      date,
-      plan,
-      now,
-      now,
-      [],
-    );
+    return new WorkoutSession(deps.ids.next(), userId, date, plan, now, now, []);
   }
 
   static fromSnapshot(snapshot: WorkoutSessionSnapshot): WorkoutSession {
@@ -82,9 +65,7 @@ export class WorkoutSession {
       },
       snapshot.createdAt,
       snapshot.updatedAt,
-      snapshot.sets
-        .map((set) => LoggedSet.fromSnapshot(set))
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+      snapshot.sets.map((set) => LoggedSet.fromSnapshot(set)).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
     );
   }
 
@@ -128,9 +109,9 @@ export class WorkoutSession {
    * workout whatever the routine had planned - training through a scheduled
    * rest day still counts as having trained.
    */
-  get status(): "workout" | "rest" | "none" {
-    if (this.loggedSets.length > 0) return "workout";
-    return this.plan.isRestDay ? "rest" : "none";
+  get status(): 'workout' | 'rest' | 'none' {
+    if (this.loggedSets.length > 0) return 'workout';
+    return this.plan.isRestDay ? 'rest' : 'none';
   }
 
   setsFor(exerciseId: string): readonly LoggedSet[] {
@@ -139,17 +120,10 @@ export class WorkoutSession {
 
   /** Total weight moved: the sum over sets that recorded both a weight and reps. */
   get tonnage(): Weight {
-    return this.loggedSets.reduce(
-      (total, set) => (set.tonnage ? total.plus(set.tonnage) : total),
-      Weight.lb(0),
-    );
+    return this.loggedSets.reduce((total, set) => (set.tonnage ? total.plus(set.tonnage) : total), Weight.lb(0));
   }
 
-  logSet(
-    exerciseId: string,
-    measurements: SetMeasurements,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): LoggedSet {
+  logSet(exerciseId: string, measurements: SetMeasurements, deps: { ids: IdGenerator; clock: Clock }): LoggedSet {
     const now = deps.clock.now();
     const set = new LoggedSet(
       deps.ids.next(),

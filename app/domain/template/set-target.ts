@@ -1,7 +1,7 @@
-import type { AthletePreferences } from "../athlete/preferences";
-import { Duration } from "../values/duration";
-import { Speed } from "../values/speed";
-import { Weight } from "../values/weight";
+import type { AthletePreferences } from '../athlete/preferences';
+import { Duration } from '../values/duration';
+import { Speed } from '../values/speed';
+import { Weight } from '../values/weight';
 
 export type SetTargetSnapshot = {
   readonly targetSets: number | null;
@@ -115,6 +115,6 @@ export class SetTarget {
 
     if (this.resistance !== null) parts.push(`resistance ${this.resistance}`);
 
-    return parts.length > 0 ? parts.join(", ") : null;
+    return parts.length > 0 ? parts.join(', ') : null;
   }
 }

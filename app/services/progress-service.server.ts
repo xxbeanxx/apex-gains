@@ -1,33 +1,21 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import type { Athlete } from "~/domain/athlete/athlete";
-import type { AthletePreferences } from "~/domain/athlete/preferences";
-import type { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
-import { muscleGroupBalance } from "~/domain/progress/muscle-balance";
-import {
-  personalRecords,
-  progressSeries,
-  type ProgressMetricKind,
-} from "~/domain/progress/personal-records";
-import { TrainingHistory } from "~/domain/progress/training-history";
-import {
-  consistencyCalendar,
-  weeklySetCount,
-  weeklyTonnage,
-} from "~/domain/progress/weekly-volume";
-import type { WorkoutSession } from "~/domain/session/workout-session";
-import { DateOnly } from "~/domain/values/date-only";
-import { Duration } from "~/domain/values/duration";
-import { Weight } from "~/domain/values/weight";
-import { formatMonthDay } from "~/lib/format";
-import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
-import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-import {
-  BODY_WEIGHT_REPOSITORY,
-  EXERCISES_REPOSITORY,
-  WORKOUT_SESSIONS_REPOSITORY,
-} from "~/repositories/tokens";
+import type { Athlete } from '~/domain/athlete/athlete';
+import type { AthletePreferences } from '~/domain/athlete/preferences';
+import type { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { muscleGroupBalance } from '~/domain/progress/muscle-balance';
+import { personalRecords, progressSeries, type ProgressMetricKind } from '~/domain/progress/personal-records';
+import { TrainingHistory } from '~/domain/progress/training-history';
+import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~/domain/progress/weekly-volume';
+import type { WorkoutSession } from '~/domain/session/workout-session';
+import { DateOnly } from '~/domain/values/date-only';
+import { Duration } from '~/domain/values/duration';
+import { Weight } from '~/domain/values/weight';
+import { formatMonthDay } from '~/lib/format';
+import type { BodyWeightRepository } from '~/repositories/body-weight-repository.server';
+import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
+import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUT_SESSIONS_REPOSITORY } from '~/repositories/tokens';
 
 import type {
   HeatmapDayView,
@@ -35,7 +23,7 @@ import type {
   PersonalRecordView,
   ProgressSeriesView,
   WeeklyPointView,
-} from "./progress-view";
+} from './progress-view';
 
 export type TimelineSet = {
   id: string;
@@ -96,22 +84,22 @@ function describeMetric(
   preferences: AthletePreferences,
 ): { metricLabel: string; unit: string; convert: (value: number) => number } {
   switch (kind) {
-    case "one-rep-max":
+    case 'one-rep-max':
       return {
-        metricLabel: "Est. best set (1RM)",
+        metricLabel: 'Est. best set (1RM)',
         unit: preferences.weightUnit,
         convert: (value) => Weight.lb(value).as(preferences.weightUnit),
       };
-    case "duration":
+    case 'duration':
       return {
-        metricLabel: "Duration",
-        unit: "min",
+        metricLabel: 'Duration',
+        unit: 'min',
         convert: (value) => Duration.seconds(value).inMinutes,
       };
-    case "reps":
+    case 'reps':
       return {
-        metricLabel: "Best set",
-        unit: "reps",
+        metricLabel: 'Best set',
+        unit: 'reps',
         convert: (value) => value,
       };
   }
@@ -140,14 +128,8 @@ export class ProgressService {
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
 
-  async history(
-    athlete: Athlete,
-    today: DateOnly = DateOnly.today(),
-  ): Promise<HistoryView> {
-    const sessions = await this.sessions.listRecent(
-      athlete.id,
-      CHART_HISTORY_LIMIT,
-    );
+  async history(athlete: Athlete, today: DateOnly = DateOnly.today()): Promise<HistoryView> {
+    const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
     const history = await this.historyFrom(sessions);
     const preferences = athlete.preferences;
 
@@ -158,13 +140,11 @@ export class ProgressService {
       totalSets: sessions.reduce((sum, s) => sum + s.setCount, 0),
       workoutCount: sessions.filter((s) => s.setCount > 0).length,
 
-      heatmap: consistencyCalendar(history, HEATMAP_WEEKS, today).map(
-        (day) => ({
-          date: day.date.value,
-          status: day.status,
-          setCount: day.setCount,
-        }),
-      ),
+      heatmap: consistencyCalendar(history, HEATMAP_WEEKS, today).map((day) => ({
+        date: day.date.value,
+        status: day.status,
+        setCount: day.setCount,
+      })),
 
       weeklySets: weeklySetCount(history, VOLUME_WEEKS, today).map((point) => ({
         weekStart: point.weekStart.value,
@@ -173,14 +153,12 @@ export class ProgressService {
         isCurrentWeek: point.isCurrentWeek,
       })),
 
-      weeklyTonnage: weeklyTonnage(history, VOLUME_WEEKS, today).map(
-        (point) => ({
-          weekStart: point.weekStart.value,
-          label: formatMonthDay(point.weekStart.value),
-          value: round(preferences.weightValue(point.value)),
-          isCurrentWeek: point.isCurrentWeek,
-        }),
-      ),
+      weeklyTonnage: weeklyTonnage(history, VOLUME_WEEKS, today).map((point) => ({
+        weekStart: point.weekStart.value,
+        label: formatMonthDay(point.weekStart.value),
+        value: round(preferences.weightValue(point.value)),
+        isCurrentWeek: point.isCurrentWeek,
+      })),
       tonnageUnit: preferences.weightUnit,
 
       exerciseProgress: progressSeries(history).map((series) => {
@@ -209,21 +187,14 @@ export class ProgressService {
         };
       }),
 
-      muscleBalance: muscleGroupBalance(
-        history,
-        MUSCLE_BALANCE_DAYS,
-        today,
-      ).map((point) => ({ ...point })),
+      muscleBalance: muscleGroupBalance(history, MUSCLE_BALANCE_DAYS, today).map((point) => ({ ...point })),
 
       bodyWeight,
     };
   }
 
   async bodyWeightLog(athlete: Athlete): Promise<BodyWeightView> {
-    const entries = await this.bodyWeight.listRecent(
-      athlete.id,
-      BODY_WEIGHT_HISTORY_LIMIT,
-    );
+    const entries = await this.bodyWeight.listRecent(athlete.id, BODY_WEIGHT_HISTORY_LIMIT);
     const unit = athlete.preferences.weightUnit;
 
     return {
@@ -243,23 +214,15 @@ export class ProgressService {
    * trend chart. Needs two points to be a trend, same rule as the exercise
    * series.
    */
-  private async bodyWeightSeries(
-    athlete: Athlete,
-    loaded?: readonly BodyWeightEntry[],
-  ): Promise<ProgressSeriesView | null> {
-    const entries =
-      loaded ??
-      (await this.bodyWeight.listRecent(
-        athlete.id,
-        BODY_WEIGHT_HISTORY_LIMIT,
-      ));
+  private async bodyWeightSeries(athlete: Athlete, loaded?: readonly BodyWeightEntry[]): Promise<ProgressSeriesView | null> {
+    const entries = loaded ?? (await this.bodyWeight.listRecent(athlete.id, BODY_WEIGHT_HISTORY_LIMIT));
     if (entries.length < 2) return null;
 
     const unit = athlete.preferences.weightUnit;
     return {
-      exerciseId: "body-weight",
-      exerciseName: "Body weight",
-      metricLabel: "Body weight",
+      exerciseId: 'body-weight',
+      exerciseName: 'Body weight',
+      metricLabel: 'Body weight',
       unit,
       // Oldest first for the trend line; the repository returns newest first.
       points: [...entries].reverse().map((entry) => ({
@@ -269,10 +232,7 @@ export class ProgressService {
     };
   }
 
-  private async timeline(
-    athlete: Athlete,
-    sessions: readonly WorkoutSession[],
-  ): Promise<TimelineDay[]> {
+  private async timeline(athlete: Athlete, sessions: readonly WorkoutSession[]): Promise<TimelineDay[]> {
     const names = await this.exerciseNames(sessions);
     return sessions.map((session) => ({
       id: session.id,
@@ -281,34 +241,24 @@ export class ProgressService {
       sets: session.sets.map((set) => ({
         id: set.id,
         exerciseId: set.exerciseId,
-        exerciseName: names.get(set.exerciseId) ?? "Unknown",
+        exerciseName: names.get(set.exerciseId) ?? 'Unknown',
         summary: set.format(athlete.preferences),
       })),
     }));
   }
 
-  private async historyFrom(
-    sessions: readonly WorkoutSession[],
-  ): Promise<TrainingHistory> {
-    const exercises = await this.exercises.findManyByIds(
-      referencedExerciseIds(sessions),
-    );
+  private async historyFrom(sessions: readonly WorkoutSession[]): Promise<TrainingHistory> {
+    const exercises = await this.exercises.findManyByIds(referencedExerciseIds(sessions));
     return TrainingHistory.of(sessions, exercises);
   }
 
-  private async exerciseNames(
-    sessions: readonly WorkoutSession[],
-  ): Promise<Map<string, string>> {
-    const exercises = await this.exercises.findManyByIds(
-      referencedExerciseIds(sessions),
-    );
+  private async exerciseNames(sessions: readonly WorkoutSession[]): Promise<Map<string, string>> {
+    const exercises = await this.exercises.findManyByIds(referencedExerciseIds(sessions));
     return new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
   }
 }
 
-function referencedExerciseIds(
-  sessions: readonly WorkoutSession[],
-): string[] {
+function referencedExerciseIds(sessions: readonly WorkoutSession[]): string[] {
   const ids = new Set<string>();
   for (const session of sessions) {
     for (const set of session.sets) ids.add(set.exerciseId);

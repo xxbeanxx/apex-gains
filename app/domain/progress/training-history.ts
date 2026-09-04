@@ -1,7 +1,7 @@
-import type { Exercise } from "../exercise/exercise";
-import type { LoggedSet } from "../session/logged-set";
-import type { WorkoutSession } from "../session/workout-session";
-import type { DateOnly } from "../values/date-only";
+import type { Exercise } from '../exercise/exercise';
+import type { LoggedSet } from '../session/logged-set';
+import type { WorkoutSession } from '../session/workout-session';
+import type { DateOnly } from '../values/date-only';
 
 /**
  * A span of logged sessions together with the exercises they refer to - what
@@ -17,14 +17,8 @@ export class TrainingHistory {
     private readonly exercises: ReadonlyMap<string, Exercise>,
   ) {}
 
-  static of(
-    sessions: readonly WorkoutSession[],
-    exercises: readonly Exercise[],
-  ): TrainingHistory {
-    return new TrainingHistory(
-      sessions,
-      new Map(exercises.map((exercise) => [exercise.id, exercise])),
-    );
+  static of(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): TrainingHistory {
+    return new TrainingHistory(sessions, new Map(exercises.map((exercise) => [exercise.id, exercise])));
   }
 
   get isEmpty(): boolean {
@@ -50,9 +44,7 @@ export class TrainingHistory {
 
   within(start: DateOnly, endInclusive: DateOnly): TrainingHistory {
     return new TrainingHistory(
-      this.sessions.filter((session) =>
-        session.date.isBetween(start, endInclusive),
-      ),
+      this.sessions.filter((session) => session.date.isBetween(start, endInclusive)),
       this.exercises,
     );
   }

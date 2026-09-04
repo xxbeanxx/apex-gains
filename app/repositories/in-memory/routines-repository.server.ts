@@ -1,6 +1,6 @@
-import { Routine, type RoutineSnapshot } from "~/domain/routine/routine";
+import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
 
-import type { RoutinesRepository } from "../routines-repository.server";
+import type { RoutinesRepository } from '../routines-repository.server';
 
 // Dev-convenience adapter - see routines-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
@@ -12,37 +12,19 @@ import type { RoutinesRepository } from "../routines-repository.server";
 export class InMemoryRoutinesRepository implements RoutinesRepository {
   private readonly byId = new Map<string, RoutineSnapshot>();
 
-  async listFor(
-    userId: string,
-    showSampleData: boolean,
-  ): Promise<Routine[]> {
+  async listFor(userId: string, showSampleData: boolean): Promise<Routine[]> {
     const all = [...this.byId.values()];
     const own = all.filter((snapshot) => snapshot.userId === userId);
-    const forkedSampleIds = new Set(
-      own
-        .map((snapshot) => snapshot.forkedFromId)
-        .filter((id): id is string => id !== null),
-    );
+    const forkedSampleIds = new Set(own.map((snapshot) => snapshot.forkedFromId).filter((id): id is string => id !== null));
 
     const visible = showSampleData
-      ? [
-          ...own,
-          ...all.filter(
-            (snapshot) =>
-              snapshot.userId === null && !forkedSampleIds.has(snapshot.id),
-          ),
-        ]
+      ? [...own, ...all.filter((snapshot) => snapshot.userId === null && !forkedSampleIds.has(snapshot.id))]
       : own;
 
-    return visible
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-      .map(Routine.fromSnapshot);
+    return visible.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).map(Routine.fromSnapshot);
   }
 
-  async findVisible(
-    userId: string,
-    routineId: string,
-  ): Promise<Routine | null> {
+  async findVisible(userId: string, routineId: string): Promise<Routine | null> {
     const snapshot = this.byId.get(routineId);
     if (!snapshot) return null;
     const visible = snapshot.userId === userId || snapshot.userId === null;
@@ -50,16 +32,13 @@ export class InMemoryRoutinesRepository implements RoutinesRepository {
   }
 
   async findActive(userId: string): Promise<Routine | null> {
-    const snapshot = [...this.byId.values()].find(
-      (candidate) => candidate.userId === userId && candidate.isActive,
-    );
+    const snapshot = [...this.byId.values()].find((candidate) => candidate.userId === userId && candidate.isActive);
     return snapshot ? Routine.fromSnapshot(snapshot) : null;
   }
 
   async findForkOf(userId: string, sampleId: string): Promise<Routine | null> {
     const snapshot = [...this.byId.values()].find(
-      (candidate) =>
-        candidate.userId === userId && candidate.forkedFromId === sampleId,
+      (candidate) => candidate.userId === userId && candidate.forkedFromId === sampleId,
     );
     return snapshot ? Routine.fromSnapshot(snapshot) : null;
   }

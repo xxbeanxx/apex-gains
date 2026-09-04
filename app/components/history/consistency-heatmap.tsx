@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState } from 'react';
 
-import { formatFullDate } from "~/lib/format";
-import type { HeatmapDayView } from "~/services/progress-view";
+import { formatFullDate } from '~/lib/format';
+import type { HeatmapDayView } from '~/services/progress-view';
 
-import { ChartTooltip } from "./chart-tooltip";
+import { ChartTooltip } from './chart-tooltip';
 
 const CELL = 12;
 const GAP = 3;
@@ -23,12 +23,12 @@ function levelForSetCount(setCount: number): number {
   return 4;
 }
 const LEVEL_OPACITY = [0, 0.28, 0.52, 0.76, 1];
-const WEEKDAY_LABELS: Record<number, string> = { 0: "Mon", 2: "Wed", 4: "Fri" };
+const WEEKDAY_LABELS: Record<number, string> = { 0: 'Mon', 2: 'Wed', 4: 'Fri' };
 
 /** "2026-09-02" -> "Sep", for the month markers along the top. */
 function shortMonthLabel(dateStr: string): string {
-  const [year, month] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: "short" });
+  const [year, month] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'short' });
 }
 
 export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
@@ -38,7 +38,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
   const chartH = MARGIN.top + MARGIN.bottom + 7 * STEP - GAP;
 
   const monthLabels: { col: number; label: string }[] = [];
-  let lastMonth = "";
+  let lastMonth = '';
   for (let col = 0; col < weeks; col++) {
     const month = days[col * 7].date.slice(0, 7);
     if (month !== lastMonth) {
@@ -52,10 +52,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
   const hoveredRow = hoveredIndex != null ? hoveredIndex % 7 : 0;
   // Clamped so the tooltip (wide relative to this narrow chart) doesn't
   // clip against the card's left/right edge for the outermost columns.
-  const tooltipX = Math.min(
-    85,
-    Math.max(15, ((MARGIN.left + hoveredCol * STEP + CELL / 2) / chartW) * 100),
-  );
+  const tooltipX = Math.min(85, Math.max(15, ((MARGIN.left + hoveredCol * STEP + CELL / 2) / chartW) * 100));
   const tooltipY = ((MARGIN.top + hoveredRow * STEP) / chartH) * 100;
 
   return (
@@ -64,7 +61,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
     // (a CSS quirk), which clips the tooltip - and once it's clipped once,
     // the browser keeps a vertical scrollbar around for every hover after.
     // HEATMAP_WEEKS is sized so `chartW` fits without scrolling instead.
-    <div className="relative" style={{ width: chartW, maxWidth: "100%" }}>
+    <div className="relative" style={{ width: chartW, maxWidth: '100%' }}>
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
         width={chartW}
@@ -73,12 +70,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
         aria-label={`Training consistency for the last ${weeks} weeks`}
       >
         {monthLabels.map(({ col, label }) => (
-          <text
-            key={col}
-            x={MARGIN.left + col * STEP}
-            y={MARGIN.top - 8}
-            className="fill-muted-foreground text-[9px]"
-          >
+          <text key={col} x={MARGIN.left + col * STEP} y={MARGIN.top - 8} className="fill-muted-foreground text-[9px]">
             {label}
           </text>
         ))}
@@ -110,7 +102,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
                 width={CELL}
                 height={CELL}
                 rx={2}
-                className={level === 0 ? "fill-muted stroke-border" : "fill-brand-strong"}
+                className={level === 0 ? 'fill-muted stroke-border' : 'fill-brand-strong'}
                 strokeWidth={level === 0 ? 1 : 0}
                 fillOpacity={level === 0 ? 1 : LEVEL_OPACITY[level]}
                 onPointerEnter={() => setHoveredIndex(i)}
@@ -119,14 +111,8 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
                 onBlur={() => setHoveredIndex((h) => (h === i ? null : h))}
                 tabIndex={0}
               />
-              {day.status === "rest" ? (
-                <circle
-                  cx={x + CELL / 2}
-                  cy={y + CELL / 2}
-                  r={1.5}
-                  className="fill-muted-foreground"
-                  pointerEvents="none"
-                />
+              {day.status === 'rest' ? (
+                <circle cx={x + CELL / 2} cy={y + CELL / 2} r={1.5} className="fill-muted-foreground" pointerEvents="none" />
               ) : null}
             </g>
           );
@@ -137,11 +123,11 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
         {hovered ? (
           <>
             <div className="font-semibold">
-              {hovered.status === "workout"
-                ? `${hovered.setCount} set${hovered.setCount === 1 ? "" : "s"}`
-                : hovered.status === "rest"
-                  ? "Rest day"
-                  : "No session logged"}
+              {hovered.status === 'workout'
+                ? `${hovered.setCount} set${hovered.setCount === 1 ? '' : 's'}`
+                : hovered.status === 'rest'
+                  ? 'Rest day'
+                  : 'No session logged'}
             </div>
             <div className="text-muted-foreground">{formatFullDate(hovered.date)}</div>
           </>

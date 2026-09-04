@@ -1,8 +1,8 @@
-import { AsyncLocalStorage } from "node:async_hooks";
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Type-only: `verbatimModuleSyntax` keeps `import { type X }` as a runtime
 // import, which would make this and ./index.server a cycle.
-import type { Transaction } from "./index.server";
+import type { Transaction } from './index.server';
 
 /**
  * Carries the open transaction for the current request.
@@ -24,9 +24,6 @@ export function currentTransaction(): Transaction | undefined {
   return storage.getStore();
 }
 
-export function runInTransaction<T>(
-  tx: Transaction,
-  work: () => Promise<T>,
-): Promise<T> {
+export function runInTransaction<T>(tx: Transaction, work: () => Promise<T>): Promise<T> {
   return storage.run(tx, work);
 }

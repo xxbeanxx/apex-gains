@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState } from 'react';
 
-import { cn } from "~/lib/utils";
-import type { WeeklyPointView } from "~/services/progress-view";
+import { cn } from '~/lib/utils';
+import type { WeeklyPointView } from '~/services/progress-view';
 
-import { ChartTooltip } from "./chart-tooltip";
-import { axisTicks, niceAxisStep, roundedTopBarPath } from "./chart-utils";
+import { ChartTooltip } from './chart-tooltip';
+import { axisTicks, niceAxisStep, roundedTopBarPath } from './chart-utils';
 
 const VIEW_W = 600;
 const VIEW_H = 220;
@@ -40,10 +40,7 @@ export function WeeklyBarChart({
   const tooltipY = hoveredPoint ? (yFor(hoveredPoint.value) / VIEW_H) * 100 : 0;
 
   return (
-    <div
-      className="relative w-full"
-      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
-    >
+    <div className="relative w-full" style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}>
       <svg
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         preserveAspectRatio="none"
@@ -100,8 +97,8 @@ export function WeeklyBarChart({
                 <path
                   d={roundedTopBarPath(x, y, barWidth, height, 4)}
                   className={cn(
-                    "pointer-events-none transition-[fill] duration-(--dur-fast)",
-                    hovered === i ? "fill-brand" : "fill-brand-strong"
+                    'pointer-events-none transition-[fill] duration-(--dur-fast)',
+                    hovered === i ? 'fill-brand' : 'fill-brand-strong',
                   )}
                 />
               ) : null}
@@ -120,10 +117,7 @@ export function WeeklyBarChart({
                   x={x + barWidth / 2}
                   y={VIEW_H - MARGIN.bottom + 14}
                   textAnchor="middle"
-                  className={cn(
-                    "text-[9px]",
-                    point.isCurrentWeek ? "fill-foreground font-medium" : "fill-muted-foreground"
-                  )}
+                  className={cn('text-[9px]', point.isCurrentWeek ? 'fill-foreground font-medium' : 'fill-muted-foreground')}
                 >
                   {point.label}
                 </text>

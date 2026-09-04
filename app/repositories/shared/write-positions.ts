@@ -18,9 +18,7 @@ export async function writePositions(
   next: readonly { id: string; position: number }[],
   update: (id: string, position: number) => Promise<unknown>,
 ): Promise<void> {
-  const moved = next.filter(
-    (child) => previousPositions.get(child.id) !== child.position,
-  );
+  const moved = next.filter((child) => previousPositions.get(child.id) !== child.position);
   if (moved.length === 0) return;
 
   // Park first, in one pass, so no final write can land on a position a

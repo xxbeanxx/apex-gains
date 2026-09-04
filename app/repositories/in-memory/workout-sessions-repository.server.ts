@@ -1,24 +1,16 @@
-import { LoggedSet } from "~/domain/session/logged-set";
-import {
-  WorkoutSession,
-  type WorkoutSessionSnapshot,
-} from "~/domain/session/workout-session";
-import { DateOnly } from "~/domain/values/date-only";
+import { LoggedSet } from '~/domain/session/logged-set';
+import { WorkoutSession, type WorkoutSessionSnapshot } from '~/domain/session/workout-session';
+import { DateOnly } from '~/domain/values/date-only';
 
-import type { WorkoutSessionsRepository } from "../workout-sessions-repository.server";
+import type { WorkoutSessionsRepository } from '../workout-sessions-repository.server';
 
 // Dev-convenience adapter - see workout-sessions-repository.server.ts for
 // when it's selected, and athletes-repository.in-memory.server.ts for why it
 // stores snapshots rather than aggregates.
-export class InMemoryWorkoutSessionsRepository
-  implements WorkoutSessionsRepository
-{
+export class InMemoryWorkoutSessionsRepository implements WorkoutSessionsRepository {
   private readonly byId = new Map<string, WorkoutSessionSnapshot>();
 
-  async findForDate(
-    userId: string,
-    date: DateOnly,
-  ): Promise<WorkoutSession | null> {
+  async findForDate(userId: string, date: DateOnly): Promise<WorkoutSession | null> {
     const snapshot = this.snapshotForDate(userId, date.value);
     return snapshot ? WorkoutSession.fromSnapshot(snapshot) : null;
   }
@@ -36,10 +28,7 @@ export class InMemoryWorkoutSessionsRepository
     return WorkoutSession.fromSnapshot(snapshot);
   }
 
-  async listRecent(
-    userId: string,
-    limit: number,
-  ): Promise<WorkoutSession[]> {
+  async listRecent(userId: string, limit: number): Promise<WorkoutSession[]> {
     return [...this.byId.values()]
       .filter((snapshot) => snapshot.userId === userId)
       .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
@@ -47,18 +36,9 @@ export class InMemoryWorkoutSessionsRepository
       .map(WorkoutSession.fromSnapshot);
   }
 
-  async listForDateRange(
-    userId: string,
-    start: DateOnly,
-    endExclusive: DateOnly,
-  ): Promise<WorkoutSession[]> {
+  async listForDateRange(userId: string, start: DateOnly, endExclusive: DateOnly): Promise<WorkoutSession[]> {
     return [...this.byId.values()]
-      .filter(
-        (snapshot) =>
-          snapshot.userId === userId &&
-          snapshot.date >= start.value &&
-          snapshot.date < endExclusive.value,
-      )
+      .filter((snapshot) => snapshot.userId === userId && snapshot.date >= start.value && snapshot.date < endExclusive.value)
       .sort((a, b) => (a.date < b.date ? -1 : 1))
       .map(WorkoutSession.fromSnapshot);
   }
@@ -95,12 +75,7 @@ export class InMemoryWorkoutSessionsRepository
     this.byId.set(snapshot.id, snapshot);
   }
 
-  private snapshotForDate(
-    userId: string,
-    date: string,
-  ): WorkoutSessionSnapshot | undefined {
-    return [...this.byId.values()].find(
-      (snapshot) => snapshot.userId === userId && snapshot.date === date,
-    );
+  private snapshotForDate(userId: string, date: string): WorkoutSessionSnapshot | undefined {
+    return [...this.byId.values()].find((snapshot) => snapshot.userId === userId && snapshot.date === date);
   }
 }

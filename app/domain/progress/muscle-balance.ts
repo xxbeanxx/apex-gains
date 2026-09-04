@@ -1,12 +1,12 @@
-import type { DateOnly } from "../values/date-only";
-import type { TrainingHistory } from "./training-history";
+import type { DateOnly } from '../values/date-only';
+import type { TrainingHistory } from './training-history';
 
 export type MuscleGroupVolume = {
   readonly muscleGroup: string;
   readonly setCount: number;
 };
 
-export const OTHER_MUSCLE_GROUP = "Other";
+export const OTHER_MUSCLE_GROUP = 'Other';
 const MAX_MUSCLE_GROUPS = 8;
 
 /**
@@ -18,11 +18,7 @@ const MAX_MUSCLE_GROUPS = 8;
  * the label. Anything blank, or past the top `MAX_MUSCLE_GROUPS`, folds into
  * "Other" so the chart stays readable.
  */
-export function muscleGroupBalance(
-  history: TrainingHistory,
-  days: number,
-  today: DateOnly,
-): MuscleGroupVolume[] {
+export function muscleGroupBalance(history: TrainingHistory, days: number, today: DateOnly): MuscleGroupVolume[] {
   const recent = history.within(today.minusDays(days - 1), today);
   const byKey = new Map<string, { label: string; setCount: number }>();
 
@@ -42,19 +38,10 @@ export function muscleGroupBalance(
 
   const overflow = sorted.slice(MAX_MUSCLE_GROUPS - 1);
   if (overflow.length > 0) {
-    const overflowCount = overflow.reduce(
-      (sum, group) => sum + group.setCount,
-      0,
-    );
-    const existingOther = top.find(
-      (point) => point.muscleGroup === OTHER_MUSCLE_GROUP,
-    );
+    const overflowCount = overflow.reduce((sum, group) => sum + group.setCount, 0);
+    const existingOther = top.find((point) => point.muscleGroup === OTHER_MUSCLE_GROUP);
     if (existingOther) {
-      return top.map((point) =>
-        point === existingOther
-          ? { ...point, setCount: point.setCount + overflowCount }
-          : point,
-      );
+      return top.map((point) => (point === existingOther ? { ...point, setCount: point.setCount + overflowCount } : point));
     }
     top.push({ muscleGroup: OTHER_MUSCLE_GROUP, setCount: overflowCount });
   }

@@ -1,22 +1,22 @@
-import * as client from "openid-client";
-import { redirect } from "react-router";
+import * as client from 'openid-client';
+import { redirect } from 'react-router';
 
-import { clearOidcState, parseOidcState } from "~/auth/oidc-state.server";
-import { safeRedirect } from "~/auth/safe-redirect.server";
-import { ErrorPage } from "~/components/error-page";
-import { requestLogger } from "~/lib/logger.server";
+import { clearOidcState, parseOidcState } from '~/auth/oidc-state.server';
+import { safeRedirect } from '~/auth/safe-redirect.server';
+import { ErrorPage } from '~/components/error-page';
+import { requestLogger } from '~/lib/logger.server';
 
 import {
   athleteServiceContext,
   oidcConfigContext,
   oidcStateCookieContext,
   sessionStorageContext,
-} from "~/lib/nest-bridge.server";
+} from '~/lib/nest-bridge.server';
 
-import type { Route } from "./+types/auth.google.callback";
+import type { Route } from './+types/auth.google.callback';
 
 /** Nest logger context label for this route's lines. */
-const AUTH = "Auth";
+const AUTH = 'Auth';
 
 // No `default` export: this route only ever redirects on success. An
 // ErrorBoundary export is still required so React Router renders errors
@@ -28,16 +28,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const logger = requestLogger(context);
   const oidcStateCookie = context.get(oidcStateCookieContext);
 
-  const state = await parseOidcState(
-    oidcStateCookie,
-    request.headers.get("Cookie"),
-  );
+  const state = await parseOidcState(oidcStateCookie, request.headers.get('Cookie'));
   if (!state) {
-    logger.warn(
-      "oauth callback arrived with a missing or expired state cookie",
-      AUTH,
-    );
-    throw redirect("/auth/google");
+    logger.warn('oauth callback arrived with a missing or expired state cookie', AUTH);
+    throw redirect('/auth/google');
   }
 
   const config = await context.get(oidcConfigContext).get();
@@ -64,42 +58,35 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   );
 
   const claims = tokens.claims();
-  if (!claims?.sub || typeof claims.email !== "string") {
+  if (!claims?.sub || typeof claims.email !== 'string') {
     logger.error(
-      "oauth callback did not return the expected profile claims " +
-        `(sub: ${claims?.sub ? "present" : "missing"}, ` +
+      'oauth callback did not return the expected profile claims ' +
+        `(sub: ${claims?.sub ? 'present' : 'missing'}, ` +
         `email: ${typeof claims?.email})`,
       undefined,
       AUTH,
     );
-    throw new Response("Google did not return the expected profile claims", {
+    throw new Response('Google did not return the expected profile claims', {
       status: 400,
     });
   }
 
-  const { athlete, isNew } = await context
-    .get(athleteServiceContext)
-    .signInWithGoogle({
-      googleSub: claims.sub,
-      email: claims.email,
-      name: typeof claims.name === "string" ? claims.name : claims.email,
-      avatarUrl: typeof claims.picture === "string" ? claims.picture : null,
-    });
+  const { athlete, isNew } = await context.get(athleteServiceContext).signInWithGoogle({
+    googleSub: claims.sub,
+    email: claims.email,
+    name: typeof claims.name === 'string' ? claims.name : claims.email,
+    avatarUrl: typeof claims.picture === 'string' ? claims.picture : null,
+  });
 
-  logger.log(
-    isNew ? `signed up user ${athlete.id}` : `logged in user ${athlete.id}`,
-    AUTH,
-  );
+  logger.log(isNew ? `signed up user ${athlete.id}` : `logged in user ${athlete.id}`, AUTH);
 
   const sessionStorage = context.get(sessionStorageContext);
-  const session = await sessionStorage.getSession(
-    request.headers.get("Cookie"),
-  );
-  session.set("userId", athlete.id);
+  const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+  session.set('userId', athlete.id);
 
   const headers = new Headers();
-  headers.append("Set-Cookie", await sessionStorage.commitSession(session));
-  headers.append("Set-Cookie", await clearOidcState(oidcStateCookie));
+  headers.append('Set-Cookie', await sessionStorage.commitSession(session));
+  headers.append('Set-Cookie', await clearOidcState(oidcStateCookie));
 
   return redirect(safeRedirect(state.redirectTo), { headers });
 }

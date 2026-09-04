@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { getBuildInfo } from "./build-info.server";
+import { getBuildInfo } from './build-info.server';
 
-describe("getBuildInfo", () => {
+describe('getBuildInfo', () => {
   const originalVersionTag = process.env.VERSION_TAG;
 
   afterEach(() => {
@@ -13,10 +13,10 @@ describe("getBuildInfo", () => {
     }
   });
 
-  it("returns VERSION_TAG when the container set one", () => {
-    process.env.VERSION_TAG = "20260901-abcd1234-0000002a";
+  it('returns VERSION_TAG when the container set one', () => {
+    process.env.VERSION_TAG = '20260901-abcd1234-0000002a';
 
-    expect(getBuildInfo()).toBe("20260901-abcd1234-0000002a");
+    expect(getBuildInfo()).toBe('20260901-abcd1234-0000002a');
   });
 
   it("falls back to the working tree's short commit SHA otherwise", () => {

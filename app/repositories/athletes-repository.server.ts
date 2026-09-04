@@ -1,4 +1,4 @@
-import type { Athlete } from "~/domain/athlete/athlete";
+import type { Athlete } from '~/domain/athlete/athlete';
 
 // Port: `AthleteService` depends on this interface, not on Drizzle/Postgres
 // directly. `server/repositories/repositories.module.ts` picks which adapter

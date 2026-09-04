@@ -1,13 +1,9 @@
-import type { Clock } from "../shared/clock";
-import {
-  alreadyEditable,
-  type EditableCopy,
-  forkedFrom,
-} from "../shared/forking";
-import type { IdGenerator } from "../shared/ids";
-import { type MoveDirection, OrderedChildren } from "../shared/ordered";
-import { Ownership } from "../shared/ownership";
-import { DateOnly } from "../values/date-only";
+import type { Clock } from '../shared/clock';
+import { alreadyEditable, type EditableCopy, forkedFrom } from '../shared/forking';
+import type { IdGenerator } from '../shared/ids';
+import { type MoveDirection, OrderedChildren } from '../shared/ordered';
+import { Ownership } from '../shared/ownership';
+import { DateOnly } from '../values/date-only';
 
 export type RoutineSlotSnapshot = {
   readonly id: string;
@@ -80,24 +76,9 @@ export class Routine {
     private readonly slotList: OrderedChildren<RoutineSlot>,
   ) {}
 
-  static create(
-    userId: string,
-    name: string,
-    anchorDate: DateOnly,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): Routine {
+  static create(userId: string, name: string, anchorDate: DateOnly, deps: { ids: IdGenerator; clock: Clock }): Routine {
     const now = deps.clock.now();
-    return new Routine(
-      deps.ids.next(),
-      Ownership.of(userId),
-      null,
-      name,
-      false,
-      anchorDate,
-      now,
-      now,
-      new OrderedChildren([]),
-    );
+    return new Routine(deps.ids.next(), Ownership.of(userId), null, name, false, anchorDate, now, now, new OrderedChildren([]));
   }
 
   static fromSnapshot(snapshot: RoutineSnapshot): Routine {
@@ -110,11 +91,7 @@ export class Routine {
       DateOnly.parse(snapshot.anchorDate),
       snapshot.createdAt,
       snapshot.updatedAt,
-      new OrderedChildren(
-        snapshot.slots.map(
-          (slot) => new RoutineSlot(slot.id, slot.position, slot.templateId),
-        ),
-      ),
+      new OrderedChildren(snapshot.slots.map((slot) => new RoutineSlot(slot.id, slot.position, slot.templateId))),
     );
   }
 
@@ -220,15 +197,8 @@ export class Routine {
   }
 
   /** A null `templateId` adds a rest day. */
-  addSlot(
-    templateId: string | null,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): RoutineSlot {
-    const slot = new RoutineSlot(
-      deps.ids.next(),
-      this.slotList.size,
-      templateId,
-    );
+  addSlot(templateId: string | null, deps: { ids: IdGenerator; clock: Clock }): RoutineSlot {
+    const slot = new RoutineSlot(deps.ids.next(), this.slotList.size, templateId);
     this.slotList.append(slot);
     this.touch(deps.clock.now());
     return slot;
@@ -251,16 +221,11 @@ export class Routine {
    * the sample it came from was: activation is per-athlete state, and
    * claiming it here would sidestep the coordination in ./activation.
    */
-  editableCopyFor(
-    userId: string,
-    deps: { ids: IdGenerator; clock: Clock },
-  ): EditableCopy<Routine> {
+  editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<Routine> {
     if (!this.ownership.isSample) return alreadyEditable(this);
 
     const now = deps.clock.now();
-    const copiedSlots = this.slotList.map(
-      (slot) => new RoutineSlot(deps.ids.next(), slot.position, slot.templateId),
-    );
+    const copiedSlots = this.slotList.map((slot) => new RoutineSlot(deps.ids.next(), slot.position, slot.templateId));
 
     const fork = new Routine(
       deps.ids.next(),
