@@ -2,7 +2,7 @@ import { RouterContextProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import type { Athlete } from '~/domain/athlete/athlete';
-import { mock } from '~/test/mock';
+import { mock } from '../../test/mock';
 
 import { requireUserMiddleware } from './require-user.server';
 import { userContext } from './user-context';

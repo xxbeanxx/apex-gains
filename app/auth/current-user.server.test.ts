@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Athlete } from '~/domain/athlete/athlete';
 import type { AthleteService } from '~/services/athlete-service.server';
-import { mock } from '~/test/mock';
+import { mock } from '../../test/mock';
 
 import type { AppSessionStorage } from '~server/auth/session-storage.provider';
 import { athleteServiceContext, sessionStorageContext } from '~/lib/nest-bridge.server';
