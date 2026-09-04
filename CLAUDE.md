@@ -36,7 +36,7 @@ Run `npm run format:write` on any file you edit before finishing a
 task - there is no lint tooling and no CI formatting check, so
 `format:write` is the only thing keeping the tree consistent.
 `typecheck` and `test` are the automated checks. Unit tests (vitest) live next to
-the code they cover as `*.test.ts`; `app/test/mock.ts` exports a
+the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
 neither: the domain layer is pure, so its tests construct real
