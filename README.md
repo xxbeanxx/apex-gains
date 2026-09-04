@@ -1,13 +1,14 @@
 # Apex Gains
 
 A personal workout tracker: an exercise library for a BowFlex PR1000,
-rowing machine, and treadmill, reusable workout templates, day-slot
-routines that cycle from an anchor date, per-set logging, and history.
-Auth is Google OIDC (open signup).
+rowing machine, treadmill, and bodyweight exercises, reusable workout
+templates, day-slot routines that cycle from an anchor date, per-set
+logging, workout history and progress charts, body weight tracking, and
+custom equipment management. Auth is Google OIDC (open signup).
 
-Stack: React Router v8 (framework mode), TypeScript, PostgreSQL
-(hosted on [Supabase](https://supabase.com)), Drizzle ORM, Tailwind +
-shadcn/ui, Podman.
+Stack: React Router v8 (framework mode), NestJS (server runtime/DI),
+TypeScript, PostgreSQL (hosted on [Supabase](https://supabase.com)),
+Drizzle ORM, Tailwind CSS v4 + shadcn/ui, Podman.
 
 ## Local development
 
@@ -27,7 +28,9 @@ Fill in:
   `postgres-js`/Drizzle use. If you'd rather not depend on Supabase for
   local dev, run `podman play kube deploy/postgres-pod.yaml` instead
   (tear down with `--down`; data persists in the `apex-gains-db-data`
-  podman volume) and point `DATABASE_URL` at that instead.
+  podman volume) and point `DATABASE_URL` at that instead. If left unset,
+  the app falls back to in-memory repositories (skipping database
+  migrations and seeding).
 - `SESSION_SECRET` - generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - from an OAuth client at
   https://console.cloud.google.com/apis/credentials. Authorized redirect
@@ -42,7 +45,8 @@ npm run db:migrate
 npm run db:seed
 ```
 
-`db:seed` is idempotent - safe to re-run.
+`db:seed` is idempotent - safe to re-run. (If running against in-memory
+repositories without a database, skip `db:migrate` and `db:seed`.)
 
 ### 3. Run the app
 
@@ -50,33 +54,49 @@ npm run db:seed
 npm run dev
 ```
 
-App is at `http://localhost:5173`.
+App is at `http://localhost:3000/`.
 
 ## Scripts
 
-| Script                | Purpose                                              |
-| --------------------- | ---------------------------------------------------- |
-| `npm run dev`         | Dev server with HMR                                  |
-| `npm run build`       | Production build                                     |
-| `npm run start`       | Serve a production build (`build/server/index.js`)   |
-| `npm run typecheck`   | Generate route types and run `tsc`                   |
-| `npm run db:generate` | Generate a Drizzle migration from `app/db/schema.ts` |
-| `npm run db:migrate`  | Apply pending migrations                             |
-| `npm run db:studio`   | Open Drizzle Studio against the local database       |
-| `npm run db:seed`     | Seed/refresh the exercise library                    |
+| Script                 | Purpose                                                                 |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `npm run build`        | Production build                                                        |
+| `npm run db:generate`  | Generate a Drizzle migration from `app/db/schema.ts`                    |
+| `npm run db:migrate`   | Apply pending migrations                                                |
+| `npm run db:seed`      | Seed/refresh the exercise library                                       |
+| `npm run db:studio`    | Open Drizzle Studio against the local database                          |
+| `npm run dev`          | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
+| `npm run format:check` | Check code formatting with Prettier                                     |
+| `npm run format:write` | Format the repository with Prettier                                     |
+| `npm run start`        | Serve a production build via `server/main.ts`                           |
+| `npm run test:watch`   | Run Vitest in watch mode                                                |
+| `npm run test`         | Run the Vitest unit test suite once                                     |
+| `npm run typecheck`    | Generate route types and run `tsc`                                      |
 
 ## Environment variables
 
-`dev`, `db:*` scripts load `.env` via `dotenv-cli` (host-side dev
+`dev` and `db:*` scripts load `.env` via `dotenv-cli` (host-side dev
 convenience). The production `start` script does **not** - a container
 gets its environment from the runtime (pod/host), not a bundled `.env`
-file. See `.env.example` for the full list.
+file. See `.env.example` for the starter template.
 
-`ENABLE_TEST_LOGIN=true` turns on `GET /auth/test-login?email=...`, which
-signs in as a user by email (creating it on first use) without going
-through Google - it exists so Playwright/e2e runs can authenticate without
-a real Google account. It 404s unless the flag is set, and the flag must
-never be set on the deployed app: it is an unauthenticated login backdoor.
+Config values are validated at server startup using `class-validator`:
+
+- `DATABASE_URL` - PostgreSQL connection string. Optional in local dev;
+  defaults to in-memory repositories when unset.
+- `SESSION_SECRET` - Secret used to sign session cookies (required).
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OIDC client
+  credentials (required).
+- `PORT` - HTTP port to listen on (optional, defaults to `3000`).
+- `HOST` - Bind address override (optional, binds to all interfaces if unset).
+- `LOG_LEVEL` - Least severe NestJS log level to print (`verbose`,
+  `debug`, `log`, `warn`, `error`, `fatal`; defaults to `log`).
+- `ENABLE_TEST_LOGIN=true` - Turns on `GET /auth/test-login?email=...`,
+  which signs in as a user by email (creating it on first use) without
+  going through Google - it exists so Playwright/e2e runs can authenticate
+  without a real Google account. It 404s unless the flag is set, and the
+  flag must never be set on the deployed app: it is an unauthenticated
+  login backdoor.
 
 ## Containerization
 
@@ -88,9 +108,9 @@ docker-compose).
 podman build -t apex-gains -f containerfile .
 ```
 
-The app container needs `DATABASE_URL`, `SESSION_SECRET`,
-`GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` set in its
-environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
+The app container exposes port `3000` and needs `DATABASE_URL`,
+`SESSION_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` set in
+its environment at runtime (e.g. via `-e` flags, a Kubernetes-style pod
 manifest, or your host's secret store).
 
 ## Hosting
@@ -138,11 +158,24 @@ There's no separate staging slot or manual promotion step.
 
 - **A domain model owns the rules.** `app/domain/` is pure TypeScript
   with no database, no framework and no I/O: aggregates (`Routine`,
-  `WorkoutTemplate`, `WorkoutSession`, ...) enforce their own
-  invariants, `app/services/` orchestrates them, and
-  `app/repositories/` only maps them to and from rows. Anything that
-  can be decided without asking the database is decided in
-  `app/domain/`, which is why most of the test suite runs without one.
+  `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`,
+  `Athlete`, `BodyWeightEntry`) enforce their own invariants,
+  `app/services/` orchestrates them, and `app/repositories/` only maps
+  them to and from rows. Anything that can be decided without asking the
+  database is decided in `app/domain/`, which is why most of the test
+  suite runs without one.
+- **Server runtime and composition root.** `server/` is the NestJS
+  composition root: it handles dependency injection for repositories,
+  services, auth providers, and logging; wraps Express; and bridges
+  singletons into React Router via load context (`nestBridgeMiddleware`
+  in `app/root.tsx`). In dev, it runs Vite in middleware mode with HMR;
+  in production, it serves static assets and dispatches SSR requests via
+  `build/server/index.js`.
+- **Sample data uses fork-on-write.** Exercises, templates, and
+  routines with a null `userId` are shared seed data available to every
+  account. Editing a sample creates a user-owned copy with
+  `forkedFromId` pointing back at the original, hiding the sample so the
+  same logical item does not appear twice.
 - **Routines are cycles, not weekdays.** A routine is an ordered list
   of day-slots (each a template or an explicit rest day). "Today's
   slot" = `(days since anchor date) mod (slot count)` - see
@@ -153,16 +186,19 @@ There's no separate staging slot or manual promotion step.
 - **Sets are logged individually**, not as one row per exercise, so
   pyramids/drop-sets are representable. Template "targets" pre-fill
   the logging form but every field is editable per set.
-- **Measurements are stored canonically** (pounds, km/h, seconds) and
-  converted to your chosen units at the edges, so the weight and
-  distance settings apply everywhere rather than to one chart label.
-  Values recorded before this was wired up are read as pounds and
-  km/h - which is what they were, unless you had switched units and
-  typed in the other one.
-- **Cardio fields differ by equipment**: treadmill logs
-  duration + speed; rowing logs duration + resistance (no
-  distance/pace for either - not reliably derivable from what's
-  tracked).
-- Auth is Google OIDC only (`openid-client`), session via a signed
-  httpOnly cookie. Any Google account can sign in (open signup); a
-  user row is created on first login.
+- **Measurements are stored canonically** (pounds for weight, km/h for
+  speed, seconds for duration) and converted to user-selected units at
+  the edges (`Weight.in`, `AthletePreferences.formatWeight`). An
+  athlete's `weightUnit` and `distanceUnit` settings determine how
+  measurements are rendered throughout the app.
+- **Cardio fields adapt to equipment.** Equipment carries an explicit
+  `cardioKind` (`speed`, `resistance`, or unset). Cardio logging and
+  template-target forms adapt to show only the relevant fields (e.g.
+  treadmill logs duration + speed; rowing machine logs duration +
+  resistance). Unset or multi-purpose equipment shows both fields.
+- **Body weight tracking.** Daily body weight entries are tracked over
+  time with trend visualization and history, stored canonically in
+  pounds and displayed in the user's preferred unit.
+- **Auth is Google OIDC only** (`openid-client`), session via a signed
+  httpOnly cookie. Any Google account can sign in (open signup); an
+  athlete user row is created on first login.
