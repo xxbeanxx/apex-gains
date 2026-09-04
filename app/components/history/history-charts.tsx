@@ -1,7 +1,7 @@
 import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import type {
@@ -93,6 +93,11 @@ export function HistoryCharts({
       <Card>
         <CardHeader>
           <CardTitle>Personal records</CardTitle>
+          <CardDescription>
+            For weighted exercises, this is an estimated one-rep max (Epley formula: weight × (1 + reps ÷ 30)),
+            not the heaviest single set - so a lighter set of more reps can outrank a heavier, lower-rep one.
+            Bodyweight and timed exercises instead show the best set or longest duration logged.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {personalRecords.length > 0 ? (
