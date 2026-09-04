@@ -58,27 +58,30 @@ App is at `http://localhost:3000/`.
 
 ## Scripts
 
-| Script                 | Purpose                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `npm run build`        | Production build                                                        |
-| `npm run db:generate`  | Generate a Drizzle migration from `app/db/schema.ts`                    |
-| `npm run db:migrate`   | Apply pending migrations                                                |
-| `npm run db:seed`      | Seed/refresh the exercise library                                       |
-| `npm run db:studio`    | Open Drizzle Studio against the local database                          |
-| `npm run dev`          | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
-| `npm run format:check` | Check code formatting with Prettier                                     |
-| `npm run format:write` | Format the repository with Prettier                                     |
-| `npm run start`        | Serve a production build via `server/main.ts`                           |
-| `npm run test:watch`   | Run Vitest in watch mode                                                |
-| `npm run test`         | Run the Vitest unit test suite once                                     |
-| `npm run typecheck`    | Generate route types and run `tsc`                                      |
+| Script                      | Purpose                                                                 |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `npm run build`             | Production build (application, then server runtime)                     |
+| `npm run build:application` | Build the React Router app into `build/`                                |
+| `npm run build:server`      | Bundle the Nest server runtime into `build/server/main.js`              |
+| `npm run db:generate`       | Generate a Drizzle migration from `app/db/schema.ts`                    |
+| `npm run db:migrate`        | Apply pending migrations                                                |
+| `npm run db:seed`           | Seed/refresh the exercise library                                       |
+| `npm run db:studio`         | Open Drizzle Studio against the local database                          |
+| `npm run dev`               | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
+| `npm run format:check`      | Check code formatting with Prettier                                     |
+| `npm run format:write`      | Format the repository with Prettier                                     |
+| `npm run start`             | Serve a production build via `build/server/main.js`                     |
+| `npm run test:watch`        | Run Vitest in watch mode                                                |
+| `npm run test`              | Run the Vitest unit test suite once                                     |
+| `npm run typecheck`         | Generate route types and run `tsc`                                      |
 
 ## Environment variables
 
 `dev` and `db:*` scripts load `.env` via `dotenv-cli` (host-side dev
-convenience). The production `start` script does **not** - a container
-gets its environment from the runtime (pod/host), not a bundled `.env`
-file. See `.env.example` for the starter template.
+convenience), and `start` picks one up with node's
+`--env-file-if-exists` if it is there. A container never gets one: it
+takes its environment from the runtime (pod/host), and the image does
+not ship a `.env`. See `.env.example` for the starter template.
 
 Config values are validated at server startup using `class-validator`:
 
@@ -98,6 +101,31 @@ Config values are validated at server startup using `class-validator`:
   flag must never be set on the deployed app: it is an unauthenticated
   login backdoor.
 
+## Build output
+
+`npm run build` produces two bundles, both with every dependency
+inlined, so `build/` is self-sufficient - `node build/server/main.js`
+needs no `node_modules`:
+
+| Path                    | Built by                | Contains                                                        |
+| ----------------------- | ----------------------- | --------------------------------------------------------------- |
+| `build/client/`         | `react-router build`    | Browser assets, plus everything from `public/`                  |
+| `build/server/index.js` | `react-router build`    | The React Router app and its ready-made Express request handler |
+| `build/server/main.js`  | `vite.server.config.ts` | The Nest server runtime: DI, config, repositories, services     |
+
+Two things keep that split honest:
+
+- `server/react-router/handler.ts`, not `server/main.ts`, is the entry
+  point of the React Router build, and it is where the request handler
+  and its `getLoadContext` are constructed. `react-router` rejects a
+  load context that is not an instance of _its own_
+  `RouterContextProvider` class, and each bundle carries its own copy of
+  the library, so a context built on the Nest side would fail every
+  request.
+- The runtime bundle reaches the application bundle by path, at
+  runtime - `build/server/main.js` imports its sibling `index.js` - so
+  neither build has to resolve the other.
+
 ## Containerization
 
 Built with `containerfile` (not `Dockerfile` - this project targets
@@ -107,6 +135,10 @@ docker-compose).
 ```bash
 podman build -t apex-gains -f containerfile .
 ```
+
+The image contains the build output and nothing else - no
+`node_modules`, no source - because both halves of the build inline
+their dependencies (see **Build output**, below).
 
 The app container exposes port `3000` and needs `DATABASE_URL`,
 `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` set in
@@ -169,8 +201,8 @@ There's no separate staging slot or manual promotion step.
   services, auth providers, and logging; wraps Express; and bridges
   singletons into React Router via load context (`nestBridgeMiddleware`
   in `app/root.tsx`). In dev, it runs Vite in middleware mode with HMR;
-  in production, it serves static assets and dispatches SSR requests via
-  `build/server/index.js`.
+  in production, it serves static assets and dispatches SSR requests to
+  the request handler `build/server/index.js` exports.
 - **Sample data uses fork-on-write.** Exercises, templates, and
   routines with a null `userId` are shared seed data available to every
   account. Editing a sample creates a user-owned copy with

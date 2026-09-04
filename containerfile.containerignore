@@ -22,6 +22,7 @@
 
 # Include build configuration
 !vite.config.ts
+!vite.server.config.ts
 !react-router.config.ts
 
 # Include the app source, server runtime, and static assets

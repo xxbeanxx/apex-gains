@@ -1,6 +1,8 @@
 /**
  * HTTP entry point: bootstraps Nest, then serves the React Router app - Vite
- * in middleware mode for dev, the built output for production.
+ * in middleware mode for dev, the built output for production. `tsx` runs this
+ * file as source in dev; in production it is `build/server/main.js`, bundled by
+ * `vite.server.config.ts` with its dependencies inlined.
  *
  * Azure Container Apps terminates TLS at its ingress and forwards plain
  * HTTP, setting X-Forwarded-Proto/X-Forwarded-Host. Express's "trust proxy"
@@ -17,11 +19,10 @@ import url from 'node:url';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { createRequestHandler, type RequestHandler } from '@react-router/express';
 import compression from 'compression';
 import { static as serveStatic } from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
-import { RouterContextProvider, type ServerBuild } from 'react-router';
+import type { ServerBuild } from 'react-router';
 
 import { AppModule } from './app.module';
 import { coreConfig } from './config/app.config';
@@ -32,20 +33,18 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Load context arrives empty: `nestBridgeMiddleware` (registered first in
- * `app/root.tsx`) is what populates it - see `app/lib/nest-bridge.server.ts`.
+ * Registers Vite middleware and the SSR fallback for `npm run dev`.
+ *
+ * Everything Vite-related is imported dynamically so it stays out of the
+ * production bundle, and `@react-router/express`/`react-router` come from
+ * `node_modules` - the same copy Vite hands the SSR-loaded server build, which
+ * is what makes `getLoadContext`'s `RouterContextProvider` the instance
+ * `handleRequest` expects.
  */
-function makeRequestHandler(serverBuild: ServerBuild, mode: 'development' | 'production'): RequestHandler {
-  return createRequestHandler({
-    build: serverBuild,
-    mode,
-    getLoadContext: () => new RouterContextProvider(),
-  });
-}
-
-/** Registers Vite middleware and the SSR fallback for `npm run dev`. */
 async function registerDevRoutes(server: Express): Promise<void> {
   const { createServer } = await import('vite');
+  const { createRequestHandler } = await import('@react-router/express');
+  const { RouterContextProvider } = await import('react-router');
 
   const vite = await createServer({
     appType: 'custom',
@@ -58,7 +57,14 @@ async function registerDevRoutes(server: Express): Promise<void> {
     try {
       const serverBuild = (await vite.ssrLoadModule('virtual:react-router/server-build')) as ServerBuild;
 
-      return await makeRequestHandler(serverBuild, 'development')(req, res, next);
+      return await createRequestHandler({
+        build: serverBuild,
+        mode: 'development',
+        // Load context arrives empty: `nestBridgeMiddleware` (registered first
+        // in `app/root.tsx`) is what populates it - see
+        // `app/lib/nest-bridge.server.ts`.
+        getLoadContext: () => new RouterContextProvider(),
+      })(req, res, next);
     } catch (error) {
       vite.ssrFixStacktrace(error as Error);
       next(error);
@@ -66,29 +72,40 @@ async function registerDevRoutes(server: Express): Promise<void> {
   });
 }
 
-/** Serves the production build's static assets and the SSR fallback. */
+/**
+ * Serves the production build's static assets and the SSR fallback.
+ *
+ * `index.js` - the React Router bundle - sits next to this file in
+ * `build/server/`, and exports its request handler ready-made rather than a
+ * bare `ServerBuild`; see `server/react-router/handler.ts` for why the handler
+ * has to be constructed on that side of the bundle boundary. The import goes
+ * through a computed path so no bundler tries to follow it: the module only
+ * exists once `react-router build` has run.
+ */
 async function registerProductionRoutes(server: Express): Promise<void> {
-  const buildPath = path.resolve(__dirname, '../build/server/index.js');
-  const build = (await import(url.pathToFileURL(buildPath).href)) as ServerBuild;
+  const handlerPath = path.resolve(__dirname, 'index.js');
+  const { assetsBuildDirectory, publicPath, requestHandler } = (await import(
+    url.pathToFileURL(handlerPath).href
+  )) as typeof import('./react-router/handler');
 
-  const assetsBuildDirectory = path.resolve(build.assetsBuildDirectory);
-  const publicPath = build.publicPath;
+  const assetsDirectory = path.resolve(assetsBuildDirectory);
 
   server.use(
     path.posix.join(publicPath, 'assets'),
-    serveStatic(path.join(assetsBuildDirectory, 'assets'), {
+    serveStatic(path.join(assetsDirectory, 'assets'), {
       immutable: true,
       maxAge: '1y',
     }),
   );
-  server.use(publicPath, serveStatic(assetsBuildDirectory));
-  server.use(serveStatic(path.resolve(__dirname, '../public'), { maxAge: '1h' }));
+  // The client build directory holds `public/`'s contents too - Vite copies
+  // them there - so this one mount covers both.
+  server.use(publicPath, serveStatic(assetsDirectory));
   // Production only: in dev, Vite serves `public/` itself. Nothing mounts
   // `/.well-known` in dev, so anything depending on it (assetlinks, apple-app-
   // site-association) can only be exercised against a production build.
-  server.use('/.well-known', serveStatic(path.join(assetsBuildDirectory, '.well-known')));
+  server.use('/.well-known', serveStatic(path.join(assetsDirectory, '.well-known')));
 
-  server.use(makeRequestHandler(build, 'production'));
+  server.use(requestHandler);
 }
 
 async function bootstrap() {

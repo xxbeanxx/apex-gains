@@ -16,7 +16,9 @@ shadcn/ui, Podman.
 ## Commands
 
 ```bash
-npm run build        # production build
+npm run build        # production build (application, then server runtime)
+npm run build:application  # react-router build -> build/client + build/server/index.js
+npm run build:server # bundle the Nest runtime -> build/server/main.js
 npm run db:generate  # generate a Drizzle migration from app/db/schema.ts
 npm run db:migrate   # apply pending migrations
 npm run db:seed      # seed/refresh the exercise library (idempotent)
@@ -24,7 +26,7 @@ npm run db:studio    # open Drizzle Studio against the local database
 npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
 npm run format:check # check formatting without writing
 npm run format:write # format the repo with prettier
-npm run start        # serve the production build, still through server/main.ts
+npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
 npm run test:watch   # vitest in watch mode
 npm run typecheck    # react-router typegen, then tsc
@@ -48,10 +50,9 @@ that call into it at class-definition time - see Server runtime, below.
 Tests that touch `~/db/index.server` rely on `vitest.config.ts` seeding
 a dummy `DATABASE_URL` - the postgres-js client is lazy, so nothing
 dials out. `dev` and `db:*` scripts load `.env` via `dotenv-cli`;
-`start` does not (a container gets its environment from the runtime,
-not a bundled `.env`) - though `tsx` also auto-loads `.env` on its own
-when one is present, which is a harmless no-op in the container image
-(it doesn't ship one) but means `start` picks it up locally too.
+`start` passes node's `--env-file-if-exists`, so it picks one up
+locally and shrugs in the container image, which ships no `.env` - a
+container gets its environment from the runtime.
 
 Database: a hosted Supabase Postgres project (`DATABASE_URL` is its
 Session pooler connection string — IPv4-compatible and supports
@@ -147,8 +148,10 @@ hosts the actual HTTP server; it holds no business logic of its own
 (that stays in `app/`, per the layers above). `server/main.ts`
 bootstraps Nest, then either mounts Vite in middleware mode (dev) or
 serves the built `build/client` output (prod) - both funnel non-static
-requests to React Router's `createRequestHandler`, one process either
-way. Repositories, `UnitOfWork`, and every `app/services/*.server.ts`
+requests to a React Router `createRequestHandler`, one process either
+way. In dev `main.ts` builds that handler itself; in production it
+imports the ready-made one from `build/server/index.js` (see Build
+output, below). Repositories, `UnitOfWork`, and every `app/services/*.server.ts`
 class are Nest-managed `@Injectable()` providers;
 `server/repositories/repositories.module.ts` is the one place that
 picks Drizzle vs. in-memory per repository (on whether
@@ -160,9 +163,9 @@ here - that is what keeps `app/services` free of any `~server/`
 import, so the application layer compiles and tests without its
 composition root. Every `@Injectable()` constructor parameter is
 `@Inject(TOKEN)`-tagged explicitly rather than relying on implicit
-type-based DI: esbuild - used by both Vite and by `tsx`, which is what
-actually runs `server/`, unbundled, as source - never emits the
-`design:paramtypes` metadata Nest needs for that, which is why
+type-based DI: neither `tsx` (dev) nor Rolldown (the production
+bundle) emits the `design:paramtypes` metadata Nest needs for that,
+which is why
 `tsconfig.json` deliberately does _not_ set `emitDecoratorMetadata`
 (it would only imply a guarantee nothing honours); a class missing an
 explicit token fails at DI-resolution time with a "Nest can't resolve
@@ -184,14 +187,15 @@ React Router's load context is the _only_ conduit from Nest to the app
 - every service and Nest-validated config value reaches a route via
   `context.get(...)`, the same `createContext()` pattern as
   `userContext`/`loggerContext`. Repositories do not: nothing above the
-  service layer holds a port. That indirection exists because Nest runs
-  directly under `tsx`, outside Vite's module graph, while every
-  route/middleware always loads through Vite (dev's SSR pipeline, or the
-  bundled prod server) - two separate module instances, so a
-  `createContext()` token created in `server/` could never be `===` the
-  token a route reads (`RouterContextProvider` keys its map by token
-  identity). `app/lib/nest-bridge.server.ts` is where the tokens actually
-  live - inside the Vite-loaded graph, alongside `nestBridgeMiddleware`,
+  service layer holds a port. That indirection exists because Nest and
+  the routes are always two separate module instances: in dev Nest runs
+  under `tsx`, outside Vite's module graph, while routes load through
+  Vite's SSR pipeline; in production the two are separate bundles (see
+  Build output, below). Either way a `createContext()` token created in
+  `server/` could never be `===` the token a route reads
+  (`RouterContextProvider` keys its map by token identity).
+  `app/lib/nest-bridge.server.ts` is where the tokens actually live -
+  inside the React Router graph, alongside `nestBridgeMiddleware`,
   registered first in `root.tsx`'s `middleware` export. Nest hands over its
   resolved singletons through `registerNestSingletons()`, which stashes
   them on `globalThis` under a `Symbol.for(...)` key - stable across the
@@ -203,6 +207,35 @@ React Router's load context is the _only_ conduit from Nest to the app
   before any request (and so any load context) exists, so they call
   `getNestLogger()` instead, reading the same registered singleton lazily
   inside the handler body.
+
+**Build output.** `npm run build` runs two Vite builds, and both inline
+every dependency (`resolve.noExternal`), so `build/` is the entire
+deployable - `node build/server/main.js` resolves no bare imports and
+the container image ships no `node_modules`:
+
+- `react-router build` (`vite.config.ts`) writes `build/client/` and
+  `build/server/index.js`. Its SSR entry is not the default virtual
+  server build but `server/react-router/handler.ts`
+  (`environments.ssr.build.rollupOptions.input`), which wraps that
+  virtual module in a `createRequestHandler` and exports it, along with
+  `assetsBuildDirectory` and `publicPath`.
+- `vite.server.config.ts` writes `build/server/main.js` plus its
+  `build/server/chunks/`, bundling `server/main.ts` and everything it
+  reaches - Nest, Express, Drizzle, postgres-js, and a second copy of
+  the `app/` tree. It runs second: `react-router build` clears `build/`
+  first, and this build sets `emptyOutDir: false` so it lands beside
+  the output already there.
+
+The handler has to be built on the React Router side, because
+`react-router` checks `initialContext instanceof RouterContextProvider`
+with its _own_ class object - `getLoadContext` returning a provider
+minted from the runtime bundle's copy would fail every request with
+"Invalid `context` value provided to `handleRequest`". `main.ts`
+reaches `index.js` through a path computed at runtime, which is also
+what keeps either bundle from trying to resolve the other at build
+time. Only `vite` stays external: the dev branch of `main.ts` loads it
+(and `@react-router/express`) through dynamic imports that production
+never reaches.
 
 **Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
 `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,

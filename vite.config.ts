@@ -4,10 +4,37 @@ import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+/**
+ * Builds the React Router application. `vite.server.config.ts` builds the Nest
+ * runtime that hosts it; the two land side by side in `build/server/`.
+ */
+export default defineConfig(({ command }) => ({
   plugins: [tailwindcss(), reactRouter()],
   resolve: {
     tsconfigPaths: true,
+  },
+  environments: {
+    ssr: {
+      resolve: {
+        // Inline every dependency so the built server needs no `node_modules`
+        // at runtime. Build only: in dev the SSR environment must keep loading
+        // `react-router` from `node_modules`, the same copy `server/main.ts`
+        // loads under tsx - two copies would fail `handleRequest`'s
+        // `instanceof RouterContextProvider` check on every request.
+        noExternal: command === 'build' ? true : undefined,
+      },
+      build: {
+        // The React Router plugin defaults this to the virtual server build.
+        // Pointing it at `handler.ts` puts the request handler - and the
+        // `RouterContextProvider` it constructs - inside this bundle, where the
+        // server build it serves also lives. The output is still
+        // `build/server/index.js`: the plugin pins `entryFileNames` to the
+        // configured `serverBuildFile` regardless of the input.
+        rollupOptions: {
+          input: './server/react-router/handler.ts',
+        },
+      },
+    },
   },
   test: {
     environment: 'node',
@@ -25,4 +52,4 @@ export default defineConfig({
       GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     },
   },
-});
+}));
