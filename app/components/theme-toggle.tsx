@@ -12,6 +12,12 @@ import {
 
 export type Theme = 'light' | 'dark' | 'system';
 
+const THEMES: Theme[] = ['light', 'dark', 'system'];
+
+function isTheme(value: string): value is Theme {
+  return (THEMES as string[]).includes(value);
+}
+
 const STORAGE_KEY = 'theme';
 
 /**
@@ -40,8 +46,8 @@ function ThemeToggle() {
   const [theme, setTheme] = React.useState<Theme | null>(null);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const resolved = stored ?? 'system';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const resolved = stored && isTheme(stored) ? stored : 'system';
     setTheme(resolved);
     // Re-apply now, not just on future changes: on Android, matchMedia's
     // prefers-color-scheme can briefly report a stale value on cold start
@@ -76,7 +82,12 @@ function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup value={theme ?? undefined} onValueChange={(value) => select(value as Theme)}>
+        <DropdownMenuRadioGroup
+          value={theme ?? undefined}
+          onValueChange={(value) => {
+            if (isTheme(value)) select(value);
+          }}
+        >
           <DropdownMenuRadioItem value="light">
             <SunIcon aria-hidden="true" />
             Light

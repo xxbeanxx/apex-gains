@@ -42,11 +42,14 @@ function weekly<T>(
     if (running !== undefined) values.set(key, accumulate(running, session));
   }
 
-  return starts.map((weekStart) => ({
-    weekStart,
-    value: values.get(weekStart.value) as T,
-    isCurrentWeek: weekStart.equals(currentWeekStart),
-  }));
+  // Every `start` was seeded into `values` above, so this lookup can never
+  // miss - the check exists to keep that invariant explicit rather than
+  // trusting it through a cast.
+  return starts.map((weekStart) => {
+    const value = values.get(weekStart.value);
+    if (value === undefined) throw new Error(`missing bucket for week ${weekStart.value}`);
+    return { weekStart, value, isCurrentWeek: weekStart.equals(currentWeekStart) };
+  });
 }
 
 /** Sets logged per week - the simplest "am I still showing up" measure. */

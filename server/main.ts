@@ -63,7 +63,7 @@ async function registerDevRoutes(server: Express, singletons: NestSingletons): P
 
       return await createHandler(singletons, 'development')(req, res, next);
     } catch (error) {
-      vite.ssrFixStacktrace(error as Error);
+      if (error instanceof Error) vite.ssrFixStacktrace(error);
       next(error);
     }
   });

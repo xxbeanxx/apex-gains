@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { Exercise, type ExerciseSnapshot } from '../exercise/exercise';
-import type { ExerciseType } from '../exercise/exercise-type';
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
 import { WorkoutSession } from '../session/workout-session';
@@ -23,7 +22,7 @@ function exercise(id: string, overrides: Partial<ExerciseSnapshot> = {}): Exerci
     userId: 'user-1',
     forkedFromId: null,
     name: id,
-    exerciseType: 'strength' as ExerciseType,
+    exerciseType: 'strength',
     muscleGroup: null,
     description: null,
     createdAt: NOW,

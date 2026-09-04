@@ -25,7 +25,9 @@ type FieldProps = {
   action?: React.ReactNode;
   className?: string;
   labelClassName?: string;
-  children: React.ReactElement | ((args: FieldRenderArgs) => React.ReactNode);
+  children:
+    | React.ReactElement<Partial<{ 'id': string; 'aria-describedby': string; 'aria-invalid': boolean }>>
+    | ((args: FieldRenderArgs) => React.ReactNode);
 };
 
 /**
@@ -56,7 +58,7 @@ function Field({ label, description, error, action, className, labelClassName, c
           id,
           'aria-describedby': describedBy,
           'aria-invalid': invalid || undefined,
-        } as React.HTMLAttributes<HTMLElement>);
+        });
 
   return (
     <div data-slot="field" className={cn('flex flex-col gap-2', className)}>

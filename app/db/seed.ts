@@ -373,7 +373,7 @@ const seedTemplates: { name: string; exercises: SeedTemplateExercise[] }[] = [
 const seedRoutine = {
   name: 'Push/Pull/Legs + Cardio',
   anchorDate: '2024-01-01',
-  days: ['Push Day', 'Pull Day', 'Leg Day', 'Easy Row', null] as (string | null)[],
+  days: ['Push Day', 'Pull Day', 'Leg Day', 'Easy Row', null],
 };
 
 async function seed() {
