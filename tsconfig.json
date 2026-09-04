@@ -23,7 +23,13 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    // Nest's decorators only need `experimentalDecorators`. There is
+    // deliberately no `emitDecoratorMetadata`: esbuild - used by Vite and by
+    // `tsx`, which is what actually runs `server/` - never emits
+    // `design:paramtypes`, so implicit type-based DI does not work here.
+    // Every `@Injectable()` constructor parameter must carry an explicit
+    // `@Inject(TOKEN)`; a missing one fails at DI-resolution time with
+    // "Nest can't resolve dependencies", not as a type error.
+    "experimentalDecorators": true
   }
 }

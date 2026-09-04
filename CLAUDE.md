@@ -74,6 +74,44 @@ Built with `containerfile` (not `Dockerfile`) — this project targets
 Podman, not docker-compose. See README.md for full first-time setup
 (env vars, Google OAuth client, etc).
 
+## Comments
+
+Comments describe the code as it stands. They are not a changelog - git
+records what changed, and a docstring that argues with a previous version
+is stale the moment nobody remembers that version. This applies to this
+file too.
+
+Never write:
+
+- what the code replaced: "used to be spread across two adapters", "now
+  a method rather than a free function", "replaces the old
+  `requireEnv()` throws"
+- that something was moved, renamed or deleted: "construction moved
+  here", "see `server.ts`, deleted", "no longer needs a handle on the
+  templates repository"
+- how much a change consolidated: "six adapters each had their own
+  check", "what used to be eight methods per adapter"
+- a justification aimed at a reviewer rather than a reader: why this
+  design was chosen *over the last one*, as opposed to what it now
+  guarantees
+
+Do write the thing a reader would otherwise have to rediscover, however
+long it takes:
+
+- an invariant the code depends on - "positions are always a contiguous
+  `0..n-1` after any mutation"
+- non-obvious platform or library behaviour - "Postgres checks a unique
+  constraint per statement, so swapping two neighbours collides on the
+  intermediate state"
+- why an ordering, a cast, or an apparently redundant step is
+  load-bearing, and what breaks without it
+- a deliberate trade-off, stated as a present-tense constraint
+
+The test: delete the sentence and ask whether a reader could still
+predict what the code does and why it is shaped that way. If yes, it was
+narration - leave it out. Describe the current design as if it had always
+been this way, because that is the only version anyone has to work with.
+
 ## Architecture
 
 **Routing.** `app/routes.ts` is the single route manifest (Framework
@@ -99,36 +137,49 @@ app/services/     application services (use cases) + read models.
 app/routes/       parse form -> call service -> map result to HTTP.
 ```
 
-**Server runtime.** `server/` is the NestJS composition root: it decides
-which adapter backs each port, wires everything together, and hosts the
-actual HTTP server; it holds no business logic of its own (that stays in
-`app/`, per the layers above). `server/main.ts` bootstraps Nest, then
-either mounts Vite in middleware mode (dev) or serves the built
-`build/client` output (prod) - both funnel non-static requests to React
-Router's `createRequestHandler`, one process either way (this replaced a
-plain Express `server.ts` plus `react-router dev` running as two
-separate things). Repositories, `UnitOfWork`, and every
-`app/services/*.server.ts` class are Nest-managed `@Injectable()`
-providers; `server/repositories/repositories.module.ts` is the one place
-that picks Drizzle vs. in-memory per repository (on whether
-`databaseConfig.databaseUrl` is set), replacing what used to be a
-`get*Repository()` factory per port. Every `@Injectable()` constructor
-parameter is `@Inject(TOKEN)`-tagged explicitly rather than relying on
-implicit type-based DI: esbuild - used by both Vite and by `tsx`, which
-is what actually runs `server/`, unbundled, as source - never emits the
-`design:paramtypes` metadata Nest needs for that, even with
-`emitDecoratorMetadata` set in `tsconfig.json`; a class missing an
+**Server runtime.** `server/` is the NestJS composition root: it
+decides which adapter backs each port, wires everything together, and
+hosts the actual HTTP server; it holds no business logic of its own
+(that stays in `app/`, per the layers above). `server/main.ts`
+bootstraps Nest, then either mounts Vite in middleware mode (dev) or
+serves the built `build/client` output (prod) - both funnel non-static
+requests to React Router's `createRequestHandler`, one process either
+way. Repositories, `UnitOfWork`, and every `app/services/*.server.ts`
+class are Nest-managed `@Injectable()` providers;
+`server/repositories/repositories.module.ts` is the one place that
+picks Drizzle vs. in-memory per repository (on whether
+`databaseConfig.databaseUrl` is set) and the one place that calls
+`configureDatabase()` with the validated connection string. The DI
+*tokens*, though, live with the ports they name
+(`app/repositories/tokens.ts`, `app/services/shared/tokens.ts`), not
+here - that is what keeps `app/services` free of any `~server/`
+import, so the application layer compiles and tests without its
+composition root. Every `@Injectable()` constructor parameter is
+`@Inject(TOKEN)`-tagged explicitly rather than relying on implicit
+type-based DI: esbuild - used by both Vite and by `tsx`, which is what
+actually runs `server/`, unbundled, as source - never emits the
+`design:paramtypes` metadata Nest needs for that, which is why
+`tsconfig.json` deliberately does *not* set `emitDecoratorMetadata`
+(it would only imply a guarantee nothing honours); a class missing an
 explicit token fails at DI-resolution time with a "Nest can't resolve
 dependencies" error, not a type error. Environment variables are
 validated once at boot with `class-validator`/`class-transformer`
-(`server/config/`, one schema class per concern: core, database, Google
-OAuth, session, test-login), replacing the old ad hoc `requireEnv()`
-throws.
+(`server/config/`, one schema class per concern: core, database,
+Google OAuth, session, test-login).
 
-React Router's load context is the *only* conduit from Nest to the
-app - every repository, service, and Nest-validated config value reaches
-a route via `context.get(...)`, the same `createContext()` pattern as
-`userContext`/`loggerContext`. That indirection exists because Nest runs
+Two bootstrap invariants in `server/main.ts` are load-bearing and easy
+to undo: `app.init()` runs *before* the React Router handler is
+mounted (that is where Nest registers controllers, and the handler is
+a catch-all that would otherwise shadow them), which in turn requires
+suppressing Nest's own catch-all 404 and creating the app with
+`bodyParser: false` - React Router reads the raw request stream, so a
+Nest body parser ahead of it would leave every form submission empty.
+
+React Router's load context is the *only* conduit from Nest to the app
+- every service and Nest-validated config value reaches a route via
+`context.get(...)`, the same `createContext()` pattern as
+`userContext`/`loggerContext`. Repositories do not: nothing above the
+service layer holds a port. That indirection exists because Nest runs
 directly under `tsx`, outside Vite's module graph, while every
 route/middleware always loads through Vite (dev's SSR pipeline, or the
 bundled prod server) - two separate module instances, so a
@@ -178,11 +229,15 @@ Transactions are ambient: `UnitOfWork.run` publishes one via
 `AsyncLocalStorage` (`app/db/transaction.server.ts`) and adapters query
 through `dbScope`, never `db`, so writes stay inside it.
 
-**Services.** `app/services/*.server.ts` are the use cases routes call —
-`RoutineService`, `TemplateService`, `WorkoutLogService`,
+**Services.** `app/services/*.server.ts` are the use cases routes call
+— `RoutineService`, `TemplateService`, `WorkoutLogService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
-`AthleteService`, `BodyWeightService`. They orchestrate (load → hand off
-to the aggregate → save) and own no rules themselves. Each is a
+`AthleteService`, `BodyWeightService`. They orchestrate (load → hand
+off to the aggregate → save) and own no rules themselves.
+`AthleteService` also covers sign-in: `signInWithGoogle` /
+`signInWithEmail` find an athlete by identity or `Athlete.register`
+one on first login, so no route touches `AthletesRepository` directly
+(`loadUserMiddleware` goes through `AthleteService.byId`). Each is a
 Nest-managed `@Injectable()` (see Server runtime, above); routes reach
 one via `context.get(xServiceContext)` (the tokens live in
 `app/lib/nest-bridge.server.ts`), never by importing the class or
@@ -330,9 +385,13 @@ the first place), reads it and binds a per-request child logger (with a
 `requestId`) into `loggerContext`, logging one `"request completed"`/
 `"request failed"` line per request with method/path/status/duration/
 userId. Route code that wants request-scoped logging reads it via
-`context.get(loggerContext)` - using pino's own API (`logger.info(obj,
-msg)`), not Nest's `LoggerService` one, since Nest's interface has no
-equivalent to a pino child logger with bound structured fields.
+`requestLogger(context)` - never `context.get(loggerContext)` directly,
+because middleware only runs for a *matched* route and an unmatched URL
+would otherwise throw on the unset context, turning a 404 into a 500;
+`requestLogger` falls back to the root logger. Use pino's own API
+(`logger.info(obj, msg)`), not Nest's `LoggerService` one, since Nest's
+interface has no equivalent to a pino child logger with bound structured
+fields.
 
 **Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as

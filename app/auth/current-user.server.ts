@@ -1,7 +1,7 @@
 import type { MiddlewareFunction } from "react-router";
 
 import {
-  athletesRepositoryContext,
+  athleteServiceContext,
   sessionStorageContext,
 } from "~/lib/nest-bridge.server";
 
@@ -19,8 +19,7 @@ export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({
 
   if (!userId) { return; }
 
-  const athletesRepository = context.get(athletesRepositoryContext);
-  const athlete = await athletesRepository.findById(userId);
+  const athlete = await context.get(athleteServiceContext).byId(userId);
 
   if (athlete) { context.set(userContext, athlete); }
 };

@@ -11,10 +11,9 @@ export type DeleteExerciseOutcome = "deleted" | "in-use";
 // directly. `server/repositories/repositories.module.ts` picks which
 // adapter backs it.
 //
-// Now a plain collection of `Exercise` aggregates: loading, saving and a few
-// lookups. The rules these methods used to carry - forking a sample on first
-// edit, copying its equipment links - moved onto the aggregate itself, so
-// they are stated once instead of once per adapter.
+// A plain collection of `Exercise` aggregates: loading, saving and a few
+// lookups. The rules - forking a sample on first edit, copying its equipment
+// links - belong to the aggregate, not to these methods.
 export interface ExercisesRepository {
   /** Own exercises plus, when asked for, samples the user hasn't forked. */
   listFor(userId: string, showSampleData: boolean): Promise<Exercise[]>;

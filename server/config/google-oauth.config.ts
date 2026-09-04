@@ -19,8 +19,8 @@ export class GoogleOAuthConfig {
   @MinLength(1, { message: "GOOGLE_CLIENT_SECRET must be set" })
   readonly googleClientSecret!: string;
 
-  // Strips trailing slashes, same as the old `getOrigin()` did - callers
-  // build URLs like `${origin}/auth/google/callback`.
+  // Strips trailing slashes: callers build URLs by concatenation, like
+  // `${origin}/auth/google/callback`.
   @Transform(({ value }: { value: unknown }) =>
     String(value).replace(/\/+$/, ""),
   )

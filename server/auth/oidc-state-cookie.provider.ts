@@ -6,11 +6,9 @@ import { coreConfig, sessionConfig } from "../config/app.config";
 import { OIDC_STATE_COOKIE } from "./tokens";
 
 /**
- * The short-lived PKCE/state cookie used only across the Google OIDC
- * redirect round-trip (`app/auth/oidc-state.server.ts` holds the
- * serialize/parse logic itself). Was built at module-import time in that
- * file from `getSessionSecret()`; construction moved here for the same
- * reason as `session-storage.provider.ts`.
+ * The short-lived PKCE/state cookie, used only across the Google OIDC
+ * redirect round-trip. `app/auth/oidc-state.server.ts` holds the
+ * serialize/parse logic; this is just the configured cookie.
  */
 export const oidcStateCookieProvider: Provider = {
   provide: OIDC_STATE_COOKIE,

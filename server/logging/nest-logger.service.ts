@@ -4,20 +4,14 @@ import type { AppLogger } from "./logger.provider";
 import { LOGGER } from "./tokens";
 
 /**
- * Adapts the shared pino instance to Nest's `LoggerService` interface, so
- * `app.useLogger()` (see `server/main.ts`) routes Nest's own internal
- * bootstrap logging (`[NestFactory]`, `[InstanceLoader]`, ...) through the
- * same structured JSON logger the rest of the app uses, instead of Nest's
- * default colorized console output.
+ * Adapts the shared pino instance to Nest's `LoggerService`, so Nest's own
+ * bootstrap logging (`[NestFactory]`, `[InstanceLoader]`, ...) lands in the
+ * same structured JSON as everything else rather than Nest's colorized
+ * console output.
  *
- * Nest's `LoggerService` methods take a free-form `message` plus trailing
- * `optionalParams` (conventionally a `context` label, e.g. "Bootstrap") -
- * that's a different calling convention than pino's own
- * `logger.info(mergingObject, msg)`, so this only exists to satisfy Nest's
- * interface. Everything else in the app (routes, services, the per-request
- * `requestLoggingMiddleware`) keeps using the pino API directly via
- * `loggerContext`, since Nest's interface has no equivalent to a pino child
- * logger with bound structured fields.
+ * Only Nest uses this shim. App code logs through `loggerContext` with
+ * pino's own API, which this interface has no equivalent for - there is no
+ * way to express a child logger with bound structured fields here.
  */
 @Injectable()
 export class NestPinoLogger implements LoggerService {

@@ -96,9 +96,8 @@ function formatValidationErrors(errors: ValidationError[]): string {
 /**
  * Validates and transforms a flat source (typically `process.env`) into an
  * instance of the given class-validator schema. Throws a single formatted
- * error listing every invalid/missing var, rather than failing on the
- * first one - this is what replaces the old `requireEnv()` throws in
- * `app/auth/env.server.ts`.
+ * error listing every invalid or missing variable, rather than failing on
+ * the first one.
  */
 export function validateConfigSlice<TSchema extends object>(
   schema: Constructor<TSchema>,

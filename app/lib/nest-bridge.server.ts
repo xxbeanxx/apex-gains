@@ -1,7 +1,6 @@
-import type { Cookie, MiddlewareFunction } from "react-router";
+import type { Cookie, MiddlewareFunction, RouterContext } from "react-router";
 import { createContext } from "react-router";
 
-import type { AthletesRepository } from "~/repositories/athletes-repository.server";
 import type { AthleteService } from "~/services/athlete-service.server";
 import type { BodyWeightService } from "~/services/body-weight-service.server";
 import type { ExerciseLibraryService } from "~/services/exercise-library-service.server";
@@ -17,67 +16,82 @@ import type { AppSessionStorage } from "~server/auth/session-storage.provider";
 import type { AppLogger } from "~server/logging/logger.provider";
 
 /**
- * Everything Nest resolves and hands to the React Router app crosses the
- * boundary through these `createContext()` tokens - the same pattern this
- * app already uses for `userContext`/`loggerContext`.
+ * The Nest -> React Router boundary.
  *
- * These tokens (and `nestBridgeMiddleware` below) have to live under `app/`,
- * not `server/`, even though every value behind them comes from Nest: Nest
- * (`server/main.ts`) runs directly under `tsx`, outside Vite's module
- * graph, while every route and middleware here is always loaded through
- * Vite (dev's SSR pipeline, or the bundled production server). Those are
- * two separate module instances, and `createContext()` returns a fresh
- * object each time it's called - `RouterContextProvider` keys its map by
- * that object's identity, so a token created in Nest-land could never be
- * `===` the token a route reads here. Keeping the tokens (and the
- * middleware that sets them) entirely inside the Vite-loaded graph avoids
- * that mismatch; only the *values* need to cross the tsx/Vite boundary,
- * which is the one thing `registerNestSingletons`/`globalThis` below is
- * for - see the comment there.
+ * Nest (`server/main.ts`) runs directly under `tsx`, outside Vite's module
+ * graph; every route and middleware always loads through Vite (dev's SSR
+ * pipeline, or the bundled production server). Those are two separate
+ * module instances of this file, which dictates the whole shape here:
+ *
+ *  - The tokens and `nestBridgeMiddleware` live under `app/`, not `server/`.
+ *    `createContext()` returns a fresh object per call and
+ *    `RouterContextProvider` keys its map by that object's identity, so a
+ *    token minted in Nest-land could never be `===` the one a route reads.
+ *    Keeping both inside the Vite-loaded graph sidesteps that entirely.
+ *
+ *  - Only the *values* cross the boundary, and they cross via `globalThis`
+ *    (`registerNestSingletons`) because that is the one thing genuinely
+ *    shared between the two loaders: one `globalThis` per process however
+ *    many copies of this module exist, and `Symbol.for` - a process-wide
+ *    registry, not a fresh `Symbol()` - resolves to the same key in each.
+ *
+ * Everything downstream still reads exclusively through `context.get(...)`.
  */
-export const athletesRepositoryContext =
-  createContext<AthletesRepository>();
+/**
+ * Every value Nest hands over, keyed by name. This object is the single
+ * declaration: the context tokens, the `NestSingletons` shape Nest must
+ * supply, and the middleware that copies one into the other are all derived
+ * from it, so adding a service is one edit here and a missing one is a type
+ * error rather than an `undefined` at request time.
+ */
+const contexts = {
+  athleteService: createContext<AthleteService>(),
+  bodyWeightService: createContext<BodyWeightService>(),
+  exerciseLibraryService: createContext<ExerciseLibraryService>(),
+  progressService: createContext<ProgressService>(),
+  routineService: createContext<RoutineService>(),
+  templateService: createContext<TemplateService>(),
+  trainingPlanService: createContext<TrainingPlanService>(),
+  workoutLogService: createContext<WorkoutLogService>(),
+  sessionStorage: createContext<AppSessionStorage>(),
+  oidcConfig: createContext<OidcClientProvider>(),
+  oidcStateCookie: createContext<Cookie>(),
+  appConfig: createContext<AppConfig>(),
+  /**
+   * The root pino instance - also what Nest's own internal logging goes
+   * through. `requestLoggingMiddleware` (`app/lib/logger.server.ts`) reads
+   * this and `.child()`s it into the per-request logger on `loggerContext`,
+   * rather than constructing its own pino instance.
+   */
+  logger: createContext<AppLogger>(),
+} as const;
 
-export const athleteServiceContext = createContext<AthleteService>();
-export const bodyWeightServiceContext = createContext<BodyWeightService>();
-export const exerciseLibraryServiceContext =
-  createContext<ExerciseLibraryService>();
-export const progressServiceContext = createContext<ProgressService>();
-export const routineServiceContext = createContext<RoutineService>();
-export const templateServiceContext = createContext<TemplateService>();
-export const trainingPlanServiceContext =
-  createContext<TrainingPlanService>();
-export const workoutLogServiceContext = createContext<WorkoutLogService>();
-
-export const sessionStorageContext = createContext<AppSessionStorage>();
-export const oidcConfigContext = createContext<OidcClientProvider>();
-export const oidcStateCookieContext = createContext<Cookie>();
-export const appConfigContext = createContext<AppConfig>();
+export const {
+  athleteService: athleteServiceContext,
+  bodyWeightService: bodyWeightServiceContext,
+  exerciseLibraryService: exerciseLibraryServiceContext,
+  progressService: progressServiceContext,
+  routineService: routineServiceContext,
+  templateService: templateServiceContext,
+  trainingPlanService: trainingPlanServiceContext,
+  workoutLogService: workoutLogServiceContext,
+  sessionStorage: sessionStorageContext,
+  oidcConfig: oidcConfigContext,
+  oidcStateCookie: oidcStateCookieContext,
+  appConfig: appConfigContext,
+  logger: nestLoggerContext,
+} = contexts;
 
 /**
- * The root pino instance (also what Nest's own internal logging goes
- * through - see `server/logging/nest-logger.service.ts`).
- * `requestLoggingMiddleware` (`app/lib/logger.server.ts`) reads this and
- * `.child()`s it into the per-request logger it sets on `loggerContext`,
- * rather than constructing its own pino instance.
+ * What `server/react-router/load-context.provider.ts` must hand over: one
+ * value per context above, checked by the compiler on both sides.
  */
-export const nestLoggerContext = createContext<AppLogger>();
-
 export type NestSingletons = {
-  athletesRepository: AthletesRepository;
-  athleteService: AthleteService;
-  bodyWeightService: BodyWeightService;
-  exerciseLibraryService: ExerciseLibraryService;
-  progressService: ProgressService;
-  routineService: RoutineService;
-  templateService: TemplateService;
-  trainingPlanService: TrainingPlanService;
-  workoutLogService: WorkoutLogService;
-  sessionStorage: AppSessionStorage;
-  oidcConfig: OidcClientProvider;
-  oidcStateCookie: Cookie;
-  appConfig: AppConfig;
-  logger: AppLogger;
+  [K in keyof typeof contexts]: (typeof contexts)[K] extends RouterContext<
+    infer V
+  >
+    ? V
+    : never;
 };
 
 const GLOBAL_KEY = Symbol.for("apex-gains.nest-singletons");
@@ -88,16 +102,8 @@ type GlobalWithSingletons = typeof globalThis & {
 
 /**
  * Called once from `server/main.ts` during Nest bootstrap, after every
- * singleton below has been resolved from Nest's DI container.
- *
- * `globalThis` is the one thing genuinely shared across the tsx/Vite module
- * boundary described above - there is exactly one `globalThis` per process
- * no matter how many separate loaders have their own copy of this file's
- * module scope, and `Symbol.for` (a process-wide registry, not a fresh
- * `Symbol()`) guarantees every copy resolves to the same property key. This
- * is the *only* place that boundary is bridged with anything other than
- * `context.get(...)` - everything downstream (routes, other middleware)
- * still reads exclusively through load context.
+ * singleton has been resolved from the DI container. See the file header
+ * for why the hand-off goes through `globalThis`.
  */
 export function registerNestSingletons(singletons: NestSingletons): void {
   (globalThis as GlobalWithSingletons)[GLOBAL_KEY] = singletons;
@@ -117,10 +123,9 @@ function requireNestSingletons(): NestSingletons {
 /**
  * The one sanctioned exception to "everything crosses via `context.get(...)`":
  * `app/entry.server.tsx` installs process-wide `uncaughtException`/
- * `unhandledRejection` handlers at module load time, before any request (and
- * so any load context) exists. Reads the singleton lazily inside those
- * handler bodies, not at module scope, so it only ever runs after Nest has
- * actually registered it.
+ * `unhandledRejection` handlers at module load, before any request - and so
+ * any load context - exists. Call this inside the handler body, never at
+ * module scope, so it only runs once Nest has registered.
  */
 export function getNestLogger(): AppLogger {
   return requireNestSingletons().logger;
@@ -134,19 +139,11 @@ export function getNestLogger(): AppLogger {
 export const nestBridgeMiddleware: MiddlewareFunction<void | Response> = ({
   context,
 }) => {
-  const s = requireNestSingletons();
-  context.set(athletesRepositoryContext, s.athletesRepository);
-  context.set(athleteServiceContext, s.athleteService);
-  context.set(bodyWeightServiceContext, s.bodyWeightService);
-  context.set(exerciseLibraryServiceContext, s.exerciseLibraryService);
-  context.set(progressServiceContext, s.progressService);
-  context.set(routineServiceContext, s.routineService);
-  context.set(templateServiceContext, s.templateService);
-  context.set(trainingPlanServiceContext, s.trainingPlanService);
-  context.set(workoutLogServiceContext, s.workoutLogService);
-  context.set(sessionStorageContext, s.sessionStorage);
-  context.set(oidcConfigContext, s.oidcConfig);
-  context.set(oidcStateCookieContext, s.oidcStateCookie);
-  context.set(appConfigContext, s.appConfig);
-  context.set(nestLoggerContext, s.logger);
+  const singletons = requireNestSingletons();
+  for (const key of Object.keys(contexts) as (keyof typeof contexts)[]) {
+    // `set` can't correlate context and value through a union key, so it is
+    // widened here. `NestSingletons` is what actually pairs the two, and
+    // `keyof typeof contexts` is what keeps this loop faithful to it.
+    context.set(contexts[key] as RouterContext<unknown>, singletons[key]);
+  }
 };

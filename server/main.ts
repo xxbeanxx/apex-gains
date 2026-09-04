@@ -1,7 +1,6 @@
 /**
- * Custom production server, replacing `@react-router/serve` - now bootstrapped
- * through Nest instead of a bare Express app (see `server.ts`, deleted, for
- * the pre-Nest version this replaces).
+ * HTTP entry point: bootstraps Nest, then serves the React Router app - Vite
+ * in middleware mode for dev, the built output for production.
  *
  * Azure Container Apps terminates TLS at its ingress and forwards plain
  * HTTP, setting X-Forwarded-Proto/X-Forwarded-Host. Express's "trust proxy"
@@ -33,11 +32,8 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * `nestBridgeMiddleware` (registered first in `app/root.tsx`) is what
- * actually populates load context, from the singletons
- * `LoadContextProvider.register()` stashed on `globalThis` during bootstrap
- * - see `app/lib/nest-bridge.server.ts`. This just has to hand React Router
- * a fresh `RouterContextProvider` to populate.
+ * Load context arrives empty: `nestBridgeMiddleware` (registered first in
+ * `app/root.tsx`) is what populates it - see `app/lib/nest-bridge.server.ts`.
  */
 function makeRequestHandler(
   serverBuild: ServerBuild,
@@ -96,6 +92,9 @@ async function registerProductionRoutes(server: Express): Promise<void> {
   );
   server.use(publicPath, serveStatic(assetsBuildDirectory));
   server.use(serveStatic(path.resolve(__dirname, "../public"), { maxAge: "1h" }));
+  // Production only: in dev, Vite serves `public/` itself. Nothing mounts
+  // `/.well-known` in dev, so anything depending on it (assetlinks, apple-app-
+  // site-association) can only be exercised against a production build.
   server.use(
     "/.well-known",
     serveStatic(path.join(assetsBuildDirectory, ".well-known")),
@@ -105,17 +104,22 @@ async function registerProductionRoutes(server: Express): Promise<void> {
 }
 
 async function bootstrap() {
-  // `bufferLogs: true` holds every log emitted during module
-  // initialization (before `useLogger` below runs) instead of dropping it
-  // or printing it through Nest's default logger, then flushes it through
-  // the real one once set.
+  // Holds logs emitted during module initialization until `useLogger` below
+  // swaps in the real one, then flushes them through it.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    // React Router owns request bodies: `request.formData()` reads the raw
+    // stream, and Nest's parser middleware - registered during `init()`,
+    // which runs before the React Router handler is mounted - would consume
+    // it first and leave every form submission empty. A Nest controller that
+    // needs a parsed body should opt in with `app.useBodyParser()`.
+    bodyParser: false,
   });
   app.useLogger(app.get(NestPinoLogger));
   app.enableShutdownHooks();
 
-  const server = app.getHttpAdapter().getInstance() as Express;
+  const adapter = app.getHttpAdapter();
+  const server = adapter.getInstance() as Express;
   server.set("trust proxy", true);
   server.disable("x-powered-by");
   server.use(compression());
@@ -141,13 +145,28 @@ async function bootstrap() {
   // pick up - must happen before any request can reach a route.
   app.get(LoadContextProvider).register();
 
+  // This app's fallback is the React Router handler, not Nest's 404. Nest
+  // registers its own catch-all during `init()` and skips it when the adapter
+  // exposes no `setNotFoundHandler` (the guard exists for adapters that
+  // genuinely lack one), which is what removing the method here relies on.
+  //
+  // Suppressing it is what lets `init()` run *before* the fallback is mounted
+  // below, and that ordering is the point: `init()` is where Nest mounts its
+  // controllers, Express dispatches in registration order, and the React
+  // Router handler matches every path and always responds. Registered the
+  // other way round, any controller would be silently shadowed - serving the
+  // SSR'd document instead of the route, with no error to diagnose.
+  // Assigned, not deleted: the method lives on the adapter's prototype, so
+  // `delete` on the instance would leave it reachable.
+  (adapter as { setNotFoundHandler?: unknown }).setNotFoundHandler = undefined;
+
+  await app.init();
+
   if (core.nodeEnv === "production") {
     await registerProductionRoutes(server);
   } else {
     await registerDevRoutes(server);
   }
-
-  await app.init();
 
   if (core.host) {
     await app.listen(core.port, core.host);

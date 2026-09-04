@@ -25,7 +25,10 @@ import {
 
 import { diffChildren } from "../shared/diff-children";
 import { writePositions } from "../shared/write-positions";
-import type { TemplatesRepository } from "../templates-repository.server";
+import type {
+  TemplateName,
+  TemplatesRepository,
+} from "../templates-repository.server";
 
 export function sampleOrOwnTemplatesWhere(
   userId: string,
@@ -106,6 +109,18 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
       },
     });
     return rows.map(toTemplate);
+  }
+
+  /** Two columns, no child join - see the port for why this exists. */
+  async listNamesFor(
+    userId: string,
+    showSampleData: boolean,
+  ): Promise<TemplateName[]> {
+    return dbScope
+      .select({ id: templates.id, name: templates.name })
+      .from(templates)
+      .where(sampleOrOwnTemplatesWhere(userId, showSampleData))
+      .orderBy(desc(templates.updatedAt));
   }
 
   async findVisible(

@@ -2,8 +2,7 @@ import { formatNumber } from "./units";
 
 /**
  * How long a cardio set ran. Stored in seconds, entered and displayed in
- * minutes - the `Math.round(x / 60)` that used to sit in three separate
- * display helpers lives here instead.
+ * minutes; this is the only place that conversion happens.
  *
  * Duration is unit-independent, so unlike `Weight` and `Speed` it needs no
  * reference to the athlete's preferences.

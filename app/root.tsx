@@ -15,9 +15,9 @@ import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
-// nestBridgeMiddleware must run first: requestLoggingMiddleware and
-// loadUserMiddleware both read context it populates (loggerContext doesn't,
-// but loadUserMiddleware reads athletesRepositoryContext/sessionStorageContext).
+// nestBridgeMiddleware must run first: requestLoggingMiddleware reads
+// nestLoggerContext and loadUserMiddleware reads athleteServiceContext and
+// sessionStorageContext, all of which it populates.
 export const middleware: Route.MiddlewareFunction[] = [
   nestBridgeMiddleware,
   requestLoggingMiddleware,

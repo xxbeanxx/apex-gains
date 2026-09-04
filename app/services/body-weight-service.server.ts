@@ -7,14 +7,13 @@ import type { DateOnly } from "~/domain/values/date-only";
 import { Weight } from "~/domain/values/weight";
 import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-
 import {
   BODY_WEIGHT_REPOSITORY,
   UNIT_OF_WORK,
-} from "~server/repositories/tokens";
-import { DOMAIN_DEPS } from "~server/services/tokens";
+} from "~/repositories/tokens";
+import { DOMAIN_DEPS } from "~/services/shared/tokens";
 
-import { productionDeps, type DomainDeps } from "./shared/deps.server";
+import type { DomainDeps } from "./shared/deps.server";
 
 /**
  * Recording body weight. Reading it back is `ProgressService`, which shapes
@@ -26,7 +25,7 @@ export class BodyWeightService {
     @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly entries: BodyWeightRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
-    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 
   /**

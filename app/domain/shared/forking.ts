@@ -9,8 +9,7 @@
  * *sample*, not on the copy the mutation will actually apply to.
  * `translateChildId` closes that gap: it maps a child id on the original
  * onto its counterpart on the fork (by position), and is the identity
- * function when nothing was forked. Every adapter used to carry its own
- * version of this remapping.
+ * function when nothing was forked.
  */
 export type EditableCopy<A> = {
   /** The aggregate to mutate: the original when already owned, else the fork. */

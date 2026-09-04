@@ -1,3 +1,5 @@
+import type { Clock } from "../shared/clock";
+import type { IdGenerator } from "../shared/ids";
 import type { DistanceUnit, WeightUnit } from "../values/units";
 import { AthletePreferences } from "./preferences";
 
@@ -40,6 +42,32 @@ export class Athlete {
     readonly createdAt: Date,
     private lastUpdatedAt: Date,
   ) {}
+
+  /**
+   * A brand new athlete, on their first sign-in.
+   *
+   * Starting preferences come from `AthletePreferences.defaults()` and are
+   * written explicitly, so this is the one place that answers "what does a
+   * new account look like". The `users` table carries matching column
+   * defaults as a backstop for rows inserted outside the app, but nothing
+   * here depends on them.
+   */
+  static register(
+    details: NewAthlete,
+    deps: { ids: IdGenerator; clock: Clock },
+  ): Athlete {
+    const now = deps.clock.now();
+    return new Athlete(
+      deps.ids.next(),
+      details.googleSub,
+      details.email,
+      details.name,
+      details.avatarUrl,
+      AthletePreferences.defaults(),
+      now,
+      now,
+    );
+  }
 
   static fromSnapshot(snapshot: AthleteSnapshot): Athlete {
     return new Athlete(

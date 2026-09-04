@@ -7,10 +7,8 @@ const KG_PER_LB = 0.45359237;
  *
  * The `numeric` columns that store weights (`session_sets.weight`,
  * `template_exercises.target_weight`, `body_weight_logs.weight`) carry no
- * unit, and postgres-js hands them back as strings - so a raw
- * `string | null` used to travel from the row all the way into JSX, where
- * every call site appended a hardcoded "lb". Anything crossing that boundary
- * now goes through here instead: parsed once on the way in, converted to the
+ * unit, and postgres-js hands them back as strings. Everything crossing that
+ * boundary goes through here: parsed once on the way in, converted to the
  * athlete's chosen unit once on the way out.
  *
  * Pounds are canonical because that is how the existing rows were written -

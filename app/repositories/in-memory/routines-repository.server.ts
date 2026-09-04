@@ -6,9 +6,9 @@ import type { RoutinesRepository } from "../routines-repository.server";
 // selected, and athletes-repository.in-memory.server.ts for why it stores
 // snapshots rather than aggregates.
 //
-// It no longer needs a handle on the templates repository: a `Routine` holds
-// its slots' template *ids*, and resolving those to templates is a read
-// model the service assembles, not something a routine carries.
+// It needs no handle on the templates repository: a `Routine` holds its
+// slots' template *ids*, and resolving those to templates is a read model
+// the service assembles, not something a routine carries.
 export class InMemoryRoutinesRepository implements RoutinesRepository {
   private readonly byId = new Map<string, RoutineSnapshot>();
 

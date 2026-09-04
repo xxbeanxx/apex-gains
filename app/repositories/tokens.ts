@@ -1,9 +1,11 @@
 /**
- * DI tokens for the repository ports under `app/repositories/*.server.ts`.
- * `repositories.module.ts` is the only place that decides which adapter
- * (Drizzle vs in-memory) backs each one; everything else - services, and
- * the couple of routes/middleware that touch `AthletesRepository` directly
- * - depends on the token, never on a concrete adapter class.
+ * DI tokens for the repository ports in this directory.
+ *
+ * They live beside the ports they name, not in the composition root, so that
+ * `app/services` can depend on a port's token without importing from
+ * `server/`. Binding a token to a concrete adapter (Drizzle vs in-memory) is
+ * the composition root's job and happens in exactly one place:
+ * `server/repositories/repositories.module.ts`.
  */
 export const ATHLETES_REPOSITORY = Symbol("ATHLETES_REPOSITORY");
 export const BODY_WEIGHT_REPOSITORY = Symbol("BODY_WEIGHT_REPOSITORY");

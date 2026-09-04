@@ -8,10 +8,8 @@ import type { DateOnly } from "../values/date-only";
  * every progress calculation reads.
  *
  * Sessions hold only an `exerciseId` per set, but the metrics need the
- * exercise's name, type and muscle group. Rather than each calculation
- * re-joining that (the repository used to hand back sets with an `exercise`
- * stapled on), the join happens once here and the calculations stay pure
- * functions over it.
+ * exercise's name, type and muscle group. The join happens once here so
+ * each calculation stays a pure function over it.
  */
 export class TrainingHistory {
   constructor(

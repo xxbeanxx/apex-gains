@@ -6,11 +6,6 @@ import type { Routine } from "./routine";
  * to stand the previous one down. That makes this a domain service rather
  * than a method: it is domain logic with no natural aggregate to live on.
  *
- * The Drizzle adapter used to express this as a blanket
- * `update routines set is_active = false where user_id = ...` followed by
- * setting the target - correct, but invisible to anything that wasn't
- * reading SQL, and duplicated in the in-memory adapter.
- *
  * Returns every routine whose state changed, which the caller must save
  * together in one transaction; the schema's partial unique index
  * (`routines_one_active_per_user`) is the backstop if that ever slips.

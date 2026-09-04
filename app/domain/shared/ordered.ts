@@ -1,13 +1,12 @@
 /**
  * Routine slots and template exercises are both ordered lists persisted as a
- * `position` column under a `(parentId, position)` unique constraint. Both
- * needed the same three operations - append at the end, remove and close the
- * gap, swap with a neighbour - and both had them written twice, once per
- * repository adapter.
+ * `position` column under a `(parentId, position)` unique constraint, and
+ * both need the same three operations: append at the end, remove and close
+ * the gap, swap with a neighbour.
  *
- * This is that logic, once. Positions are always a contiguous `0..n-1` after
- * any mutation, which is the invariant the rest of the app assumes when it
- * does cycle math on slot count or renders "exercise 3 of 5".
+ * Positions are always a contiguous `0..n-1` after any mutation, which is
+ * the invariant the rest of the app assumes when it does cycle math on slot
+ * count or renders "exercise 3 of 5".
  */
 
 export interface Positioned {

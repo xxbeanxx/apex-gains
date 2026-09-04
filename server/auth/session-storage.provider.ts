@@ -12,10 +12,7 @@ export type SessionData = {
 export type AppSessionStorage = SessionStorage<SessionData>;
 
 /**
- * Was a module-level singleton built from `getSessionSecret()` in
- * `app/auth/session.server.ts` (now deleted); construction moved here so it
- * can be built once from validated config and handed to the app via load
- * context (`sessionStorageContext`) instead of an ambient import.
+ * The signed cookie session, reached by the app via `sessionStorageContext`.
  */
 export const sessionStorageProvider: Provider = {
   provide: SESSION_STORAGE,

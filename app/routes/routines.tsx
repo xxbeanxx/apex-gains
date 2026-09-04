@@ -16,7 +16,7 @@ import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { DateOnly } from "~/domain/values/date-only";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import { routineServiceContext } from "~/lib/nest-bridge.server";
 
@@ -59,9 +59,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     DateOnly.today(),
   );
 
-  context
-    .get(loggerContext)
-    .info({ userId: user.id, routineId: routine.id }, "routine created");
+  requestLogger(context).info(
+    { userId: user.id, routineId: routine.id },
+    "routine created",
+  );
 
   throw redirect(`/routines/${routine.id}`);
 }

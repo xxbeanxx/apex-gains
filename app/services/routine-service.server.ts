@@ -9,15 +9,14 @@ import { DateOnly } from "~/domain/values/date-only";
 import type { RoutinesRepository } from "~/repositories/routines-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-
 import {
   ROUTINES_REPOSITORY,
   TEMPLATES_REPOSITORY,
   UNIT_OF_WORK,
-} from "~server/repositories/tokens";
-import { DOMAIN_DEPS } from "~server/services/tokens";
+} from "~/repositories/tokens";
+import { DOMAIN_DEPS } from "~/services/shared/tokens";
 
-import { productionDeps, type DomainDeps } from "./shared/deps.server";
+import type { DomainDeps } from "./shared/deps.server";
 import { resolveEditableCopy } from "./shared/fork.server";
 
 export type RoutineSummary = {
@@ -80,7 +79,7 @@ export class RoutineService {
     @Inject(ROUTINES_REPOSITORY) private readonly routines: RoutinesRepository,
     @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
-    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 
   async list(athlete: Athlete): Promise<RoutineSummary[]> {
@@ -290,7 +289,7 @@ export class RoutineService {
   private async templateNames(
     athlete: Athlete,
   ): Promise<Map<string, string>> {
-    const templates = await this.templates.listFor(
+    const templates = await this.templates.listNamesFor(
       athlete.id,
       athlete.preferences.showSampleData,
     );

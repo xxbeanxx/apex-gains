@@ -1,11 +1,12 @@
 import { redirect } from "react-router";
 
+import { safeRedirect } from "~/auth/safe-redirect.server";
 import { ErrorPage } from "~/components/error-page";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import {
   appConfigContext,
-  athletesRepositoryContext,
+  athleteServiceContext,
   sessionStorageContext,
 } from "~/lib/nest-bridge.server";
 
@@ -27,7 +28,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const logger = context.get(loggerContext);
+  const logger = requestLogger(context);
   const url = new URL(request.url);
   const email = url.searchParams.get("email");
   if (!email) {
@@ -36,27 +37,24 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     });
   }
   const name = url.searchParams.get("name") ?? email;
-  const redirectTo = url.searchParams.get("redirectTo") ?? "/today";
+  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
 
-  const athletesRepository = context.get(athletesRepositoryContext);
-  const existingUser = await athletesRepository.findByEmail(email);
-
-  const user =
-    existingUser ??
-    (await athletesRepository.create({
+  const { athlete, isNew } = await context
+    .get(athleteServiceContext)
+    .signInWithEmail({
       googleSub: `test-login:${email}`,
       email,
       name,
       avatarUrl: null,
-    }));
+    });
 
-  logger.info({ userId: user.id, newUser: !existingUser }, "test login used");
+  logger.info({ userId: athlete.id, newUser: isNew }, "test login used");
 
   const sessionStorage = context.get(sessionStorageContext);
   const session = await sessionStorage.getSession(
     request.headers.get("Cookie"),
   );
-  session.set("userId", user.id);
+  session.set("userId", athlete.id);
 
   return redirect(redirectTo, {
     headers: { "Set-Cookie": await sessionStorage.commitSession(session) },

@@ -15,7 +15,7 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import { templateServiceContext } from "~/lib/nest-bridge.server";
 
@@ -52,9 +52,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   const templateService = context.get(templateServiceContext);
   const template = await templateService.create(user, result.data.name);
 
-  context
-    .get(loggerContext)
-    .info({ userId: user.id, templateId: template.id }, "template created");
+  requestLogger(context).info(
+    { userId: user.id, templateId: template.id },
+    "template created",
+  );
 
   throw redirect(`/templates/${template.id}`);
 }

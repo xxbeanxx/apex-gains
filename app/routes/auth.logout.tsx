@@ -2,7 +2,7 @@ import { redirect } from "react-router";
 
 import { userContext } from "~/auth/user-context";
 import { ErrorPage } from "~/components/error-page";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import { sessionStorageContext } from "~/lib/nest-bridge.server";
 
@@ -17,7 +17,7 @@ export { ErrorPage as ErrorBoundary };
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext);
   if (user) {
-    context.get(loggerContext).info({ userId: user.id }, "user logged out");
+    requestLogger(context).info({ userId: user.id }, "user logged out");
   }
 
   const sessionStorage = context.get(sessionStorageContext);

@@ -4,15 +4,11 @@
  *
  * Postgres checks a plain unique constraint per statement, so swapping two
  * neighbours by updating one row at a time collides on the intermediate
- * state. The Drizzle adapter used to dodge this by parking one row at a
- * hardcoded `-1` and writing the pair back in a fixed order - which works
- * for a swap and only for a swap.
- *
- * This generalises it: every row whose position actually changed is parked
- * at a distinct negative scratch value first, then written to its final
- * position. Negatives can't collide with the real 0..n-1 range or with each
- * other, so any permutation is safe - including the one a removal produces,
- * where several rows shift down at once.
+ * state. Every row whose position actually changed is parked at a distinct
+ * negative scratch value first, then written to its final position.
+ * Negatives can't collide with the real 0..n-1 range or with each other, so
+ * any permutation is safe - including the one a removal produces, where
+ * several rows shift down at once.
  *
  * Rows that didn't move are skipped, so an edit that only renames something
  * issues no position writes at all.

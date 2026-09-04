@@ -39,8 +39,7 @@ export type SessionPlan = {
  * There is exactly one session per (athlete, day) - the unique constraint
  * enforces it - so a session is opened idempotently and then accumulates
  * sets. Set numbering is per exercise within the day, which is what makes
- * "set 3 of the bench press" mean something across a pyramid; that counter
- * used to be recomputed by each repository adapter with its own query.
+ * "set 3 of the bench press" mean something across a pyramid.
  */
 export class WorkoutSession {
   private constructor(

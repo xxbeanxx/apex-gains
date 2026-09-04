@@ -43,7 +43,7 @@ import {
   formatRelativeDate,
   formatWeekday,
 } from "~/lib/format";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 import { cn } from "~/lib/utils";
 import type {
   WeekHistoryDay,
@@ -163,12 +163,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       return data({ error: "Invalid set" }, { status: 400 });
     }
     if (outcome.value.sessionOpened) {
-      context
-        .get(loggerContext)
-        .info(
-          { userId: athlete.id, date: date.value },
-          "workout session created",
-        );
+      requestLogger(context).info(
+        { userId: athlete.id, date: date.value },
+        "workout session created",
+      );
     }
     return { ok: true };
   }

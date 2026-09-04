@@ -23,12 +23,11 @@ import { formatMonthDay } from "~/lib/format";
 import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-
 import {
   BODY_WEIGHT_REPOSITORY,
   EXERCISES_REPOSITORY,
   WORKOUT_SESSIONS_REPOSITORY,
-} from "~server/repositories/tokens";
+} from "~/repositories/tokens";
 
 import type {
   HeatmapDayView,

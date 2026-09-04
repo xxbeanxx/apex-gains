@@ -1,26 +1,39 @@
 import { randomUUID } from "node:crypto";
 
 import type { Logger } from "pino";
-import { createContext, type MiddlewareFunction } from "react-router";
+import {
+  createContext,
+  type MiddlewareFunction,
+  type RouterContextProvider,
+} from "react-router";
 
 import { userContext } from "~/auth/user-context";
 
-import { nestLoggerContext } from "./nest-bridge.server";
+import { getNestLogger, nestLoggerContext } from "./nest-bridge.server";
 
 /**
- * A per-request child logger with `requestId` bound, so every log line from
- * a single request (route logs included, via `context.get(loggerContext)`)
- * can be correlated. Populated by `requestLoggingMiddleware` below, from the
- * root pino instance Nest constructs and validates - see
+ * A per-request child logger with `requestId` bound, so every log line from a
+ * single request can be correlated. Populated by `requestLoggingMiddleware`
+ * below from the root pino instance Nest constructs - see
  * `server/logging/logger.provider.ts` and `app/lib/nest-bridge.server.ts`.
  *
- * No default value: `nestBridgeMiddleware` (which this middleware depends
- * on running after) already throws a clear error if Nest's singletons were
- * never registered, so there's no meaningful fallback logger to construct
- * here - unlike the repository/service contexts, this one just never gets
- * skipped in practice.
+ * Defaults to null rather than being left unset: middleware only runs for a
+ * *matched* route, so an unmatched URL reaches `entry.server.tsx`'s
+ * `handleError` with nothing here - and `context.get` throws on an unset
+ * context with no default, which would turn a plain 404 into a 500. Read it
+ * through `requestLogger` below rather than directly.
  */
-export const loggerContext = createContext<Logger>();
+export const loggerContext = createContext<Logger | null>(null);
+
+/**
+ * The request-scoped logger, falling back to the process-wide root logger on
+ * the paths that have no request context to bind one to.
+ */
+export function requestLogger(
+  context: Readonly<RouterContextProvider>,
+): Logger {
+  return context.get(loggerContext) ?? getNestLogger();
+}
 
 export const requestLoggingMiddleware: MiddlewareFunction<Response> = async (
   { request, context },

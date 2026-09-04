@@ -12,15 +12,14 @@ import { Weight } from "~/domain/values/weight";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-
 import {
   EXERCISES_REPOSITORY,
   TEMPLATES_REPOSITORY,
   UNIT_OF_WORK,
-} from "~server/repositories/tokens";
-import { DOMAIN_DEPS } from "~server/services/tokens";
+} from "~/repositories/tokens";
+import { DOMAIN_DEPS } from "~/services/shared/tokens";
 
-import { productionDeps, type DomainDeps } from "./shared/deps.server";
+import type { DomainDeps } from "./shared/deps.server";
 import { resolveEditableCopy } from "./shared/fork.server";
 
 export type TemplateSummary = {
@@ -84,7 +83,7 @@ export class TemplateService {
     @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
-    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 
   async list(athlete: Athlete): Promise<TemplateSummary[]> {

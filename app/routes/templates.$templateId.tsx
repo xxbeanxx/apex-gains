@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 import type { ExerciseView } from "~/services/exercise-library-service.server";
 
 import {
@@ -106,9 +106,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    context
-      .get(loggerContext)
-      .info({ userId: athlete.id, templateId }, "template deleted");
+    requestLogger(context).info(
+      { userId: athlete.id, templateId },
+      "template deleted",
+    );
     throw redirect("/templates");
   }
 

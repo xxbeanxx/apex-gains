@@ -1,10 +1,4 @@
-import { randomUUID } from "node:crypto";
-
-import {
-  Athlete,
-  type AthleteSnapshot,
-  type NewAthlete,
-} from "~/domain/athlete/athlete";
+import { Athlete, type AthleteSnapshot } from "~/domain/athlete/athlete";
 
 import type { AthletesRepository } from "../athletes-repository.server";
 
@@ -32,26 +26,6 @@ export class InMemoryAthletesRepository implements AthletesRepository {
 
   async findByEmail(email: string): Promise<Athlete | null> {
     return this.findBy((snapshot) => snapshot.email === email);
-  }
-
-  async create(input: NewAthlete): Promise<Athlete> {
-    const now = new Date();
-    const snapshot: AthleteSnapshot = {
-      id: randomUUID(),
-      googleSub: input.googleSub,
-      email: input.email,
-      name: input.name,
-      avatarUrl: input.avatarUrl,
-      // Mirrors the column defaults, which is where a new athlete's
-      // preferences come from on the Drizzle side.
-      weightUnit: "lb",
-      distanceUnit: "km",
-      showSampleData: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.byId.set(snapshot.id, snapshot);
-    return Athlete.fromSnapshot(snapshot);
   }
 
   async save(athlete: Athlete): Promise<void> {

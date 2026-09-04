@@ -2,6 +2,7 @@ import * as client from "openid-client";
 import { redirect } from "react-router";
 
 import { serializeOidcState } from "~/auth/oidc-state.server";
+import { safeRedirect } from "~/auth/safe-redirect.server";
 import { ErrorPage } from "~/components/error-page";
 
 import {
@@ -27,7 +28,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const state = client.randomState();
 
   const url = new URL(request.url);
-  const redirectTo = url.searchParams.get("redirectTo") ?? "/today";
+  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
 
   const authorizationUrl = client.buildAuthorizationUrl(config, {
     redirect_uri: `${origin}/auth/google/callback`,

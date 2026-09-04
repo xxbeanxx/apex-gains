@@ -7,13 +7,10 @@ import type { Weight } from "../values/weight";
  * How an athlete wants their numbers shown, and whether they want the shared
  * sample library in their lists at all.
  *
- * These columns have existed since the schema was written and were editable
- * in /settings, but nothing except the weight chart's axis label ever read
- * them - every other call site appended a hardcoded "lb". Giving the
- * preferences a home with the formatting on it is what makes the setting
- * take effect: a service that needs to render a measurement has to go
- * through here, and there is no longer a plausible way to hardcode a unit
- * by accident.
+ * The formatting lives on the preferences rather than beside them, which is
+ * what makes the /settings choice actually take effect: a service rendering
+ * a measurement has to come through here, so there is no plausible way to
+ * hardcode a unit by accident.
  */
 export class AthletePreferences {
   constructor(

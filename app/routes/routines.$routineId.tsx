@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { DateOnly } from "~/domain/values/date-only";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import {
   routineServiceContext,
@@ -108,9 +108,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    context
-      .get(loggerContext)
-      .info({ userId: athlete.id, routineId }, "routine deleted");
+    requestLogger(context).info(
+      { userId: athlete.id, routineId },
+      "routine deleted",
+    );
     throw redirect("/routines");
   }
 
@@ -164,9 +165,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         : await routineService.deactivate(athlete, routineId);
 
     if (outcome.ok) {
-      context
-        .get(loggerContext)
-        .info({ userId: athlete.id, routineId }, `routine ${intent}d`);
+      requestLogger(context).info(
+        { userId: athlete.id, routineId },
+        `routine ${intent}d`,
+      );
     }
     return settle(outcome);
   }

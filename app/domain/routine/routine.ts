@@ -65,9 +65,7 @@ export class RoutineSlot {
  * cycles on *day count from an anchor date*, not on weekdays. Which slot
  * falls on a given day is `(days since anchorDate) mod (slot count)` - it
  * never pauses for a missed day, and a 7-slot routine only lines up with
- * weekdays if the anchor happens to fall right. `slotOn` is that rule, and
- * it is now a method on the thing it describes rather than a free function
- * a caller has to remember to combine with the right slot list.
+ * weekdays if the anchor happens to fall right. `slotOn` is that rule.
  */
 export class Routine {
   private constructor(

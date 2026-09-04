@@ -5,9 +5,9 @@ import type { Routine } from "~/domain/routine/routine";
 // adapter backs it.
 //
 // Shaped like TemplatesRepository: `save` writes the routine and its slots
-// as one unit, and the rules that used to live in the adapters (fork on
-// first edit, reordering, standing down the previously active routine) are
-// on the `Routine` aggregate and in domain/routine/activation.ts.
+// as one unit. The rules - fork on first edit, reordering, standing down the
+// previously active routine - live on the `Routine` aggregate and in
+// domain/routine/activation.ts.
 export interface RoutinesRepository {
   listFor(userId: string, showSampleData: boolean): Promise<Routine[]>;
   findVisible(userId: string, routineId: string): Promise<Routine | null>;

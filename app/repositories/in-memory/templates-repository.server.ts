@@ -3,7 +3,10 @@ import {
   type TemplateSnapshot,
 } from "~/domain/template/workout-template";
 
-import type { TemplatesRepository } from "../templates-repository.server";
+import type {
+  TemplateName,
+  TemplatesRepository,
+} from "../templates-repository.server";
 
 // Dev-convenience adapter - see templates-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
@@ -41,6 +44,14 @@ export class InMemoryTemplatesRepository implements TemplatesRepository {
     return visible
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
       .map(WorkoutTemplate.fromSnapshot);
+  }
+
+  async listNamesFor(
+    userId: string,
+    showSampleData: boolean,
+  ): Promise<TemplateName[]> {
+    const templates = await this.listFor(userId, showSampleData);
+    return templates.map(({ id, name }) => ({ id, name }));
   }
 
   async findVisible(

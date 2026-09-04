@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 
-import { db, dbScope } from "~/db/index.server";
+import { dbScope } from "~/db/index.server";
 import { users, type User } from "~/db/schema";
-import { Athlete, type NewAthlete } from "~/domain/athlete/athlete";
+import { Athlete } from "~/domain/athlete/athlete";
 
 import type { AthletesRepository } from "../athletes-repository.server";
 
@@ -43,31 +43,32 @@ export class DrizzleAthletesRepository implements AthletesRepository {
     return row ? toAthlete(row) : null;
   }
 
-  async create(input: NewAthlete): Promise<Athlete> {
-    // Preferences and timestamps take their column defaults; a new athlete
-    // starts on `AthletePreferences.defaults()` by construction.
-    const [row] = await db
-      .insert(users)
-      .values({
-        googleSub: input.googleSub,
-        email: input.email,
-        name: input.name,
-        avatarUrl: input.avatarUrl,
-      })
-      .returning();
-    return toAthlete(row);
-  }
-
   async save(athlete: Athlete): Promise<void> {
     const snapshot = athlete.toSnapshot();
     await dbScope
-      .update(users)
-      .set({
+      .insert(users)
+      .values({
+        id: snapshot.id,
+        googleSub: snapshot.googleSub,
+        email: snapshot.email,
+        name: snapshot.name,
+        avatarUrl: snapshot.avatarUrl,
         weightUnit: snapshot.weightUnit,
         distanceUnit: snapshot.distanceUnit,
         showSampleData: snapshot.showSampleData,
+        createdAt: snapshot.createdAt,
         updatedAt: snapshot.updatedAt,
       })
-      .where(eq(users.id, snapshot.id));
+      // Identity comes from Google and is not editable here, so an update
+      // only ever writes the preferences and the stamp.
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          weightUnit: snapshot.weightUnit,
+          distanceUnit: snapshot.distanceUnit,
+          showSampleData: snapshot.showSampleData,
+          updatedAt: snapshot.updatedAt,
+        },
+      });
   }
 }

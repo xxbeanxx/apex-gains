@@ -8,10 +8,10 @@ import { RoutineService } from "~/services/routine-service.server";
 import { productionDeps } from "~/services/shared/deps.server";
 import { TemplateService } from "~/services/template-service.server";
 import { TrainingPlanService } from "~/services/training-plan-service.server";
+import { DOMAIN_DEPS } from "~/services/shared/tokens";
 import { WorkoutLogService } from "~/services/workout-log-service.server";
 
 import { RepositoriesModule } from "../repositories/repositories.module";
-import { DOMAIN_DEPS } from "./tokens";
 
 const services = [
   AthleteService,
@@ -24,13 +24,6 @@ const services = [
   WorkoutLogService,
 ];
 
-/**
- * Registers each `app/services/*.server.ts` use-case class as a Nest
- * provider - they're `@Injectable()` with `@Inject()`-tokenized
- * constructors (see the classes themselves), so Nest's default singleton
- * scope is what replaces their old manual `XService.forRequest()` +
- * module-level cache.
- */
 @Module({
   imports: [RepositoriesModule],
   providers: [

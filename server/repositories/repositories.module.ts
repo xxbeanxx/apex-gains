@@ -1,6 +1,7 @@
 import { Module, type Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
+import { configureDatabase } from "~/db/index.server";
 import { DrizzleAthletesRepository } from "~/repositories/drizzle/athletes-repository.server";
 import { DrizzleBodyWeightRepository } from "~/repositories/drizzle/body-weight-repository.server";
 import { DrizzleEquipmentRepository } from "~/repositories/drizzle/equipment-repository.server";
@@ -17,8 +18,6 @@ import { InMemoryRoutinesRepository } from "~/repositories/in-memory/routines-re
 import { InMemoryTemplatesRepository } from "~/repositories/in-memory/templates-repository.server";
 import { InMemoryUnitOfWork } from "~/repositories/in-memory/unit-of-work.server";
 import { InMemoryWorkoutSessionsRepository } from "~/repositories/in-memory/workout-sessions-repository.server";
-
-import { databaseConfig } from "../config/app.config";
 import {
   ATHLETES_REPOSITORY,
   BODY_WEIGHT_REPOSITORY,
@@ -28,17 +27,19 @@ import {
   TEMPLATES_REPOSITORY,
   UNIT_OF_WORK,
   WORKOUT_SESSIONS_REPOSITORY,
-} from "./tokens";
+} from "~/repositories/tokens";
+
+import { databaseConfig } from "../config/app.config";
 
 type DatabaseConfig = ConfigType<typeof databaseConfig>;
 
 /**
  * One `useFactory` provider per port, each picking Drizzle vs in-memory off
- * `databaseConfig.databaseUrl` - the same rule `get*Repository()` used to
- * apply per-call, now decided once by Nest at startup. The Drizzle adapter
- * classes are safe to import statically even when running in-memory: they
- * only touch `~/db/index.server`'s lazy `db`/`dbScope` proxies when a query
- * actually runs, never at import time.
+ * `databaseConfig.databaseUrl`. This is the only place that choice is made.
+ *
+ * The Drizzle adapter classes are safe to import statically even when
+ * running in-memory: they only touch `~/db/index.server`'s lazy
+ * `db`/`dbScope` proxies when a query actually runs, never at import time.
  */
 function repositoryProvider<T>(
   token: symbol,
@@ -47,7 +48,13 @@ function repositoryProvider<T>(
   return {
     provide: token,
     inject: [databaseConfig.KEY],
-    useFactory: create,
+    useFactory: (dbConfig: DatabaseConfig) => {
+      // Hands the validated URL to `~/db/index.server` so nothing below has
+      // to read `process.env` for itself. Connecting is still lazy; this only
+      // decides what the connection will be made with.
+      if (dbConfig.databaseUrl) configureDatabase(dbConfig.databaseUrl);
+      return create(dbConfig);
+    },
   };
 }
 

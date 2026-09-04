@@ -12,7 +12,7 @@ import { isbot } from "isbot";
 import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
 
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 import { getNestLogger } from "~/lib/nest-bridge.server";
 
 export const streamTimeout = 5_000;
@@ -103,7 +103,10 @@ export default function handleRequest(
           // errors encountered during initial shell rendering since they'll
           // reject and get logged via handleError below.
           if (shellRendered) {
-            loadContext.get(loggerContext).error({ err: error }, "streaming render error");
+            requestLogger(loadContext).error(
+              { err: error },
+              "streaming render error",
+            );
           }
         },
       },
@@ -118,13 +121,41 @@ type HandleErrorArgs = {
 };
 
 /**
- * Called by React Router for any loader/action/render error that isn't a
- * plain thrown Response/`data()` used for control flow (redirects, 404s,
- * etc. never reach here - see the `!isRouteErrorResponse || err.error`
- * check in React Router's server runtime).
+ * Called by React Router for any loader/action/render error that isn't
+ * purely control flow. A thrown `redirect()` or bare `data(..., { status })`
+ * never reaches here; an `ErrorResponse` synthesized from a real Error does,
+ * which includes the 404 for an unmatched URL - so this splits client faults
+ * (4xx, logged as a warning) from ours (everything else, logged as an error).
+ *
+ * The logger is read through `requestLogger`: an unmatched URL matches no
+ * route, so `root.tsx`'s middleware never ran and there is no request-scoped
+ * logger to bind to.
  */
-export function handleError(error: unknown, { request, context }: HandleErrorArgs) {
+export function handleError(
+  error: unknown,
+  { request, context }: HandleErrorArgs,
+) {
   if (request.signal.aborted) return;
+
+  const logger = requestLogger(context);
+
+  // A 4xx is the caller's mistake, not a fault of ours - an unmatched URL is
+  // by far the most common, and bot traffic produces a steady stream of them.
+  // Logging those at error level would bury real faults and make any
+  // error-rate alert meaningless. The path is worth recording because an
+  // unmatched URL never reached `requestLoggingMiddleware`, so this is the
+  // only line that will mention it.
+  if (isRouteErrorResponse(error) && error.status < 500) {
+    logger.warn(
+      {
+        status: error.status,
+        method: request.method,
+        path: new URL(request.url).pathname,
+      },
+      "request rejected",
+    );
+    return;
+  }
 
   // `ErrorResponseImpl.error` (the underlying thrown Error, when a Response
   // was synthesized from one) is private in react-router's public types, so
@@ -132,5 +163,5 @@ export function handleError(error: unknown, { request, context }: HandleErrorArg
   const wrapped = isRouteErrorResponse(error)
     ? (error as { error?: unknown }).error
     : undefined;
-  context.get(loggerContext).error({ err: wrapped ?? error }, "unhandled server error");
+  logger.error({ err: wrapped ?? error }, "unhandled server error");
 }

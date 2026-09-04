@@ -1,27 +1,65 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { Athlete } from "~/domain/athlete/athlete";
+import { Athlete, type NewAthlete } from "~/domain/athlete/athlete";
 import type { DistanceUnit, WeightUnit } from "~/domain/values/units";
 import type { AthletesRepository } from "~/repositories/athletes-repository.server";
+import { ATHLETES_REPOSITORY, UNIT_OF_WORK } from "~/repositories/tokens";
+import type { UnitOfWork } from "~/repositories/unit-of-work.server";
+import { DOMAIN_DEPS } from "~/services/shared/tokens";
 
-import { ATHLETES_REPOSITORY } from "~server/repositories/tokens";
-import { DOMAIN_DEPS } from "~server/services/tokens";
+import type { DomainDeps } from "./shared/deps.server";
 
-import { productionDeps, type DomainDeps } from "./shared/deps.server";
+/** Who signed in, and whether this was their first time. */
+export type SignIn = {
+  athlete: Athlete;
+  isNew: boolean;
+};
 
 /**
- * Use cases for an athlete's own settings.
+ * Use cases for an athlete's own account and settings.
  *
- * Both of these reach further than they look: the unit preferences decide
- * how every weight and speed in the app is rendered, and the sample-data
- * flag decides what the exercise, template and routine lists contain.
+ * The settings reach further than they look: the unit preferences decide how
+ * every weight and speed in the app is rendered, and the sample-data flag
+ * decides what the exercise, template and routine lists contain.
  */
 @Injectable()
 export class AthleteService {
   constructor(
     @Inject(ATHLETES_REPOSITORY) private readonly athletes: AthletesRepository,
-    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
+
+  /** The signed-in athlete, or null - what `loadUserMiddleware` resolves. */
+  async byId(userId: string): Promise<Athlete | null> {
+    return this.athletes.findById(userId);
+  }
+
+  /**
+   * Signs an athlete in by their Google subject, registering them on first
+   * use. Signup is open, so an unrecognised subject is a new account rather
+   * than a rejection.
+   *
+   * The check and the insert are one transaction because two requests can
+   * race the first login of the same account; `google_sub` is unique, so the
+   * loser's insert fails rather than producing a second athlete.
+   */
+  async signInWithGoogle(identity: NewAthlete): Promise<SignIn> {
+    return this.register(identity, () =>
+      this.athletes.findByGoogleSub(identity.googleSub),
+    );
+  }
+
+  /**
+   * The e2e stand-in for `signInWithGoogle`, matching it in every respect
+   * except that it identifies the athlete by email. Only ever reachable when
+   * ENABLE_TEST_LOGIN is set - see `app/routes/auth.test-login.tsx`.
+   */
+  async signInWithEmail(identity: NewAthlete): Promise<SignIn> {
+    return this.register(identity, () =>
+      this.athletes.findByEmail(identity.email),
+    );
+  }
 
   async changeUnits(
     athlete: Athlete,
@@ -36,10 +74,21 @@ export class AthleteService {
     athlete: Athlete,
     showSampleData: boolean,
   ): Promise<void> {
-    athlete.changeSampleDataVisibility(
-      showSampleData,
-      this.deps.clock.now(),
-    );
+    athlete.changeSampleDataVisibility(showSampleData, this.deps.clock.now());
     await this.athletes.save(athlete);
+  }
+
+  private async register(
+    identity: NewAthlete,
+    findExisting: () => Promise<Athlete | null>,
+  ): Promise<SignIn> {
+    return this.unitOfWork.run(async () => {
+      const existing = await findExisting();
+      if (existing) return { athlete: existing, isNew: false };
+
+      const athlete = Athlete.register(identity, this.deps);
+      await this.athletes.save(athlete);
+      return { athlete, isNew: true };
+    });
   }
 }

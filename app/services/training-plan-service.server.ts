@@ -8,13 +8,12 @@ import type { ExercisesRepository } from "~/repositories/exercises-repository.se
 import type { RoutinesRepository } from "~/repositories/routines-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
 import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-
 import {
   EXERCISES_REPOSITORY,
   ROUTINES_REPOSITORY,
   TEMPLATES_REPOSITORY,
   WORKOUT_SESSIONS_REPOSITORY,
-} from "~server/repositories/tokens";
+} from "~/repositories/tokens";
 
 export type PlanItem = {
   exerciseId: string;
@@ -137,7 +136,7 @@ export class TrainingPlanService {
       return dates.map((date) => ({ date: date.value, type: "none" }));
     }
 
-    const templates = await this.templates.listFor(
+    const templates = await this.templates.listNamesFor(
       athlete.id,
       athlete.preferences.showSampleData,
     );

@@ -61,11 +61,8 @@ export class TemplateExerciseEntry {
  * A named, ordered list of exercises with their targets - the unit a routine
  * schedules and a session is logged against.
  *
- * Everything that used to be spread across `TemplatesRepository`'s two
- * adapters lives here: appending at the next position, closing the gap after
- * a removal, swapping neighbours, and copying a sample into a personal
- * template on first edit. The adapters are now only responsible for turning
- * this into rows and back.
+ * Owns its own ordering and its fork-on-first-edit copy; the adapters are
+ * responsible only for turning this into rows and back.
  */
 export class WorkoutTemplate {
   private constructor(

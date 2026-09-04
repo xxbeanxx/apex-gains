@@ -3,7 +3,6 @@ import type { ConfigType } from "@nestjs/config";
 import type { Cookie } from "react-router";
 
 import { registerNestSingletons } from "~/lib/nest-bridge.server";
-import type { AthletesRepository } from "~/repositories/athletes-repository.server";
 import { AthleteService } from "~/services/athlete-service.server";
 import { BodyWeightService } from "~/services/body-weight-service.server";
 import { ExerciseLibraryService } from "~/services/exercise-library-service.server";
@@ -23,22 +22,16 @@ import {
 import { appConfig } from "../config/app.config";
 import type { AppLogger } from "../logging/logger.provider";
 import { LOGGER } from "../logging/tokens";
-import { ATHLETES_REPOSITORY } from "../repositories/tokens";
 
 /**
  * Gathers every Nest-resolved singleton the React Router app needs and
- * publishes them for `nestBridgeMiddleware` to pick up - see
- * `app/lib/nest-bridge.server.ts` for why that hand-off goes through
- * `registerNestSingletons`/`globalThis` rather than a `RouterContextProvider`
- * built directly here (Nest runs outside Vite's module graph, so any
- * `createContext()` token created in this file could never match the one a
- * route reads).
+ * publishes them for `nestBridgeMiddleware` to pick up. See
+ * `app/lib/nest-bridge.server.ts` for why the hand-off goes through
+ * `registerNestSingletons` rather than a `RouterContextProvider` built here.
  */
 @Injectable()
 export class LoadContextProvider {
   constructor(
-    @Inject(ATHLETES_REPOSITORY)
-    private readonly athletesRepository: AthletesRepository,
     @Inject(AthleteService) private readonly athleteService: AthleteService,
     @Inject(BodyWeightService)
     private readonly bodyWeightService: BodyWeightService,
@@ -66,7 +59,6 @@ export class LoadContextProvider {
   /** Call once during bootstrap, before the server starts accepting requests. */
   register(): void {
     registerNestSingletons({
-      athletesRepository: this.athletesRepository,
       athleteService: this.athleteService,
       bodyWeightService: this.bodyWeightService,
       exerciseLibraryService: this.exerciseLibraryService,

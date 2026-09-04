@@ -2,12 +2,13 @@ import * as client from "openid-client";
 import { redirect } from "react-router";
 
 import { clearOidcState, parseOidcState } from "~/auth/oidc-state.server";
+import { safeRedirect } from "~/auth/safe-redirect.server";
 import { ErrorPage } from "~/components/error-page";
-import { loggerContext } from "~/lib/logger.server";
+import { requestLogger } from "~/lib/logger.server";
 
 import {
   appConfigContext,
-  athletesRepositoryContext,
+  athleteServiceContext,
   oidcConfigContext,
   oidcStateCookieContext,
   sessionStorageContext,
@@ -22,7 +23,7 @@ import type { Route } from "./+types/auth.google.callback";
 export { ErrorPage as ErrorBoundary };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const logger = context.get(loggerContext);
+  const logger = requestLogger(context);
   const oidcStateCookie = context.get(oidcStateCookieContext);
 
   const state = await parseOidcState(
@@ -72,32 +73,29 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     });
   }
 
-  const athletesRepository = context.get(athletesRepositoryContext);
-  const existingUser = await athletesRepository.findByGoogleSub(claims.sub);
-
-  const user =
-    existingUser ??
-    (await athletesRepository.create({
+  const { athlete, isNew } = await context
+    .get(athleteServiceContext)
+    .signInWithGoogle({
       googleSub: claims.sub,
       email: claims.email,
       name: typeof claims.name === "string" ? claims.name : claims.email,
       avatarUrl: typeof claims.picture === "string" ? claims.picture : null,
-    }));
+    });
 
   logger.info(
-    { userId: user.id, newUser: !existingUser },
-    existingUser ? "user logged in" : "user signed up",
+    { userId: athlete.id, newUser: isNew },
+    isNew ? "user signed up" : "user logged in",
   );
 
   const sessionStorage = context.get(sessionStorageContext);
   const session = await sessionStorage.getSession(
     request.headers.get("Cookie"),
   );
-  session.set("userId", user.id);
+  session.set("userId", athlete.id);
 
   const headers = new Headers();
   headers.append("Set-Cookie", await sessionStorage.commitSession(session));
   headers.append("Set-Cookie", await clearOidcState(oidcStateCookie));
 
-  return redirect(state.redirectTo, { headers });
+  return redirect(safeRedirect(state.redirectTo), { headers });
 }

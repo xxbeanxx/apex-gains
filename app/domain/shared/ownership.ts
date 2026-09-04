@@ -3,10 +3,8 @@
  * sample data (a null `userId`), and a user edits a sample by forking it
  * into a personal copy - see CLAUDE.md's "Sample data and fork-on-write".
  *
- * That null was previously re-interpreted at every call site: six adapters
- * each had their own `isVisible` / `userId === null` checks. Here the
- * convention is stated once, so "is this mine", "is this a sample" and "may
- * I see this" all mean the same thing everywhere.
+ * This is the single place that null is interpreted, so "is this mine", "is
+ * this a sample" and "may I see this" mean the same thing everywhere.
  */
 export class Ownership {
   private constructor(readonly userId: string | null) {}

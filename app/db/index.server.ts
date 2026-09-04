@@ -7,20 +7,38 @@ import { currentTransaction } from "./transaction.server";
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
 let client: Db | undefined;
+let connectionString: string | undefined;
 
-// Deferred past module load, not just past connecting: React Router's dev
-// server imports every route module up front to build its route manifest,
-// regardless of which URL was actually requested, so throwing here at
-// import time would take down routes that never touch `db` at all. This
-// throws only once something actually calls into `db` - by then, whichever
-// route triggered it is the one that legitimately needs DATABASE_URL.
+/**
+ * Supplies the connection string, once, from config the server has already
+ * validated (`server/repositories/repositories.module.ts` calls this with
+ * `databaseConfig.databaseUrl`).
+ *
+ * Without it this module would have to read `process.env` itself, which
+ * would put a second, unvalidated reader on the one variable the config
+ * layer is supposed to own. Standalone entry points that never boot Nest -
+ * `app/db/seed.ts`, drizzle-kit - fall back to the environment below.
+ */
+export function configureDatabase(url: string): void {
+  connectionString = url;
+}
+
+// Connecting is deferred past module load, not just past first use: React
+// Router's dev server imports every route module up front to build its route
+// manifest, regardless of which URL was requested, so throwing here at import
+// time would take down routes that never touch `db` at all. This throws only
+// once something actually calls into `db` - by then, whichever route
+// triggered it is the one that legitimately needs a database.
 function getClient(): Db {
   if (!client) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error("DATABASE_URL environment variable is not set");
+    const url = connectionString ?? process.env.DATABASE_URL;
+    if (!url) {
+      throw new Error(
+        "No database connection configured - set DATABASE_URL, or call " +
+          "configureDatabase() during server bootstrap.",
+      );
     }
-    client = drizzle(postgres(connectionString), { schema });
+    client = drizzle(postgres(url), { schema });
   }
   return client;
 }
