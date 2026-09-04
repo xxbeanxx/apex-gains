@@ -1,9 +1,10 @@
 import { redirect } from "react-router";
 
-import { destroySession, getSession } from "~/auth/session.server";
 import { userContext } from "~/auth/user-context";
 import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
+
+import { sessionStorageContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/auth.logout";
 
@@ -19,10 +20,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     context.get(loggerContext).info({ userId: user.id }, "user logged out");
   }
 
-  const session = await getSession(request.headers.get("Cookie"));
+  const sessionStorage = context.get(sessionStorageContext);
+  const session = await sessionStorage.getSession(
+    request.headers.get("Cookie"),
+  );
   return redirect("/", {
     headers: {
-      "Set-Cookie": await destroySession(session),
+      "Set-Cookie": await sessionStorage.destroySession(session),
     },
   });
 }

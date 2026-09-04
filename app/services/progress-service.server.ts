@@ -1,3 +1,5 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import type { AthletePreferences } from "~/domain/athlete/preferences";
 import type { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
@@ -19,11 +21,14 @@ import { Duration } from "~/domain/values/duration";
 import { Weight } from "~/domain/values/weight";
 import { formatMonthDay } from "~/lib/format";
 import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
-import { getBodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
+
+import {
+  BODY_WEIGHT_REPOSITORY,
+  EXERCISES_REPOSITORY,
+  WORKOUT_SESSIONS_REPOSITORY,
+} from "~server/repositories/tokens";
 
 import type {
   HeatmapDayView,
@@ -126,10 +131,13 @@ function round(value: number): number {
  * the exercises behind the sets, and converting canonical measurements into
  * the athlete's units.
  */
+@Injectable()
 export class ProgressService {
   constructor(
+    @Inject(WORKOUT_SESSIONS_REPOSITORY)
     private readonly sessions: WorkoutSessionsRepository,
-    private readonly exercises: ExercisesRepository,
+    @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
 
@@ -307,17 +315,4 @@ function referencedExerciseIds(
     for (const set of session.sets) ids.add(set.exerciseId);
   }
   return [...ids];
-}
-
-let service: ProgressService | undefined;
-
-export async function getProgressService(): Promise<ProgressService> {
-  if (!service) {
-    service = new ProgressService(
-      await getWorkoutSessionsRepository(),
-      await getExercisesRepository(),
-      await getBodyWeightRepository(),
-    );
-  }
-  return service;
 }

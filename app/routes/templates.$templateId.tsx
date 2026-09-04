@@ -34,8 +34,11 @@ import {
 } from "~/components/ui/select";
 import { loggerContext } from "~/lib/logger.server";
 import type { ExerciseView } from "~/services/exercise-library-service.server";
-import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
-import { getTemplateService } from "~/services/template-service.server";
+
+import {
+  exerciseLibraryServiceContext,
+  templateServiceContext,
+} from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/templates.$templateId";
 
@@ -47,13 +50,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const templateService = await getTemplateService();
+  const templateService = context.get(templateServiceContext);
   const template = await templateService.detail(athlete, params.templateId);
   if (!template) {
     throw data("Template not found", { status: 404 });
   }
 
-  const libraryService = await getExerciseLibraryService();
+  const libraryService = context.get(exerciseLibraryServiceContext);
   return { template, exercises: await libraryService.listExercises(athlete) };
 }
 
@@ -87,7 +90,7 @@ function settle(
 export async function action({ request, params, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
   const templateId = params.templateId;
-  const templateService = await getTemplateService();
+  const templateService = context.get(templateServiceContext);
 
   const formData = await request.formData();
   const intent = formData.get("intent");

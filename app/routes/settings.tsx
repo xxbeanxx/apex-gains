@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { DISTANCE_UNITS, WEIGHT_UNITS } from "~/domain/values/units";
-import { getAthleteService } from "~/services/athlete-service.server";
+
+import { athleteServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/settings";
 
@@ -49,7 +50,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const athleteService = await getAthleteService();
+  const athleteService = context.get(athleteServiceContext);
 
   if (intent === "updateSampleDataVisibility") {
     await athleteService.changeSampleDataVisibility(

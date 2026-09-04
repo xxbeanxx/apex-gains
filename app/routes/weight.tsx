@@ -26,8 +26,11 @@ import {
 } from "~/components/ui/table";
 import { DateOnly } from "~/domain/values/date-only";
 import { formatFullDate } from "~/lib/format";
-import { getBodyWeightService } from "~/services/body-weight-service.server";
-import { getProgressService } from "~/services/progress-service.server";
+
+import {
+  bodyWeightServiceContext,
+  progressServiceContext,
+} from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/weight";
 
@@ -37,7 +40,7 @@ export function meta() {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const progressService = await getProgressService();
+  const progressService = context.get(progressServiceContext);
   const log = await progressService.bodyWeightLog(athlete);
 
   return {
@@ -59,7 +62,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const bodyWeightService = await getBodyWeightService();
+  const bodyWeightService = context.get(bodyWeightServiceContext);
 
   if (intent === "log") {
     const result = logSchema.safeParse({

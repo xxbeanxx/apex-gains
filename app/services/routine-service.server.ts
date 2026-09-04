@@ -1,3 +1,5 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import { activateRoutine } from "~/domain/routine/activation";
 import { Routine } from "~/domain/routine/routine";
@@ -5,11 +7,15 @@ import type { MoveDirection } from "~/domain/shared/ordered";
 import { err, ok, type Result } from "~/domain/shared/result";
 import { DateOnly } from "~/domain/values/date-only";
 import type { RoutinesRepository } from "~/repositories/routines-repository.server";
-import { getRoutinesRepository } from "~/repositories/routines-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { getUnitOfWork } from "~/repositories/unit-of-work.server";
+
+import {
+  ROUTINES_REPOSITORY,
+  TEMPLATES_REPOSITORY,
+  UNIT_OF_WORK,
+} from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
 import { resolveEditableCopy } from "./shared/fork.server";
@@ -68,12 +74,13 @@ function toSummary(routine: Routine): RoutineSummary {
  * what lives here is the sequencing that needs a repository or a
  * transaction.
  */
+@Injectable()
 export class RoutineService {
   constructor(
-    private readonly routines: RoutinesRepository,
-    private readonly templates: TemplatesRepository,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(ROUTINES_REPOSITORY) private readonly routines: RoutinesRepository,
+    @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   async list(athlete: Athlete): Promise<RoutineSummary[]> {
@@ -289,17 +296,4 @@ export class RoutineService {
     );
     return new Map(templates.map((template) => [template.id, template.name]));
   }
-}
-
-let service: RoutineService | undefined;
-
-export async function getRoutineService(): Promise<RoutineService> {
-  if (!service) {
-    service = new RoutineService(
-      await getRoutinesRepository(),
-      await getTemplatesRepository(),
-      await getUnitOfWork(),
-    );
-  }
-  return service;
 }

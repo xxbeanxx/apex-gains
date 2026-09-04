@@ -15,7 +15,8 @@ import {
 } from "~/components/ui/card";
 import { EmptyState } from "~/components/ui/empty-state";
 import { formatFullDate, formatMonthYear } from "~/lib/format";
-import { getProgressService } from "~/services/progress-service.server";
+
+import { progressServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/history";
 
@@ -25,7 +26,7 @@ export function meta() {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const progressService = await getProgressService();
+  const progressService = context.get(progressServiceContext);
   return await progressService.history(athlete);
 }
 

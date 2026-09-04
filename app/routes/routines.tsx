@@ -17,7 +17,8 @@ import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { DateOnly } from "~/domain/values/date-only";
 import { loggerContext } from "~/lib/logger.server";
-import { getRoutineService } from "~/services/routine-service.server";
+
+import { routineServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/routines";
 
@@ -31,7 +32,7 @@ const createRoutineSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const routineService = await getRoutineService();
+  const routineService = context.get(routineServiceContext);
   return { routines: await routineService.list(athlete) };
 }
 
@@ -51,7 +52,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   // A new routine is anchored to today, so its first slot is today's - the
   // athlete can re-anchor it afterwards.
-  const routineService = await getRoutineService();
+  const routineService = context.get(routineServiceContext);
   const routine = await routineService.create(
     user,
     result.data.name,

@@ -34,8 +34,11 @@ import {
 } from "~/components/ui/select";
 import { DateOnly } from "~/domain/values/date-only";
 import { loggerContext } from "~/lib/logger.server";
-import { getRoutineService } from "~/services/routine-service.server";
-import { getTemplateService } from "~/services/template-service.server";
+
+import {
+  routineServiceContext,
+  templateServiceContext,
+} from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/routines.$routineId";
 
@@ -47,13 +50,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const routineService = await getRoutineService();
+  const routineService = context.get(routineServiceContext);
   const routine = await routineService.detail(athlete, params.routineId);
   if (!routine) {
     throw data("Routine not found", { status: 404 });
   }
 
-  const templateService = await getTemplateService();
+  const templateService = context.get(templateServiceContext);
   return {
     routine,
     templates: await templateService.listForPicker(athlete),
@@ -89,7 +92,7 @@ function settle(
 export async function action({ request, params, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
   const routineId = params.routineId;
-  const routineService = await getRoutineService();
+  const routineService = context.get(routineServiceContext);
 
   const formData = await request.formData();
   const intent = formData.get("intent");

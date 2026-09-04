@@ -3,7 +3,8 @@ import type { WorkoutSession } from "~/domain/session/workout-session";
 import type { DateOnly } from "~/domain/values/date-only";
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
-// directly. The factory below picks which adapter backs it at runtime.
+// directly. `server/repositories/repositories.module.ts` picks which
+// adapter backs it.
 export interface WorkoutSessionsRepository {
   findForDate(userId: string, date: DateOnly): Promise<WorkoutSession | null>;
   /**
@@ -31,25 +32,4 @@ export interface WorkoutSessionsRepository {
     limit: number,
   ): Promise<{ date: DateOnly; set: LoggedSet }[]>;
   save(session: WorkoutSession): Promise<void>;
-}
-
-let repository: WorkoutSessionsRepository | undefined;
-
-// Ports and adapters: pick the adapter once per process and cache it, so
-// the in-memory adapter's state actually persists across requests. See
-// athletes-repository.server.ts for why the adapter modules are imported
-// dynamically rather than at the top of this file.
-export async function getWorkoutSessionsRepository(): Promise<WorkoutSessionsRepository> {
-  if (!repository) {
-    repository = process.env.DATABASE_URL
-      ? new (
-          await import("./drizzle/workout-sessions-repository.server")
-        ).DrizzleWorkoutSessionsRepository()
-      : new (
-          await import(
-            "./in-memory/workout-sessions-repository.server"
-          )
-        ).InMemoryWorkoutSessionsRepository();
-  }
-  return repository;
 }

@@ -1,3 +1,5 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import type { MoveDirection } from "~/domain/shared/ordered";
@@ -8,11 +10,15 @@ import { Duration } from "~/domain/values/duration";
 import { Speed } from "~/domain/values/speed";
 import { Weight } from "~/domain/values/weight";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { getUnitOfWork } from "~/repositories/unit-of-work.server";
+
+import {
+  EXERCISES_REPOSITORY,
+  TEMPLATES_REPOSITORY,
+  UNIT_OF_WORK,
+} from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
 import { resolveEditableCopy } from "./shared/fork.server";
@@ -72,12 +78,13 @@ function toSummary(template: WorkoutTemplate): TemplateSummary {
 }
 
 /** Use cases for building the reusable workouts a routine schedules. */
+@Injectable()
 export class TemplateService {
   constructor(
-    private readonly templates: TemplatesRepository,
-    private readonly exercises: ExercisesRepository,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
+    @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   async list(athlete: Athlete): Promise<TemplateSummary[]> {
@@ -274,17 +281,4 @@ export class TemplateService {
       (candidate) => candidate.exercises,
     );
   }
-}
-
-let service: TemplateService | undefined;
-
-export async function getTemplateService(): Promise<TemplateService> {
-  if (!service) {
-    service = new TemplateService(
-      await getTemplatesRepository(),
-      await getExercisesRepository(),
-      await getUnitOfWork(),
-    );
-  }
-  return service;
 }

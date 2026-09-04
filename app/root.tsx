@@ -8,13 +8,18 @@ import { loadUserMiddleware } from "~/auth/current-user.server";
 import { userContext } from "~/auth/user-context";
 import { getBuildInfo } from "~/lib/build-info.server";
 import { requestLoggingMiddleware } from "~/lib/logger.server";
+import { nestBridgeMiddleware } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
+// nestBridgeMiddleware must run first: requestLoggingMiddleware and
+// loadUserMiddleware both read context it populates (loggerContext doesn't,
+// but loadUserMiddleware reads athletesRepositoryContext/sessionStorageContext).
 export const middleware: Route.MiddlewareFunction[] = [
+  nestBridgeMiddleware,
   requestLoggingMiddleware,
   loadUserMiddleware,
 ];

@@ -1,5 +1,6 @@
 import { userContext } from "~/auth/user-context";
-import { getWorkoutLogService } from "~/services/workout-log-service.server";
+
+import { workoutLogServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/exercises.$exerciseId.history";
 
@@ -11,7 +12,7 @@ const RECENT_SETS_LIMIT = 10;
  */
 export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const logService = await getWorkoutLogService();
+  const logService = context.get(workoutLogServiceContext);
   const sets = await logService.recentSetsFor(
     athlete,
     params.exerciseId,

@@ -1,12 +1,18 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import { BodyWeightEntry } from "~/domain/bodyweight/body-weight-entry";
 import { ok, type Result } from "~/domain/shared/result";
 import type { DateOnly } from "~/domain/values/date-only";
 import { Weight } from "~/domain/values/weight";
 import type { BodyWeightRepository } from "~/repositories/body-weight-repository.server";
-import { getBodyWeightRepository } from "~/repositories/body-weight-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { getUnitOfWork } from "~/repositories/unit-of-work.server";
+
+import {
+  BODY_WEIGHT_REPOSITORY,
+  UNIT_OF_WORK,
+} from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
 
@@ -14,11 +20,13 @@ import { productionDeps, type DomainDeps } from "./shared/deps.server";
  * Recording body weight. Reading it back is `ProgressService`, which shapes
  * it into the same trend series the exercise charts use.
  */
+@Injectable()
 export class BodyWeightService {
   constructor(
+    @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly entries: BodyWeightRepository,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   /**
@@ -63,16 +71,4 @@ export class BodyWeightService {
     });
     return ok();
   }
-}
-
-let service: BodyWeightService | undefined;
-
-export async function getBodyWeightService(): Promise<BodyWeightService> {
-  if (!service) {
-    service = new BodyWeightService(
-      await getBodyWeightRepository(),
-      await getUnitOfWork(),
-    );
-  }
-  return service;
 }

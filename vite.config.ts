@@ -11,10 +11,14 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["./vitest.setup.ts"],
     env: {
-      // Modules under app/db and app/auth read these at import time; tests
-      // never open a real connection (drizzle-orm/postgres-js and
-      // createCookieSessionStorage are both lazy), so dummy values are safe.
+      // ~/db/index.server reads DATABASE_URL at import time (lazily, via a
+      // Proxy - drizzle-orm/postgres-js never actually opens a connection
+      // unless a test queries through it) - dummy values are safe. The rest
+      // are no longer read directly by app code (server/config validates
+      // them for the Nest bootstrap, which tests never go through), but stay
+      // harmless to seed in case something still reads process.env.
       DATABASE_URL: "postgres://test:test@localhost:5432/test",
       SESSION_SECRET: "test-session-secret",
       ORIGIN: "http://localhost:5173",

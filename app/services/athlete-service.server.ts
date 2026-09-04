@@ -1,7 +1,11 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import type { DistanceUnit, WeightUnit } from "~/domain/values/units";
 import type { AthletesRepository } from "~/repositories/athletes-repository.server";
-import { getAthletesRepository } from "~/repositories/athletes-repository.server";
+
+import { ATHLETES_REPOSITORY } from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
 
@@ -12,10 +16,11 @@ import { productionDeps, type DomainDeps } from "./shared/deps.server";
  * how every weight and speed in the app is rendered, and the sample-data
  * flag decides what the exercise, template and routine lists contain.
  */
+@Injectable()
 export class AthleteService {
   constructor(
-    private readonly athletes: AthletesRepository,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(ATHLETES_REPOSITORY) private readonly athletes: AthletesRepository,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   async changeUnits(
@@ -37,13 +42,4 @@ export class AthleteService {
     );
     await this.athletes.save(athlete);
   }
-}
-
-let service: AthleteService | undefined;
-
-export async function getAthleteService(): Promise<AthleteService> {
-  if (!service) {
-    service = new AthleteService(await getAthletesRepository());
-  }
-  return service;
 }

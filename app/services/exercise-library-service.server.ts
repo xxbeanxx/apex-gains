@@ -1,14 +1,20 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import { Equipment } from "~/domain/equipment/equipment";
 import { Exercise, type ExerciseDetails } from "~/domain/exercise/exercise";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import { err, ok, type Result } from "~/domain/shared/result";
 import type { EquipmentRepository } from "~/repositories/equipment-repository.server";
-import { getEquipmentRepository } from "~/repositories/equipment-repository.server";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { getUnitOfWork } from "~/repositories/unit-of-work.server";
+
+import {
+  EQUIPMENT_REPOSITORY,
+  EXERCISES_REPOSITORY,
+  UNIT_OF_WORK,
+} from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
 import { resolveEditableCopy } from "./shared/fork.server";
@@ -73,12 +79,13 @@ function toEquipmentView(item: Equipment): EquipmentView {
  * Exercises and equipment are separate aggregates but always shown together,
  * so one service covers both rather than the route orchestrating two.
  */
+@Injectable()
 export class ExerciseLibraryService {
   constructor(
-    private readonly exercises: ExercisesRepository,
-    private readonly equipment: EquipmentRepository,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   async library(athlete: Athlete): Promise<LibraryView> {
@@ -245,17 +252,4 @@ export class ExerciseLibraryService {
       () => [],
     );
   }
-}
-
-let service: ExerciseLibraryService | undefined;
-
-export async function getExerciseLibraryService(): Promise<ExerciseLibraryService> {
-  if (!service) {
-    service = new ExerciseLibraryService(
-      await getExercisesRepository(),
-      await getEquipmentRepository(),
-      await getUnitOfWork(),
-    );
-  }
-  return service;
 }

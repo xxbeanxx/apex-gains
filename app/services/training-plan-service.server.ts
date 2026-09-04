@@ -1,15 +1,20 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import type { ExerciseType } from "~/domain/exercise/exercise-type";
 import type { SessionPlan } from "~/domain/session/workout-session";
 import { DateOnly } from "~/domain/values/date-only";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { RoutinesRepository } from "~/repositories/routines-repository.server";
-import { getRoutinesRepository } from "~/repositories/routines-repository.server";
 import type { TemplatesRepository } from "~/repositories/templates-repository.server";
-import { getTemplatesRepository } from "~/repositories/templates-repository.server";
 import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
+
+import {
+  EXERCISES_REPOSITORY,
+  ROUTINES_REPOSITORY,
+  TEMPLATES_REPOSITORY,
+  WORKOUT_SESSIONS_REPOSITORY,
+} from "~server/repositories/tokens";
 
 export type PlanItem = {
   exerciseId: string;
@@ -60,11 +65,13 @@ const WEEK = 7;
  * the shapes the pages render, and mutates nothing. The rule it leans on,
  * "which slot does this date fall on", belongs to `Routine.slotOn`.
  */
+@Injectable()
 export class TrainingPlanService {
   constructor(
-    private readonly routines: RoutinesRepository,
-    private readonly templates: TemplatesRepository,
-    private readonly exercises: ExercisesRepository,
+    @Inject(ROUTINES_REPOSITORY) private readonly routines: RoutinesRepository,
+    @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
+    @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(WORKOUT_SESSIONS_REPOSITORY)
     private readonly sessions: WorkoutSessionsRepository,
   ) {}
 
@@ -182,18 +189,4 @@ export class TrainingPlanService {
       };
     });
   }
-}
-
-let service: TrainingPlanService | undefined;
-
-export async function getTrainingPlanService(): Promise<TrainingPlanService> {
-  if (!service) {
-    service = new TrainingPlanService(
-      await getRoutinesRepository(),
-      await getTemplatesRepository(),
-      await getExercisesRepository(),
-      await getWorkoutSessionsRepository(),
-    );
-  }
-  return service;
 }

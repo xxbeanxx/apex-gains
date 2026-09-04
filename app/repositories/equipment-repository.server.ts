@@ -1,7 +1,8 @@
 import type { Equipment } from "~/domain/equipment/equipment";
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
-// directly. The factory below picks which adapter backs it at runtime.
+// directly. `server/repositories/repositories.module.ts` picks which
+// adapter backs it.
 export interface EquipmentRepository {
   listFor(userId: string, showSampleData: boolean): Promise<Equipment[]>;
   findById(equipmentId: string): Promise<Equipment | null>;
@@ -15,23 +16,4 @@ export interface EquipmentRepository {
   findByName(name: string): Promise<Equipment | null>;
   save(equipment: Equipment): Promise<void>;
   delete(equipmentId: string): Promise<void>;
-}
-
-let repository: EquipmentRepository | undefined;
-
-// Ports and adapters: pick the adapter once per process and cache it, so
-// the in-memory adapter's state actually persists across requests. See
-// athletes-repository.server.ts for why the adapter modules are imported
-// dynamically rather than at the top of this file.
-export async function getEquipmentRepository(): Promise<EquipmentRepository> {
-  if (!repository) {
-    repository = process.env.DATABASE_URL
-      ? new (
-          await import("./drizzle/equipment-repository.server")
-        ).DrizzleEquipmentRepository()
-      : new (
-          await import("./in-memory/equipment-repository.server")
-        ).InMemoryEquipmentRepository();
-  }
-  return repository;
 }

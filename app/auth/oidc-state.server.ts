@@ -1,6 +1,4 @@
-import { createCookie } from "react-router";
-
-import { getSessionSecret } from "./env.server";
+import type { Cookie } from "react-router";
 
 type OidcState = {
   codeVerifier: string;
@@ -8,20 +6,15 @@ type OidcState = {
   redirectTo: string;
 };
 
-const cookie = createCookie("__oidc_state", {
-  path: "/",
-  httpOnly: true,
-  sameSite: "lax",
-  secure: process.env.NODE_ENV === "production",
-  maxAge: 60 * 10,
-  secrets: [getSessionSecret()],
-});
-
-export async function serializeOidcState(data: OidcState): Promise<string> {
+export async function serializeOidcState(
+  cookie: Cookie,
+  data: OidcState,
+): Promise<string> {
   return cookie.serialize(data);
 }
 
 export async function parseOidcState(
+  cookie: Cookie,
   cookieHeader: string | null,
 ): Promise<OidcState | null> {
   const value = await cookie.parse(cookieHeader);
@@ -36,6 +29,6 @@ export async function parseOidcState(
   return value;
 }
 
-export async function clearOidcState(): Promise<string> {
+export async function clearOidcState(cookie: Cookie): Promise<string> {
   return cookie.serialize("", { maxAge: 0 });
 }

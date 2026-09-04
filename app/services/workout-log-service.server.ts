@@ -1,3 +1,5 @@
+import { Inject, Injectable } from "@nestjs/common";
+
 import type { Athlete } from "~/domain/athlete/athlete";
 import { WorkoutSession } from "~/domain/session/workout-session";
 import { err, ok, type Result } from "~/domain/shared/result";
@@ -6,17 +8,18 @@ import { Duration } from "~/domain/values/duration";
 import { Speed } from "~/domain/values/speed";
 import { Weight } from "~/domain/values/weight";
 import type { ExercisesRepository } from "~/repositories/exercises-repository.server";
-import { getExercisesRepository } from "~/repositories/exercises-repository.server";
 import type { UnitOfWork } from "~/repositories/unit-of-work.server";
-import { getUnitOfWork } from "~/repositories/unit-of-work.server";
 import type { WorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
-import { getWorkoutSessionsRepository } from "~/repositories/workout-sessions-repository.server";
+
+import {
+  EXERCISES_REPOSITORY,
+  UNIT_OF_WORK,
+  WORKOUT_SESSIONS_REPOSITORY,
+} from "~server/repositories/tokens";
+import { DOMAIN_DEPS } from "~server/services/tokens";
 
 import { productionDeps, type DomainDeps } from "./shared/deps.server";
-import {
-  getTrainingPlanService,
-  TrainingPlanService,
-} from "./training-plan-service.server";
+import { TrainingPlanService } from "./training-plan-service.server";
 
 export type LoggedSetView = {
   id: string;
@@ -43,13 +46,15 @@ export type SetInput = {
   resistance?: number | null;
 };
 
+@Injectable()
 export class WorkoutLogService {
   constructor(
+    @Inject(WORKOUT_SESSIONS_REPOSITORY)
     private readonly sessions: WorkoutSessionsRepository,
-    private readonly exercises: ExercisesRepository,
-    private readonly plans: TrainingPlanService,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps = productionDeps,
+    @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(TrainingPlanService) private readonly plans: TrainingPlanService,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps = productionDeps,
   ) {}
 
   async loggedSetsFor(
@@ -174,18 +179,4 @@ export class WorkoutLogService {
       return ok();
     });
   }
-}
-
-let service: WorkoutLogService | undefined;
-
-export async function getWorkoutLogService(): Promise<WorkoutLogService> {
-  if (!service) {
-    service = new WorkoutLogService(
-      await getWorkoutSessionsRepository(),
-      await getExercisesRepository(),
-      await getTrainingPlanService(),
-      await getUnitOfWork(),
-    );
-  }
-  return service;
 }

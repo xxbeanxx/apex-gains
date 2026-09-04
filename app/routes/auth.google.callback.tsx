@@ -1,13 +1,17 @@
 import * as client from "openid-client";
 import { redirect } from "react-router";
 
-import { getOrigin } from "~/auth/env.server";
 import { clearOidcState, parseOidcState } from "~/auth/oidc-state.server";
-import { getGoogleConfig } from "~/auth/oidc.server";
-import { commitSession, getSession } from "~/auth/session.server";
 import { ErrorPage } from "~/components/error-page";
 import { loggerContext } from "~/lib/logger.server";
-import { getAthletesRepository } from "~/repositories/athletes-repository.server";
+
+import {
+  appConfigContext,
+  athletesRepositoryContext,
+  oidcConfigContext,
+  oidcStateCookieContext,
+  sessionStorageContext,
+} from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/auth.google.callback";
 
@@ -19,25 +23,30 @@ export { ErrorPage as ErrorBoundary };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const logger = context.get(loggerContext);
+  const oidcStateCookie = context.get(oidcStateCookieContext);
 
-  const state = await parseOidcState(request.headers.get("Cookie"));
+  const state = await parseOidcState(
+    oidcStateCookie,
+    request.headers.get("Cookie"),
+  );
   if (!state) {
     logger.warn("google oauth callback with missing/expired state cookie");
     throw redirect("/auth/google");
   }
 
-  const config = await getGoogleConfig();
+  const config = await context.get(oidcConfigContext).get();
+  const origin = context.get(appConfigContext).origin;
 
   // openid-client derives the redirect_uri it validates against Google from
   // this URL's origin (stripping query params), not from the redirect_uri
   // passed below. Rebuild the origin from ORIGIN rather than trusting
   // request.url's, since ORIGIN is the exact value registered with Google
   // and request.url's origin depends on how the deployed server derives it
-  // from forwarded headers (see server.ts).
+  // from forwarded headers (see server/main.ts).
   const requestUrl = new URL(request.url);
   const currentUrl = new URL(
     `${requestUrl.pathname}${requestUrl.search}`,
-    getOrigin(),
+    origin,
   );
 
   const tokens = await client.authorizationCodeGrant(
@@ -48,7 +57,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       expectedState: state.state,
     },
     {
-      redirect_uri: `${getOrigin()}/auth/google/callback`,
+      redirect_uri: `${origin}/auth/google/callback`,
     },
   );
 
@@ -63,7 +72,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     });
   }
 
-  const athletesRepository = await getAthletesRepository();
+  const athletesRepository = context.get(athletesRepositoryContext);
   const existingUser = await athletesRepository.findByGoogleSub(claims.sub);
 
   const user =
@@ -80,12 +89,15 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     existingUser ? "user logged in" : "user signed up",
   );
 
-  const session = await getSession(request.headers.get("Cookie"));
+  const sessionStorage = context.get(sessionStorageContext);
+  const session = await sessionStorage.getSession(
+    request.headers.get("Cookie"),
+  );
   session.set("userId", user.id);
 
   const headers = new Headers();
-  headers.append("Set-Cookie", await commitSession(session));
-  headers.append("Set-Cookie", await clearOidcState());
+  headers.append("Set-Cookie", await sessionStorage.commitSession(session));
+  headers.append("Set-Cookie", await clearOidcState(oidcStateCookie));
 
   return redirect(state.redirectTo, { headers });
 }

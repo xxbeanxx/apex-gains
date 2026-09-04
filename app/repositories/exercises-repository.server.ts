@@ -8,7 +8,8 @@ import type { Exercise } from "~/domain/exercise/exercise";
 export type DeleteExerciseOutcome = "deleted" | "in-use";
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
-// directly. The factory below picks which adapter backs it at runtime.
+// directly. `server/repositories/repositories.module.ts` picks which
+// adapter backs it.
 //
 // Now a plain collection of `Exercise` aggregates: loading, saving and a few
 // lookups. The rules these methods used to carry - forking a sample on first
@@ -40,23 +41,4 @@ export interface ExercisesRepository {
   findForkOf(userId: string, sampleId: string): Promise<Exercise | null>;
   save(exercise: Exercise): Promise<void>;
   delete(exerciseId: string): Promise<DeleteExerciseOutcome>;
-}
-
-let repository: ExercisesRepository | undefined;
-
-// Ports and adapters: pick the adapter once per process and cache it, so
-// the in-memory adapter's state actually persists across requests. See
-// athletes-repository.server.ts for why the adapter modules are imported
-// dynamically rather than at the top of this file.
-export async function getExercisesRepository(): Promise<ExercisesRepository> {
-  if (!repository) {
-    repository = process.env.DATABASE_URL
-      ? new (
-          await import("./drizzle/exercises-repository.server")
-        ).DrizzleExercisesRepository()
-      : new (
-          await import("./in-memory/exercises-repository.server")
-        ).InMemoryExercisesRepository();
-  }
-  return repository;
 }

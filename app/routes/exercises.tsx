@@ -42,7 +42,8 @@ import type {
   EquipmentView,
   ExerciseView,
 } from "~/services/exercise-library-service.server";
-import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
+
+import { exerciseLibraryServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/exercises";
 
@@ -57,7 +58,7 @@ const typeLabels: Record<string, string> = {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const libraryService = await getExerciseLibraryService();
+  const libraryService = context.get(exerciseLibraryServiceContext);
   return await libraryService.library(athlete);
 }
 
@@ -93,7 +94,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const libraryService = await getExerciseLibraryService();
+  const libraryService = context.get(exerciseLibraryServiceContext);
 
   if (intent === "addEquipment") {
     const result = addEquipmentSchema.safeParse({ name: formData.get("name") });

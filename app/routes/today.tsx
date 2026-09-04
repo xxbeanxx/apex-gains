@@ -45,17 +45,20 @@ import {
 } from "~/lib/format";
 import { loggerContext } from "~/lib/logger.server";
 import { cn } from "~/lib/utils";
-import { getExerciseLibraryService } from "~/services/exercise-library-service.server";
-import {
-  getTrainingPlanService,
-  type WeekHistoryDay,
-  type WeekPlanDay,
+import type {
+  WeekHistoryDay,
+  WeekPlanDay,
 } from "~/services/training-plan-service.server";
-import {
-  getWorkoutLogService,
-  type LoggedSetView,
-  type RecentSetView,
+import type {
+  LoggedSetView,
+  RecentSetView,
 } from "~/services/workout-log-service.server";
+
+import {
+  exerciseLibraryServiceContext,
+  trainingPlanServiceContext,
+  workoutLogServiceContext,
+} from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/today";
 
@@ -84,9 +87,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   );
   const date = requested?.isOnOrBefore(today) ? requested : today;
 
-  const planService = await getTrainingPlanService();
-  const logService = await getWorkoutLogService();
-  const libraryService = await getExerciseLibraryService();
+  const planService = context.get(trainingPlanServiceContext);
+  const logService = context.get(workoutLogServiceContext);
+  const libraryService = context.get(exerciseLibraryServiceContext);
 
   const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] =
     await Promise.all([
@@ -125,7 +128,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const logService = await getWorkoutLogService();
+  const logService = context.get(workoutLogServiceContext);
 
   if (intent === "logSet") {
     // Blank optional fields arrive as "", which z.coerce.number() reads as 0

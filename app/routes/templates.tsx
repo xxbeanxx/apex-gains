@@ -16,7 +16,8 @@ import { Field } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { loggerContext } from "~/lib/logger.server";
-import { getTemplateService } from "~/services/template-service.server";
+
+import { templateServiceContext } from "~/lib/nest-bridge.server";
 
 import type { Route } from "./+types/templates";
 
@@ -30,7 +31,7 @@ const createTemplateSchema = z.object({
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
-  const templateService = await getTemplateService();
+  const templateService = context.get(templateServiceContext);
   return { templates: await templateService.list(athlete) };
 }
 
@@ -48,7 +49,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  const templateService = await getTemplateService();
+  const templateService = context.get(templateServiceContext);
   const template = await templateService.create(user, result.data.name);
 
   context
