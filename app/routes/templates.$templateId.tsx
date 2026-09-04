@@ -106,9 +106,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    requestLogger(context).info(
-      { userId: athlete.id, templateId },
-      "template deleted",
+    requestLogger(context).log(
+      `deleted template ${templateId} for user ${athlete.id}`,
+      "Templates",
     );
     throw redirect("/templates");
   }

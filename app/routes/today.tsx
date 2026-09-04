@@ -163,9 +163,9 @@ export async function action({ request, context }: Route.ActionArgs) {
       return data({ error: "Invalid set" }, { status: 400 });
     }
     if (outcome.value.sessionOpened) {
-      requestLogger(context).info(
-        { userId: athlete.id, date: date.value },
-        "workout session created",
+      requestLogger(context).log(
+        `opened session on ${date.value} for user ${athlete.id}`,
+        "Today",
       );
     }
     return { ok: true };

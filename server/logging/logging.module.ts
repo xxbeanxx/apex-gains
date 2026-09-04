@@ -1,11 +1,10 @@
 import { Global, Module } from "@nestjs/common";
 
 import { loggerProvider } from "./logger.provider";
-import { NestPinoLogger } from "./nest-logger.service";
 
 @Global()
 @Module({
-  providers: [loggerProvider, NestPinoLogger],
-  exports: [loggerProvider, NestPinoLogger],
+  providers: [loggerProvider],
+  exports: [loggerProvider],
 })
 export class LoggingModule {}

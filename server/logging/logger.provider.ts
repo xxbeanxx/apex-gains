@@ -1,35 +1,35 @@
+import { ConsoleLogger, LOG_LEVELS, type LogLevel } from "@nestjs/common";
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
-import pino from "pino";
-
-import { getBuildInfo } from "~/lib/build-info.server";
 
 import { coreConfig } from "../config/app.config";
 import { LOGGER } from "./tokens";
 
-export type AppLogger = pino.Logger;
+export type AppLogger = ConsoleLogger;
 
 /**
- * The one pino instance for the whole process: Nest's own internal logs go
- * through it (see `NestPinoLogger`), and it is the root every per-request
- * child logger is derived from (`app/lib/logger.server.ts`).
+ * `LOG_LEVELS` is ordered least to most severe, so everything from the
+ * configured level onwards is what stays enabled - Nest takes the set of
+ * levels to print, not a threshold.
+ */
+export function enabledLogLevels(minimum: LogLevel): LogLevel[] {
+  return LOG_LEVELS.slice(LOG_LEVELS.indexOf(minimum));
+}
+
+/**
+ * The one logger for the whole process. Nest's own internal logging goes
+ * through it as well, via `app.useLogger()` in `server/main.ts`, and it
+ * reaches the React Router app through `nestLoggerContext`.
  *
- * Structured JSON on stdout/stderr - Azure Container Apps ships those
- * straight into Log Analytics, so `pino-pretty` (readable, but not
- * JSON-parseable) is only worth it for a human watching `npm run dev`.
- * "test" stays plain JSON too, so vitest runs don't spawn pino-pretty's
- * worker thread.
+ * Colour is decided by whether anything can render it: writing ANSI escapes
+ * into a redirected stream just makes the output harder to read.
  */
 export const loggerProvider: Provider = {
   provide: LOGGER,
   inject: [coreConfig.KEY],
   useFactory: (core: ConfigType<typeof coreConfig>): AppLogger =>
-    pino({
-      level: core.logLevel,
-      base: { service: "apex-gains", build: getBuildInfo() },
-      transport:
-        core.nodeEnv === "development"
-          ? { target: "pino-pretty", options: { colorize: true } }
-          : undefined,
+    new ConsoleLogger({
+      logLevels: enabledLogLevels(core.logLevel),
+      colors: process.stdout.isTTY === true,
     }),
 };

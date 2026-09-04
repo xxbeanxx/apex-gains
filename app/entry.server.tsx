@@ -17,6 +17,10 @@ import { getNestLogger } from "~/lib/nest-bridge.server";
 
 export const streamTimeout = 5_000;
 
+/** Nest logger context labels for the lines this module emits. */
+const PROCESS = "Process";
+const REQUEST = "Request";
+
 // Registered here (the server's actual bootstrap module) rather than in
 // logger.server.ts, so importing the logger from a route/lib module never
 // has the side effect of hooking process-wide crash handlers - that would
@@ -27,12 +31,16 @@ export const streamTimeout = 5_000;
 // Nest has necessarily finished bootstrapping - it only matters that
 // registration has completed by the time a handler actually *fires*.
 process.on("uncaughtException", (err) => {
-  getNestLogger().fatal({ err }, "uncaught exception");
+  getNestLogger().fatal("uncaught exception", err.stack, PROCESS);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
-  getNestLogger().error({ err: reason }, "unhandled rejection");
+  getNestLogger().error(
+    "unhandled rejection",
+    reason instanceof Error ? reason.stack : String(reason),
+    PROCESS,
+  );
 });
 
 export default function handleRequest(
@@ -104,8 +112,9 @@ export default function handleRequest(
           // reject and get logged via handleError below.
           if (shellRendered) {
             requestLogger(loadContext).error(
-              { err: error },
               "streaming render error",
+              error instanceof Error ? error.stack : String(error),
+              REQUEST,
             );
           }
         },
@@ -146,22 +155,20 @@ export function handleError(
   // unmatched URL never reached `requestLoggingMiddleware`, so this is the
   // only line that will mention it.
   if (isRouteErrorResponse(error) && error.status < 500) {
-    logger.warn(
-      {
-        status: error.status,
-        method: request.method,
-        path: new URL(request.url).pathname,
-      },
-      "request rejected",
-    );
+    const { pathname } = new URL(request.url);
+    logger.warn(`${request.method} ${pathname} ${error.status}`, REQUEST);
     return;
   }
 
   // `ErrorResponseImpl.error` (the underlying thrown Error, when a Response
   // was synthesized from one) is private in react-router's public types, so
   // reach it structurally rather than through the nominal ErrorResponse type.
-  const wrapped = isRouteErrorResponse(error)
-    ? (error as { error?: unknown }).error
-    : undefined;
-  logger.error({ err: wrapped ?? error }, "unhandled server error");
+  const cause = isRouteErrorResponse(error)
+    ? ((error as { error?: unknown }).error ?? error)
+    : error;
+  logger.error(
+    "unhandled server error",
+    cause instanceof Error ? cause.stack : String(cause),
+    REQUEST,
+  );
 }

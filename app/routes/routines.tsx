@@ -59,9 +59,9 @@ export async function action({ request, context }: Route.ActionArgs) {
     DateOnly.today(),
   );
 
-  requestLogger(context).info(
-    { userId: user.id, routineId: routine.id },
-    "routine created",
+  requestLogger(context).log(
+    `created routine ${routine.id} for user ${user.id}`,
+    "Routines",
   );
 
   throw redirect(`/routines/${routine.id}`);

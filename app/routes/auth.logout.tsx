@@ -17,7 +17,7 @@ export { ErrorPage as ErrorBoundary };
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext);
   if (user) {
-    requestLogger(context).info({ userId: user.id }, "user logged out");
+    requestLogger(context).log(`user ${user.id} logged out`, "Auth");
   }
 
   const sessionStorage = context.get(sessionStorageContext);

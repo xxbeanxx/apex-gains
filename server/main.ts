@@ -25,7 +25,7 @@ import { RouterContextProvider, type ServerBuild } from "react-router";
 
 import { AppModule } from "./app.module";
 import { coreConfig } from "./config/app.config";
-import { NestPinoLogger } from "./logging/nest-logger.service";
+import { LOGGER } from "./logging/tokens";
 import { LoadContextProvider } from "./react-router/load-context.provider";
 
 const __filename = url.fileURLToPath(import.meta.url);
@@ -115,7 +115,7 @@ async function bootstrap() {
     // needs a parsed body should opt in with `app.useBodyParser()`.
     bodyParser: false,
   });
-  app.useLogger(app.get(NestPinoLogger));
+  app.useLogger(app.get(LOGGER));
   app.enableShutdownHooks();
 
   const adapter = app.getHttpAdapter();

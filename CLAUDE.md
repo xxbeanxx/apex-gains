@@ -368,30 +368,34 @@ maps to `app/`, `~server/` to `server/` (see `tsconfig.json` and
 `app/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
-**Logging.** The root `pino` logger is built once by Nest
-(`server/logging/logger.provider.ts`; JSON on stdout/stderr everywhere
-except `development`, where it pipes through `pino-pretty`; Azure
-Container Apps ships stdout JSON straight into Log Analytics) and
-adapted to Nest's own `LoggerService` interface
-(`server/logging/nest-logger.service.ts`, wired up via `app.useLogger()`
-in `server/main.ts`) so Nest's *own* internal bootstrap logging
-(`[NestFactory]`, `[InstanceLoader]`, ...) goes through it too, instead
-of Nest's default console output. It reaches the React Router app via
-`nestLoggerContext` (`app/lib/nest-bridge.server.ts` - see Server
-runtime, above). `app/lib/logger.server.ts`'s `requestLoggingMiddleware`,
-registered in `root.tsx`'s `middleware` export right after
-`nestBridgeMiddleware` (which is what makes the root logger reachable in
-the first place), reads it and binds a per-request child logger (with a
-`requestId`) into `loggerContext`, logging one `"request completed"`/
-`"request failed"` line per request with method/path/status/duration/
-userId. Route code that wants request-scoped logging reads it via
-`requestLogger(context)` - never `context.get(loggerContext)` directly,
-because middleware only runs for a *matched* route and an unmatched URL
-would otherwise throw on the unset context, turning a 404 into a 500;
-`requestLogger` falls back to the root logger. Use pino's own API
-(`logger.info(obj, msg)`), not Nest's `LoggerService` one, since Nest's
-interface has no equivalent to a pino child logger with bound structured
-fields.
+**Logging.** Nest's own `ConsoleLogger` is the only logger, built once
+(`server/logging/logger.provider.ts`) and handed to `app.useLogger()`
+in `server/main.ts`, so Nest's internal bootstrap lines
+(`[NestFactory]`, `[InstanceLoader]`, ...) and the app's own share one
+format. Output is plain text, never JSON; colour is enabled only when
+stdout is a TTY, so a redirected stream does not collect ANSI escapes.
+`LOG_LEVEL` names the least severe level to print and is validated
+against Nest's own names - `verbose`, `debug`, `log`, `warn`, `error`,
+`fatal` - so `log` is what other loggers would call "info", and an
+unrecognised value stops the server at boot.
+
+The logger reaches the React Router app via `nestLoggerContext`
+(`app/lib/nest-bridge.server.ts` - see Server runtime, above);
+`app/lib/logger.server.ts`'s `requestLoggingMiddleware`, registered in
+`root.tsx`'s `middleware` export right after `nestBridgeMiddleware`,
+puts it on `loggerContext` and logs one line per request - `GET /today
+200 in 12ms for user <id>`. Route code reads it via
+`requestLogger(context)`, never `context.get(loggerContext)` directly,
+because middleware only runs for a *matched* route and an unmatched
+URL would otherwise throw on the unset context, turning a 404 into a
+500; `requestLogger` falls back to the process-wide logger.
+
+Log lines are plain sentences with the values interpolated (`created
+routine <id> for user <id>`), and the second argument is Nest's
+context label - `Request`, `Auth`, `Routines`, `Templates`, `Today`,
+`Process` - which prints in brackets. There is no structured-field or
+correlation-id machinery: `logger.error` takes a stack string as its
+second argument, so an `Error` is passed as `err.stack`.
 
 **Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as

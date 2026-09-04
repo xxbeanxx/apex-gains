@@ -16,6 +16,9 @@ import {
 
 import type { Route } from "./+types/auth.google.callback";
 
+/** Nest logger context label for this route's lines. */
+const AUTH = "Auth";
+
 // No `default` export: this route only ever redirects on success. An
 // ErrorBoundary export is still required so React Router renders errors
 // through the normal styled document instead of treating this as a raw
@@ -31,7 +34,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     request.headers.get("Cookie"),
   );
   if (!state) {
-    logger.warn("google oauth callback with missing/expired state cookie");
+    logger.warn(
+      "oauth callback arrived with a missing or expired state cookie",
+      AUTH,
+    );
     throw redirect("/auth/google");
   }
 
@@ -65,8 +71,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const claims = tokens.claims();
   if (!claims?.sub || typeof claims.email !== "string") {
     logger.error(
-      { claims },
-      "google oauth callback missing expected profile claims",
+      "oauth callback did not return the expected profile claims " +
+        `(sub: ${claims?.sub ? "present" : "missing"}, ` +
+        `email: ${typeof claims?.email})`,
+      undefined,
+      AUTH,
     );
     throw new Response("Google did not return the expected profile claims", {
       status: 400,
@@ -82,9 +91,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       avatarUrl: typeof claims.picture === "string" ? claims.picture : null,
     });
 
-  logger.info(
-    { userId: athlete.id, newUser: isNew },
-    isNew ? "user signed up" : "user logged in",
+  logger.log(
+    isNew ? `signed up user ${athlete.id}` : `logged in user ${athlete.id}`,
+    AUTH,
   );
 
   const sessionStorage = context.get(sessionStorageContext);

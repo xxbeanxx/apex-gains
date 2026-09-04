@@ -52,9 +52,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const templateService = context.get(templateServiceContext);
   const template = await templateService.create(user, result.data.name);
 
-  requestLogger(context).info(
-    { userId: user.id, templateId: template.id },
-    "template created",
+  requestLogger(context).log(
+    `created template ${template.id} for user ${user.id}`,
+    "Templates",
   );
 
   throw redirect(`/templates/${template.id}`);

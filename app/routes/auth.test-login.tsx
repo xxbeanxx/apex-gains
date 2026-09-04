@@ -48,7 +48,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       avatarUrl: null,
     });
 
-  logger.info({ userId: athlete.id, newUser: isNew }, "test login used");
+  logger.log(
+    `test login as ${isNew ? "new" : "existing"} user ${athlete.id}`,
+    "Auth",
+  );
 
   const sessionStorage = context.get(sessionStorageContext);
   const session = await sessionStorage.getSession(

@@ -58,10 +58,10 @@ const contexts = {
   oidcStateCookie: createContext<Cookie>(),
   appConfig: createContext<AppConfig>(),
   /**
-   * The root pino instance - also what Nest's own internal logging goes
-   * through. `requestLoggingMiddleware` (`app/lib/logger.server.ts`) reads
-   * this and `.child()`s it into the per-request logger on `loggerContext`,
-   * rather than constructing its own pino instance.
+   * The process-wide logger, which Nest's own internal logging also goes
+   * through. `requestLoggingMiddleware` (`app/lib/logger.server.ts`) puts it
+   * on `loggerContext` for the request, and `getNestLogger()` below reaches
+   * it from the paths that have no request context.
    */
   logger: createContext<AppLogger>(),
 } as const;

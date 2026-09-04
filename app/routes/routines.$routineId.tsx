@@ -108,9 +108,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400 },
       );
     }
-    requestLogger(context).info(
-      { userId: athlete.id, routineId },
-      "routine deleted",
+    requestLogger(context).log(
+      `deleted routine ${routineId} for user ${athlete.id}`,
+      "Routines",
     );
     throw redirect("/routines");
   }
@@ -165,9 +165,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         : await routineService.deactivate(athlete, routineId);
 
     if (outcome.ok) {
-      requestLogger(context).info(
-        { userId: athlete.id, routineId },
-        `routine ${intent}d`,
+      requestLogger(context).log(
+        `${intent}d routine ${routineId} for user ${athlete.id}`,
+        "Routines",
       );
     }
     return settle(outcome);
