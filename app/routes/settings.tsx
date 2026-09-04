@@ -104,8 +104,10 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               )}
             </Field>
 
-            {/* Both outcomes land in one live region so a screen reader hears
-                the result of saving without moving focus. */}
+            {
+              // Both outcomes land in one live region so a screen reader hears
+              // the result of saving without moving focus.
+            }
             <div aria-live="polite" className="empty:hidden">
               {actionData && 'ok' in actionData && actionData.intent === 'updateUnits' ? (
                 <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">

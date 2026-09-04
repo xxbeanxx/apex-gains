@@ -731,11 +731,11 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         </Card>
       </Section>
 
-      {/*
-        Anything logged that day that its template does not cover. Without
-        this, sets for an off-template exercise were logged successfully and
-        then displayed nowhere at all whenever a template was active.
-      */}
+      {
+        // Anything logged that day that its template does not cover. Without
+        // this, sets for an off-template exercise were logged successfully and
+        // then displayed nowhere at all whenever a template was active.
+      }
       {extraEntries.length > 0 || plan.type !== 'template' ? (
         <Section
           title={plan.type === 'template' ? `Also logged ${dayWord}` : `Logged ${dayWord}`}

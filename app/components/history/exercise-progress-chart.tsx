@@ -116,7 +116,9 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
             />
           ) : null}
 
-          {/* End marker: ring in the surface color, then the mark itself. */}
+          {
+            // End marker: ring in the surface color, then the mark itself.
+          }
           <circle cx={last.x} cy={last.y} r={7} className="fill-card" />
           <circle cx={last.x} cy={last.y} r={4} className="fill-brand-strong" />
           <text

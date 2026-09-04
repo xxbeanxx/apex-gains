@@ -74,9 +74,11 @@ function DesktopNav() {
               {({ isActive }) => (
                 <>
                   {label}
-                  {/* Volt underline is the only brand-coloured chrome here.
-                      `brand-strong`, not `brand`: a 2px indicator must clear
-                      3:1 against the header, which the light fill does not. */}
+                  {
+                    // Volt underline is the only brand-coloured chrome here.
+                    // `brand-strong`, not `brand`: a 2px indicator must clear
+                    // 3:1 against the header, which the light fill does not.
+                  }
                   <span
                     aria-hidden="true"
                     className={cn(

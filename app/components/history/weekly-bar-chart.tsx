@@ -82,7 +82,9 @@ export function WeeklyBarChart({
 
             return (
               <g key={point.weekStart}>
-                {/* Full-column hit target, taller than the bar itself. */}
+                {
+                  // Full-column hit target, taller than the bar itself.
+                }
                 <rect
                   x={MARGIN.left + i * bandWidth}
                   y={MARGIN.top}
