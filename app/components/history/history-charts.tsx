@@ -96,9 +96,9 @@ export function HistoryCharts({
         <CardHeader>
           <CardTitle>Personal records</CardTitle>
           <CardDescription>
-            For weighted exercises, this is an estimated one-rep max (Epley formula: weight × (1 + reps ÷ 30)),
-            not the heaviest single set - so a lighter set of more reps can outrank a heavier, lower-rep one.
-            Bodyweight and timed exercises instead show the best set or longest duration logged.
+            For weighted exercises, this is an estimated one-rep max (Epley formula: weight × (1 + reps ÷ 30)), not the heaviest
+            single set - so a lighter set of more reps can outrank a heavier, lower-rep one. Bodyweight and timed exercises
+            instead show the best set or longest duration logged.
           </CardDescription>
         </CardHeader>
         <CardContent>

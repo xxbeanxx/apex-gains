@@ -135,7 +135,12 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
             </>
           ) : null}
 
-          <text x={MARGIN.left} y={HEIGHT - MARGIN.bottom + 14} textAnchor="start" className="fill-muted-foreground text-[10px]">
+          <text
+            x={MARGIN.left}
+            y={HEIGHT - MARGIN.bottom + 14}
+            textAnchor="start"
+            className="fill-muted-foreground text-[10px]"
+          >
             {formatMonthDay(firstDate)}
           </text>
           <text

@@ -13,8 +13,8 @@ const equipmentNames = ['BowFlex PR1000', 'Rowing Machine', 'Treadmill', 'Bodywe
 const cardioKindByEquipmentName: Record<(typeof equipmentNames)[number], 'speed' | 'resistance' | null> = {
   'BowFlex PR1000': null,
   'Rowing Machine': 'resistance',
-  Treadmill: 'speed',
-  Bodyweight: null,
+  'Treadmill': 'speed',
+  'Bodyweight': null,
 };
 
 type SeedExercise = typeof exercises.$inferInsert & {
