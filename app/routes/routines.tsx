@@ -1,6 +1,7 @@
+import { Expose, Transform } from 'class-transformer';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import { RepeatIcon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -12,6 +13,7 @@ import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
+import { trim, validateForm } from '~/lib/validate-form.server';
 
 import { routineServiceContext } from '~/lib/nest-bridge.server';
 
@@ -21,9 +23,14 @@ export function meta() {
   return [{ title: 'Routines - Apex Gains' }];
 }
 
-const createRoutineSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(100),
-});
+class CreateRoutineDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1, { message: 'Name is required' })
+  @MaxLength(100)
+  readonly name!: string;
+}
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
@@ -34,12 +41,10 @@ export async function loader({ context }: Route.LoaderArgs) {
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
   const formData = await request.formData();
-  const result = createRoutineSchema.safeParse({
-    name: formData.get('name'),
-  });
+  const result = validateForm(CreateRoutineDto, { name: formData.get('name') });
 
   if (!result.success) {
-    return data({ error: result.error.issues[0]?.message ?? 'Invalid name' }, { status: 400 });
+    return data({ error: result.message }, { status: 400 });
   }
 
   // A new routine is anchored to today, so its first slot is today's - the

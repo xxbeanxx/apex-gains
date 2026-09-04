@@ -359,7 +359,14 @@ single `action` with an `intent` hidden field dispatched via
 if/else-if (see `app/routes/routines.$routineId.tsx` for the fullest
 example: rename, reanchor, activate/deactivate, addSlot, removeSlot,
 move, delete). Each branch validates its own `formData` with a local
-Zod schema. Both detail routes share a `settle` helper that maps a
+`class-validator` DTO class, checked through `validateForm`
+(`app/lib/validate-form.server.ts`) — the same
+`class-validator`/`class-transformer` pairing `server/config/` uses for
+env vars (see Server runtime, above), so there is one validation
+mechanism for the whole app rather than a second one only for forms.
+`validateForm` returns `{ success: true; data }` or `{ success: false;
+message }` instead of throwing, since a bad submission is a 400, not a
+boot failure. Both detail routes share a `settle` helper that maps a
 service result onto HTTP: not-found becomes a 404, and a non-null
 `forkedId` becomes a redirect to the fork's own URL, since the edit
 would be invisible at the sample's. Every mutating form is a

@@ -1,7 +1,8 @@
+import { Expose, Transform } from 'class-transformer';
+import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, PlusIcon, RotateCcwIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { data, redirect, useFetcher } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -18,6 +19,7 @@ import { speedUnitLabel } from '~/domain/values/units';
 import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
+import { toOptionalNumber, trim, validateForm } from '~/lib/validate-form.server';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
@@ -45,19 +47,74 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   };
 }
 
-const renameSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-});
+class RenameTemplateDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  readonly name!: string;
+}
 
-const addExerciseSchema = z.object({
-  exerciseId: z.uuid(),
-  targetSets: z.coerce.number().int().positive().optional(),
-  targetReps: z.coerce.number().int().positive().optional(),
-  targetWeight: z.coerce.number().positive().optional(),
-  targetDurationMinutes: z.coerce.number().positive().optional(),
-  targetSpeed: z.coerce.number().positive().optional(),
-  targetResistance: z.coerce.number().int().positive().optional(),
-});
+class AddExerciseDto {
+  @Expose()
+  @IsUUID()
+  readonly exerciseId!: string;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly targetSets?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly targetReps?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly targetWeight?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly targetDurationMinutes?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly targetSpeed?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly targetResistance?: number;
+}
+
+class TemplateExerciseIdDto {
+  @Expose()
+  @IsUUID()
+  readonly templateExerciseId!: string;
+}
+
+class MoveExerciseDto extends TemplateExerciseIdDto {
+  @Expose()
+  @IsIn(['up', 'down'])
+  readonly direction!: 'up' | 'down';
+}
 
 /** See routines.$routineId.tsx's `settle` - same epilogue, same reasoning. */
 function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok: false }) {
@@ -102,7 +159,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'rename') {
-    const result = renameSchema.safeParse({ name: formData.get('name') });
+    const result = validateForm(RenameTemplateDto, { name: formData.get('name') });
     if (!result.success) {
       return data({ error: 'Invalid name', intent: 'rename' }, { status: 400 });
     }
@@ -110,11 +167,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'addExercise') {
-    // Blank optional fields arrive as "", which z.coerce.number() reads as 0
-    // (failing .positive()) rather than as absent - drop them so they parse
-    // as undefined instead.
-    const raw = Object.fromEntries([...formData].filter(([, value]) => value !== ''));
-    const result = addExerciseSchema.safeParse(raw);
+    const result = validateForm(AddExerciseDto, Object.fromEntries(formData));
     if (!result.success) {
       return data({ error: 'Invalid exercise', intent: 'addExercise' }, { status: 400 });
     }
@@ -135,17 +188,23 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'removeExercise') {
-    return settle(await templateService.removeExercise(athlete, templateId, String(formData.get('templateExerciseId'))));
+    const result = validateForm(TemplateExerciseIdDto, { templateExerciseId: formData.get('templateExerciseId') });
+    if (!result.success) {
+      return data({ error: result.message, intent: 'removeExercise' }, { status: 400 });
+    }
+    return settle(await templateService.removeExercise(athlete, templateId, result.data.templateExerciseId));
   }
 
   if (intent === 'move') {
+    const result = validateForm(MoveExerciseDto, {
+      templateExerciseId: formData.get('templateExerciseId'),
+      direction: formData.get('direction'),
+    });
+    if (!result.success) {
+      return data({ error: result.message, intent: 'move' }, { status: 400 });
+    }
     return settle(
-      await templateService.moveExercise(
-        athlete,
-        templateId,
-        String(formData.get('templateExerciseId')),
-        formData.get('direction') === 'up' ? 'up' : 'down',
-      ),
+      await templateService.moveExercise(athlete, templateId, result.data.templateExerciseId, result.data.direction),
     );
   }
 

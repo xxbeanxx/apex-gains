@@ -1,8 +1,9 @@
+import { Expose, Transform } from 'class-transformer';
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { ChevronRightIcon, DumbbellIcon, PlusIcon, RotateCcwIcon, SearchIcon, Settings2Icon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { data, useFetcher } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -17,7 +18,8 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Textarea } from '~/components/ui/textarea';
 import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
-import { EXERCISE_TYPES } from '~/domain/exercise/exercise-type';
+import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
+import { optionalTrim, trim, validateForm } from '~/lib/validate-form.server';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext } from '~/lib/nest-bridge.server';
@@ -52,38 +54,92 @@ export async function loader({ context }: Route.LoaderArgs) {
   return await libraryService.library(athlete);
 }
 
-const addEquipmentSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(100),
-  cardioKind: z.enum(cardioKindOptionValues).transform((v) => (v === NO_CARDIO_KIND ? null : v)),
-});
+/** Maps the wire-level `'none'` sentinel to the domain's actual "no restriction" value. */
+function toCardioKind(value: (typeof cardioKindOptionValues)[number]): CardioKind | null {
+  return value === NO_CARDIO_KIND ? null : value;
+}
 
-const setCardioKindSchema = z.object({
-  equipmentId: z.uuid(),
-  cardioKind: z.enum(cardioKindOptionValues).transform((v) => (v === NO_CARDIO_KIND ? null : v)),
-});
+class AddEquipmentDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1, { message: 'Name is required' })
+  @MaxLength(100)
+  readonly name!: string;
 
-const toggleSchema = z.object({
-  exerciseId: z.uuid(),
-  equipmentId: z.uuid(),
-  checked: z.enum(['true', 'false']),
-});
+  @Expose()
+  @IsIn(cardioKindOptionValues)
+  readonly cardioKind!: (typeof cardioKindOptionValues)[number];
+}
 
-const exerciseDetailsSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(100),
-  exerciseType: z.enum(EXERCISE_TYPES),
-  muscleGroup: z
-    .string()
-    .trim()
-    .max(50)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
-  description: z
-    .string()
-    .trim()
-    .max(1000)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
-});
+class SetCardioKindDto {
+  @Expose()
+  @IsUUID()
+  readonly equipmentId!: string;
+
+  @Expose()
+  @IsIn(cardioKindOptionValues)
+  readonly cardioKind!: (typeof cardioKindOptionValues)[number];
+}
+
+class ToggleExerciseEquipmentDto {
+  @Expose()
+  @IsUUID()
+  readonly exerciseId!: string;
+
+  @Expose()
+  @IsUUID()
+  readonly equipmentId!: string;
+
+  @Expose()
+  @IsIn(['true', 'false'])
+  readonly checked!: 'true' | 'false';
+}
+
+class ExerciseDetailsDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1, { message: 'Name is required' })
+  @MaxLength(100)
+  readonly name!: string;
+
+  @Expose()
+  @IsIn(EXERCISE_TYPES)
+  readonly exerciseType!: ExerciseType;
+
+  @Expose()
+  @Transform(optionalTrim())
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  readonly muscleGroup?: string;
+
+  @Expose()
+  @Transform(optionalTrim())
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  readonly description?: string;
+}
+
+class UpdateExerciseDto extends ExerciseDetailsDto {
+  @Expose()
+  @IsUUID()
+  readonly exerciseId!: string;
+}
+
+class EquipmentIdDto {
+  @Expose()
+  @IsUUID()
+  readonly equipmentId!: string;
+}
+
+class ExerciseIdDto {
+  @Expose()
+  @IsUUID()
+  readonly exerciseId!: string;
+}
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
@@ -93,33 +149,34 @@ export async function action({ request, context }: Route.ActionArgs) {
   const libraryService = context.get(exerciseLibraryServiceContext);
 
   if (intent === 'addEquipment') {
-    const result = addEquipmentSchema.safeParse({
-      name: formData.get('name'),
-      cardioKind: formData.get('cardioKind'),
-    });
+    const result = validateForm(AddEquipmentDto, { name: formData.get('name'), cardioKind: formData.get('cardioKind') });
     if (!result.success) {
-      return data({ error: result.error.issues[0]?.message ?? 'Invalid name' }, { status: 400 });
+      return data({ error: result.message }, { status: 400 });
     }
-    await libraryService.addEquipment(athlete, result.data.name, result.data.cardioKind);
+    await libraryService.addEquipment(athlete, result.data.name, toCardioKind(result.data.cardioKind));
     return { ok: true };
   }
 
   if (intent === 'deleteEquipment') {
-    await libraryService.removeEquipment(athlete, String(formData.get('equipmentId')));
+    const result = validateForm(EquipmentIdDto, { equipmentId: formData.get('equipmentId') });
+    if (!result.success) {
+      return data({ error: result.message }, { status: 400 });
+    }
+    await libraryService.removeEquipment(athlete, result.data.equipmentId);
     return { ok: true };
   }
 
   if (intent === 'setEquipmentCardioKind') {
-    const result = setCardioKindSchema.safeParse(Object.fromEntries(formData));
+    const result = validateForm(SetCardioKindDto, Object.fromEntries(formData));
     if (!result.success) {
       return data({ error: 'Invalid cardio fields' }, { status: 400 });
     }
-    await libraryService.setEquipmentCardioKind(athlete, result.data.equipmentId, result.data.cardioKind);
+    await libraryService.setEquipmentCardioKind(athlete, result.data.equipmentId, toCardioKind(result.data.cardioKind));
     return { ok: true };
   }
 
   if (intent === 'toggleExerciseEquipment') {
-    const result = toggleSchema.safeParse(Object.fromEntries(formData));
+    const result = validateForm(ToggleExerciseEquipmentDto, Object.fromEntries(formData));
     if (!result.success) {
       return data({ error: 'Invalid toggle' }, { status: 400 });
     }
@@ -135,9 +192,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === 'createExercise') {
-    const result = exerciseDetailsSchema.safeParse(Object.fromEntries(formData));
+    const result = validateForm(ExerciseDetailsDto, Object.fromEntries(formData));
     if (!result.success) {
-      return data({ error: result.error.issues[0]?.message ?? 'Invalid exercise' }, { status: 400 });
+      return data({ error: result.message }, { status: 400 });
     }
     const outcome = await libraryService.createExercise(athlete, {
       name: result.data.name,
@@ -152,12 +209,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === 'updateExercise') {
-    const result = exerciseDetailsSchema.safeParse(Object.fromEntries(formData));
+    const result = validateForm(UpdateExerciseDto, Object.fromEntries(formData));
     if (!result.success) {
-      return data({ error: result.error.issues[0]?.message ?? 'Invalid exercise' }, { status: 400 });
+      return data({ error: result.message }, { status: 400 });
     }
 
-    const outcome = await libraryService.updateExercise(athlete, String(formData.get('exerciseId')), {
+    const outcome = await libraryService.updateExercise(athlete, result.data.exerciseId, {
       name: result.data.name,
       exerciseType: result.data.exerciseType,
       muscleGroup: result.data.muscleGroup ?? null,
@@ -172,7 +229,11 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === 'revertExercise') {
-    const outcome = await libraryService.revertExercise(athlete, String(formData.get('exerciseId')));
+    const idResult = validateForm(ExerciseIdDto, { exerciseId: formData.get('exerciseId') });
+    if (!idResult.success) {
+      return data({ error: idResult.message }, { status: 400 });
+    }
+    const outcome = await libraryService.revertExercise(athlete, idResult.data.exerciseId);
     if (!outcome.ok) {
       return outcome.error === 'nothing-to-revert'
         ? data({ error: 'Nothing to revert' }, { status: 400 })

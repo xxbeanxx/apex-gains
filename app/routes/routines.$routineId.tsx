@@ -8,8 +8,19 @@ import {
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
+import { Expose, Transform } from 'class-transformer';
+import {
+  isUUID,
+  IsIn,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+  Validate,
+  type ValidatorConstraintInterface,
+  ValidatorConstraint,
+} from 'class-validator';
 import { Link, data, redirect } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -23,6 +34,7 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
+import { IsDateOnly, trim, validateForm } from '~/lib/validate-form.server';
 
 import { routineServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
 
@@ -47,13 +59,46 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   };
 }
 
-const renameSchema = z.object({ name: z.string().trim().min(1).max(100) });
-const reanchorSchema = z.object({
-  anchorDate: z.string().refine(DateOnly.isValid),
-});
-const addSlotSchema = z.object({
-  templateId: z.union([z.uuid(), z.literal('rest')]),
-});
+class RenameRoutineDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  readonly name!: string;
+}
+
+class ReanchorRoutineDto {
+  @Expose()
+  @IsDateOnly()
+  readonly anchorDate!: string;
+}
+
+/** A routine slot names either a template by id, or the sentinel `'rest'` for a rest day. */
+@ValidatorConstraint({ name: 'isTemplateSlotId' })
+class IsTemplateSlotIdConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    return value === 'rest' || (typeof value === 'string' && isUUID(value));
+  }
+}
+
+class AddSlotDto {
+  @Expose()
+  @Validate(IsTemplateSlotIdConstraint)
+  readonly templateId!: string;
+}
+
+class SlotIdDto {
+  @Expose()
+  @IsUUID()
+  readonly slotId!: string;
+}
+
+class MoveSlotDto extends SlotIdDto {
+  @Expose()
+  @IsIn(['up', 'down'])
+  readonly direction!: 'up' | 'down';
+}
 
 /**
  * Every mutating intent shares an epilogue: a routine that isn't there is a
@@ -103,7 +148,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'rename') {
-    const result = renameSchema.safeParse({ name: formData.get('name') });
+    const result = validateForm(RenameRoutineDto, { name: formData.get('name') });
     if (!result.success) {
       return data({ error: 'Invalid name', intent: 'rename' }, { status: 400 });
     }
@@ -111,9 +156,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'reanchor') {
-    const result = reanchorSchema.safeParse({
-      anchorDate: formData.get('anchorDate'),
-    });
+    const result = validateForm(ReanchorRoutineDto, { anchorDate: formData.get('anchorDate') });
     if (!result.success) {
       return data({ error: 'Invalid date', intent: 'reanchor' }, { status: 400 });
     }
@@ -133,9 +176,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'addSlot') {
-    const result = addSlotSchema.safeParse({
-      templateId: formData.get('templateId'),
-    });
+    const result = validateForm(AddSlotDto, { templateId: formData.get('templateId') });
     if (!result.success) {
       return data({ error: 'Invalid slot', intent: 'addSlot' }, { status: 400 });
     }
@@ -145,18 +186,19 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === 'removeSlot') {
-    return settle(await routineService.removeSlot(athlete, routineId, String(formData.get('slotId'))));
+    const result = validateForm(SlotIdDto, { slotId: formData.get('slotId') });
+    if (!result.success) {
+      return data({ error: result.message, intent: 'removeSlot' }, { status: 400 });
+    }
+    return settle(await routineService.removeSlot(athlete, routineId, result.data.slotId));
   }
 
   if (intent === 'move') {
-    return settle(
-      await routineService.moveSlot(
-        athlete,
-        routineId,
-        String(formData.get('slotId')),
-        formData.get('direction') === 'up' ? 'up' : 'down',
-      ),
-    );
+    const result = validateForm(MoveSlotDto, { slotId: formData.get('slotId'), direction: formData.get('direction') });
+    if (!result.success) {
+      return data({ error: result.message, intent: 'move' }, { status: 400 });
+    }
+    return settle(await routineService.moveSlot(athlete, routineId, result.data.slotId, result.data.direction));
   }
 
   return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });

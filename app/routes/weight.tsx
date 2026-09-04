@@ -1,6 +1,7 @@
+import { Expose, Transform } from 'class-transformer';
+import { IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, ScaleIcon, XIcon } from 'lucide-react';
 import { data } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
@@ -14,6 +15,7 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { DateOnly } from '~/domain/values/date-only';
 import { formatFullDate } from '~/lib/format';
+import { IsDateOnly, toNumber, validateForm } from '~/lib/validate-form.server';
 
 import { bodyWeightServiceContext, progressServiceContext } from '~/lib/nest-bridge.server';
 
@@ -36,10 +38,27 @@ export async function loader({ context }: Route.LoaderArgs) {
   };
 }
 
-const logSchema = z.object({
-  date: z.string().refine(DateOnly.isValid),
-  weight: z.coerce.number().positive(),
-});
+class LogWeightDto {
+  @Expose()
+  @IsDateOnly()
+  readonly date!: string;
+
+  @Expose()
+  @Transform(toNumber())
+  @IsNumber()
+  @IsPositive()
+  readonly weight!: number;
+}
+
+class RemoveWeightDto {
+  @Expose()
+  @IsDateOnly({ message: 'Unknown weigh-in' })
+  readonly date!: string;
+
+  @Expose()
+  @IsUUID(undefined, { message: 'Unknown weigh-in' })
+  readonly logId!: string;
+}
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
@@ -50,10 +69,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const bodyWeightService = context.get(bodyWeightServiceContext);
 
   if (intent === 'log') {
-    const result = logSchema.safeParse({
-      date: formData.get('date'),
-      weight: formData.get('weight'),
-    });
+    const result = validateForm(LogWeightDto, { date: formData.get('date'), weight: formData.get('weight') });
     if (!result.success) {
       return data({ error: 'Enter a valid date and weight.' }, { status: 400 });
     }
@@ -68,11 +84,11 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === 'remove') {
-    const date = DateOnly.tryParse(String(formData.get('date')));
-    if (!date) {
-      return data({ error: 'Unknown weigh-in' }, { status: 400 });
+    const result = validateForm(RemoveWeightDto, { date: formData.get('date'), logId: formData.get('logId') });
+    if (!result.success) {
+      return data({ error: result.message }, { status: 400 });
     }
-    await bodyWeightService.remove(athlete, date, String(formData.get('logId')));
+    await bodyWeightService.remove(athlete, DateOnly.parse(result.data.date), result.data.logId);
     return { ok: true, intent: 'remove' } as const;
   }
 

@@ -1,6 +1,7 @@
+import { Expose, Transform } from 'class-transformer';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import { ClipboardListIcon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Badge } from '~/components/ui/badge';
@@ -11,6 +12,7 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { requestLogger } from '~/lib/logger.server';
+import { trim, validateForm } from '~/lib/validate-form.server';
 
 import { templateServiceContext } from '~/lib/nest-bridge.server';
 
@@ -20,9 +22,14 @@ export function meta() {
   return [{ title: 'Templates - Apex Gains' }];
 }
 
-const createTemplateSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(100),
-});
+class CreateTemplateDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1, { message: 'Name is required' })
+  @MaxLength(100)
+  readonly name!: string;
+}
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext)!;
@@ -33,12 +40,10 @@ export async function loader({ context }: Route.LoaderArgs) {
 export async function action({ request, context }: Route.ActionArgs) {
   const user = context.get(userContext)!;
   const formData = await request.formData();
-  const result = createTemplateSchema.safeParse({
-    name: formData.get('name'),
-  });
+  const result = validateForm(CreateTemplateDto, { name: formData.get('name') });
 
   if (!result.success) {
-    return data({ error: result.error.issues[0]?.message ?? 'Invalid name' }, { status: 400 });
+    return data({ error: result.message }, { status: 400 });
   }
 
   const templateService = context.get(templateServiceContext);

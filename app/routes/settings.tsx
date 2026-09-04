@@ -1,6 +1,7 @@
+import { Expose } from 'class-transformer';
+import { IsIn } from 'class-validator';
 import { CheckCircle2Icon } from 'lucide-react';
 import { data } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -9,7 +10,8 @@ import { Checkbox } from '~/components/ui/checkbox';
 import { Field } from '~/components/ui/field';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { DISTANCE_UNITS, WEIGHT_UNITS } from '~/domain/values/units';
+import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from '~/domain/values/units';
+import { validateForm } from '~/lib/validate-form.server';
 
 import { athleteServiceContext } from '~/lib/nest-bridge.server';
 
@@ -19,10 +21,21 @@ export function meta() {
   return [{ title: 'Settings - Apex Gains' }];
 }
 
-const unitsSchema = z.object({
-  weightUnit: z.enum(WEIGHT_UNITS),
-  distanceUnit: z.enum(DISTANCE_UNITS),
-});
+class UpdateUnitsDto {
+  @Expose()
+  @IsIn(WEIGHT_UNITS)
+  readonly weightUnit!: WeightUnit;
+
+  @Expose()
+  @IsIn(DISTANCE_UNITS)
+  readonly distanceUnit!: DistanceUnit;
+}
+
+class UpdateSampleDataVisibilityDto {
+  @Expose()
+  @IsIn(['true', 'false'])
+  readonly showSampleData!: 'true' | 'false';
+}
 
 export async function loader({ context }: Route.LoaderArgs) {
   const { preferences } = context.get(userContext)!;
@@ -41,11 +54,15 @@ export async function action({ request, context }: Route.ActionArgs) {
   const athleteService = context.get(athleteServiceContext);
 
   if (intent === 'updateSampleDataVisibility') {
-    await athleteService.changeSampleDataVisibility(user, formData.get('showSampleData') === 'true');
+    const result = validateForm(UpdateSampleDataVisibilityDto, { showSampleData: formData.get('showSampleData') });
+    if (!result.success) {
+      return data({ error: result.message }, { status: 400 });
+    }
+    await athleteService.changeSampleDataVisibility(user, result.data.showSampleData === 'true');
     return { ok: true, intent: 'updateSampleDataVisibility' } as const;
   }
 
-  const result = unitsSchema.safeParse({
+  const result = validateForm(UpdateUnitsDto, {
     weightUnit: formData.get('weightUnit'),
     distanceUnit: formData.get('distanceUnit'),
   });

@@ -8,9 +8,10 @@ import {
   PlusIcon,
   XIcon,
 } from 'lucide-react';
+import { Expose, Transform } from 'class-transformer';
+import { IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 import { useState } from 'react';
 import { data, Link, useFetcher, useNavigate } from 'react-router';
-import { z } from 'zod';
 
 import { userContext } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -33,6 +34,7 @@ import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
+import { IsDateOnly, toOptionalNumber, validateForm } from '~/lib/validate-form.server';
 import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
 import type { LoggedSetView, RecentSetView } from '~/services/workout-log-service.server';
 
@@ -90,15 +92,60 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   };
 }
 
-const logSetSchema = z.object({
-  exerciseId: z.uuid(),
-  date: z.string().refine(DateOnly.isValid),
-  reps: z.coerce.number().int().positive().optional(),
-  weight: z.coerce.number().positive().optional(),
-  durationMinutes: z.coerce.number().positive().optional(),
-  speed: z.coerce.number().positive().optional(),
-  resistance: z.coerce.number().int().positive().optional(),
-});
+class LogSetDto {
+  @Expose()
+  @IsUUID()
+  readonly exerciseId!: string;
+
+  @Expose()
+  @IsDateOnly()
+  readonly date!: string;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly reps?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly weight?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly durationMinutes?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  readonly speed?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly resistance?: number;
+}
+
+class RemoveSetDto {
+  @Expose()
+  @IsDateOnly({ message: 'Unknown set' })
+  readonly date!: string;
+
+  @Expose()
+  @IsUUID(undefined, { message: 'Unknown set' })
+  readonly setId!: string;
+}
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = context.get(userContext)!;
@@ -109,11 +156,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const logService = context.get(workoutLogServiceContext);
 
   if (intent === 'logSet') {
-    // Blank optional fields arrive as "", which z.coerce.number() reads as 0
-    // (failing .positive()) rather than as absent - drop them so they parse
-    // as undefined instead.
-    const raw = Object.fromEntries([...formData].filter(([, value]) => value !== ''));
-    const result = logSetSchema.safeParse(raw);
+    const result = validateForm(LogSetDto, Object.fromEntries(formData));
     if (!result.success) {
       return data({ error: 'Invalid set' }, { status: 400 });
     }
@@ -140,11 +183,11 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === 'removeSet') {
-    const date = DateOnly.tryParse(String(formData.get('date')));
-    if (!date) {
-      return data({ error: 'Unknown set' }, { status: 400 });
+    const result = validateForm(RemoveSetDto, { date: formData.get('date'), setId: formData.get('setId') });
+    if (!result.success) {
+      return data({ error: result.message }, { status: 400 });
     }
-    await logService.removeSet(athlete, date, String(formData.get('setId')));
+    await logService.removeSet(athlete, DateOnly.parse(result.data.date), result.data.setId);
     return { ok: true };
   }
 
