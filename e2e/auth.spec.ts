@@ -24,6 +24,19 @@ test.describe('anonymous visitors', () => {
 
     expect(response.headers()['location']).toBe('/auth/google?redirectTo=%2Ftoday%3Fdate%3D2026-01-15');
   });
+
+  // The only spec that actually calls `/auth/google` - every test above
+  // stops at the redirect *to* it, specifically to avoid the real OIDC
+  // discovery call this one deliberately makes. That discovery is exactly
+  // where a bundling regression once broke this route in production while
+  // every other check (typecheck, unit tests, and every other e2e spec)
+  // stayed green, so this is the one place that would have caught it.
+  test('really can build a Google authorization URL', async ({ page }) => {
+    const response = await page.request.get('/auth/google', { maxRedirects: 0 });
+
+    expect(response.status()).toBe(302);
+    expect(new URL(response.headers()['location']).hostname).toBe('accounts.google.com');
+  });
 });
 
 test.describe('test login', () => {

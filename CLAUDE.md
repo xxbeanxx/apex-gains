@@ -281,6 +281,25 @@ conditions; Vite's dev SSR picks `development` where plain node picks
 `default`, so leaving the express adapter external would put the
 handler and the routes on two different copies of the class.
 
+This is the general shape of a hazard that isn't unique to
+`RouterContextProvider`: any value handed from a Nest provider to a
+route through `nestLoadContext` carries the _Nest bundle's_ copy of
+every class it was built from, not the route bundle's. A Nest provider
+must never hand a route a raw instance of a third-party class that
+itself runs `instanceof` checks - `openid-client`'s `Configuration` is
+one such class, which is why `server/auth/oidc-client.provider.ts`
+performs every `openid-client` call (`discovery`, `buildAuthorizationUrl`,
+`authorizationCodeGrant`) itself and exposes only plain data (a `URL`,
+a claims object) through `OidcClientProvider`. Handing whole service
+instances across the same boundary (`AthleteService`, `RoutineService`,
+...) is fine, because nothing on the route side checks their class
+identity - it only calls their methods. `e2e/auth.spec.ts`'s "really
+can build a Google authorization URL" test is the one spec that
+exercises `/auth/google` against the real bundled build rather than
+through `ENABLE_TEST_LOGIN`, specifically to catch a regression here -
+typecheck and unit tests each run one layer in isolation and never load
+the two production bundles side by side.
+
 **Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
 `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
