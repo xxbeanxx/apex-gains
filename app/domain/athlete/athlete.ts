@@ -12,6 +12,7 @@ export type AthleteSnapshot = {
   readonly weightUnit: WeightUnit;
   readonly distanceUnit: DistanceUnit;
   readonly showSampleData: boolean;
+  readonly isAdmin: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -26,10 +27,14 @@ export type NewAthlete = {
 /**
  * The person training - the `users` row, named for what it means here.
  *
- * There is no role or permission model (signup is open to any Google
- * account); an athlete's authority is simply that they own their own rows,
- * which `Ownership` expresses. So this aggregate is mostly a home for the
- * preferences that shape how everything else is rendered.
+ * Signup is open to any Google account, and over their own data an athlete's
+ * authority is simply that they own their own rows, which `Ownership`
+ * expresses. The one thing that reaches past that boundary is `isAdmin`: an
+ * administrator may see and act on *every* athlete's account through
+ * `/admin`. It is a single flag rather than a role table because the app has
+ * exactly two kinds of person, and the rules that span several athletes -
+ * who may hold the flag, and who may take it away - live in
+ * `./administration.ts` rather than here.
  */
 export class Athlete {
   private constructor(
@@ -39,6 +44,7 @@ export class Athlete {
     readonly name: string,
     readonly avatarUrl: string | null,
     private currentPreferences: AthletePreferences,
+    private administrator: boolean,
     readonly createdAt: Date,
     private lastUpdatedAt: Date,
   ) {}
@@ -61,6 +67,7 @@ export class Athlete {
       details.name,
       details.avatarUrl,
       AthletePreferences.defaults(),
+      false,
       now,
       now,
     );
@@ -74,6 +81,7 @@ export class Athlete {
       snapshot.name,
       snapshot.avatarUrl,
       new AthletePreferences(snapshot.weightUnit, snapshot.distanceUnit, snapshot.showSampleData),
+      snapshot.isAdmin,
       snapshot.createdAt,
       snapshot.updatedAt,
     );
@@ -89,6 +97,7 @@ export class Athlete {
       weightUnit: this.currentPreferences.weightUnit,
       distanceUnit: this.currentPreferences.distanceUnit,
       showSampleData: this.currentPreferences.showSampleData,
+      isAdmin: this.administrator,
       createdAt: this.createdAt,
       updatedAt: this.lastUpdatedAt,
     };
@@ -100,6 +109,22 @@ export class Athlete {
 
   get updatedAt(): Date {
     return this.lastUpdatedAt;
+  }
+
+  /** May reach the `/admin` area, and every other athlete's account with it. */
+  get isAdmin(): boolean {
+    return this.administrator;
+  }
+
+  /**
+   * Grants or withdraws administrator access. Idempotent, and deliberately
+   * unguarded: which athletes may hold the flag at all is a rule about the
+   * whole set of them, so `changeAdminAccess` in ./administration.ts decides
+   * whether this is allowed to be called.
+   */
+  changeAdminAccess(isAdmin: boolean, now: Date): void {
+    this.administrator = isAdmin;
+    this.lastUpdatedAt = now;
   }
 
   changeUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit, now: Date): void {

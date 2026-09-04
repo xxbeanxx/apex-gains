@@ -2,7 +2,7 @@ import { LoggedSet } from '~/domain/session/logged-set';
 import { WorkoutSession, type WorkoutSessionSnapshot } from '~/domain/session/workout-session';
 import { DateOnly } from '~/domain/values/date-only';
 
-import type { WorkoutSessionsRepository } from '../workout-sessions-repository.server';
+import type { TrainingTotals, WorkoutSessionsRepository } from '../workout-sessions-repository.server';
 
 // Dev-convenience adapter - see workout-sessions-repository.server.ts for
 // when it's selected, and athletes-repository.in-memory.server.ts for why it
@@ -68,6 +68,27 @@ export class InMemoryWorkoutSessionsRepository implements WorkoutSessionsReposit
     });
 
     return entries.slice(0, limit);
+  }
+
+  async trainingTotals(): Promise<Map<string, TrainingTotals>> {
+    const totals = new Map<string, { workoutCount: number; setCount: number; lastActiveOn: string | null }>();
+
+    for (const snapshot of this.byId.values()) {
+      const running = totals.get(snapshot.userId) ?? { workoutCount: 0, setCount: 0, lastActiveOn: null };
+      if (!snapshot.isRestDay) running.workoutCount += 1;
+      running.setCount += snapshot.sets.length;
+      if (running.lastActiveOn === null || snapshot.date > running.lastActiveOn) {
+        running.lastActiveOn = snapshot.date;
+      }
+      totals.set(snapshot.userId, running);
+    }
+
+    return new Map(
+      [...totals].map(([userId, running]) => [
+        userId,
+        { ...running, lastActiveOn: running.lastActiveOn ? DateOnly.parse(running.lastActiveOn) : null },
+      ]),
+    );
   }
 
   async save(session: WorkoutSession): Promise<void> {

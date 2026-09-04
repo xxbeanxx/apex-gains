@@ -1,13 +1,18 @@
 /**
- * Locale-dependent date formatting for the UI.
+ * Locale-dependent formatting for the UI.
  *
- * Deliberately separate from the calendar arithmetic, which lives on
- * `DateOnly` in the domain layer: this half is presentation, it has to run
- * in the browser, and it depends on the viewer's locale.
+ * The date half is deliberately separate from the calendar arithmetic, which
+ * lives on `DateOnly` in the domain layer: this is presentation, it has to
+ * run in the browser, and it depends on the viewer's locale.
  *
- * Everything takes a `YYYY-MM-DD` string, because that is what crosses the
- * loader boundary - domain objects don't serialize.
+ * Every date function takes a `YYYY-MM-DD` string, because that is what
+ * crosses the loader boundary - domain objects don't serialize.
  */
+
+/** Groups thousands, and compacts once a headline number stops fitting: "12.9K". */
+export function formatCount(value: number): string {
+  return value.toLocaleString(undefined, value >= 10_000 ? { notation: 'compact', maximumFractionDigits: 1 } : {});
+}
 
 function toLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);

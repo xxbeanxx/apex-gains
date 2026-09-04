@@ -29,6 +29,7 @@ function athlete(overrides: { weightUnit?: 'lb' | 'kg' } = {}): Athlete {
     weightUnit: overrides.weightUnit ?? 'lb',
     distanceUnit: 'km',
     showSampleData: true,
+    isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,
   });

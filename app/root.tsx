@@ -22,7 +22,7 @@ export const middleware: Route.MiddlewareFunction[] = [requestLoggingMiddleware,
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext);
   return {
-    user: user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl } : null,
+    user: user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl, isAdmin: user.isAdmin } : null,
     buildInfo: getBuildInfo(),
   };
 }

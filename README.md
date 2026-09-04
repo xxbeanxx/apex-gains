@@ -100,9 +100,27 @@ Config values are validated at server startup using `class-validator`:
 - `ENABLE_TEST_LOGIN=true` - Turns on `GET /auth/test-login?email=...`,
   which signs in as a user by email (creating it on first use) without
   going through Google - it exists so Playwright/e2e runs can authenticate
-  without a real Google account. It 404s unless the flag is set, and the
+  without a real Google account. Adding `&admin=true` registers that
+  account with admin access, which is how the `/admin` specs get an
+  administrator. It 404s unless the flag is set, and the
   flag must never be set on the deployed app: it is an unauthenticated
   login backdoor.
+
+## Granting the first administrator
+
+Nothing in the UI can create the first administrator: admin access is
+only ever granted by another administrator, from `/admin/users`. Sign
+in once so the account exists, then flip the flag directly against the
+database:
+
+```bash
+psql "$DATABASE_URL" -c "update users set is_admin = true where email = 'you@example.com';"
+```
+
+An `/admin` link appears in the nav on the next request. From there
+you can grant access to anyone else, revoke it, or delete an account
+outright - on any account but your own, which is what stops the
+instance from ending up with no administrator at all.
 
 ## End-to-end tests
 
@@ -152,9 +170,13 @@ starts empty` a standing check that the suite is not talking to a real
 database, since that assertion cannot pass against a seeded one. And state
 lives for the life of the server process rather than per test, so isolation
 comes from identity: the `athlete` fixture signs each test in as a freshly
-generated user, and everything is scoped by `userId`. Equipment names are
+generated user, and everything is scoped by `userId`. The `administrator`
+fixture is the same thing with admin access, which is the one account the
+UI cannot create. Equipment names are
 the exception - they are globally unique - so a spec creating equipment
-names it via `uniqueName`.
+names it via `uniqueName`. So is the /admin user list, which sees every
+worker's athletes at once, so `admin.spec.ts` searches for the account it
+made rather than asserting on the whole table.
 
 Every page is server-rendered, which means a button is clickable a beat
 before React attaches to it. `e2e/fixtures.ts` folds a hydration wait into
@@ -296,3 +318,10 @@ There's no separate staging slot or manual promotion step.
 - **Auth is Google OIDC only** (`openid-client`), session via a signed
   httpOnly cookie. Any Google account can sign in (open signup); an
   athlete user row is created on first login.
+- **Administrators get an `/admin` area.** A single `users.is_admin`
+  flag is the whole permission model: it unlocks a dashboard of
+  instance-wide stats and a user manager (search every account, grant
+  or revoke admin access, delete an account and everything it owns).
+  An administrator can act on any account but their own, which is also
+  what keeps the instance from ever being left without one. See
+  "Granting the first administrator" above.

@@ -21,6 +21,7 @@ function athlete(weightUnit: 'lb' | 'kg' = 'lb'): Athlete {
     weightUnit,
     distanceUnit: 'km',
     showSampleData: true,
+    isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,
   });

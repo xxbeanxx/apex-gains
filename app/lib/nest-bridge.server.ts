@@ -2,6 +2,7 @@ import type { ConfigType } from '@nestjs/config';
 import type { Cookie, RouterContext } from 'react-router';
 import { createContext, RouterContextProvider } from 'react-router';
 
+import type { AdminService } from '~/services/admin-service.server';
 import type { AthleteService } from '~/services/athlete-service.server';
 import type { BodyWeightService } from '~/services/body-weight-service.server';
 import type { ExerciseLibraryService } from '~/services/exercise-library-service.server';
@@ -40,6 +41,7 @@ import type { AppLogger } from '~server/logging/logger.provider';
  * `undefined` at request time.
  */
 const contexts = {
+  adminService: createContext<AdminService>(),
   athleteService: createContext<AthleteService>(),
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
@@ -57,6 +59,7 @@ const contexts = {
 } as const;
 
 export const {
+  adminService: adminServiceContext,
   athleteService: athleteServiceContext,
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,

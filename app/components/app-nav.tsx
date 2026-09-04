@@ -9,10 +9,12 @@ import {
   SettingsIcon,
   ClipboardListIcon,
   LogOutIcon,
+  ShieldCheckIcon,
 } from 'lucide-react';
 import { Form, Link, NavLink, useSubmit } from 'react-router';
 
 import { ThemeToggle } from '~/components/theme-toggle';
+import { Avatar } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
@@ -36,31 +38,20 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-type NavUser = { id: string; name: string | null; avatarUrl: string | null };
+/** Admin is the one destination not everyone has, so it is appended per user. */
+const ADMIN_NAV_ITEM: NavItem = { to: '/admin', label: 'Admin', icon: ShieldCheckIcon };
 
-/** First letter of the display name, for the avatar fallback. */
-function initial(name: string | null) {
-  return name?.trim()?.charAt(0)?.toUpperCase() || '?';
+function navItemsFor(user: NavUser): NavItem[] {
+  return user.isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 }
 
-function UserAvatar({ user }: { user: NavUser }) {
-  return user.avatarUrl ? (
-    <img src={user.avatarUrl} alt="" width={28} height={28} className="size-7 rounded-full object-cover ring-1 ring-border" />
-  ) : (
-    <span
-      aria-hidden="true"
-      className="flex size-7 items-center justify-center rounded-full bg-brand-muted text-xs font-semibold text-brand-strong ring-1 ring-brand/25"
-    >
-      {initial(user.name)}
-    </span>
-  );
-}
+type NavUser = { id: string; name: string | null; avatarUrl: string | null; isAdmin: boolean };
 
-function DesktopNav() {
+function DesktopNav({ items }: { items: NavItem[] }) {
   return (
     <nav aria-label="Main" className="hidden md:block">
       <ul className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ to, label }) => (
+        {items.map(({ to, label }) => (
           <li key={to}>
             <NavLink
               to={to}
@@ -96,7 +87,7 @@ function DesktopNav() {
   );
 }
 
-function MobileNav({ user }: { user: NavUser }) {
+function MobileNav({ user, items }: { user: NavUser; items: NavItem[] }) {
   const submit = useSubmit();
 
   return (
@@ -108,11 +99,11 @@ function MobileNav({ user }: { user: NavUser }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
-          <UserAvatar user={user} />
+          <Avatar name={user.name} src={user.avatarUrl} />
           <span className="truncate">{user.name ?? 'Signed in'}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {items.map(({ to, label, icon: Icon }) => (
           <DropdownMenuItem key={to} asChild>
             <NavLink to={to} className={({ isActive }) => cn(isActive && 'font-medium text-brand-strong')}>
               <Icon aria-hidden="true" />
@@ -131,6 +122,8 @@ function MobileNav({ user }: { user: NavUser }) {
 }
 
 function AppNav({ user }: { user: NavUser | null }) {
+  const items = user ? navItemsFor(user) : [];
+
   return (
     <>
       <a
@@ -152,7 +145,7 @@ function AppNav({ user }: { user: NavUser | null }) {
             Apex Gains
           </Link>
 
-          {user ? <DesktopNav /> : null}
+          {user ? <DesktopNav items={items} /> : null}
 
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
@@ -160,7 +153,7 @@ function AppNav({ user }: { user: NavUser | null }) {
               <>
                 <div className="hidden items-center gap-2 md:flex">
                   <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <UserAvatar user={user} />
+                    <Avatar name={user.name} src={user.avatarUrl} />
                     <span className="max-w-32 truncate">{user.name}</span>
                   </span>
                   <Form method="post" action="/auth/logout">
@@ -169,7 +162,7 @@ function AppNav({ user }: { user: NavUser | null }) {
                     </Button>
                   </Form>
                 </div>
-                <MobileNav user={user} />
+                <MobileNav user={user} items={items} />
               </>
             ) : (
               <Button asChild variant="outline" size="sm">

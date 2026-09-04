@@ -67,6 +67,38 @@ describe('changeUnits', () => {
   });
 });
 
+describe('changeAdminAccess', () => {
+  it('starts a new athlete without admin access', () => {
+    expect(Athlete.register(identity, deps).isAdmin).toBe(false);
+  });
+
+  it('grants access and bumps updatedAt', () => {
+    const athlete = Athlete.register(identity, deps);
+    const later = new Date('2026-09-04T12:00:00Z');
+
+    athlete.changeAdminAccess(true, later);
+
+    expect(athlete.isAdmin).toBe(true);
+    expect(athlete.updatedAt).toEqual(later);
+  });
+
+  it('withdraws access again', () => {
+    const athlete = Athlete.register(identity, deps);
+    athlete.changeAdminAccess(true, NOW);
+
+    athlete.changeAdminAccess(false, NOW);
+
+    expect(athlete.isAdmin).toBe(false);
+  });
+
+  it('carries through a snapshot round-trip', () => {
+    const athlete = Athlete.register(identity, deps);
+    athlete.changeAdminAccess(true, NOW);
+
+    expect(Athlete.fromSnapshot(athlete.toSnapshot()).isAdmin).toBe(true);
+  });
+});
+
 describe('changeSampleDataVisibility', () => {
   it('updates the flag and bumps updatedAt', () => {
     const athlete = Athlete.register(identity, deps);

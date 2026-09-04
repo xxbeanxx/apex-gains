@@ -17,5 +17,10 @@ export default [
     route('history', 'routes/history.tsx'),
     route('weight', 'routes/weight.tsx'),
     route('settings', 'routes/settings.tsx'),
+    layout('routes/_admin.tsx', [
+      route('admin', 'routes/admin.tsx'),
+      route('admin/users', 'routes/admin.users.tsx'),
+      route('admin/users/:userId', 'routes/admin.users.$userId.tsx'),
+    ]),
   ]),
 ] satisfies RouteConfig;

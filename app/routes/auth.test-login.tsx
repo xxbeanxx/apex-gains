@@ -34,13 +34,20 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   }
   const name = url.searchParams.get('name') ?? email;
   const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
+  // Only honoured for an email being seen for the first time, and only
+  // behind the same flag as the rest of this route: it is how an /admin spec
+  // gets an administrator to sign in as.
+  const asAdministrator = url.searchParams.get('admin') === 'true';
 
-  const { athlete, isNew } = await context.get(athleteServiceContext).signInWithEmail({
-    googleSub: `test-login:${email}`,
-    email,
-    name,
-    avatarUrl: null,
-  });
+  const { athlete, isNew } = await context.get(athleteServiceContext).signInWithEmail(
+    {
+      googleSub: `test-login:${email}`,
+      email,
+      name,
+      avatarUrl: null,
+    },
+    { asAdministrator },
+  );
 
   logger.log(`test login as ${isNew ? 'new' : 'existing'} user ${athlete.id}`, 'Auth');
 

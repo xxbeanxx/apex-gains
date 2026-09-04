@@ -28,9 +28,24 @@ export class InMemoryAthletesRepository implements AthletesRepository {
     return this.findBy((snapshot) => snapshot.email === email);
   }
 
+  async listAll(): Promise<Athlete[]> {
+    return [...this.byId.values()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).map(Athlete.fromSnapshot);
+  }
+
   async save(athlete: Athlete): Promise<void> {
     const snapshot = athlete.toSnapshot();
     this.byId.set(snapshot.id, snapshot);
+  }
+
+  /**
+   * Drops the athlete only. Postgres cascades a deletion through every table
+   * that references `users`, but each port here owns a separate store with
+   * no foreign keys between them, so what the other adapters still hold is
+   * simply unreachable: every query they answer is scoped by `userId`, and
+   * no later athlete is minted with an id that has already been used.
+   */
+  async remove(athlete: Athlete): Promise<void> {
+    this.byId.delete(athlete.id);
   }
 
   private findBy(predicate: (snapshot: AthleteSnapshot) => boolean): Athlete | null {

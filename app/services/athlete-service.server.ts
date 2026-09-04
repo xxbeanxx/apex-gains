@@ -50,11 +50,17 @@ export class AthleteService {
 
   /**
    * The e2e stand-in for `signInWithGoogle`, matching it in every respect
-   * except that it identifies the athlete by email. Only ever reachable when
-   * ENABLE_TEST_LOGIN is set - see `app/routes/auth.test-login.tsx`.
+   * except that it identifies the athlete by email, and that it can register
+   * the account with admin access already granted - the /admin specs need an
+   * administrator, and nothing in the UI can mint the first one. Only ever
+   * reachable when ENABLE_TEST_LOGIN is set - see
+   * `app/routes/auth.test-login.tsx`.
+   *
+   * `asAdministrator` applies on registration only, so a returning account
+   * keeps whatever access it has now.
    */
-  async signInWithEmail(identity: NewAthlete): Promise<SignIn> {
-    return this.register(identity, () => this.athletes.findByEmail(identity.email));
+  async signInWithEmail(identity: NewAthlete, options: { asAdministrator?: boolean } = {}): Promise<SignIn> {
+    return this.register(identity, () => this.athletes.findByEmail(identity.email), options.asAdministrator ?? false);
   }
 
   async changeUnits(athlete: Athlete, weightUnit: WeightUnit, distanceUnit: DistanceUnit): Promise<void> {
@@ -67,12 +73,17 @@ export class AthleteService {
     await this.athletes.save(athlete);
   }
 
-  private async register(identity: NewAthlete, findExisting: () => Promise<Athlete | null>): Promise<SignIn> {
+  private async register(
+    identity: NewAthlete,
+    findExisting: () => Promise<Athlete | null>,
+    asAdministrator = false,
+  ): Promise<SignIn> {
     return this.unitOfWork.run(async () => {
       const existing = await findExisting();
       if (existing) return { athlete: existing, isNew: false };
 
       const athlete = Athlete.register(identity, this.deps);
+      if (asAdministrator) athlete.changeAdminAccess(true, this.deps.clock.now());
       await this.athletes.save(athlete);
       return { athlete, isNew: true };
     });

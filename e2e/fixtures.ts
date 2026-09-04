@@ -48,7 +48,34 @@ export async function waitForHydration(page: Page): Promise<void> {
   });
 }
 
-export const test = base.extend<{ athlete: Athlete }>({
+/**
+ * Signs the browser context in, creating the account on first use, and lands
+ * on /today. `asAdministrator` only takes effect for an email the server has
+ * never seen - which every generated one is.
+ */
+export async function signIn(
+  page: Page,
+  details: { email: string; name: string; asAdministrator?: boolean },
+): Promise<Athlete> {
+  const query = new URLSearchParams({ email: details.email, name: details.name });
+  if (details.asAdministrator) query.set('admin', 'true');
+
+  const response = await page.goto(`/auth/test-login?${query}`);
+  expect(response?.ok(), 'test login should succeed - is ENABLE_TEST_LOGIN set?').toBe(true);
+
+  return { email: details.email, name: details.name };
+}
+
+/** A fresh athlete, signed in - an administrator when `asAdministrator`. */
+export async function newAthlete(page: Page, options: { asAdministrator?: boolean } = {}): Promise<Athlete> {
+  return signIn(page, {
+    email: `${uniqueName('athlete')}@example.test`,
+    name: uniqueName('Athlete'),
+    ...options,
+  });
+}
+
+export const test = base.extend<{ athlete: Athlete; administrator: Athlete }>({
   // Folds the hydration wait into navigation so no spec has to remember it.
   // A plain `<form method="post">` submit navigates without going through
   // either of these, so helpers that submit one wait explicitly.
@@ -72,14 +99,14 @@ export const test = base.extend<{ athlete: Athlete }>({
   },
 
   athlete: async ({ page }, use) => {
-    const email = `${uniqueName('athlete')}@example.test`;
-    const name = uniqueName('Athlete');
+    await use(await newAthlete(page));
+  },
 
-    // Sets the session cookie on the browser context and lands on /today.
-    const response = await page.goto(`/auth/test-login?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`);
-    expect(response?.ok(), 'test login should succeed - is ENABLE_TEST_LOGIN set?').toBe(true);
-
-    await use({ email, name });
+  // The /admin area needs an account nothing in the UI can create: the first
+  // administrator. `admin=true` on the test-login route is how a spec gets
+  // one, and it is gated on ENABLE_TEST_LOGIN like the rest of that route.
+  administrator: async ({ page }, use) => {
+    await use(await newAthlete(page, { asAdministrator: true }));
   },
 });
 

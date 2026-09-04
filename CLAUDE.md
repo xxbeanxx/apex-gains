@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Apex Gains: a personal workout tracker (exercise library for a BowFlex
 PR1000, rowing machine, and treadmill; reusable workout templates;
 day-slot routines that cycle from an anchor date; per-set logging;
-history). Auth is Google OIDC with open signup.
+history). Auth is Google OIDC with open signup. Administrators get an
+`/admin` area on top: instance-wide stats and a user manager.
 
 Stack: React Router v8 (Framework Mode), NestJS (server runtime/DI),
 TypeScript, PostgreSQL (hosted on Supabase), Drizzle ORM, Tailwind v4 +
@@ -146,10 +147,12 @@ been this way, because that is the only version anyone has to work with.
 Mode, not file-system routing). All authenticated pages are nested
 under the `routes/_protected.tsx` layout, which sets
 `requireUserMiddleware` (`app/auth/require-user.server.ts`) to redirect
-anonymous requests to `/auth/google`. The current user is threaded
-through via React Router's context API: `app/auth/user-context.ts`
-defines `userContext` — which holds the `Athlete` aggregate, not the raw
-`users` row, so loaders have the athlete's unit preferences and
+anonymous requests to `/auth/google`. Nested inside that,
+`routes/_admin.tsx` adds `requireAdminMiddleware`
+(`app/auth/require-admin.server.ts`) and holds the `/admin` pages.
+The current user is threaded through via React Router's context API:
+`app/auth/user-context.ts` defines `userContext` — which holds the
+`Athlete` aggregate, not the raw `users` row, so loaders have the athlete's unit preferences and
 behaviour to hand — populated by `loadUserMiddleware` (see Auth, below)
 and read in loaders/actions with `context.get(userContext)`.
 Route modules import their generated types
@@ -312,7 +315,8 @@ pieces carry most of the weight: `shared/ordered.ts` (`OrderedChildren`)
 is the single implementation of append / remove-and-close-the-gap /
 swap, and `shared/forking.ts` is the shape every `editableCopyFor`
 returns. Cross-aggregate rules that belong to no single root are domain
-services — see `domain/routine/activation.ts`.
+services — see `domain/routine/activation.ts` and
+`domain/athlete/administration.ts`.
 
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
 (Postgres). Repositories in `app/repositories/` are ports over
@@ -333,8 +337,8 @@ through `dbScope`, never `db`, so writes stay inside it.
 **Services.** `app/services/*.server.ts` are the use cases routes call
 — `RoutineService`, `TemplateService`, `WorkoutLogService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
-`AthleteService`, `BodyWeightService`. They orchestrate (load → hand
-off to the aggregate → save) and own no rules themselves.
+`AthleteService`, `BodyWeightService`, `AdminService`. They orchestrate
+(load → hand off to the aggregate → save) and own no rules themselves.
 `AthleteService` also covers sign-in: `signInWithGoogle` /
 `signInWithEmail` find an athlete by identity or `Athlete.register`
 one on first login, so no route touches `AthletesRepository` directly
@@ -435,11 +439,28 @@ Session storage is likewise a Nest provider
 `userContext` on every request (registered in `root.tsx`'s
 `middleware` export, ahead of `requireUserMiddleware` which only the
 `_protected` layout adds). Any Google account can sign in (open
-signup) — a `users` row is created on first login. There is no
-role/permission system; all authorization is "does this row's
-`userId` match the current user" (see `loadOwnedRoutine`-style loaders
-that scope every query by `userId` before returning 404) plus the
-sample-data fork rule above. Azure Container Apps terminates TLS at
+signup) — a `users` row is created on first login.
+
+Authorization has two levels and no role table. For an athlete's own
+data it is "does this row's `userId` match the current user" (see
+`loadOwnedRoutine`-style loaders that scope every query by `userId`
+before returning 404), plus the sample-data fork rule above. Above
+that sits a single `users.is_admin` flag, read as `Athlete.isAdmin`:
+an administrator reaches `/admin` and, through it, every account.
+`requireAdminMiddleware` is the only gate — the two queries that
+deliberately ignore `userId` (`AthletesRepository.listAll` and
+`WorkoutSessionsRepository.trainingTotals`) are reachable from nowhere
+else, and a signed-in athlete without the flag gets a 404 like any
+other row that isn't theirs. Who may hold the flag is a rule about the
+whole set of athletes, so it lives in `domain/athlete/administration.ts`:
+an administrator may act on any account but their own, which is also
+what guarantees the instance can never be left with no administrator.
+The first one has to be granted out of band — `update users set
+is_admin = true where id = '…'` — since nothing in the UI can mint it
+(e2e reaches for `/auth/test-login?admin=true`, which is gated behind
+ENABLE_TEST_LOGIN like the rest of that route).
+
+Azure Container Apps terminates TLS at
 its ingress and forwards plain HTTP with `X-Forwarded-*` headers, so
 `server/main.ts` (an Express server under Nest's `@nestjs/platform-express`
 adapter, built on `@react-router/express` - see Server runtime, above)

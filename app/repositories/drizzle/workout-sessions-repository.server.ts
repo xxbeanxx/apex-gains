@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 
 import { dbScope } from '~/db/index.server';
 import {
@@ -12,7 +12,7 @@ import { WorkoutSession } from '~/domain/session/workout-session';
 import { DateOnly } from '~/domain/values/date-only';
 
 import { diffChildren } from '../shared/diff-children';
-import type { WorkoutSessionsRepository } from '../workout-sessions-repository.server';
+import type { TrainingTotals, WorkoutSessionsRepository } from '../workout-sessions-repository.server';
 
 type RowWithSets = WorkoutSessionRow & { sets: SessionSetRow[] };
 
@@ -145,6 +145,36 @@ export class DrizzleWorkoutSessionsRepository implements WorkoutSessionsReposito
       date: DateOnly.parse(date),
       set: LoggedSet.fromSnapshot(set),
     }));
+  }
+
+  /**
+   * One grouped pass over every session. The left join means a day with no
+   * sets still contributes to the counts, and `count(distinct ...)` is what
+   * keeps the join's row multiplication out of the session tally.
+   */
+  async trainingTotals(): Promise<Map<string, TrainingTotals>> {
+    const rows = await dbScope
+      .select({
+        userId: workoutSessions.userId,
+        workoutCount:
+          sql<number>`count(distinct ${workoutSessions.id}) filter (where not ${workoutSessions.isRestDay})`.mapWith(Number),
+        setCount: sql<number>`count(${sessionSets.id})`.mapWith(Number),
+        lastActiveOn: sql<string | null>`max(${workoutSessions.date})`,
+      })
+      .from(workoutSessions)
+      .leftJoin(sessionSets, eq(sessionSets.sessionId, workoutSessions.id))
+      .groupBy(workoutSessions.userId);
+
+    return new Map(
+      rows.map((row) => [
+        row.userId,
+        {
+          workoutCount: row.workoutCount,
+          setCount: row.setCount,
+          lastActiveOn: row.lastActiveOn ? DateOnly.parse(row.lastActiveOn) : null,
+        },
+      ]),
+    );
   }
 
   /**

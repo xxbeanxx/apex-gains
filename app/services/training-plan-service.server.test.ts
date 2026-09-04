@@ -29,6 +29,7 @@ const athlete = Athlete.fromSnapshot({
   weightUnit: 'lb',
   distanceUnit: 'km',
   showSampleData: true,
+  isAdmin: false,
   createdAt: NOW,
   updatedAt: NOW,
 });

@@ -29,6 +29,7 @@ export const users = pgTable('users', {
   weightUnit: weightUnitEnum('weight_unit').notNull().default('lb'),
   distanceUnit: distanceUnitEnum('distance_unit').notNull().default('km'),
   showSampleData: boolean('show_sample_data').notNull().default(true),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

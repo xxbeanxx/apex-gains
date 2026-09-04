@@ -32,6 +32,7 @@ function athleteWith(overrides: Partial<AthleteSnapshot> = {}): Athlete {
     weightUnit: 'lb',
     distanceUnit: 'km',
     showSampleData: true,
+    isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
