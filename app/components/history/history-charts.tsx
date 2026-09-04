@@ -55,6 +55,7 @@ export function HistoryCharts({
             <WeeklyBarChart
               points={weeklySets}
               formatValue={(v) => `${v} set${v === 1 ? '' : 's'}`}
+              formatCompact={(v) => `${v}`}
               ariaLabel={`Sets logged per week, from ${weeklySets[0]?.label} to ${weeklySets.at(-1)?.label}`}
             />
           </CardContent>
@@ -68,6 +69,7 @@ export function HistoryCharts({
             <WeeklyBarChart
               points={weeklyTonnage}
               formatValue={(v) => `${Math.round(v).toLocaleString()} lb`}
+              formatCompact={(v) => Math.round(v).toLocaleString()}
               ariaLabel={`Total weight lifted per week, from ${weeklyTonnage[0]?.label} to ${weeklyTonnage.at(-1)?.label}`}
             />
           </CardContent>

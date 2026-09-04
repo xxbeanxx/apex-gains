@@ -12,7 +12,7 @@ const STEP = CELL + GAP;
 // tooltip anchors above the hovered cell (like the other charts), and row
 // 0 needs that much headroom *within this component's own box* to clear
 // without the card's overflow-hidden clipping it.
-const MARGIN = { top: 56, right: 4, bottom: 4, left: 24 };
+const MARGIN = { top: 56, right: 4, bottom: 4, left: 28 };
 
 /** 0 (nothing logged) through 4 (a big day), for the fill-opacity ramp below. */
 function levelForSetCount(setCount: number): number {
@@ -70,7 +70,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
         aria-label={`Training consistency for the last ${weeks} weeks`}
       >
         {monthLabels.map(({ col, label }) => (
-          <text key={col} x={MARGIN.left + col * STEP} y={MARGIN.top - 8} className="fill-muted-foreground text-[9px]">
+          <text key={col} x={MARGIN.left + col * STEP} y={MARGIN.top - 8} className="fill-muted-foreground text-[10px]">
             {label}
           </text>
         ))}
@@ -81,7 +81,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
             y={MARGIN.top + Number(row) * STEP + CELL / 2}
             textAnchor="end"
             dominantBaseline="middle"
-            className="fill-muted-foreground text-[8px]"
+            className="fill-muted-foreground text-[10px]"
           >
             {label}
           </text>

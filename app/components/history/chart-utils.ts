@@ -1,3 +1,29 @@
+import { useEffect, useRef, useState } from 'react';
+
+/**
+ * An element's rendered width in real CSS pixels, tracked live via
+ * ResizeObserver. Charts use this as their SVG viewBox width so 1 viewBox
+ * unit is always 1 screen pixel - text sizes stay at the px value declared
+ * in code instead of being stretched or shrunk along with a fixed-width
+ * viewBox (which is what made chart text unreadably small on narrow/mobile
+ * screens).
+ */
+export function useChartWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.getBoundingClientRect().width);
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width];
+}
+
 /**
  * Picks a "nice" gridline step (1/2/5 × a power of ten) for an axis whose
  * data max is `maxValue`, aiming for roughly `targetTicks` gridlines.

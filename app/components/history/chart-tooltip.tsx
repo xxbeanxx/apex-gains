@@ -1,10 +1,9 @@
 import { cn } from '~/lib/utils';
 
 /**
- * Positioned by percentage (`x`/`y` of the chart's viewBox), which lines up
- * correctly with the SVG under it as long as the SVG uses
- * `preserveAspectRatio="none"` inside a container whose CSS aspect-ratio
- * matches the viewBox - see the two chart components for that pairing.
+ * Positioned by percentage of the chart's own box (`x`/`y` each 0-100,
+ * computed by the caller as a fraction of its rendered width/height) - so
+ * it lines up with the SVG under it regardless of how that SVG scales.
  * Always anchors above `y` - every chart that uses this reserves enough
  * headroom above its topmost point/row for that to clear the card's edge.
  */
