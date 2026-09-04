@@ -4,15 +4,17 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "dotenv -e .env -- tsx watch server/main.ts",
-    "start": "cross-env NODE_ENV=production tsx server/main.ts",
-    "typecheck": "react-router typegen && tsc",
-    "db:generate": "dotenv -e .env -- drizzle-kit generate",
-    "db:migrate": "dotenv -e .env -- drizzle-kit migrate",
-    "db:studio": "dotenv -e .env -- drizzle-kit studio",
-    "db:seed": "dotenv -e .env -- tsx app/db/seed.ts",
+    "dev": "dotenv -e ./.env -- tsx watch ./server/main.ts",
+    "db:generate": "dotenv -e ./.env -- drizzle-kit generate",
+    "db:migrate": "dotenv -e ./.env -- drizzle-kit migrate",
+    "db:studio": "dotenv -e ./.env -- drizzle-kit studio",
+    "db:seed": "dotenv -e ./.env -- tsx app/db/seed.ts",
+    "format:check": "prettier --cache --cache-location ./node_modules/.cache/prettier/ --check ./",
+    "format:write": "prettier --cache --cache-location ./node_modules/.cache/prettier/ --write ./",
+    "start": "cross-env NODE_ENV=production tsx ./server/main.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -63,5 +65,12 @@
     "typescript": "^5.9.3",
     "vite": "^8.0.3",
     "vitest": "^4.1.11"
+  },
+  "prettier": {
+    "printWidth": 128,
+    "quoteProps": "consistent",
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2
   }
 }
