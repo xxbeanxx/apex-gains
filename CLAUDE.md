@@ -57,7 +57,7 @@ container gets its environment from the runtime.
 Database: a hosted Supabase Postgres project (`DATABASE_URL` is its
 Session pooler connection string — IPv4-compatible and supports
 prepared statements, unlike the transaction pooler; the direct
-connection is IPv6-only). `.github/workflows/build.yml` runs
+connection is IPv6-only). `.github/workflows/build.yaml` runs
 `drizzle-kit migrate` against it on every push to `main` via the
 `migrate-database` job (the `DATABASE_URL` repo secret), so schema
 changes ship on merge. The app itself is hosted on Azure Container
@@ -437,6 +437,6 @@ second argument, so an `Error` is passed as `err.stack`.
 
 **Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as
-`date-sha-buildnum` by `containerfile`/`build.yml`) or, outside a
+`date-sha-buildnum` by `containerfile`/`build.yaml`) or, outside a
 container, the working tree's short git SHA. It's shown in the app
 footer (`root.tsx`) and included in every log line's `build` field.

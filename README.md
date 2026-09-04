@@ -168,7 +168,7 @@ configure on the Container App for it.
 
 ## Database migrations and deployment in CI
 
-`.github/workflows/build.yml` runs three jobs after tests pass on a
+`.github/workflows/build.yaml` runs three jobs after tests pass on a
 push to `main`:
 
 - `migrate-database` - applies pending Drizzle migrations to the
