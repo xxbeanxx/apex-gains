@@ -16,20 +16,24 @@ shadcn/ui, Podman.
 ## Commands
 
 ```bash
-npm run dev           # dev server with HMR, http://localhost:3000 (Nest + Vite middleware mode)
-npm run build          # production build
-npm run start           # serve the production build, still through server/main.ts
-npm run typecheck        # react-router typegen, then tsc
-npm run db:generate       # generate a Drizzle migration from app/db/schema.ts
-npm run db:migrate         # apply pending migrations
-npm run db:studio           # open Drizzle Studio against the local database
-npm run db:seed              # seed/refresh the exercise library (idempotent)
-npm run test                  # run the vitest unit test suite once
-npm run test:watch             # vitest in watch mode
+npm run build        # production build
+npm run db:generate  # generate a Drizzle migration from app/db/schema.ts
+npm run db:migrate   # apply pending migrations
+npm run db:seed      # seed/refresh the exercise library (idempotent)
+npm run db:studio    # open Drizzle Studio against the local database
+npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
+npm run format:check # check formatting without writing
+npm run format:write # format the repo with prettier
+npm run start        # serve the production build, still through server/main.ts
+npm run test         # run the vitest unit test suite once
+npm run test:watch   # vitest in watch mode
+npm run typecheck    # react-router typegen, then tsc
 ```
 
-There is no lint/format tooling configured in this repo — `typecheck`
-and `test` are the automated checks. Unit tests (vitest) live next to
+Run `npm run format:write` on any file you edit before finishing a
+task - there is no lint tooling and no CI formatting check, so
+`format:write` is the only thing keeping the tree consistent.
+`typecheck` and `test` are the automated checks. Unit tests (vitest) live next to
 the code they cover as `*.test.ts`; `app/test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
