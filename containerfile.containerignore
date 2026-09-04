@@ -1,0 +1,33 @@
+# Container build context ignore file for Apex Gains.
+#
+# This file tells Podman (and Docker) which files to exclude from the build
+# context, reducing the amount of data sent to the container engine. This is
+# especially important in CI/CD pipelines where context transfer time matters.
+#
+# Important: This file uses an allowlist strategy. Everything is excluded by
+# default, then only the files needed for the container build are included.
+# This ensures that adding new files or directories to the repository does
+# not inadvertently increase context size (or leak something like .env into
+# the build context).
+#
+# see: https://docs.docker.com/build/concepts/context/#dockerignore-files
+
+# Exclude everything by default
+*
+
+# Include application manifests
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# Include build configuration
+!vite.config.ts
+!react-router.config.ts
+
+# Include the app source, server runtime, and static assets
+!app/
+!server/
+!public/
+
+# Exclude node_modules everywhere (installed inside container)
+**/node_modules/

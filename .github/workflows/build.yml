@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -113,7 +113,6 @@ jobs:
           echo "  - Latest:  ${IMAGE_NAME}:latest"
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
 
@@ -121,14 +120,16 @@ jobs:
         run: |
           # Layer cache lives in the same GHCR repo the image tags are
           # pushed to (a bare repo ref, no tag - podman manages its own
-          # cache references underneath it). Only main-branch pushes are
-          # logged in to GHCR, so only they can pull/push that cache.
-          CACHE_ARGS=()
-
+          # cache references underneath it). Main pushes pull and update
+          # cache; pull requests only pull the cache.
           if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             CACHE_ARGS=(
               --cache-from "${{ steps.tags.outputs.image_name }}"
               --cache-to "${{ steps.tags.outputs.image_name }}"
+            )
+          else
+            CACHE_ARGS=(
+              --cache-from "${{ steps.tags.outputs.image_name }}"
             )
           fi
 
