@@ -13,7 +13,7 @@ import type { WorkoutService } from '~/services/workout-service.server';
 import type { TrainingPlanService } from '~/services/training-plan-service.server';
 import type { SessionService } from '~/services/session-service.server';
 
-import type { OidcClientProvider } from '~server/auth/oidc-client.provider';
+import type { OidcClient } from '~server/auth/oidc-client.provider';
 import type { AppSessionStorage } from '~server/auth/session-storage.provider';
 import type { testLoginConfig } from '~server/config/test-login.config';
 import type { AppLogger } from '~server/logging/logger.provider';
@@ -57,7 +57,7 @@ const contexts = {
   trainingPlanService: createContext<TrainingPlanService>(),
   sessionService: createContext<SessionService>(),
   sessionStorage: createContext<AppSessionStorage>(),
-  oidcConfig: createContext<OidcClientProvider>(),
+  oidcConfig: createContext<OidcClient>(),
   oidcStateCookie: createContext<Cookie>(),
   testLoginConfig: createContext<ConfigType<typeof testLoginConfig>>(),
   /** The process-wide logger, which Nest's own internal logging also goes through. */

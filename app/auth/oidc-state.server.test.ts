@@ -16,6 +16,7 @@ describe('oidc-state.server', () => {
   it('round-trips serialized state through parse', async () => {
     const data = {
       codeVerifier: 'verifier-123',
+      nonce: 'nonce-abc',
       state: 'state-abc',
       redirectTo: '/today',
     };
@@ -37,6 +38,7 @@ describe('oidc-state.server', () => {
   it('returns null when the cookie value has been tampered with', async () => {
     const cookieHeader = await serializeOidcState(cookie, {
       codeVerifier: 'verifier-123',
+      nonce: 'nonce-abc',
       state: 'state-abc',
       redirectTo: '/today',
     });

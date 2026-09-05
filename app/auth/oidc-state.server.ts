@@ -2,6 +2,7 @@ import type { Cookie } from 'react-router';
 
 type OidcState = {
   codeVerifier: string;
+  nonce: string;
   state: string;
   redirectTo: string;
 };
@@ -16,6 +17,7 @@ export async function parseOidcState(cookie: Cookie, cookieHeader: string | null
   const hasRequiredFields =
     !!value &&
     typeof value.codeVerifier === 'string' &&
+    typeof value.nonce === 'string' &&
     typeof value.state === 'string' &&
     typeof value.redirectTo === 'string';
 

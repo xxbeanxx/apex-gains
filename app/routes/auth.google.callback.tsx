@@ -46,6 +46,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     currentUrl: requestUrl,
     redirectUri: `${origin}/auth/google/callback`,
     pkceCodeVerifier: state.codeVerifier,
+    expectedNonce: state.nonce,
     expectedState: state.state,
   });
 

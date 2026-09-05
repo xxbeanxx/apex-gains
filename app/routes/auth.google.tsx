@@ -24,6 +24,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const codeVerifier = client.randomPKCECodeVerifier();
   const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
+  const nonce = client.randomNonce();
   const state = client.randomState();
 
   const url = new URL(request.url);
@@ -31,13 +32,14 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const authorizationUrl = await context.get(oidcConfigContext).buildAuthorizationUrl({
     redirectUri: `${origin}/auth/google/callback`,
-    codeChallenge,
-    state,
+    codeChallenge: codeChallenge,
+    nonce: nonce,
+    state: state,
   });
 
   return redirect(authorizationUrl.href, {
     headers: {
-      'Set-Cookie': await serializeOidcState(context.get(oidcStateCookieContext), { codeVerifier, state, redirectTo }),
+      'Set-Cookie': await serializeOidcState(context.get(oidcStateCookieContext), { codeVerifier, nonce, state, redirectTo }),
     },
   });
 }
