@@ -350,6 +350,12 @@ through `dbScope`, never `db`, so writes stay inside it.
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
 `AthleteService`, `BodyWeightService`, `AdminService`. They orchestrate
 (load → hand off to the aggregate → save) and own no rules themselves.
+`shared/exercise-directory.server.ts` is the read-side counterpart to
+`shared/fork.server.ts`: a logged set, a template entry and a routine
+slot all hold an exercise _id_ rather than an exercise, so every read
+model that renders one joins the name back in through
+`ExerciseDirectory` — which is also where the missing-exercise fallback
+(`'Unknown'`, because history outlives the library) is stated.
 `AthleteService` also covers sign-in: `signInWithGoogle` /
 `signInWithEmail` find an athlete by identity or `Athlete.register`
 one on first login, so no route touches `AthletesRepository` directly

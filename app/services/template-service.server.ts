@@ -16,6 +16,7 @@ import { EXERCISES_REPOSITORY, TEMPLATES_REPOSITORY, UNIT_OF_WORK } from '~/repo
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
+import { ExerciseDirectory } from './shared/exercise-directory.server';
 import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
 
 export type TemplateSummary = {
@@ -100,24 +101,23 @@ export class TemplateService {
 
     // By id rather than by the athlete's library: an entry can point at a
     // sample they have since forked away from, which their library hides.
-    const exercises = await this.exercises.findManyByIds(template.exercises.map((entry) => entry.exerciseId));
-    const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    const directory = await ExerciseDirectory.of(
+      template.exercises.map((entry) => entry.exerciseId),
+      this.exercises,
+    );
 
     return {
       ...toSummary(template),
       canRevert: template.canRevert,
       isDeletable: template.isDeletable,
-      exercises: template.exercises.map((entry) => {
-        const exercise = byId.get(entry.exerciseId);
-        return {
-          id: entry.id,
-          position: entry.position,
-          exerciseId: entry.exerciseId,
-          exerciseName: exercise?.name ?? 'Unknown',
-          exerciseType: exercise?.exerciseType ?? 'strength',
-          targetSummary: entry.target.format(athlete.preferences),
-        };
-      }),
+      exercises: template.exercises.map((entry) => ({
+        id: entry.id,
+        position: entry.position,
+        exerciseId: entry.exerciseId,
+        exerciseName: directory.nameOf(entry.exerciseId),
+        exerciseType: directory.typeOf(entry.exerciseId),
+        targetSummary: entry.target.format(athlete.preferences),
+      })),
     };
   }
 

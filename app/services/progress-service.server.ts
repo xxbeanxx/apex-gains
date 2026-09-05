@@ -17,6 +17,8 @@ import type { ExercisesRepository } from '~/repositories/exercises-repository.se
 import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
 import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUT_SESSIONS_REPOSITORY } from '~/repositories/tokens';
 
+import { ExerciseDirectory } from './shared/exercise-directory.server';
+
 import type {
   HeatmapDayView,
   MuscleBalanceView,
@@ -130,13 +132,18 @@ export class ProgressService {
 
   async history(athlete: Athlete, today: DateOnly = DateOnly.today()): Promise<HistoryView> {
     const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
-    const history = await this.historyFrom(sessions);
+
+    // One directory serves both the domain calculations and the timeline's
+    // labels; resolving the exercises twice over the same ids would be two
+    // round trips for one page.
+    const directory = await ExerciseDirectory.of(referencedExerciseIds(sessions), this.exercises);
+    const history = TrainingHistory.of(sessions, directory.exercises);
     const preferences = athlete.preferences;
 
     const bodyWeight = await this.bodyWeightSeries(athlete);
 
     return {
-      timeline: await this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT)),
+      timeline: this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT), directory),
       totalSets: sessions.reduce((sum, s) => sum + s.setCount, 0),
       workoutCount: sessions.filter((s) => s.setCount > 0).length,
 
@@ -232,8 +239,7 @@ export class ProgressService {
     };
   }
 
-  private async timeline(athlete: Athlete, sessions: readonly WorkoutSession[]): Promise<TimelineDay[]> {
-    const names = await this.exerciseNames(sessions);
+  private timeline(athlete: Athlete, sessions: readonly WorkoutSession[], directory: ExerciseDirectory): TimelineDay[] {
     return sessions.map((session) => ({
       id: session.id,
       date: session.date.value,
@@ -241,27 +247,13 @@ export class ProgressService {
       sets: session.sets.map((set) => ({
         id: set.id,
         exerciseId: set.exerciseId,
-        exerciseName: names.get(set.exerciseId) ?? 'Unknown',
+        exerciseName: directory.nameOf(set.exerciseId),
         summary: set.format(athlete.preferences),
       })),
     }));
   }
-
-  private async historyFrom(sessions: readonly WorkoutSession[]): Promise<TrainingHistory> {
-    const exercises = await this.exercises.findManyByIds(referencedExerciseIds(sessions));
-    return TrainingHistory.of(sessions, exercises);
-  }
-
-  private async exerciseNames(sessions: readonly WorkoutSession[]): Promise<Map<string, string>> {
-    const exercises = await this.exercises.findManyByIds(referencedExerciseIds(sessions));
-    return new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
-  }
 }
 
 function referencedExerciseIds(sessions: readonly WorkoutSession[]): string[] {
-  const ids = new Set<string>();
-  for (const session of sessions) {
-    for (const set of session.sets) ids.add(set.exerciseId);
-  }
-  return [...ids];
+  return sessions.flatMap((session) => session.sets.map((set) => set.exerciseId));
 }

@@ -14,6 +14,7 @@ import { EXERCISES_REPOSITORY, UNIT_OF_WORK, WORKOUT_SESSIONS_REPOSITORY } from 
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
+import { ExerciseDirectory } from './shared/exercise-directory.server';
 import { TrainingPlanService } from './training-plan-service.server';
 
 export type LoggedSetView = {
@@ -56,13 +57,15 @@ export class WorkoutLogService {
     const session = await this.sessions.findForDate(athlete.id, date);
     if (!session) return [];
 
-    const exercises = await this.exercises.findManyByIds(session.sets.map((set) => set.exerciseId));
-    const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    const directory = await ExerciseDirectory.of(
+      session.sets.map((set) => set.exerciseId),
+      this.exercises,
+    );
 
     return session.sets.map((set) => ({
       id: set.id,
       exerciseId: set.exerciseId,
-      exerciseName: byId.get(set.exerciseId)?.name ?? 'Unknown',
+      exerciseName: directory.nameOf(set.exerciseId),
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
     }));

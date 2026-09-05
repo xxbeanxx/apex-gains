@@ -10,6 +10,8 @@ import type { ExercisesRepository } from '~/repositories/exercises-repository.se
 import type { RoutinesRepository } from '~/repositories/routines-repository.server';
 import type { TemplatesRepository } from '~/repositories/templates-repository.server';
 import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
+import { ExerciseDirectory } from './shared/exercise-directory.server';
+
 import {
   EQUIPMENT_REPOSITORY,
   EXERCISES_REPOSITORY,
@@ -94,14 +96,11 @@ export class TrainingPlanService {
     // rest rather than as an error.
     if (!template) return { type: 'rest', routineId: routine.id };
 
-    const exercises = await this.exercises.findManyByIds(template.exercises.map((entry) => entry.exerciseId));
-    const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
-
-    const equipmentIds = new Set<string>();
-    for (const exercise of exercises) {
-      for (const id of exercise.equipmentIds) equipmentIds.add(id);
-    }
-    const equipment = await this.equipment.findManyByIds([...equipmentIds]);
+    const directory = await ExerciseDirectory.of(
+      template.exercises.map((entry) => entry.exerciseId),
+      this.exercises,
+    );
+    const equipment = await this.equipment.findManyByIds(directory.allEquipmentIds);
     const cardioKindById = new Map(equipment.map((item) => [item.id, item.cardioKind]));
 
     return {
@@ -109,17 +108,14 @@ export class TrainingPlanService {
       routineId: routine.id,
       templateId: template.id,
       templateName: template.name,
-      items: template.exercises.map((entry) => {
-        const exercise = byId.get(entry.exerciseId);
-        return {
-          exerciseId: entry.exerciseId,
-          exerciseName: exercise?.name ?? 'Unknown',
-          exerciseType: exercise?.exerciseType ?? 'strength',
-          cardioFields: cardioFieldsFor((exercise?.equipmentIds ?? []).map((id) => cardioKindById.get(id) ?? null)),
-          targetSummary: entry.target.format(athlete.preferences),
-          targetSets: entry.target.sets,
-        };
-      }),
+      items: template.exercises.map((entry) => ({
+        exerciseId: entry.exerciseId,
+        exerciseName: directory.nameOf(entry.exerciseId),
+        exerciseType: directory.typeOf(entry.exerciseId),
+        cardioFields: cardioFieldsFor(directory.equipmentIdsOf(entry.exerciseId).map((id) => cardioKindById.get(id) ?? null)),
+        targetSummary: entry.target.format(athlete.preferences),
+        targetSets: entry.target.sets,
+      })),
     };
   }
 
