@@ -456,10 +456,16 @@ env vars (see Server runtime, above), so there is one validation
 mechanism for the whole app rather than a second one only for forms.
 `validateForm` returns `{ success: true; data }` or `{ success: false;
 message }` instead of throwing, since a bad submission is a 400, not a
-boot failure. Both detail routes share a `settle` helper that maps a
-service result onto HTTP: not-found becomes a 404, and a non-null
-`forkedId` becomes a redirect to the fork's own URL, since the edit
-would be invisible at the sample's. Every mutating form is a
+boot failure. Both fork-on-write detail routes build a
+`forkableDetail(...)` (`app/lib/forkable-detail.server.ts`) naming their
+noun and paths, and read the four shared HTTP mappings off it:
+`notFound`, `settle` (not-found is a 404, and a non-null `forkedId` is a
+redirect to the fork's own URL, since the edit would be invisible at the
+sample's), `deleted` and `reverted`. Their shared header chrome — the
+Sample/Customized badge and the revert-or-delete form that follows from
+it — is `app/components/forkable-header.tsx`. What is left in each route
+is what the two pages genuinely do differently: re-anchoring and
+activating a routine, adding a targeted exercise to a template. Every mutating form is a
 plain `<form method="post">` (no client-side fetchers for these), and
 `~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
 pending state from `useNavigation()` matched against a `match` prop —

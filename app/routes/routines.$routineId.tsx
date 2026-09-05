@@ -23,6 +23,7 @@ import {
 import { Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -35,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
 import { intent } from '~/lib/intent';
+import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, trim } from '~/lib/validate-form';
 
@@ -50,9 +52,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const routineService = context.get(routineServiceContext);
   const routine = await routineService.detail(athlete, params.routineId);
-  if (!routine) {
-    throw data('Routine not found', { status: 404 });
-  }
+  if (!routine) page.notFound();
 
   const templateService = context.get(templateServiceContext);
   return {
@@ -102,21 +102,10 @@ class MoveSlotDto extends SlotIdDto {
   readonly direction!: 'up' | 'down';
 }
 
-/**
- * Every mutating intent shares an epilogue: a routine that isn't there is a
- * 404, and an edit that forked a sample has landed on a new routine whose
- * URL the browser needs to follow - staying put would show the untouched
- * sample and look like the edit was lost.
- */
-function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok: false }) {
-  if (!outcome.ok) {
-    throw data('Routine not found', { status: 404 });
-  }
-  if (outcome.value.forkedId) {
-    throw redirect(`/routines/${outcome.value.forkedId}`);
-  }
-  return { ok: true };
-}
+// Annotated so `notFound()`'s `never` narrows at the call site: TypeScript
+// only applies that to a dotted name whose type is declared, not inferred.
+const page: ForkableDetail = forkableDetail({ noun: 'Routine', indexPath: '/routines', pathFor: (id) => `/routines/${id}` });
+const { settle } = page;
 
 const intents = {
   delete: intent('delete'),
@@ -151,28 +140,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   };
 
   return dispatch(request, [
-    handled(intents.delete, async () => {
-      const outcome = await routineService.remove(athlete, routineId);
-      if (!outcome.ok && outcome.error === 'not-found') {
-        throw data('Routine not found', { status: 404 });
-      }
-      if (!outcome.ok) {
-        return intents.delete.reject("Sample routines can't be deleted.");
-      }
-      requestLogger(context).log(`deleted routine ${routineId} for user ${athlete.id}`, 'Routines');
-      throw redirect('/routines');
-    }),
+    handled(intents.delete, async () =>
+      page.deleted(intents.delete, await routineService.remove(athlete, routineId), () =>
+        requestLogger(context).log(`deleted routine ${routineId} for user ${athlete.id}`, 'Routines'),
+      ),
+    ),
 
-    handled(intents.revert, async () => {
-      const outcome = await routineService.revert(athlete, routineId);
-      if (!outcome.ok && outcome.error === 'not-found') {
-        throw data('Routine not found', { status: 404 });
-      }
-      if (!outcome.ok) {
-        return intents.revert.reject('Nothing to revert');
-      }
-      throw redirect(`/routines/${outcome.value.forkedFromId}`);
-    }),
+    handled(intents.revert, async () => page.reverted(intents.revert, await routineService.revert(athlete, routineId))),
 
     handled(intents.rename, async ({ name }) => settle(await routineService.rename(athlete, routineId, name))),
     handled(intents.reanchor, async ({ anchorDate }) =>
@@ -196,8 +170,6 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
   const slotCount = routine.slots.length;
   const { isSample, isCustomized } = routine;
 
-  const deleteError = intents.delete.errorIn(actionData);
-  const revertError = intents.revert.errorIn(actionData);
   const renameError = intents.rename.errorIn(actionData);
   const reanchorError = intents.reanchor.errorIn(actionData);
   const addSlotError = intents.addSlot.errorIn(actionData);
@@ -209,11 +181,7 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
         badge={
           <>
             {routine.isActive ? <Badge variant="brand">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
-            {isSample ? (
-              <Badge variant="outline">Sample</Badge>
-            ) : isCustomized ? (
-              <Badge variant="secondary">Customized</Badge>
-            ) : null}
+            <OwnershipBadge isSample={isSample} isCustomized={isCustomized} />
           </>
         }
         description={
@@ -235,25 +203,14 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
                 {routine.isActive ? 'Deactivate' : 'Set active'}
               </SubmitButton>
             </form>
-            {isSample ? null : isCustomized ? (
-              <form method="post" className="flex flex-col items-end gap-1.5">
-                <input {...intents.revert.field} />
-                <SubmitButton variant="outline" size="sm" match={intents.revert.match} pendingLabel="Reverting">
-                  <RotateCcwIcon aria-hidden="true" />
-                  Revert to sample
-                </SubmitButton>
-                {revertError ? <p className="text-sm font-medium text-destructive">{revertError}</p> : null}
-              </form>
-            ) : (
-              <form method="post" className="flex flex-col items-end gap-1.5">
-                <input {...intents.delete.field} />
-                <SubmitButton variant="destructive" size="sm" match={intents.delete.match} pendingLabel="Deleting routine">
-                  <Trash2Icon aria-hidden="true" />
-                  Delete routine
-                </SubmitButton>
-                {deleteError ? <p className="text-sm font-medium text-destructive">{deleteError}</p> : null}
-              </form>
-            )}
+            <RevertOrDeleteForm
+              noun="routine"
+              isSample={isSample}
+              isCustomized={isCustomized}
+              revert={intents.revert}
+              remove={intents.delete}
+              actionData={actionData}
+            />
           </>
         }
       />

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { data, redirect, useFetcher } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -19,6 +20,7 @@ import { speedUnitLabel } from '~/domain/values/units';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
+import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
@@ -35,9 +37,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const templateService = context.get(templateServiceContext);
   const template = await templateService.detail(athlete, params.templateId);
-  if (!template) {
-    throw data('Template not found', { status: 404 });
-  }
+  if (!template) page.notFound();
 
   const libraryService = context.get(exerciseLibraryServiceContext);
   return {
@@ -117,16 +117,14 @@ class MoveExerciseDto extends TemplateExerciseIdDto {
   readonly direction!: 'up' | 'down';
 }
 
-/** See routines.$routineId.tsx's `settle` - same epilogue, same reasoning. */
-function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok: false }) {
-  if (!outcome.ok) {
-    throw data('Template not found', { status: 404 });
-  }
-  if (outcome.value.forkedId) {
-    throw redirect(`/templates/${outcome.value.forkedId}`);
-  }
-  return { ok: true };
-}
+// Annotated so `notFound()`'s `never` narrows at the call site: TypeScript
+// only applies that to a dotted name whose type is declared, not inferred.
+const page: ForkableDetail = forkableDetail({
+  noun: 'Template',
+  indexPath: '/templates',
+  pathFor: (id) => `/templates/${id}`,
+});
+const { settle } = page;
 
 const intents = {
   delete: intent('delete'),
@@ -143,28 +141,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const templateService = context.get(templateServiceContext);
 
   return dispatch(request, [
-    handled(intents.delete, async () => {
-      const outcome = await templateService.remove(athlete, templateId);
-      if (!outcome.ok && outcome.error === 'not-found') {
-        throw data('Template not found', { status: 404 });
-      }
-      if (!outcome.ok) {
-        return intents.delete.reject("Sample templates can't be deleted.");
-      }
-      requestLogger(context).log(`deleted template ${templateId} for user ${athlete.id}`, 'Templates');
-      throw redirect('/templates');
-    }),
+    handled(intents.delete, async () =>
+      page.deleted(intents.delete, await templateService.remove(athlete, templateId), () =>
+        requestLogger(context).log(`deleted template ${templateId} for user ${athlete.id}`, 'Templates'),
+      ),
+    ),
 
-    handled(intents.revert, async () => {
-      const outcome = await templateService.revert(athlete, templateId);
-      if (!outcome.ok && outcome.error === 'not-found') {
-        throw data('Template not found', { status: 404 });
-      }
-      if (!outcome.ok) {
-        return intents.revert.reject('Nothing to revert');
-      }
-      throw redirect(`/templates/${outcome.value.forkedFromId}`);
-    }),
+    handled(intents.revert, async () => page.reverted(intents.revert, await templateService.revert(athlete, templateId))),
 
     handled(intents.rename, async ({ name }) => settle(await templateService.rename(athlete, templateId, name))),
 
@@ -291,42 +274,23 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
   const exerciseCount = template.exercises.length;
   const { isSample, isCustomized } = template;
 
-  const deleteError = intents.delete.errorIn(actionData);
-  const revertError = intents.revert.errorIn(actionData);
   const renameError = intents.rename.errorIn(actionData);
 
   return (
     <Page width="narrow">
       <PageHeader
         title={template.name}
-        badge={
-          isSample ? (
-            <Badge variant="outline">Sample</Badge>
-          ) : isCustomized ? (
-            <Badge variant="secondary">Customized</Badge>
-          ) : null
-        }
+        badge={<OwnershipBadge isSample={isSample} isCustomized={isCustomized} />}
         description={`${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'} in this workout.`}
         actions={
-          isSample ? null : isCustomized ? (
-            <form method="post" className="flex flex-col items-end gap-1.5">
-              <input {...intents.revert.field} />
-              <SubmitButton variant="outline" size="sm" match={intents.revert.match} pendingLabel="Reverting">
-                <RotateCcwIcon aria-hidden="true" />
-                Revert to sample
-              </SubmitButton>
-              {revertError ? <p className="text-sm font-medium text-destructive">{revertError}</p> : null}
-            </form>
-          ) : (
-            <form method="post" className="flex flex-col items-end gap-1.5">
-              <input {...intents.delete.field} />
-              <SubmitButton variant="destructive" size="sm" match={intents.delete.match} pendingLabel="Deleting template">
-                <Trash2Icon aria-hidden="true" />
-                Delete template
-              </SubmitButton>
-              {deleteError ? <p className="text-sm font-medium text-destructive">{deleteError}</p> : null}
-            </form>
-          )
+          <RevertOrDeleteForm
+            noun="template"
+            isSample={isSample}
+            isCustomized={isCustomized}
+            revert={intents.revert}
+            remove={intents.delete}
+            actionData={actionData}
+          />
         }
       />
 
