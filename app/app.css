@@ -123,11 +123,16 @@
   --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   /* Layout rhythm - page gutters and vertical spacing live here only */
-  --content-max: 84rem;
+  --content-max: 78rem;
   --page-px: clamp(1rem, 0.5rem + 2vw, 2.5rem);
   --section-gap: clamp(2rem, 1.5rem + 2vw, 3.5rem);
   --stack-gap: 1.5rem;
   --header-h: 3.75rem;
+
+  /* Shell geometry - the sidebar and bottom tab bar are the only fixed chrome */
+  --sidebar-w: 15rem;
+  --sidebar-w-collapsed: 3.5rem;
+  --bottom-tabs-h: 3.75rem;
 
   --radius: 0.75rem;
 

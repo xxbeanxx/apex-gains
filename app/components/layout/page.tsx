@@ -10,9 +10,10 @@ import { cn } from '~/lib/utils';
  * one gutter token (`--page-px`), one vertical rhythm token (`--section-gap`).
  */
 
-type Width = 'default' | 'narrow' | 'prose';
+type Width = 'full' | 'default' | 'narrow' | 'prose';
 
 const widths: Record<Width, string> = {
+  full: 'max-w-none',
   default: 'max-w-(--content-max)',
   narrow: 'max-w-4xl',
   prose: 'max-w-2xl',
