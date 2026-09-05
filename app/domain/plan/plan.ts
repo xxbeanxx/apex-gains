@@ -189,6 +189,19 @@ export class Plan {
     return index === null ? null : (this.slotList.at(index) ?? null);
   }
 
+  /**
+   * The next date - today itself, if it's already due - this slot's turn
+   * comes round. The inverse of `slotOn`: that answers which slot a date
+   * lands on, this answers which date a slot lands on next.
+   */
+  nextDateFor(slot: PlanSlot, today: DateOnly): DateOnly {
+    const length = this.cycleLength;
+    const offset = this.anchor.daysUntil(today);
+    const todayIndex = ((offset % length) + length) % length;
+    const diff = (((slot.position - todayIndex) % length) + length) % length;
+    return today.plusDays(diff);
+  }
+
   rename(name: string, now: Date): void {
     this.currentName = name;
     this.touch(now);

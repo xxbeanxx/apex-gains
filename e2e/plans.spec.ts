@@ -1,13 +1,12 @@
 import type { Page } from '@playwright/test';
 
-import { createPlan, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
+import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
-/** Adds one day-slot to the open plan detail page. */
+/** Adds one day-slot to the open plan detail page by clicking it in the palette. */
 async function addDay(page: Page, dayType: string) {
   const before = await orderedRows(page).count();
-  await selectOption(page.getByLabel('Day type'), dayType);
-  await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+  await page.getByRole('button', { name: dayType, exact: true }).click();
   await expect(orderedRows(page)).toHaveCount(before + 1);
 }
 
@@ -50,7 +49,8 @@ test('reorders and removes day-slots', async ({ page, athlete }) => {
   await expect(days.nth(0)).toContainText('Rest');
   await expect(days.nth(1)).toContainText(workout);
 
-  await submitForm(page.getByRole('button', { name: 'Remove day 1 from this plan' }));
+  await page.getByRole('button', { name: 'Actions for day 1' }).click();
+  await page.getByRole('menuitem', { name: 'Remove' }).click();
   await expect(days).toHaveCount(1);
   await expect(days.nth(0)).toContainText(workout);
 });
@@ -60,12 +60,16 @@ test('renames a plan and re-anchors its cycle', async ({ page, athlete }) => {
   const renamed = uniqueName('Reanchored');
   await createPlan(page, name);
 
+  await page.getByRole('button', { name: 'Rename' }).click();
   await page.getByLabel('Name').fill(renamed);
-  await page.getByRole('button', { name: 'Save', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('heading', { name: renamed, exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Anchor date' }).click();
   await page.getByLabel('Anchor date').fill('2026-01-05');
-  await submitForm(page.getByRole('button', { name: 'Save', exact: true }).last());
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Anchor date' }).click();
   await expect(page.getByLabel('Anchor date')).toHaveValue('2026-01-05');
 });
 

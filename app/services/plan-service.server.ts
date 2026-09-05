@@ -34,6 +34,8 @@ export type PlanSlotView = {
   workoutId: string | null;
   workoutName: string | null;
   isRestDay: boolean;
+  /** The next calendar date this slot comes up, as YYYY-MM-DD - today itself if it's already due. */
+  nextDate: string;
 };
 
 export type PlanDetail = PlanSummary & {
@@ -97,6 +99,7 @@ export class PlanService {
     if (!plan) return null;
 
     const names = await this.workoutNames(athlete);
+    const today = DateOnly.today(this.deps.clock.now(), athlete.preferences.timezone);
 
     return {
       ...toSummary(plan),
@@ -108,6 +111,7 @@ export class PlanService {
         workoutId: slot.workoutId,
         workoutName: slot.workoutId ? (names.get(slot.workoutId) ?? 'Unknown') : null,
         isRestDay: slot.isRestDay,
+        nextDate: plan.nextDateFor(slot, today).value,
       })),
     };
   }

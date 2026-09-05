@@ -279,3 +279,49 @@ describe('sharing', () => {
     expect(detail?.shareToken).toBe(shared.ok ? shared.value.token : null);
   });
 });
+
+describe('next occurrence dates', () => {
+  it('gives each slot the next date its turn comes round, in the athlete s timezone', async () => {
+    // NOW is 2026-09-03T12:00:00Z; the plan's own anchor is 2026-09-01, so a
+    // 6-slot cycle puts slot 2 on today and wraps slot 0 and slot 1 forward.
+    await plans.save(
+      samplePlan({
+        id: 'own-1',
+        userId: 'user-1',
+        anchorDate: '2026-09-01',
+        slots: Array.from({ length: 6 }, (_, position) => ({ id: `slot-${position}`, position, workoutId: null })),
+      }),
+    );
+
+    const detail = await service.detail(athlete, 'own-1');
+
+    expect(detail?.slots.map((slot) => slot.nextDate)).toEqual([
+      '2026-09-07', // slot 0 already had its turn today's cycle - next one is a full cycle on
+      '2026-09-08',
+      '2026-09-03', // today
+      '2026-09-04',
+      '2026-09-05',
+      '2026-09-06',
+    ]);
+  });
+
+  it('still answers correctly for a plan anchored in the future', async () => {
+    await plans.save(
+      samplePlan({
+        id: 'own-1',
+        userId: 'user-1',
+        anchorDate: '2026-09-10',
+        slots: [
+          { id: 'slot-0', position: 0, workoutId: 'workout-push' },
+          { id: 'slot-1', position: 1, workoutId: null },
+        ],
+      }),
+    );
+
+    const detail = await service.detail(athlete, 'own-1');
+
+    // NOW (2026-09-03) is 7 days before the anchor; 7 mod 2 = 1, so today
+    // already lands on slot 1, and slot 0 is due the day after.
+    expect(detail?.slots.map((slot) => slot.nextDate)).toEqual(['2026-09-04', '2026-09-03']);
+  });
+});

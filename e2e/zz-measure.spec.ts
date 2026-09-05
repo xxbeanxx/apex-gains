@@ -1,4 +1,4 @@
-import { createPlan, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
+import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 // Chrome DevTools' responsive mode, with no device preset picked, is desktop
@@ -19,8 +19,13 @@ for (const mobile of [false, true]) {
 
       await createPlan(page, 'My Plan');
       for (let i = 0; i < 4; i++) {
-        await selectOption(page.getByLabel('Day type'), i % 2 === 0 ? workout : 'Rest day');
-        await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+        // The palette sits behind an "Add day" dialog below `md:`, and this
+        // viewport is narrower than that.
+        await page.getByRole('button', { name: 'Add day' }).click();
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: i % 2 === 0 ? workout : 'Rest day', exact: true })
+          .click();
         await expect(orderedRows(page)).toHaveCount(i + 1);
       }
       await submitForm(page.getByRole('button', { name: 'Set active' }));

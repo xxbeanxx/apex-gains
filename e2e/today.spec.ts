@@ -33,8 +33,7 @@ async function activePlanWith(page: Page, exercise: string, targets?: { sets?: s
   }
 
   await createPlan(page, uniqueName('Plan'));
-  await selectOption(page.getByLabel('Day type'), workout);
-  await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+  await page.getByRole('button', { name: workout, exact: true }).click();
   await expect(page.locator('ol > li')).toHaveCount(1);
   await submitForm(page.getByRole('button', { name: 'Set active' }));
   await expect(page.getByText('Active', { exact: true })).toBeVisible();
@@ -120,8 +119,7 @@ test("surfaces the active plan's workout and tracks set progress", async ({ page
 
 test('marks a rest day but still allows logging', async ({ page, athlete }) => {
   await createPlan(page, uniqueName('Rest Cycle'));
-  await selectOption(page.getByLabel('Day type'), 'Rest day');
-  await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+  await page.getByRole('button', { name: 'Rest day', exact: true }).click();
   await expect(page.locator('ol > li')).toHaveCount(1);
   await submitForm(page.getByRole('button', { name: 'Set active' }));
 

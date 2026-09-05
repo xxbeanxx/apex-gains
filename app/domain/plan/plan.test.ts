@@ -82,6 +82,29 @@ describe('cycle scheduling', () => {
   });
 });
 
+describe('next occurrence', () => {
+  const plan = withSlots(['push', 'pull', null]);
+
+  it('is today itself for the slot currently due', () => {
+    expect(plan.nextDateFor(plan.slots[0], DateOnly.parse('2026-09-01')).value).toBe('2026-09-01');
+  });
+
+  it('is later this cycle for a slot still to come', () => {
+    expect(plan.nextDateFor(plan.slots[2], DateOnly.parse('2026-09-01')).value).toBe('2026-09-03');
+  });
+
+  it('wraps to the next cycle once its slot has already passed today', () => {
+    // Slot 0 last came up on the 1st; the 2nd has already moved past it,
+    // so its next turn is a full cycle later.
+    expect(plan.nextDateFor(plan.slots[0], DateOnly.parse('2026-09-02')).value).toBe('2026-09-04');
+  });
+
+  it('still answers correctly for a plan anchored in the future', () => {
+    const future = withSlots(['push', 'pull', null], { anchorDate: '2026-10-01' });
+    expect(future.nextDateFor(future.slots[1], DateOnly.parse('2026-09-01')).value).toBe('2026-09-02');
+  });
+});
+
 describe('slots', () => {
   it('appends a new slot at the end of the cycle', () => {
     const plan = withSlots(['push']);

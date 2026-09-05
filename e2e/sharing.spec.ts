@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { createExercise, createPlan, createWorkout, orderedRows, selectOption, signOut, submitForm } from './helpers';
+import { createExercise, createPlan, createWorkout, orderedRows, signOut, submitForm } from './helpers';
 import { expect, newAthlete, signIn, test, uniqueName, waitForHydration } from './fixtures';
 
 /**
@@ -27,11 +27,9 @@ async function shareAPlan(page: Page, names: { exercise: string; workout: string
   await expect(row).toContainText('135 lb');
 
   await createPlan(page, names.plan);
-  await selectOption(page.getByLabel('Day type'), names.workout);
-  await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+  await page.getByRole('button', { name: names.workout, exact: true }).click();
   await expect(orderedRows(page)).toHaveCount(1);
-  await selectOption(page.getByLabel('Day type'), 'Rest day');
-  await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
+  await page.getByRole('button', { name: 'Rest day', exact: true }).click();
   await expect(orderedRows(page)).toHaveCount(2);
 
   await submitForm(page.getByRole('button', { name: 'Share', exact: true }));
@@ -117,8 +115,10 @@ test('another athlete imports the plan, its workouts and its exercises', async (
 test('the anchor date starts on the original and can be moved before importing', async ({ page, athlete }) => {
   const names = uniqueNames();
   await createPlan(page, names.plan);
+  await page.getByRole('button', { name: 'Anchor date' }).click();
   await page.getByLabel('Anchor date').fill('2026-01-05');
-  await submitForm(page.getByRole('button', { name: 'Save', exact: true }).last());
+  await submitForm(page.getByRole('button', { name: 'Save', exact: true }));
+  await page.getByRole('button', { name: 'Anchor date' }).click();
   await expect(page.getByLabel('Anchor date')).toHaveValue('2026-01-05');
 
   await submitForm(page.getByRole('button', { name: 'Share', exact: true }));
