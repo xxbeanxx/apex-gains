@@ -497,6 +497,24 @@ maps to `app/`, `~server/` to `server/` (see `tsconfig.json` and
 `app/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
+**Charts.** Recharts, through shadcn's `app/components/ui/chart.tsx`
+wrapper (`ChartContainer` + `ChartTooltipContent`) — a chart declares a
+`ChartConfig` and paints with the `var(--color-<key>)` variables
+`ChartContainer` emits from it, so the same component is themed by
+`app.css` in both modes. The charts themselves are in
+`app/components/history/`, and they render only in the browser:
+`ResponsiveContainer` has to measure its box first, so an SSR'd page
+shows the card and fills the plot on hydration. Two constraints are not
+obvious. Bar animation is off, because Recharts restarts it whenever the
+container resizes — a bar caught at t=0 has zero height, so anything that
+observes the page (a screenshot, a resize) can catch an empty plot. And a
+`LabelList` entry's `index` counts the rectangles that were drawn, not the
+data points: a zero-value bar draws nothing, so a label that depends on
+which point it belongs to must read `entry.payload`. The consistency
+calendar in `consistency-heatmap.tsx` stays hand-drawn SVG — Recharts has
+no heatmap — and carries its own tooltip in the same clothes as
+`ChartTooltipContent`.
+
 **Logging.** Nest's own `ConsoleLogger` is the only logger, built once
 (`server/logging/logger.provider.ts`) and handed to `app.useLogger()`
 in `server/main.ts`, so Nest's internal bootstrap lines

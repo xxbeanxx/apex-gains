@@ -1,9 +1,8 @@
 import { useState } from 'react';
 
 import { formatFullDate } from '~/lib/format';
+import { cn } from '~/lib/utils';
 import type { HeatmapDayView } from '~/services/progress-view';
-
-import { ChartTooltip } from './chart-tooltip';
 
 const CELL = 12;
 const GAP = 3;
@@ -119,7 +118,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
         })}
       </svg>
 
-      <ChartTooltip x={tooltipX} y={tooltipY} visible={hovered != null}>
+      <HeatmapTooltip x={tooltipX} y={tooltipY} visible={hovered != null}>
         {hovered ? (
           <>
             <div className="font-semibold">
@@ -132,7 +131,32 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
             <div className="text-muted-foreground">{formatFullDate(hovered.date)}</div>
           </>
         ) : null}
-      </ChartTooltip>
+      </HeatmapTooltip>
+    </div>
+  );
+}
+
+/**
+ * Positioned by percentage of the heatmap's own box (`x`/`y` each 0-100,
+ * computed by the caller as a fraction of its rendered width/height) - so it
+ * lines up with the SVG under it regardless of how that SVG scales. Always
+ * anchors above `y`, which is what the top margin's headroom is for.
+ *
+ * The Recharts charts get this from `ChartTooltipContent`; the calendar is
+ * hand-drawn, so it carries its own in the same clothes.
+ */
+function HeatmapTooltip({ x, y, visible, children }: { x: number; y: number; visible: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      role="status"
+      aria-hidden={!visible}
+      className={cn(
+        'pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs whitespace-nowrap shadow-xl transition-opacity duration-(--dur-fast) ease-(--ease-quint)',
+        visible ? 'opacity-100' : 'opacity-0',
+      )}
+      style={{ left: `${x}%`, top: `${y}%`, marginTop: -10 }}
+    >
+      {children}
     </div>
   );
 }

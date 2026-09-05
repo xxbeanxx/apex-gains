@@ -1,61 +1,40 @@
+import { Bar, BarChart, LabelList, XAxis, YAxis } from 'recharts';
+
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '~/components/ui/chart';
 import type { MuscleBalanceView } from '~/services/progress-view';
 
-import { niceAxisStep, roundedRightBarPath, useChartWidth } from './chart-utils';
+const ROW_HEIGHT = 30;
 
-const ROW_H = 30;
-const BAR_H = 18;
-const MARGIN = { top: 4, right: 40, bottom: 4, left: 96 };
+const config = {
+  setCount: { label: 'Sets', color: 'var(--brand-strong)' },
+} satisfies ChartConfig;
 
 export function MuscleBalanceChart({ groups }: { groups: MuscleBalanceView[] }) {
-  const [ref, width] = useChartWidth<HTMLDivElement>();
-  const chartW = Math.max(0, width - MARGIN.left - MARGIN.right);
-  const height = MARGIN.top + MARGIN.bottom + groups.length * ROW_H;
-
-  const maxValue = Math.max(0, ...groups.map((g) => g.setCount));
-  const step = niceAxisStep(maxValue);
-  const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step;
-
   return (
-    <div ref={ref} className="w-full" style={{ height }}>
-      {width > 0 ? (
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="size-full overflow-visible"
-          role="img"
-          aria-label={`Sets by muscle group, most trained first: ${groups.map((g) => `${g.muscleGroup} ${g.setCount}`).join(', ')}`}
-        >
-          {groups.map((group, i) => {
-            const rowY = MARGIN.top + i * ROW_H;
-            const barY = rowY + (ROW_H - BAR_H) / 2;
-            const barWidth = axisMax > 0 ? (group.setCount / axisMax) * chartW : 0;
-
-            return (
-              <g key={group.muscleGroup}>
-                <text
-                  x={MARGIN.left - 8}
-                  y={rowY + ROW_H / 2}
-                  textAnchor="end"
-                  dominantBaseline="middle"
-                  className="fill-foreground text-[11px]"
-                >
-                  {group.muscleGroup}
-                </text>
-                {barWidth > 0 ? (
-                  <path d={roundedRightBarPath(MARGIN.left, barY, barWidth, BAR_H, 4)} className="fill-brand-strong" />
-                ) : null}
-                <text
-                  x={MARGIN.left + barWidth + 6}
-                  y={rowY + ROW_H / 2}
-                  dominantBaseline="middle"
-                  className="fill-muted-foreground text-[11px] tabular-nums"
-                >
-                  {group.setCount}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      ) : null}
-    </div>
+    <ChartContainer config={config} className="aspect-auto w-full" style={{ height: groups.length * ROW_HEIGHT }}>
+      <BarChart
+        data={groups}
+        layout="vertical"
+        margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
+        role="img"
+        aria-label={`Sets by muscle group, most trained first: ${groups.map((g) => `${g.muscleGroup} ${g.setCount}`).join(', ')}`}
+      >
+        {
+          // The count sits beside each bar, so the value axis itself is
+          // redundant - the rows are a ranking, not a reading off a scale.
+        }
+        <XAxis type="number" dataKey="setCount" hide />
+        <YAxis type="category" dataKey="muscleGroup" tickLine={false} axisLine={false} tickMargin={8} width={104} />
+        <ChartTooltip cursor={{ fill: 'var(--muted)', fillOpacity: 0.5 }} content={<ChartTooltipContent />} />
+        <Bar dataKey="setCount" fill="var(--color-setCount)" radius={[0, 4, 4, 0]} barSize={18} isAnimationActive={false}>
+          <LabelList
+            dataKey="setCount"
+            position="right"
+            offset={8}
+            className="fill-muted-foreground text-[11px] tabular-nums"
+          />
+        </Bar>
+      </BarChart>
+    </ChartContainer>
   );
 }

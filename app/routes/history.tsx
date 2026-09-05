@@ -32,6 +32,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
     heatmap,
     weeklySets,
     weeklyTonnage,
+    tonnageUnit,
     exerciseProgress,
     muscleBalance,
     personalRecords,
@@ -67,6 +68,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
             heatmap={heatmap}
             weeklySets={weeklySets}
             weeklyTonnage={weeklyTonnage}
+            tonnageUnit={tonnageUnit}
             exerciseProgress={exerciseProgress}
             muscleBalance={muscleBalance}
             personalRecords={personalRecords}

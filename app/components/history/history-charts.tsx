@@ -22,6 +22,7 @@ export function HistoryCharts({
   heatmap,
   weeklySets,
   weeklyTonnage,
+  tonnageUnit,
   exerciseProgress,
   muscleBalance,
   personalRecords,
@@ -30,6 +31,7 @@ export function HistoryCharts({
   heatmap: HeatmapDayView[];
   weeklySets: WeeklyPointView[];
   weeklyTonnage: WeeklyPointView[];
+  tonnageUnit: string;
   exerciseProgress: ProgressSeriesView[];
   muscleBalance: MuscleBalanceView[];
   personalRecords: PersonalRecordView[];
@@ -54,6 +56,7 @@ export function HistoryCharts({
           <CardContent>
             <WeeklyBarChart
               points={weeklySets}
+              seriesLabel="Sets"
               formatValue={(v) => `${v} set${v === 1 ? '' : 's'}`}
               formatCompact={(v) => `${v}`}
               ariaLabel={`Sets logged per week, from ${weeklySets[0]?.label} to ${weeklySets.at(-1)?.label}`}
@@ -68,7 +71,8 @@ export function HistoryCharts({
           <CardContent>
             <WeeklyBarChart
               points={weeklyTonnage}
-              formatValue={(v) => `${Math.round(v).toLocaleString()} lb`}
+              seriesLabel="Tonnage"
+              formatValue={(v) => `${Math.round(v).toLocaleString()} ${tonnageUnit}`}
               formatCompact={(v) => Math.round(v).toLocaleString()}
               ariaLabel={`Total weight lifted per week, from ${weeklyTonnage[0]?.label} to ${weeklyTonnage.at(-1)?.label}`}
             />
