@@ -11,6 +11,7 @@
  * on document actions compares that origin against the browser's `Origin`
  * header, so without it every form submission would be rejected with a 400.
  */
+
 import 'reflect-metadata';
 
 import path from 'node:path';
@@ -33,9 +34,6 @@ import { collectNestSingletons } from './react-router/singletons';
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** Nest logger context label for the process-wide crash handlers below. */
-const PROCESS = 'Process';
-
 /**
  * Registers Vite middleware and the SSR fallback for `npm run dev`.
  *
@@ -55,15 +53,20 @@ async function registerDevRoutes(server: Express, singletons: NestSingletons): P
 
   server.use(vite.middlewares);
 
-  server.use(async (req: Request, res: Response, next: NextFunction) => {
+  server.use(async (req, res, next) => {
     try {
       const { createHandler } = (await vite.ssrLoadModule(
         '/server/react-router/handler.ts',
       )) as typeof import('./react-router/handler');
 
-      return await createHandler(singletons, 'development')(req, res, next);
+      const requestHandler = createHandler(singletons, 'development');
+
+      return await requestHandler(req, res, next);
     } catch (error) {
-      if (error instanceof Error) vite.ssrFixStacktrace(error);
+      if (error instanceof Error) {
+        vite.ssrFixStacktrace(error);
+      }
+
       next(error);
     }
   });
@@ -79,6 +82,7 @@ async function registerDevRoutes(server: Express, singletons: NestSingletons): P
  */
 async function registerProductionRoutes(server: Express, singletons: NestSingletons): Promise<void> {
   const handlerPath = path.resolve(__dirname, 'index.js');
+
   const { assetsBuildDirectory, publicPath, createHandler } = (await import(
     url.pathToFileURL(handlerPath).href
   )) as typeof import('./react-router/handler');
@@ -92,12 +96,14 @@ async function registerProductionRoutes(server: Express, singletons: NestSinglet
       maxAge: '1y',
     }),
   );
+
   // The client build directory holds `public/`'s contents too - Vite copies
   // them there - so this one mount covers both.
   server.use(publicPath, serveStatic(assetsDirectory));
-  // Production only: in dev, Vite serves `public/` itself. Nothing mounts
-  // `/.well-known` in dev, so anything depending on it (assetlinks, apple-app-
-  // site-association) can only be exercised against a production build.
+
+  // Production only: in dev, Vite serves `public/` itself. Nothing mounts `/.well-known`
+  // in dev, so anything depending on it (assetlinks, apple-app-site-association)
+  // can only be exercised against a production build.
   server.use('/.well-known', serveStatic(path.join(assetsDirectory, '.well-known')));
 
   server.use(createHandler(singletons, 'production'));
@@ -115,7 +121,9 @@ async function bootstrap() {
     // needs a parsed body should opt in with `app.useBodyParser()`.
     bodyParser: false,
   });
+
   const logger = app.get(LOGGER);
+
   app.useLogger(logger);
   app.enableShutdownHooks();
 
@@ -123,16 +131,20 @@ async function bootstrap() {
   // anywhere under `app/`, where importing the module would hook them inside
   // the vitest process too.
   process.on('uncaughtException', (err) => {
-    logger.fatal('uncaught exception', err.stack, PROCESS);
+    logger.fatal('uncaught exception', err.stack, 'Process');
     process.exit(1);
   });
 
+  // Since Node.js 15+, unhandled Promise rejections crash the process by default.
+  // We honor that behavior here by shutting down the process after logging.
   process.on('unhandledRejection', (reason) => {
-    logger.error('unhandled rejection', reason instanceof Error ? reason.stack : String(reason), PROCESS);
+    logger.error('unhandled rejection', reason instanceof Error ? reason.stack : String(reason), 'Process');
+    process.exit(1);
   });
 
   const adapter = app.getHttpAdapter();
-  const server = adapter.getInstance() as Express;
+  const server = adapter.getInstance();
+
   server.set('trust proxy', true);
   server.disable('x-powered-by');
   server.use(compression());
@@ -142,13 +154,15 @@ async function bootstrap() {
   // in its source). Azure's ingress forwards an internal `Host` value that
   // doesn't necessarily match `X-Forwarded-Host`, so that fallback can still
   // produce a `request.url` with an unexpected port and trip the CSRF
-  // origin check above. Normalize `Host` to the forwarded value so both
-  // agree.
-  server.use((req: Request, _res: Response, next: NextFunction) => {
+  // origin check above. Normalize `Host` to the forwarded value so both agree.
+
+  server.use((req, _res, next) => {
     const forwardedHost = req.get('X-Forwarded-Host');
+
     if (forwardedHost) {
       req.headers.host = forwardedHost;
     }
+
     next();
   });
 
@@ -168,7 +182,7 @@ async function bootstrap() {
   // SSR'd document instead of the route, with no error to diagnose.
   // Assigned, not deleted: the method lives on the adapter's prototype, so
   // `delete` on the instance would leave it reachable.
-  (adapter as { setNotFoundHandler?: unknown }).setNotFoundHandler = undefined;
+  adapter.setNotFoundHandler = undefined;
 
   await app.init();
 
