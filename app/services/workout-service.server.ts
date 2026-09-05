@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
+import type { AthletePreferences } from '~/domain/athlete/preferences';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import type { MoveDirection } from '~/domain/shared/ordered';
 import { err, ok, type Result } from '~/domain/shared/result';
@@ -36,6 +37,15 @@ export type WorkoutExerciseView = {
   exerciseType: ExerciseType;
   /** Already formatted in the athlete's units; null when nothing is targeted. */
   targetSummary: string | null;
+  /** The same target, broken into chips ("3 sets", "8 reps", "135 lb"); a field is null when untargeted. */
+  target: {
+    sets: number | null;
+    reps: number | null;
+    weight: string | null;
+    duration: string | null;
+    speed: string | null;
+    resistance: number | null;
+  } | null;
 };
 
 export type WorkoutDetail = WorkoutSummary & {
@@ -59,6 +69,18 @@ export type TargetInput = {
 };
 
 export type WorkoutMutation = ForkMutation;
+
+function toTargetChips(target: SetTarget, preferences: AthletePreferences): WorkoutExerciseView['target'] {
+  if (target.isEmpty) return null;
+  return {
+    sets: target.sets,
+    reps: target.reps,
+    weight: preferences.formatWeight(target.weight),
+    duration: preferences.formatDuration(target.duration),
+    speed: preferences.formatSpeed(target.speed),
+    resistance: target.resistance,
+  };
+}
 
 function toSummary(workout: Workout): WorkoutSummary {
   return {
@@ -117,6 +139,7 @@ export class WorkoutService {
         exerciseName: directory.nameOf(entry.exerciseId),
         exerciseType: directory.typeOf(entry.exerciseId),
         targetSummary: entry.target.format(athlete.preferences),
+        target: toTargetChips(entry.target, athlete.preferences),
       })),
     };
   }

@@ -108,8 +108,35 @@ describe('detail', () => {
         exerciseName: 'Bench Press',
         exerciseType: 'strength',
         targetSummary: '3 x 10',
+        target: { sets: 3, reps: 10, weight: null, duration: null, speed: null, resistance: null },
       },
     ]);
+  });
+
+  it('reports no target chips for an untargeted entry', async () => {
+    await workouts.save(
+      sampleWorkout({
+        exercises: [
+          {
+            id: 'entry-0',
+            exerciseId: 'exercise-1',
+            position: 0,
+            targetSets: null,
+            targetReps: null,
+            targetWeight: null,
+            targetDurationSeconds: null,
+            targetSpeed: null,
+            targetResistance: null,
+          },
+        ],
+      }),
+    );
+    await exercises.save(exercise());
+
+    const detail = await service.detail(athlete, 'sample-1');
+
+    expect(detail?.exercises[0].target).toBeNull();
+    expect(detail?.exercises[0].targetSummary).toBeNull();
   });
 
   it('falls back to "Unknown" for an entry whose exercise cannot be resolved', async () => {
