@@ -29,7 +29,7 @@ function CommandDialog({
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
-      <DialogContent showCloseButton={false} className="top-24 max-w-lg translate-y-0 gap-0 overflow-hidden p-0">
+      <DialogContent showCloseButton={false} className="top-24 sm:max-w-lg translate-y-0 gap-0 overflow-hidden p-0">
         <Command className="[&_[cmdk-group-heading]]:px-2">{children}</Command>
       </DialogContent>
     </Dialog>
