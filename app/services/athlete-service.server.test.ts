@@ -46,6 +46,7 @@ describe('signing in with Google', () => {
     expect(athlete.preferences.weightUnit).toBe('lb');
     expect(athlete.preferences.distanceUnit).toBe('km');
     expect(athlete.preferences.showSampleData).toBe(true);
+    expect(athlete.preferences.timezone).toBe('UTC');
   });
 
   it('persists the newly registered athlete', async () => {
@@ -79,6 +80,16 @@ describe('signing in with Google', () => {
     const { athlete: returning } = await service.signInWithGoogle(googleIdentity);
     expect(returning.preferences.weightUnit).toBe('kg');
     expect(returning.preferences.distanceUnit).toBe('mi');
+  });
+});
+
+describe('changeTimezone', () => {
+  it('persists the new timezone', async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+    await service.changeTimezone(athlete, 'America/Toronto');
+
+    const found = await athletes.findById(athlete.id);
+    expect(found?.preferences.timezone).toBe('America/Toronto');
   });
 });
 

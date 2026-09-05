@@ -30,6 +30,7 @@ const athlete = Athlete.fromSnapshot({
   weightUnit: 'lb',
   distanceUnit: 'km',
   showSampleData: true,
+  timezone: 'UTC',
   isAdmin: false,
   createdAt: NOW,
   updatedAt: NOW,

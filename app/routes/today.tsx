@@ -60,7 +60,7 @@ type LoggableExercise = {
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today();
+  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
 
   // An unparseable or future ?date falls back to today rather than erroring -
   // there is nothing to log against a day that hasn't happened.
@@ -155,7 +155,7 @@ const intents = {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today();
+  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
   const logService = context.get(workoutLogServiceContext);
 
   return dispatch(request, [

@@ -33,6 +33,7 @@ describe('register', () => {
     expect(athlete.preferences.weightUnit).toBe('lb');
     expect(athlete.preferences.distanceUnit).toBe('km');
     expect(athlete.preferences.showSampleData).toBe(true);
+    expect(athlete.preferences.timezone).toBe('UTC');
   });
 });
 
@@ -108,5 +109,24 @@ describe('changeSampleDataVisibility', () => {
 
     expect(athlete.preferences.showSampleData).toBe(false);
     expect(athlete.updatedAt).toEqual(later);
+  });
+});
+
+describe('changeTimezone', () => {
+  it('updates the timezone and bumps updatedAt', () => {
+    const athlete = Athlete.register(identity, deps);
+    const later = new Date('2026-09-04T00:00:00Z');
+
+    athlete.changeTimezone('America/Toronto', later);
+
+    expect(athlete.preferences.timezone).toBe('America/Toronto');
+    expect(athlete.updatedAt).toEqual(later);
+  });
+
+  it('carries through a snapshot round-trip', () => {
+    const athlete = Athlete.register(identity, deps);
+    athlete.changeTimezone('America/Toronto', NOW);
+
+    expect(Athlete.fromSnapshot(athlete.toSnapshot()).preferences.timezone).toBe('America/Toronto');
   });
 });

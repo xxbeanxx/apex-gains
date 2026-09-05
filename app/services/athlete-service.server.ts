@@ -73,6 +73,11 @@ export class AthleteService {
     await this.athletes.save(athlete);
   }
 
+  async changeTimezone(athlete: Athlete, timezone: string): Promise<void> {
+    athlete.changeTimezone(timezone, this.deps.clock.now());
+    await this.athletes.save(athlete);
+  }
+
   private async register(
     identity: NewAthlete,
     findExisting: () => Promise<Athlete | null>,

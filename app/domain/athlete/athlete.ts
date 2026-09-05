@@ -12,6 +12,7 @@ export type AthleteSnapshot = {
   readonly weightUnit: WeightUnit;
   readonly distanceUnit: DistanceUnit;
   readonly showSampleData: boolean;
+  readonly timezone: string;
   readonly isAdmin: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -80,7 +81,7 @@ export class Athlete {
       snapshot.email,
       snapshot.name,
       snapshot.avatarUrl,
-      new AthletePreferences(snapshot.weightUnit, snapshot.distanceUnit, snapshot.showSampleData),
+      new AthletePreferences(snapshot.weightUnit, snapshot.distanceUnit, snapshot.showSampleData, snapshot.timezone),
       snapshot.isAdmin,
       snapshot.createdAt,
       snapshot.updatedAt,
@@ -97,6 +98,7 @@ export class Athlete {
       weightUnit: this.currentPreferences.weightUnit,
       distanceUnit: this.currentPreferences.distanceUnit,
       showSampleData: this.currentPreferences.showSampleData,
+      timezone: this.currentPreferences.timezone,
       isAdmin: this.administrator,
       createdAt: this.createdAt,
       updatedAt: this.lastUpdatedAt,
@@ -134,6 +136,11 @@ export class Athlete {
 
   changeSampleDataVisibility(showSampleData: boolean, now: Date): void {
     this.currentPreferences = this.currentPreferences.withSampleData(showSampleData);
+    this.lastUpdatedAt = now;
+  }
+
+  changeTimezone(timezone: string, now: Date): void {
+    this.currentPreferences = this.currentPreferences.withTimezone(timezone);
     this.lastUpdatedAt = now;
   }
 }

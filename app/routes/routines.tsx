@@ -51,7 +51,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   // A new routine is anchored to today, so its first slot is today's - the
   // athlete can re-anchor it afterwards.
   const routineService = context.get(routineServiceContext);
-  const routine = await routineService.create(user, result.data.name, DateOnly.today());
+  const routine = await routineService.create(user, result.data.name, DateOnly.today(new Date(), user.preferences.timezone));
 
   requestLogger(context).log(`created routine ${routine.id} for user ${user.id}`, 'Routines');
 

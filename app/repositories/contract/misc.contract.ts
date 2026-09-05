@@ -27,6 +27,7 @@ export function describeAthletesContract(subject: ContractSubject): void {
     it('round-trips an athlete and their preferences', async () => {
       const registered = athlete(ids.athlete, { email: 'a@example.com', googleSub: 'sub-1' });
       registered.changeUnits('kg', 'mi', NOW);
+      registered.changeTimezone('America/Toronto', NOW);
       await repositories.athletes.save(registered);
 
       const found = await repositories.athletes.findById(ids.athlete);
@@ -37,6 +38,7 @@ export function describeAthletesContract(subject: ContractSubject): void {
         googleSub: 'sub-1',
         weightUnit: 'kg',
         distanceUnit: 'mi',
+        timezone: 'America/Toronto',
       });
     });
 

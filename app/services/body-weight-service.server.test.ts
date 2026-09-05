@@ -22,6 +22,7 @@ function athlete(weightUnit: 'lb' | 'kg' = 'lb'): Athlete {
     weightUnit,
     distanceUnit: 'km',
     showSampleData: true,
+    timezone: 'UTC',
     isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,

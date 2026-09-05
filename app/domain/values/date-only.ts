@@ -1,3 +1,5 @@
+import { DEFAULT_TIMEZONE } from './timezone';
+
 const MS_PER_DAY = 86_400_000;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -6,9 +8,10 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
  * what routine cycles count in.
  *
  * The arithmetic is done in UTC on the `YYYY-MM-DD` string so that adding a
- * day never lands on a 23- or 25-hour day, while "today" is read from the
- * server's *local* calendar, since that is the day the athlete believes they
- * are training on. That split is deliberate.
+ * day never lands on a 23- or 25-hour day, while "today" is read in an
+ * explicit IANA timezone - the athlete's own, at every call site that has
+ * one - since that is the day the athlete believes they are training on.
+ * That split is deliberate.
  *
  * Display formatting lives in `app/lib/format.ts` instead: it is
  * locale-dependent and runs in the browser, whereas this is pure calendar
@@ -44,12 +47,16 @@ export class DateOnly {
     return DateOnly.tryParse(value) !== null;
   }
 
-  /** The server's local calendar day. */
-  static today(now: Date = new Date()): DateOnly {
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return new DateOnly(`${year}-${month}-${day}`);
+  /**
+   * The calendar day `now` falls on in `timeZone`. Defaults to UTC, which is
+   * the right choice only where no single athlete is in view (an
+   * instance-wide cutoff, say) - a per-athlete call site should always pass
+   * `athlete.preferences.timezone`.
+   */
+  static today(now: Date = new Date(), timeZone: string = DEFAULT_TIMEZONE): DateOnly {
+    return new DateOnly(
+      new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now),
+    );
   }
 
   private get epochMs(): number {

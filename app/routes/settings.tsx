@@ -11,6 +11,7 @@ import { Field } from '~/components/ui/field';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from '~/domain/values/units';
+import { TIMEZONES } from '~/domain/values/timezone';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 
@@ -38,12 +39,36 @@ class UpdateSampleDataVisibilityDto {
   readonly showSampleData!: 'true' | 'false';
 }
 
+class UpdateTimezoneDto {
+  @Expose()
+  @IsIn(TIMEZONES)
+  readonly timezone!: string;
+}
+
+/** Timezones grouped by their IANA region, for the settings dropdown. */
+const TIMEZONE_GROUPS: ReadonlyArray<{ region: string; zones: readonly string[] }> = (() => {
+  const groups = new Map<string, string[]>();
+  for (const zone of TIMEZONES) {
+    const region = zone.includes('/') ? zone.slice(0, zone.indexOf('/')) : zone;
+    const zones = groups.get(region) ?? [];
+    zones.push(zone);
+    groups.set(region, zones);
+  }
+  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+})().map(([region, zones]) => ({ region, zones }));
+
+/** "America/Argentina/Buenos_Aires" -> "Argentina/Buenos Aires"; "UTC" -> "UTC". */
+function timezoneLabel(zone: string, region: string): string {
+  return zone === region ? zone : zone.slice(region.length + 1).replaceAll('_', ' ');
+}
+
 export async function loader({ context }: Route.LoaderArgs) {
   const { preferences } = requireAthlete(context);
   return {
     weightUnit: preferences.weightUnit,
     distanceUnit: preferences.distanceUnit,
     showSampleData: preferences.showSampleData,
+    timezone: preferences.timezone,
   };
 }
 
@@ -55,6 +80,7 @@ const intents = {
     // ever turns sample data off.
     fields: (formData) => ({ showSampleData: formData.get('showSampleData') ?? 'false' }),
   }),
+  updateTimezone: intent('updateTimezone', UpdateTimezoneDto, { invalidMessage: 'Unknown timezone.' }),
 };
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -70,6 +96,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     handled(intents.updateSampleDataVisibility, async ({ showSampleData }) => {
       await athleteService.changeSampleDataVisibility(athlete, showSampleData === 'true');
       return { ok: true, intent: intents.updateSampleDataVisibility.name } as const;
+    }),
+
+    handled(intents.updateTimezone, async ({ timezone }) => {
+      await athleteService.changeTimezone(athlete, timezone);
+      return { ok: true, intent: intents.updateTimezone.name } as const;
     }),
   ]);
 }
@@ -133,6 +164,54 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </div>
 
             <SubmitButton match={intents.updateUnits.match} pendingLabel="Saving" className="self-start">
+              Save
+            </SubmitButton>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-(--section-gap)">
+        <CardHeader>
+          <CardTitle>Timezone</CardTitle>
+          <CardDescription>
+            Decides when your training day starts and ends, and which day a workout or weigh-in is logged against.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form method="post" className="flex flex-col gap-6">
+            <input {...intents.updateTimezone.field} />
+            <Field label="Timezone" error={intents.updateTimezone.errorIn(actionData)}>
+              {({ id, describedBy }) => (
+                <select
+                  id={id}
+                  name="timezone"
+                  aria-describedby={describedBy}
+                  defaultValue={loaderData.timezone}
+                  className="h-9 w-full min-w-0 rounded-lg border border-input bg-card px-3 py-1 text-base shadow-xs transition-[color,background-color,border-color,box-shadow] duration-(--dur-fast) ease-(--ease-quint) outline-none pointer-coarse:h-11 hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+                >
+                  {TIMEZONE_GROUPS.map(({ region, zones }) => (
+                    <optgroup key={region} label={region}>
+                      {zones.map((zone) => (
+                        <option key={zone} value={zone}>
+                          {timezoneLabel(zone, region)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              )}
+            </Field>
+
+            <div aria-live="polite" className="empty:hidden">
+              {intents.updateTimezone.succeededIn(actionData) ? (
+                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                  Saved.
+                </p>
+              ) : null}
+            </div>
+
+            <SubmitButton match={intents.updateTimezone.match} pendingLabel="Saving" className="self-start">
               Save
             </SubmitButton>
           </form>

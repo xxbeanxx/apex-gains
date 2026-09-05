@@ -7,7 +7,7 @@ import { Weight } from '../values/weight';
 import { LoggedSet } from './logged-set';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
-const preferences = new AthletePreferences('lb', 'km', true);
+const preferences = new AthletePreferences('lb', 'km', true, 'UTC');
 
 function strengthSet(overrides: Partial<{ reps: number | null; weight: Weight | null }> = {}): LoggedSet {
   return new LoggedSet(

@@ -149,8 +149,9 @@ function toView(athlete: Athlete, totals: TrainingTotals, actor: Athlete): Admin
     isAdmin: athlete.isAdmin,
     isSelf: athlete.id === actor.id,
     // A `YYYY-MM-DD` string, not the timestamp: loaders serialize, and every
-    // date the UI formats crosses that boundary in this shape.
-    joinedOn: DateOnly.today(athlete.createdAt).value,
+    // date the UI formats crosses that boundary in this shape. Bucketed in
+    // the athlete's own timezone, since it's a fact about their day.
+    joinedOn: DateOnly.today(athlete.createdAt, athlete.preferences.timezone).value,
     lastActiveOn: totals.lastActiveOn?.value ?? null,
     workoutCount: totals.workoutCount,
     setCount: totals.setCount,

@@ -37,6 +37,20 @@ test('the unit choice survives a reload', async ({ page, athlete }) => {
   await expect(page.getByLabel('Distance & speed')).toContainText('Miles (mi, mph)');
 });
 
+test('defaults to UTC and the timezone choice survives a reload', async ({ page, athlete }) => {
+  await page.goto('/settings');
+
+  const timezone = page.getByLabel('Timezone');
+  await expect(timezone).toHaveValue('UTC');
+
+  await timezone.selectOption('America/Toronto');
+  await page.locator('form', { has: timezone }).getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByLabel('Timezone')).toHaveValue('America/Toronto');
+});
+
 test('toggles sample data visibility', async ({ page, athlete }) => {
   await page.goto('/settings');
 

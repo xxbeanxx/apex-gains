@@ -100,6 +100,22 @@ describe('accounts', () => {
     expect(view.workoutCount).toBe(0);
     expect(view.lastActiveOn).toBe(TODAY.value);
   });
+
+  it("buckets joinedOn using the athlete's own timezone, not UTC's", async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const joinedAt = new Date('2026-09-03T23:30:00Z'); // late on the 3rd in UTC
+    const other = Athlete.register(
+      { googleSub: 'google-other-tz', email: 'othertz@example.com', name: 'OtherTz', avatarUrl: null },
+      { ids: deps.ids, clock: fixedClock(joinedAt) },
+    );
+    other.changeTimezone('Asia/Karachi', joinedAt); // UTC+5: already the 4th there
+    await athletes.save(other);
+
+    const accounts = await service.accounts(admin);
+    const view = accounts.find((account) => account.name === 'OtherTz')!;
+
+    expect(view.joinedOn).toBe('2026-09-04');
+  });
 });
 
 describe('overview', () => {

@@ -27,11 +27,18 @@ describe('DateOnly.tryParse', () => {
 });
 
 describe('DateOnly.today', () => {
-  it("reads the local calendar day, not UTC's", () => {
-    // 22:30 on the 3rd in a UTC-05:00 zone is already the 4th in UTC. The
-    // athlete is training on the 3rd, so that is the day that counts.
-    const lateEvening = new Date(2026, 8, 3, 22, 30);
-    expect(DateOnly.today(lateEvening).value).toBe('2026-09-03');
+  it('defaults to UTC', () => {
+    const almostMidnightUtc = new Date('2026-09-03T23:30:00Z');
+    expect(DateOnly.today(almostMidnightUtc).value).toBe('2026-09-03');
+  });
+
+  it("reads the given zone's calendar day, not UTC's", () => {
+    // 19:30 UTC is already past midnight - the 4th - five hours east of UTC,
+    // but still the afternoon of the 3rd four hours west of it. The zone
+    // passed in, not the instant alone, decides which day counts as "today".
+    const instant = new Date('2026-09-03T19:30:00Z');
+    expect(DateOnly.today(instant, 'Asia/Karachi').value).toBe('2026-09-04');
+    expect(DateOnly.today(instant, 'America/New_York').value).toBe('2026-09-03');
   });
 });
 

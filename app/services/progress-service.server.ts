@@ -130,7 +130,8 @@ export class ProgressService {
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
 
-  async history(athlete: Athlete, today: DateOnly = DateOnly.today()): Promise<HistoryView> {
+  async history(athlete: Athlete, asOf?: DateOnly): Promise<HistoryView> {
+    const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);
     const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
 
     // One directory serves both the domain calculations and the timeline's

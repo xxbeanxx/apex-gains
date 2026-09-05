@@ -37,11 +37,15 @@ for (const mobile of [false, true]) {
         ];
         const d = document.querySelector('[data-slot="dialog-content"]') as HTMLElement;
         const r = d.getBoundingClientRect();
-        rows.push(`dialog left=${r.left.toFixed(1)} right=${r.right.toFixed(1)} w=${r.width.toFixed(1)} overflowRight=${(r.right - window.innerWidth).toFixed(1)}`);
+        rows.push(
+          `dialog left=${r.left.toFixed(1)} right=${r.right.toFixed(1)} w=${r.width.toFixed(1)} overflowRight=${(r.right - window.innerWidth).toFixed(1)}`,
+        );
         for (const el of document.querySelectorAll('*')) {
           const b = el.getBoundingClientRect();
           if (b.width > 0 && (b.right > window.innerWidth + 0.5 || b.left < -0.5)) {
-            rows.push(`OVER ${el.tagName.toLowerCase()}.${String(el.className).slice(0, 45)} l=${b.left.toFixed(1)} r=${b.right.toFixed(1)}`);
+            rows.push(
+              `OVER ${el.tagName.toLowerCase()}.${String(el.className).slice(0, 45)} l=${b.left.toFixed(1)} r=${b.right.toFixed(1)}`,
+            );
           }
         }
         return rows.join('\n');

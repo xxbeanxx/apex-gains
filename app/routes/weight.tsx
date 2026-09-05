@@ -34,7 +34,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 
   return {
     weightUnit: log.unit,
-    todayStr: DateOnly.today().value,
+    todayStr: DateOnly.today(new Date(), athlete.preferences.timezone).value,
     logs: log.entries,
     series: log.series,
   };
@@ -69,7 +69,7 @@ const intents = {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today();
+  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
   const bodyWeightService = context.get(bodyWeightServiceContext);
 
   return dispatch(request, [

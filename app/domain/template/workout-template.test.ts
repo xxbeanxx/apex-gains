@@ -180,7 +180,7 @@ describe('copy for import', () => {
 
     const copy = original.copyForImport('user-2', (id) => id, deps());
 
-    expect(copy.exercises[2]!.target.format(new AthletePreferences('lb', 'km', true))).toBe('3 x 10, 135 lb');
+    expect(copy.exercises[2]!.target.format(new AthletePreferences('lb', 'km', true, 'UTC'))).toBe('3 x 10, 135 lb');
   });
 
   it('gives the entries new ids so the original keeps its own', () => {
@@ -199,8 +199,8 @@ describe('copy for import', () => {
 });
 
 describe('SetTarget', () => {
-  const imperial = new AthletePreferences('lb', 'km', true);
-  const metric = new AthletePreferences('kg', 'mi', true);
+  const imperial = new AthletePreferences('lb', 'km', true, 'UTC');
+  const metric = new AthletePreferences('kg', 'mi', true, 'UTC');
 
   it('has nothing to say when nothing is targeted', () => {
     expect(SetTarget.none().format(imperial)).toBeNull();
