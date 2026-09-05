@@ -220,7 +220,7 @@ describe('remove', () => {
 
     expect(await service.remove(athlete, 'sample-1')).toEqual({
       ok: false,
-      error: 'sample-template',
+      error: 'sample',
     });
   });
 

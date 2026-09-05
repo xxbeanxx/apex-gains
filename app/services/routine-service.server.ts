@@ -13,7 +13,7 @@ import { ROUTINES_REPOSITORY, TEMPLATES_REPOSITORY, UNIT_OF_WORK } from '~/repos
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
-import { resolveEditableCopy } from './shared/fork.server';
+import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
 
 export type RoutineSummary = {
   id: string;
@@ -40,13 +40,7 @@ export type RoutineDetail = RoutineSummary & {
   slots: RoutineSlotView[];
 };
 
-/**
- * Every mutating use case answers the same two questions: did it apply, and
- * did applying it fork a sample into a personal copy? A non-null `forkedId`
- * means the route should redirect - the edit landed on a new routine with
- * its own URL, and would be invisible at the sample's.
- */
-export type RoutineMutation = Result<{ forkedId: string | null }, 'not-found'>;
+export type RoutineMutation = ForkMutation;
 
 function toSummary(routine: Routine): RoutineSummary {
   return {
@@ -76,7 +70,12 @@ export class RoutineService {
     @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    this.editor = new ForkableLibrary(this.routines, this.unitOfWork, this.deps, (routine) => routine.slots);
+  }
+
+  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  private readonly editor: ForkableLibrary<Routine>;
 
   async list(athlete: Athlete): Promise<RoutineSummary[]> {
     const routines = await this.routines.listFor(athlete.id, athlete.preferences.showSampleData);
@@ -117,11 +116,11 @@ export class RoutineService {
   }
 
   async rename(athlete: Athlete, routineId: string, name: string): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) => routine.rename(name, this.deps.clock.now()));
+    return this.editor.mutate(athlete.id, routineId, (routine) => routine.rename(name, this.deps.clock.now()));
   }
 
   async reanchor(athlete: Athlete, routineId: string, anchorDate: DateOnly): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) => routine.reanchor(anchorDate, this.deps.clock.now()));
+    return this.editor.mutate(athlete.id, routineId, (routine) => routine.reanchor(anchorDate, this.deps.clock.now()));
   }
 
   /**
@@ -131,99 +130,46 @@ export class RoutineService {
    * intermediate state must never be committed.
    */
   async activate(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.routines.findVisible(athlete.id, routineId);
-      if (!loaded) return err('not-found' as const);
-
-      const copy = await this.editableCopy(loaded, athlete);
+    return this.editor.edit(athlete.id, routineId, async (copy) => {
       const currentlyActive = await this.routines.findActive(athlete.id);
 
       for (const routine of activateRoutine(copy.editable, currentlyActive, this.deps.clock.now())) {
         await this.routines.save(routine);
       }
-
-      return ok({ forkedId: copy.forkedId });
+      return ok();
     });
   }
 
   async deactivate(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) => routine.deactivate(this.deps.clock.now()));
+    return this.editor.mutate(athlete.id, routineId, (routine) => routine.deactivate(this.deps.clock.now()));
   }
 
   async addSlot(athlete: Athlete, routineId: string, templateId: string | null): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine) => routine.addSlot(templateId, this.deps));
+    return this.editor.mutate(athlete.id, routineId, (routine) => routine.addSlot(templateId, this.deps));
   }
 
   async removeSlot(athlete: Athlete, routineId: string, slotId: string): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine, translate) =>
+    return this.editor.mutate(athlete.id, routineId, (routine, translate) =>
       routine.removeSlot(translate(slotId), this.deps.clock.now()),
     );
   }
 
   async moveSlot(athlete: Athlete, routineId: string, slotId: string, direction: MoveDirection): Promise<RoutineMutation> {
-    return this.mutate(athlete, routineId, (routine, translate) =>
+    return this.editor.mutate(athlete.id, routineId, (routine, translate) =>
       routine.moveSlot(translate(slotId), direction, this.deps.clock.now()),
     );
   }
 
-  async remove(athlete: Athlete, routineId: string): Promise<Result<void, 'not-found' | 'sample-routine'>> {
-    return this.unitOfWork.run(async () => {
-      const routine = await this.routines.findVisible(athlete.id, routineId);
-      if (!routine) return err('not-found' as const);
-      if (!routine.isDeletable) return err('sample-routine' as const);
-
-      await this.routines.delete(routine.id);
-      return ok();
-    });
+  async remove(athlete: Athlete, routineId: string): Promise<Result<void, 'not-found' | 'sample'>> {
+    return this.editor.remove(athlete.id, routineId);
   }
 
-  /**
-   * Discards a personal copy so the shared sample stands in for it again.
-   * The caller redirects to the original, which is about to reappear in the
-   * athlete's list now that nothing forks from it.
-   */
+  /** See `ForkableLibrary.revert` - the caller redirects to the original. */
   async revert(
     athlete: Athlete,
     routineId: string,
   ): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
-    return this.unitOfWork.run(async () => {
-      const routine = await this.routines.findVisible(athlete.id, routineId);
-      if (!routine) return err('not-found' as const);
-      if (!routine.canRevert || !routine.forkedFromId) {
-        return err('nothing-to-revert' as const);
-      }
-
-      const forkedFromId = routine.forkedFromId;
-      await this.routines.delete(routine.id);
-      return ok({ forkedFromId });
-    });
-  }
-
-  private async mutate(
-    athlete: Athlete,
-    routineId: string,
-    apply: (routine: Routine, translate: (id: string) => string) => void,
-  ): Promise<RoutineMutation> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.routines.findVisible(athlete.id, routineId);
-      if (!loaded) return err('not-found' as const);
-
-      const copy = await this.editableCopy(loaded, athlete);
-      apply(copy.editable, copy.translateChildId);
-      await this.routines.save(copy.editable);
-
-      return ok({ forkedId: copy.forkedId });
-    });
-  }
-
-  private editableCopy(routine: Routine, athlete: Athlete) {
-    return resolveEditableCopy(
-      routine,
-      athlete.id,
-      this.deps,
-      (sampleId) => this.routines.findForkOf(athlete.id, sampleId),
-      (candidate) => candidate.slots,
-    );
+    return this.editor.revert(athlete.id, routineId);
   }
 
   private async templateNames(athlete: Athlete): Promise<Map<string, string>> {

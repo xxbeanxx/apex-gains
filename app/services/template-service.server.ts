@@ -16,7 +16,7 @@ import { EXERCISES_REPOSITORY, TEMPLATES_REPOSITORY, UNIT_OF_WORK } from '~/repo
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
-import { resolveEditableCopy } from './shared/fork.server';
+import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
 
 export type TemplateSummary = {
   id: string;
@@ -57,7 +57,7 @@ export type TargetInput = {
   resistance?: number | null;
 };
 
-export type TemplateMutation = Result<{ forkedId: string | null }, 'not-found'>;
+export type TemplateMutation = ForkMutation;
 
 function toSummary(template: WorkoutTemplate): TemplateSummary {
   return {
@@ -77,7 +77,12 @@ export class TemplateService {
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    this.editor = new ForkableLibrary(this.templates, this.unitOfWork, this.deps, (template) => template.exercises);
+  }
+
+  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  private readonly editor: ForkableLibrary<WorkoutTemplate>;
 
   async list(athlete: Athlete): Promise<TemplateSummary[]> {
     const templates = await this.templates.listFor(athlete.id, athlete.preferences.showSampleData);
@@ -123,7 +128,7 @@ export class TemplateService {
   }
 
   async rename(athlete: Athlete, templateId: string, name: string): Promise<TemplateMutation> {
-    return this.mutate(athlete, templateId, (template) => template.rename(name, this.deps.clock.now()));
+    return this.editor.mutate(athlete.id, templateId, (template) => template.rename(name, this.deps.clock.now()));
   }
 
   async addExercise(
@@ -132,23 +137,18 @@ export class TemplateService {
     exerciseId: string,
     input: TargetInput,
   ): Promise<Result<{ forkedId: string | null }, 'not-found' | 'exercise-not-found'>> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.templates.findVisible(athlete.id, templateId);
-      if (!loaded) return err('not-found' as const);
-
+    return this.editor.edit(athlete.id, templateId, async (copy) => {
       const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
       if (!exercise) return err('exercise-not-found' as const);
 
-      const copy = await this.editableCopy(loaded, athlete);
       copy.editable.addExercise(exerciseId, this.toTarget(athlete, input), this.deps);
       await this.templates.save(copy.editable);
-
-      return ok({ forkedId: copy.forkedId });
+      return ok();
     });
   }
 
   async removeExercise(athlete: Athlete, templateId: string, entryId: string): Promise<TemplateMutation> {
-    return this.mutate(athlete, templateId, (template, translate) =>
+    return this.editor.mutate(athlete.id, templateId, (template, translate) =>
       template.removeExercise(translate(entryId), this.deps.clock.now()),
     );
   }
@@ -159,37 +159,21 @@ export class TemplateService {
     entryId: string,
     direction: MoveDirection,
   ): Promise<TemplateMutation> {
-    return this.mutate(athlete, templateId, (template, translate) =>
+    return this.editor.mutate(athlete.id, templateId, (template, translate) =>
       template.moveExercise(translate(entryId), direction, this.deps.clock.now()),
     );
   }
 
-  async remove(athlete: Athlete, templateId: string): Promise<Result<void, 'not-found' | 'sample-template'>> {
-    return this.unitOfWork.run(async () => {
-      const template = await this.templates.findVisible(athlete.id, templateId);
-      if (!template) return err('not-found' as const);
-      if (!template.isDeletable) return err('sample-template' as const);
-
-      await this.templates.delete(template.id);
-      return ok();
-    });
+  async remove(athlete: Athlete, templateId: string): Promise<Result<void, 'not-found' | 'sample'>> {
+    return this.editor.remove(athlete.id, templateId);
   }
 
+  /** See `ForkableLibrary.revert` - the caller redirects to the original. */
   async revert(
     athlete: Athlete,
     templateId: string,
   ): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
-    return this.unitOfWork.run(async () => {
-      const template = await this.templates.findVisible(athlete.id, templateId);
-      if (!template) return err('not-found' as const);
-      if (!template.canRevert || !template.forkedFromId) {
-        return err('nothing-to-revert' as const);
-      }
-
-      const forkedFromId = template.forkedFromId;
-      await this.templates.delete(template.id);
-      return ok({ forkedFromId });
-    });
+    return this.editor.revert(athlete.id, templateId);
   }
 
   /** Where the athlete's chosen units are converted to canonical storage. */
@@ -203,32 +187,5 @@ export class TemplateService {
       speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
       resistance: input.resistance,
     });
-  }
-
-  private async mutate(
-    athlete: Athlete,
-    templateId: string,
-    apply: (template: WorkoutTemplate, translate: (id: string) => string) => void,
-  ): Promise<TemplateMutation> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.templates.findVisible(athlete.id, templateId);
-      if (!loaded) return err('not-found' as const);
-
-      const copy = await this.editableCopy(loaded, athlete);
-      apply(copy.editable, copy.translateChildId);
-      await this.templates.save(copy.editable);
-
-      return ok({ forkedId: copy.forkedId });
-    });
-  }
-
-  private editableCopy(template: WorkoutTemplate, athlete: Athlete) {
-    return resolveEditableCopy(
-      template,
-      athlete.id,
-      this.deps,
-      (sampleId) => this.templates.findForkOf(athlete.id, sampleId),
-      (candidate) => candidate.exercises,
-    );
   }
 }

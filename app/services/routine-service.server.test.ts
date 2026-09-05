@@ -182,7 +182,7 @@ describe('deleting and reverting', () => {
     await routines.save(sampleRoutine());
     expect(await service.remove(athlete, 'sample-1')).toEqual({
       ok: false,
-      error: 'sample-routine',
+      error: 'sample',
     });
   });
 

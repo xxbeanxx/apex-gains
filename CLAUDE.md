@@ -377,7 +377,14 @@ one — needs a query, so it lives in
 `app/services/shared/fork.server.ts` (`resolveEditableCopy`), which
 every mutating service goes through. Because a fork's children get new
 ids, an id that arrived on a form names a child of the _sample_; the
-returned `translateChildId` maps it onto the copy by position. Which
+returned `translateChildId` maps it onto the copy by position. Around
+that sits `ForkableEditor` in the same file, which owns the whole
+sequence a mutation goes through — open a transaction, load what the
+athlete can see, resolve the copy, apply, save, report `forkedId` — so
+the three services construct one rather than restating it.
+`ForkableLibrary` adds `remove` and `revert` for the two libraries whose
+rows can simply be deleted; exercises keep their own `revert`, because
+`on delete restrict` means theirs can refuse. Which
 rows a list shows — own rows plus not-yet-forked samples — is
 `LibraryVisibility` in `domain/shared/ownership.ts`, beside `Ownership`
 itself: `selectFrom` answers it for the in-memory adapters, and because

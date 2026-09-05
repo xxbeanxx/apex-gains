@@ -12,7 +12,7 @@ import { EQUIPMENT_REPOSITORY, EXERCISES_REPOSITORY, UNIT_OF_WORK } from '~/repo
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
-import { resolveEditableCopy } from './shared/fork.server';
+import { ForkableEditor, type ForkMutation } from './shared/fork.server';
 
 export type EquipmentView = {
   id: string;
@@ -77,7 +77,13 @@ export class ExerciseLibraryService {
     @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    // Equipment links carry no position, so fork translation is the identity.
+    this.editor = new ForkableEditor(this.exercises, this.unitOfWork, this.deps, () => []);
+  }
+
+  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  private readonly editor: ForkableEditor<Exercise>;
 
   async library(athlete: Athlete): Promise<LibraryView> {
     const showSamples = athlete.preferences.showSampleData;
@@ -131,12 +137,7 @@ export class ExerciseLibraryService {
    * edited: renaming an exercise to what it is already called is not a clash.
    */
   async updateExercise(athlete: Athlete, exerciseId: string, details: ExerciseDetails): Promise<ExerciseMutation> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!loaded) return err('not-found' as const);
-
-      const copy = await this.editableCopy(loaded, athlete);
-
+    return this.editor.edit(athlete.id, exerciseId, async (copy) => {
       const clash = await this.exercises.findOwnByName(athlete.id, details.name);
       if (clash && clash.id !== copy.editable.id) {
         return err('duplicate-name' as const);
@@ -144,7 +145,7 @@ export class ExerciseLibraryService {
 
       copy.editable.updateDetails(details);
       await this.exercises.save(copy.editable);
-      return ok({ forkedId: copy.forkedId });
+      return ok();
     });
   }
 
@@ -153,16 +154,8 @@ export class ExerciseLibraryService {
     exerciseId: string,
     equipmentId: string,
     linked: boolean,
-  ): Promise<Result<{ forkedId: string | null }, 'not-found'>> {
-    return this.unitOfWork.run(async () => {
-      const loaded = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!loaded) return err('not-found' as const);
-
-      const copy = await this.editableCopy(loaded, athlete);
-      copy.editable.setEquipment(equipmentId, linked);
-      await this.exercises.save(copy.editable);
-      return ok({ forkedId: copy.forkedId });
-    });
+  ): Promise<ForkMutation> {
+    return this.editor.mutate(athlete.id, exerciseId, (exercise) => exercise.setEquipment(equipmentId, linked));
   }
 
   /**
@@ -213,16 +206,5 @@ export class ExerciseLibraryService {
       item.setCardioKind(cardioKind);
       await this.equipment.save(item);
     });
-  }
-
-  private editableCopy(exercise: Exercise, athlete: Athlete) {
-    return resolveEditableCopy(
-      exercise,
-      athlete.id,
-      this.deps,
-      (sampleId) => this.exercises.findForkOf(athlete.id, sampleId),
-      // Equipment links carry no position; fork translation is the identity.
-      () => [],
-    );
   }
 }
