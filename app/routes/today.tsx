@@ -13,7 +13,7 @@ import { IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator
 import { useState } from 'react';
 import { data, Link, useFetcher, useNavigate } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -34,8 +34,9 @@ import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toOptionalNumber } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
 import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
 import type { LoggedSetView, RecentSetView } from '~/services/workout-log-service.server';
 
@@ -59,7 +60,7 @@ type LoggableExercise = {
 };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const today = DateOnly.today();
 
   // An unparseable or future ?date falls back to today rather than erroring -
@@ -148,51 +149,45 @@ class RemoveSetDto {
   readonly setId!: string;
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
-  const athlete = context.get(userContext)!;
-  const today = DateOnly.today();
-  const formData = await request.formData();
-  const intent = formData.get('intent');
+const intents = {
+  logSet: intent('logSet', LogSetDto, { invalidMessage: 'Invalid set' }),
+  removeSet: intent('removeSet', RemoveSetDto),
+};
 
+export async function action({ request, context }: Route.ActionArgs) {
+  const athlete = requireAthlete(context);
+  const today = DateOnly.today();
   const logService = context.get(workoutLogServiceContext);
 
-  if (intent === 'logSet') {
-    const result = validateForm(LogSetDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: 'Invalid set' }, { status: 400 });
-    }
-    // Clamp instead of rejecting: a stale form (left open since yesterday)
-    // should still log against today rather than fail outright.
-    const date = DateOnly.parse(result.data.date).atMost(today);
+  return dispatch(request, [
+    handled(intents.logSet, async (input) => {
+      // Clamp instead of rejecting: a stale form (left open since yesterday)
+      // should still log against today rather than fail outright.
+      const date = DateOnly.parse(input.date).atMost(today);
 
-    // Measurements are in the athlete's own units; the service converts them.
-    const outcome = await logService.logSet(athlete, date, result.data.exerciseId, {
-      reps: result.data.reps,
-      weight: result.data.weight,
-      durationMinutes: result.data.durationMinutes,
-      speed: result.data.speed,
-      resistance: result.data.resistance,
-    });
+      // Measurements are in the athlete's own units; the service converts them.
+      const outcome = await logService.logSet(athlete, date, input.exerciseId, {
+        reps: input.reps,
+        weight: input.weight,
+        durationMinutes: input.durationMinutes,
+        speed: input.speed,
+        resistance: input.resistance,
+      });
 
-    if (!outcome.ok) {
-      return data({ error: 'Invalid set' }, { status: 400 });
-    }
-    if (outcome.value.sessionOpened) {
-      requestLogger(context).log(`opened session on ${date.value} for user ${athlete.id}`, 'Today');
-    }
-    return { ok: true };
-  }
+      if (!outcome.ok) {
+        return intents.logSet.reject('Invalid set');
+      }
+      if (outcome.value.sessionOpened) {
+        requestLogger(context).log(`opened session on ${date.value} for user ${athlete.id}`, 'Today');
+      }
+      return { ok: true };
+    }),
 
-  if (intent === 'removeSet') {
-    const result = validateForm(RemoveSetDto, { date: formData.get('date'), setId: formData.get('setId') });
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
-    await logService.removeSet(athlete, DateOnly.parse(result.data.date), result.data.setId);
-    return { ok: true };
-  }
-
-  return data({ error: 'Unknown action' }, { status: 400 });
+    handled(intents.removeSet, async ({ date, setId }) => {
+      await logService.removeSet(athlete, DateOnly.parse(date), setId);
+      return { ok: true };
+    }),
+  ]);
 }
 
 /** Groups a newest-first flat set list into one entry per day it was logged. */
@@ -294,7 +289,7 @@ function LogSetForm({
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-3">
-      <input type="hidden" name="intent" value="logSet" />
+      <input {...intents.logSet.field} />
       <input type="hidden" name="date" value={date} />
       {exercise ? (
         <input type="hidden" name="exerciseId" value={exercise.id} />
@@ -402,7 +397,7 @@ function LoggedSetsList({ sets, date }: { sets: LoggedSetView[]; date: string })
             {set.summary}
           </span>
           <form method="post" className="contents">
-            <input type="hidden" name="intent" value="removeSet" />
+            <input {...intents.removeSet.field} />
             <input type="hidden" name="date" value={date} />
             <input type="hidden" name="setId" value={set.id} />
             <button

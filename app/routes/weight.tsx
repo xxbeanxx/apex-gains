@@ -3,7 +3,7 @@ import { IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, ScaleIcon, XIcon } from 'lucide-react';
 import { data } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Button } from '~/components/ui/button';
@@ -15,8 +15,9 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { DateOnly } from '~/domain/values/date-only';
 import { formatFullDate } from '~/lib/format';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toNumber } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
 
 import { bodyWeightServiceContext, progressServiceContext } from '~/lib/nest-bridge.server';
 
@@ -27,7 +28,7 @@ export function meta() {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const progressService = context.get(progressServiceContext);
   const log = await progressService.bodyWeightLog(athlete);
 
@@ -61,44 +62,36 @@ class RemoveWeightDto {
   readonly logId!: string;
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
-  const athlete = context.get(userContext)!;
-  const today = DateOnly.today();
-  const formData = await request.formData();
-  const intent = formData.get('intent');
+const intents = {
+  log: intent('log', LogWeightDto, { invalidMessage: 'Enter a valid date and weight.' }),
+  remove: intent('remove', RemoveWeightDto),
+};
 
+export async function action({ request, context }: Route.ActionArgs) {
+  const athlete = requireAthlete(context);
+  const today = DateOnly.today();
   const bodyWeightService = context.get(bodyWeightServiceContext);
 
-  if (intent === 'log') {
-    const result = validateForm(LogWeightDto, { date: formData.get('date'), weight: formData.get('weight') });
-    if (!result.success) {
-      return data({ error: 'Enter a valid date and weight.' }, { status: 400 });
-    }
-    // Clamp instead of rejecting: a stale form (left open since yesterday)
-    // should still log against today rather than fail outright.
-    const date = DateOnly.parse(result.data.date).atMost(today);
+  return dispatch(request, [
+    handled(intents.log, async ({ date, weight }) => {
+      // Clamp instead of rejecting: a stale form (left open since yesterday)
+      // should still log against today rather than fail outright.
+      // The number is in whatever unit the athlete has chosen; the service
+      // converts it to canonical storage.
+      await bodyWeightService.record(athlete, DateOnly.parse(date).atMost(today), weight);
+      return { ok: true, intent: intents.log.name } as const;
+    }),
 
-    // The number is in whatever unit the athlete has chosen; the service
-    // converts it to canonical storage.
-    await bodyWeightService.record(athlete, date, result.data.weight);
-    return { ok: true, intent: 'log' } as const;
-  }
-
-  if (intent === 'remove') {
-    const result = validateForm(RemoveWeightDto, { date: formData.get('date'), logId: formData.get('logId') });
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
-    await bodyWeightService.remove(athlete, DateOnly.parse(result.data.date), result.data.logId);
-    return { ok: true, intent: 'remove' } as const;
-  }
-
-  return data({ error: 'Unknown action' }, { status: 400 });
+    handled(intents.remove, async ({ date, logId }) => {
+      await bodyWeightService.remove(athlete, DateOnly.parse(date), logId);
+      return { ok: true, intent: intents.remove.name } as const;
+    }),
+  ]);
 }
 
 export default function Weight({ loaderData, actionData }: Route.ComponentProps) {
   const { weightUnit, todayStr, logs, series } = loaderData;
-  const error = actionData && 'error' in actionData ? actionData.error : undefined;
+  const error = intents.log.errorIn(actionData) ?? intents.remove.errorIn(actionData);
 
   return (
     <Page>
@@ -108,7 +101,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
         <Card>
           <CardContent>
             <form method="post" className="flex flex-wrap items-end gap-4">
-              <input type="hidden" name="intent" value="log" />
+              <input {...intents.log.field} />
               <Field label="Date" className="w-40">
                 {({ id, describedBy }) => (
                   <Input
@@ -125,13 +118,13 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
               <Field label={`Weight (${weightUnit})`} error={error} className="w-40">
                 <Input name="weight" type="number" step="0.1" min="0" required />
               </Field>
-              <SubmitButton match={{ intent: 'log' }} pendingLabel="Saving">
+              <SubmitButton match={intents.log.match} pendingLabel="Saving">
                 Save
               </SubmitButton>
             </form>
 
             <div aria-live="polite" className="empty:hidden">
-              {actionData && 'ok' in actionData && actionData.intent === 'log' ? (
+              {intents.log.succeededIn(actionData) ? (
                 <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
                   <CheckCircle2Icon className="size-4" aria-hidden="true" />
                   Saved.
@@ -178,7 +171,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
                       </TableCell>
                       <TableCell>
                         <form method="post">
-                          <input type="hidden" name="intent" value="remove" />
+                          <input {...intents.remove.field} />
                           <input type="hidden" name="date" value={log.date} />
                           <input type="hidden" name="logId" value={log.id} />
                           <Button

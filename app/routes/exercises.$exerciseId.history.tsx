@@ -1,4 +1,4 @@
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 
 import { workoutLogServiceContext } from '~/lib/nest-bridge.server';
 
@@ -11,7 +11,7 @@ const RECENT_SETS_LIMIT = 10;
  * navigated to) backing the "recent sets" popover on the logging form.
  */
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const logService = context.get(workoutLogServiceContext);
   const sets = await logService.recentSetsFor(athlete, params.exerciseId, RECENT_SETS_LIMIT);
   return { sets };

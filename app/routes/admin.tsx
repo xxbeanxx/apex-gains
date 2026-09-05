@@ -1,7 +1,7 @@
 import { UsersIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { AccountIdentity } from '~/components/admin/account-identity';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Button } from '~/components/ui/button';
@@ -19,7 +19,7 @@ export function meta() {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const administrator = context.get(userContext)!;
+  const administrator = requireAthlete(context);
   return { overview: await context.get(adminServiceContext).overview(administrator) };
 }
 

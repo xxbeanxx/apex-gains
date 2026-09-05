@@ -416,11 +416,22 @@ partial unique index as the backstop — the two routines it changes must
 be saved in one transaction. `TrainingPlanService.planFor` is the
 canonical read path from "active routine" to "today's exercises."
 
-**Route module action pattern.** Routes with multiple mutations use a
-single `action` with an `intent` hidden field dispatched via
-if/else-if (see `app/routes/routines.$routineId.tsx` for the fullest
-example: rename, reanchor, activate/deactivate, addSlot, removeSlot,
-move, delete). Each branch validates its own `formData` with a local
+**Route module action pattern.** Routes with multiple mutations
+declare their intents once with `intent()` (`app/lib/intent.ts`) and run
+them through `dispatch`/`handled` (`app/lib/intent.server.ts`) — see
+`app/routes/routines.$routineId.tsx` for the fullest example: rename,
+reanchor, activate/deactivate, addSlot, removeSlot, move, delete. One
+declaration derives everything that used to be a hand-typed string in
+five places: `intent.field` is the hidden input, `intent.match` is what
+`SubmitButton` compares against, `intent.reject(message)` is a tagged
+400, and `intent.errorIn(actionData)` / `succeededIn` read the result
+back in the component. `dispatch` reads the submission once, validates
+the named intent's DTO, and hands the handler its data already parsed;
+a handler still answers a redirect or a 404 by throwing. An intent the
+page never declared is a 400, not a silent success. Single-form routes
+(`routines.tsx`, `templates.tsx`, `admin.users.tsx`) post no `intent`
+at all and call `validateForm` directly — there is nothing to dispatch
+between. Each intent names a local
 `class-validator` DTO class, checked through `validateForm`
 (`app/lib/validate-form.server.ts`) — the same
 `class-validator`/`class-transformer` pairing `server/config/` uses for
@@ -434,9 +445,18 @@ service result onto HTTP: not-found becomes a 404, and a non-null
 would be invisible at the sample's. Every mutating form is a
 plain `<form method="post">` (no client-side fetchers for these), and
 `~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
-pending state from `useNavigation()` matched against a `match={{
-intent: "..." }}` prop — pass `match` whenever a page has more than
-one form, or every submit button on the page will spin together.
+pending state from `useNavigation()` matched against a `match` prop —
+pass `intent.match` whenever a page has more than one form, or every
+submit button on the page will spin together.
+
+Loaders and actions under the `_protected` layout read the athlete with
+`requireAthlete(context)` (`app/auth/user-context.ts`) rather than
+`context.get(userContext)!`. The context is nullable because
+`loadUserMiddleware` runs on every request signed in or not; under the
+layout `requireUserMiddleware` has already made the null unreachable,
+and `requireAthlete` states that once instead of asserting it at every
+call site. `home.tsx` and `auth.logout.tsx` are outside the layout and
+read the nullable context directly.
 
 **Auth.** Google OIDC via `openid-client`. The OIDC discovery
 `Configuration` and the PKCE/state cookie are both built by Nest

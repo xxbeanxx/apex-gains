@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { data, useFetcher } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -19,8 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Textarea } from '~/components/ui/textarea';
 import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
 import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext } from '~/lib/nest-bridge.server';
@@ -50,7 +51,7 @@ const cardioKindLabels: Record<CardioKind, string> = {
 };
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const libraryService = context.get(exerciseLibraryServiceContext);
   return await libraryService.library(athlete);
 }
@@ -142,113 +143,83 @@ class ExerciseIdDto {
   readonly exerciseId!: string;
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
-  const athlete = context.get(userContext)!;
-  const formData = await request.formData();
-  const intent = formData.get('intent');
+const intents = {
+  addEquipment: intent('addEquipment', AddEquipmentDto),
+  deleteEquipment: intent('deleteEquipment', EquipmentIdDto),
+  setEquipmentCardioKind: intent('setEquipmentCardioKind', SetCardioKindDto, { invalidMessage: 'Invalid cardio fields' }),
+  toggleExerciseEquipment: intent('toggleExerciseEquipment', ToggleExerciseEquipmentDto, { invalidMessage: 'Invalid toggle' }),
+  createExercise: intent('createExercise', ExerciseDetailsDto),
+  updateExercise: intent('updateExercise', UpdateExerciseDto),
+  revertExercise: intent('revertExercise', ExerciseIdDto),
+};
 
+export async function action({ request, context }: Route.ActionArgs) {
+  const athlete = requireAthlete(context);
   const libraryService = context.get(exerciseLibraryServiceContext);
 
-  if (intent === 'addEquipment') {
-    const result = validateForm(AddEquipmentDto, { name: formData.get('name'), cardioKind: formData.get('cardioKind') });
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
-    await libraryService.addEquipment(athlete, result.data.name, toCardioKind(result.data.cardioKind));
-    return { ok: true };
-  }
+  return dispatch(request, [
+    handled(intents.addEquipment, async ({ name, cardioKind }) => {
+      await libraryService.addEquipment(athlete, name, toCardioKind(cardioKind));
+      return { ok: true };
+    }),
 
-  if (intent === 'deleteEquipment') {
-    const result = validateForm(EquipmentIdDto, { equipmentId: formData.get('equipmentId') });
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
-    await libraryService.removeEquipment(athlete, result.data.equipmentId);
-    return { ok: true };
-  }
+    handled(intents.deleteEquipment, async ({ equipmentId }) => {
+      await libraryService.removeEquipment(athlete, equipmentId);
+      return { ok: true };
+    }),
 
-  if (intent === 'setEquipmentCardioKind') {
-    const result = validateForm(SetCardioKindDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: 'Invalid cardio fields' }, { status: 400 });
-    }
-    await libraryService.setEquipmentCardioKind(athlete, result.data.equipmentId, toCardioKind(result.data.cardioKind));
-    return { ok: true };
-  }
+    handled(intents.setEquipmentCardioKind, async ({ equipmentId, cardioKind }) => {
+      await libraryService.setEquipmentCardioKind(athlete, equipmentId, toCardioKind(cardioKind));
+      return { ok: true };
+    }),
 
-  if (intent === 'toggleExerciseEquipment') {
-    const result = validateForm(ToggleExerciseEquipmentDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: 'Invalid toggle' }, { status: 400 });
-    }
-    // A toggle on a since-deleted exercise is ignored rather than surfaced -
-    // the list is about to revalidate and the row will be gone anyway.
-    await libraryService.setExerciseEquipment(
-      athlete,
-      result.data.exerciseId,
-      result.data.equipmentId,
-      result.data.checked === 'true',
-    );
-    return { ok: true };
-  }
+    handled(intents.toggleExerciseEquipment, async ({ exerciseId, equipmentId, checked }) => {
+      // A toggle on a since-deleted exercise is ignored rather than surfaced -
+      // the list is about to revalidate and the row will be gone anyway.
+      await libraryService.setExerciseEquipment(athlete, exerciseId, equipmentId, checked === 'true');
+      return { ok: true };
+    }),
 
-  if (intent === 'createExercise') {
-    const result = validateForm(ExerciseDetailsDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
-    const outcome = await libraryService.createExercise(athlete, {
-      name: result.data.name,
-      exerciseType: result.data.exerciseType,
-      muscleGroup: result.data.muscleGroup ?? null,
-      description: result.data.description ?? null,
-    });
-    if (!outcome.ok) {
-      return data({ error: 'An exercise with this name already exists' }, { status: 400 });
-    }
-    return { ok: true };
-  }
+    handled(intents.createExercise, async (details) => {
+      const outcome = await libraryService.createExercise(athlete, {
+        name: details.name,
+        exerciseType: details.exerciseType,
+        muscleGroup: details.muscleGroup ?? null,
+        description: details.description ?? null,
+      });
+      if (!outcome.ok) {
+        return intents.createExercise.reject('An exercise with this name already exists');
+      }
+      return { ok: true };
+    }),
 
-  if (intent === 'updateExercise') {
-    const result = validateForm(UpdateExerciseDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: result.message }, { status: 400 });
-    }
+    handled(intents.updateExercise, async (details) => {
+      const outcome = await libraryService.updateExercise(athlete, details.exerciseId, {
+        name: details.name,
+        exerciseType: details.exerciseType,
+        muscleGroup: details.muscleGroup ?? null,
+        description: details.description ?? null,
+      });
+      if (!outcome.ok) {
+        return outcome.error === 'not-found'
+          ? data({ error: 'Exercise not found', intent: intents.updateExercise.name }, { status: 404 })
+          : intents.updateExercise.reject('An exercise with this name already exists');
+      }
+      return { ok: true };
+    }),
 
-    const outcome = await libraryService.updateExercise(athlete, result.data.exerciseId, {
-      name: result.data.name,
-      exerciseType: result.data.exerciseType,
-      muscleGroup: result.data.muscleGroup ?? null,
-      description: result.data.description ?? null,
-    });
-    if (!outcome.ok) {
-      return outcome.error === 'not-found'
-        ? data({ error: 'Exercise not found' }, { status: 404 })
-        : data({ error: 'An exercise with this name already exists' }, { status: 400 });
-    }
-    return { ok: true };
-  }
-
-  if (intent === 'revertExercise') {
-    const idResult = validateForm(ExerciseIdDto, { exerciseId: formData.get('exerciseId') });
-    if (!idResult.success) {
-      return data({ error: idResult.message }, { status: 400 });
-    }
-    const outcome = await libraryService.revertExercise(athlete, idResult.data.exerciseId);
-    if (!outcome.ok) {
-      return outcome.error === 'nothing-to-revert'
-        ? data({ error: 'Nothing to revert' }, { status: 400 })
-        : data(
-            {
-              error: 'This customization is used in a template or logged workout — remove it from those first.',
-            },
-            { status: 400 },
-          );
-    }
-    return { ok: true };
-  }
-
-  return data({ error: 'Unknown action' }, { status: 400 });
+    handled(intents.revertExercise, async ({ exerciseId }) => {
+      const outcome = await libraryService.revertExercise(athlete, exerciseId);
+      if (!outcome.ok) {
+        return intents.revertExercise.reject(
+          outcome.error === 'nothing-to-revert'
+            ? 'Nothing to revert'
+            : 'This customization is used in a template or logged workout — remove it from those first.',
+        );
+      }
+      return { ok: true };
+    }),
+  ]);
 }
 
 function ExerciseDetailsFields({
@@ -330,7 +301,7 @@ function ExerciseEditorDialog({
               This is your customized copy of a sample exercise. The original sample is unaffected.
             </p>
             <revertFetcher.Form method="post" className="flex flex-col gap-2">
-              <input type="hidden" name="intent" value="revertExercise" />
+              <input {...intents.revertExercise.field} />
               <input type="hidden" name="exerciseId" value={exercise.id} />
               {revertError ? <p className="text-destructive">{revertError}</p> : null}
               <SubmitButton
@@ -347,7 +318,7 @@ function ExerciseEditorDialog({
           </div>
         ) : null}
         <fetcher.Form method="post" className="flex flex-col gap-4">
-          <input type="hidden" name="intent" value="updateExercise" />
+          <input {...intents.updateExercise.field} />
           <input type="hidden" name="exerciseId" value={exercise.id} />
           <ExerciseDetailsFields defaultValues={exercise} error={error} />
           <SubmitButton pending={fetcher.state !== 'idle'} pendingLabel="Saving exercise" className="self-start">
@@ -398,7 +369,7 @@ function EquipmentCheckboxRow({
           setChecked(isChecked);
           fetcher.submit(
             {
-              intent: 'toggleExerciseEquipment',
+              intent: intents.toggleExerciseEquipment.name,
               exerciseId,
               equipmentId,
               checked: String(isChecked),
@@ -428,7 +399,7 @@ function NewExerciseForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <fetcher.Form ref={formRef} method="post" className="flex flex-col gap-4">
-      <input type="hidden" name="intent" value="createExercise" />
+      <input {...intents.createExercise.field} />
       <ExerciseDetailsFields error={error} />
       <SubmitButton pending={pending} pendingLabel="Creating exercise" variant="brand" className="self-start">
         {pending ? null : <PlusIcon aria-hidden="true" />}
@@ -485,7 +456,7 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
             onValueChange={(value) => {
               setCardioKind(value);
               cardioKindFetcher.submit(
-                { intent: 'setEquipmentCardioKind', equipmentId: equipment.id, cardioKind: value },
+                { intent: intents.setEquipmentCardioKind.name, equipmentId: equipment.id, cardioKind: value },
                 { method: 'post' },
               );
             }}
@@ -500,7 +471,7 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
             </SelectContent>
           </Select>
           <deleteFetcher.Form method="post" className="flex">
-            <input type="hidden" name="intent" value="deleteEquipment" />
+            <input {...intents.deleteEquipment.field} />
             <input type="hidden" name="equipmentId" value={equipment.id} />
             <Button type="submit" variant="ghost" size="icon-sm">
               <XIcon aria-hidden="true" />
@@ -548,7 +519,7 @@ function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; t
         )}
 
         <fetcher.Form ref={formRef} method="post" className="flex flex-wrap items-end gap-3">
-          <input type="hidden" name="intent" value="addEquipment" />
+          <input {...intents.addEquipment.field} />
           <Field label="Add equipment" error={error} className="min-w-40 flex-1">
             <Input name="name" placeholder="Free Weights" required />
           </Field>

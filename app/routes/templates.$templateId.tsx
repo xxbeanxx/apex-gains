@@ -4,7 +4,7 @@ import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, PlusIcon, RotateCcwIcon, Tras
 import { useState } from 'react';
 import { data, redirect, useFetcher } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -19,8 +19,9 @@ import { speedUnitLabel } from '~/domain/values/units';
 import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
@@ -32,7 +33,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const templateService = context.get(templateServiceContext);
   const template = await templateService.detail(athlete, params.templateId);
   if (!template) {
@@ -128,88 +129,69 @@ function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok
   return { ok: true };
 }
 
+const intents = {
+  delete: intent('delete'),
+  revert: intent('revert'),
+  rename: intent('rename', RenameTemplateDto, { invalidMessage: 'Invalid name' }),
+  addExercise: intent('addExercise', AddExerciseDto, { invalidMessage: 'Invalid exercise' }),
+  removeExercise: intent('removeExercise', TemplateExerciseIdDto),
+  move: intent('move', MoveExerciseDto),
+};
+
 export async function action({ request, params, context }: Route.ActionArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const templateId = params.templateId;
   const templateService = context.get(templateServiceContext);
 
-  const formData = await request.formData();
-  const intent = formData.get('intent');
+  return dispatch(request, [
+    handled(intents.delete, async () => {
+      const outcome = await templateService.remove(athlete, templateId);
+      if (!outcome.ok && outcome.error === 'not-found') {
+        throw data('Template not found', { status: 404 });
+      }
+      if (!outcome.ok) {
+        return intents.delete.reject("Sample templates can't be deleted.");
+      }
+      requestLogger(context).log(`deleted template ${templateId} for user ${athlete.id}`, 'Templates');
+      throw redirect('/templates');
+    }),
 
-  if (intent === 'delete') {
-    const outcome = await templateService.remove(athlete, templateId);
-    if (!outcome.ok && outcome.error === 'not-found') {
-      throw data('Template not found', { status: 404 });
-    }
-    if (!outcome.ok) {
-      return data({ error: "Sample templates can't be deleted.", intent: 'delete' }, { status: 400 });
-    }
-    requestLogger(context).log(`deleted template ${templateId} for user ${athlete.id}`, 'Templates');
-    throw redirect('/templates');
-  }
+    handled(intents.revert, async () => {
+      const outcome = await templateService.revert(athlete, templateId);
+      if (!outcome.ok && outcome.error === 'not-found') {
+        throw data('Template not found', { status: 404 });
+      }
+      if (!outcome.ok) {
+        return intents.revert.reject('Nothing to revert');
+      }
+      throw redirect(`/templates/${outcome.value.forkedFromId}`);
+    }),
 
-  if (intent === 'revert') {
-    const outcome = await templateService.revert(athlete, templateId);
-    if (!outcome.ok && outcome.error === 'not-found') {
-      throw data('Template not found', { status: 404 });
-    }
-    if (!outcome.ok) {
-      return data({ error: 'Nothing to revert', intent: 'revert' }, { status: 400 });
-    }
-    throw redirect(`/templates/${outcome.value.forkedFromId}`);
-  }
+    handled(intents.rename, async ({ name }) => settle(await templateService.rename(athlete, templateId, name))),
 
-  if (intent === 'rename') {
-    const result = validateForm(RenameTemplateDto, { name: formData.get('name') });
-    if (!result.success) {
-      return data({ error: 'Invalid name', intent: 'rename' }, { status: 400 });
-    }
-    return settle(await templateService.rename(athlete, templateId, result.data.name));
-  }
+    handled(intents.addExercise, async (input) => {
+      // Targets are in the athlete's own units; the service converts them.
+      const outcome = await templateService.addExercise(athlete, templateId, input.exerciseId, {
+        sets: input.targetSets,
+        reps: input.targetReps,
+        weight: input.targetWeight,
+        durationMinutes: input.targetDurationMinutes,
+        speed: input.targetSpeed,
+        resistance: input.targetResistance,
+      });
+      if (!outcome.ok && outcome.error === 'exercise-not-found') {
+        return intents.addExercise.reject('Exercise not found');
+      }
+      return settle(outcome);
+    }),
 
-  if (intent === 'addExercise') {
-    const result = validateForm(AddExerciseDto, Object.fromEntries(formData));
-    if (!result.success) {
-      return data({ error: 'Invalid exercise', intent: 'addExercise' }, { status: 400 });
-    }
-
-    // Targets are in the athlete's own units; the service converts them.
-    const outcome = await templateService.addExercise(athlete, templateId, result.data.exerciseId, {
-      sets: result.data.targetSets,
-      reps: result.data.targetReps,
-      weight: result.data.targetWeight,
-      durationMinutes: result.data.targetDurationMinutes,
-      speed: result.data.targetSpeed,
-      resistance: result.data.targetResistance,
-    });
-    if (!outcome.ok && outcome.error === 'exercise-not-found') {
-      return data({ error: 'Exercise not found', intent: 'addExercise' }, { status: 400 });
-    }
-    return settle(outcome);
-  }
-
-  if (intent === 'removeExercise') {
-    const result = validateForm(TemplateExerciseIdDto, { templateExerciseId: formData.get('templateExerciseId') });
-    if (!result.success) {
-      return data({ error: result.message, intent: 'removeExercise' }, { status: 400 });
-    }
-    return settle(await templateService.removeExercise(athlete, templateId, result.data.templateExerciseId));
-  }
-
-  if (intent === 'move') {
-    const result = validateForm(MoveExerciseDto, {
-      templateExerciseId: formData.get('templateExerciseId'),
-      direction: formData.get('direction'),
-    });
-    if (!result.success) {
-      return data({ error: result.message, intent: 'move' }, { status: 400 });
-    }
-    return settle(
-      await templateService.moveExercise(athlete, templateId, result.data.templateExerciseId, result.data.direction),
-    );
-  }
-
-  return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });
+    handled(intents.removeExercise, async ({ templateExerciseId }) =>
+      settle(await templateService.removeExercise(athlete, templateId, templateExerciseId)),
+    ),
+    handled(intents.move, async ({ templateExerciseId, direction }) =>
+      settle(await templateService.moveExercise(athlete, templateId, templateExerciseId, direction)),
+    ),
+  ]);
 }
 
 function AddExerciseForm({
@@ -231,7 +213,7 @@ function AddExerciseForm({
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-4">
-      <input type="hidden" name="intent" value="addExercise" />
+      <input {...intents.addExercise.field} />
       <Field label="Exercise">
         {({ id }) => (
           <Select name="exerciseId" value={exerciseId} onValueChange={setExerciseId}>
@@ -310,9 +292,9 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
   const exerciseCount = template.exercises.length;
   const { isSample, isCustomized } = template;
 
-  const deleteError = actionData && 'error' in actionData && actionData.intent === 'delete' ? actionData.error : undefined;
-  const revertError = actionData && 'error' in actionData && actionData.intent === 'revert' ? actionData.error : undefined;
-  const renameError = actionData && 'error' in actionData && actionData.intent === 'rename' ? actionData.error : undefined;
+  const deleteError = intents.delete.errorIn(actionData);
+  const revertError = intents.revert.errorIn(actionData);
+  const renameError = intents.rename.errorIn(actionData);
 
   return (
     <Page width="narrow">
@@ -329,8 +311,8 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
         actions={
           isSample ? null : isCustomized ? (
             <form method="post" className="flex flex-col items-end gap-1.5">
-              <input type="hidden" name="intent" value="revert" />
-              <SubmitButton variant="outline" size="sm" match={{ intent: 'revert' }} pendingLabel="Reverting">
+              <input {...intents.revert.field} />
+              <SubmitButton variant="outline" size="sm" match={intents.revert.match} pendingLabel="Reverting">
                 <RotateCcwIcon aria-hidden="true" />
                 Revert to sample
               </SubmitButton>
@@ -338,8 +320,8 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
             </form>
           ) : (
             <form method="post" className="flex flex-col items-end gap-1.5">
-              <input type="hidden" name="intent" value="delete" />
-              <SubmitButton variant="destructive" size="sm" match={{ intent: 'delete' }} pendingLabel="Deleting template">
+              <input {...intents.delete.field} />
+              <SubmitButton variant="destructive" size="sm" match={intents.delete.match} pendingLabel="Deleting template">
                 <Trash2Icon aria-hidden="true" />
                 Delete template
               </SubmitButton>
@@ -364,12 +346,12 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
         </CardHeader>
         <CardContent>
           <form method="post">
-            <input type="hidden" name="intent" value="rename" />
+            <input {...intents.rename.field} />
             <Field
               label="Name"
               error={renameError}
               action={
-                <SubmitButton match={{ intent: 'rename' }} pendingLabel="Saving">
+                <SubmitButton match={intents.rename.match} pendingLabel="Saving">
                   Save
                 </SubmitButton>
               }
@@ -412,7 +394,7 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
                   <form method="post">
-                    <input type="hidden" name="intent" value="move" />
+                    <input {...intents.move.field} />
                     <input type="hidden" name="templateExerciseId" value={te.id} />
                     <input type="hidden" name="direction" value="up" />
                     <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
@@ -421,7 +403,7 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
                     </Button>
                   </form>
                   <form method="post">
-                    <input type="hidden" name="intent" value="move" />
+                    <input {...intents.move.field} />
                     <input type="hidden" name="templateExerciseId" value={te.id} />
                     <input type="hidden" name="direction" value="down" />
                     <Button type="submit" variant="ghost" size="icon-sm" disabled={index === exerciseCount - 1}>
@@ -430,7 +412,7 @@ export default function TemplateDetail({ loaderData, actionData }: Route.Compone
                     </Button>
                   </form>
                   <form method="post">
-                    <input type="hidden" name="intent" value="removeExercise" />
+                    <input {...intents.removeExercise.field} />
                     <input type="hidden" name="templateExerciseId" value={te.id} />
                     <Button
                       type="submit"

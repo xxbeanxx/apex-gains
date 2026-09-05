@@ -3,7 +3,7 @@ import { IsIn, IsString } from 'class-validator';
 import { ArrowLeftIcon, ShieldCheckIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
 import { Avatar } from '~/components/ui/avatar';
 import { Badge } from '~/components/ui/badge';
@@ -15,7 +15,8 @@ import { Stat } from '~/components/ui/stat';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { formatCount, formatFullDate } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
-import { validateForm } from '~/lib/validate-form.server';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 
 import { adminServiceContext } from '~/lib/nest-bridge.server';
 
@@ -38,7 +39,7 @@ class DeleteAccountDto {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const administrator = context.get(userContext)!;
+  const administrator = requireAthlete(context);
   const account = await context.get(adminServiceContext).account(administrator, params.userId);
   if (!account) {
     throw data('User not found', { status: 404 });
@@ -46,63 +47,61 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   return { account };
 }
 
+const intents = {
+  changeAdminAccess: intent('changeAdminAccess', ChangeAdminAccessDto),
+  deleteAccount: intent('deleteAccount', DeleteAccountDto, {
+    // The message is the same whether the field was blank or simply wrong -
+    // the confirmation is about deliberateness, not about spelling.
+    invalidMessage: "That doesn't match this account's email address.",
+  }),
+};
+
 export async function action({ request, params, context }: Route.ActionArgs) {
-  const administrator = context.get(userContext)!;
+  const administrator = requireAthlete(context);
   const adminService = context.get(adminServiceContext);
-  const formData = await request.formData();
-  const intent = formData.get('intent');
 
-  if (intent === 'changeAdminAccess') {
-    const result = validateForm(ChangeAdminAccessDto, { isAdmin: formData.get('isAdmin') });
-    if (!result.success) {
-      return data({ error: result.message, intent: 'changeAdminAccess' }, { status: 400 });
-    }
+  return dispatch(request, [
+    handled(intents.changeAdminAccess, async ({ isAdmin }) => {
+      const granting = isAdmin === 'true';
+      const outcome = await adminService.changeAdminAccess(administrator, params.userId, granting);
+      if (!outcome.ok) {
+        if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
+        return intents.changeAdminAccess.reject('You cannot change your own admin access.');
+      }
 
-    const isAdmin = result.data.isAdmin === 'true';
-    const outcome = await adminService.changeAdminAccess(administrator, params.userId, isAdmin);
-    if (!outcome.ok) {
-      if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
-      return data({ error: 'You cannot change your own admin access.', intent: 'changeAdminAccess' }, { status: 400 });
-    }
+      requestLogger(context).log(
+        `${granting ? 'granted' : 'revoked'} admin access for user ${params.userId} by ${administrator.id}`,
+        'Admin',
+      );
+      return { ok: true, intent: intents.changeAdminAccess.name } as const;
+    }),
 
-    requestLogger(context).log(
-      `${isAdmin ? 'granted' : 'revoked'} admin access for user ${params.userId} by ${administrator.id}`,
-      'Admin',
-    );
-    return { ok: true, intent: 'changeAdminAccess' } as const;
-  }
+    handled(intents.deleteAccount, async ({ confirmEmail }) => {
+      const account = await adminService.account(administrator, params.userId);
+      if (!account) {
+        throw data('User not found', { status: 404 });
+      }
 
-  if (intent === 'deleteAccount') {
-    const result = validateForm(DeleteAccountDto, { confirmEmail: formData.get('confirmEmail') });
-    const account = await adminService.account(administrator, params.userId);
-    if (!account) {
-      throw data('User not found', { status: 404 });
-    }
+      // The typed email is the confirmation step: this deletes an athlete's
+      // entire training history along with the account, and there is no undo.
+      if (confirmEmail.trim().toLowerCase() !== account.email.toLowerCase()) {
+        return intents.deleteAccount.reject("That doesn't match this account's email address.");
+      }
 
-    // The typed email is the confirmation step: this deletes an athlete's
-    // entire training history along with the account, and there is no undo.
-    if (!result.success || result.data.confirmEmail.trim().toLowerCase() !== account.email.toLowerCase()) {
-      return data({ error: "That doesn't match this account's email address.", intent: 'deleteAccount' }, { status: 400 });
-    }
+      const outcome = await adminService.removeAccount(administrator, params.userId);
+      if (!outcome.ok) {
+        if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
+        return intents.deleteAccount.reject('You cannot delete your own account.');
+      }
 
-    const outcome = await adminService.removeAccount(administrator, params.userId);
-    if (!outcome.ok) {
-      if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
-      return data({ error: 'You cannot delete your own account.', intent: 'deleteAccount' }, { status: 400 });
-    }
-
-    requestLogger(context).log(`deleted user ${params.userId} by ${administrator.id}`, 'Admin');
-    throw redirect('/admin/users');
-  }
-
-  return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });
+      requestLogger(context).log(`deleted user ${params.userId} by ${administrator.id}`, 'Admin');
+      throw redirect('/admin/users');
+    }),
+  ]);
 }
 
 export default function AdminUserDetail({ loaderData, actionData }: Route.ComponentProps) {
   const { account } = loaderData;
-
-  const errorFor = (matchIntent: string) =>
-    actionData && 'error' in actionData && actionData.intent === matchIntent ? actionData.error : undefined;
 
   return (
     <Page width="narrow">
@@ -190,11 +189,11 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <form method="post">
-                <input type="hidden" name="intent" value="changeAdminAccess" />
+                <input {...intents.changeAdminAccess.field} />
                 <input type="hidden" name="isAdmin" value={account.isAdmin ? 'false' : 'true'} />
                 <SubmitButton
                   variant={account.isAdmin ? 'outline' : 'brand'}
-                  match={{ intent: 'changeAdminAccess' }}
+                  match={intents.changeAdminAccess.match}
                   pendingLabel="Updating access"
                 >
                   {account.isAdmin ? (
@@ -211,8 +210,8 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                 </SubmitButton>
               </form>
               <div aria-live="polite" className="empty:hidden">
-                {errorFor('changeAdminAccess') ? (
-                  <p className="text-sm font-medium text-destructive">{errorFor('changeAdminAccess')}</p>
+                {intents.changeAdminAccess.errorIn(actionData) ? (
+                  <p className="text-sm font-medium text-destructive">{intents.changeAdminAccess.errorIn(actionData)}</p>
                 ) : actionData && 'ok' in actionData && actionData.intent === 'changeAdminAccess' ? (
                   <p className="animate-fade-in text-sm font-medium text-success">Saved.</p>
                 ) : null}
@@ -230,13 +229,13 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
             </CardHeader>
             <CardContent>
               <form method="post">
-                <input type="hidden" name="intent" value="deleteAccount" />
+                <input {...intents.deleteAccount.field} />
                 <Field
                   label="Type the account's email to confirm"
                   description={account.email}
-                  error={errorFor('deleteAccount')}
+                  error={intents.deleteAccount.errorIn(actionData)}
                   action={
-                    <SubmitButton variant="destructive" match={{ intent: 'deleteAccount' }} pendingLabel="Deleting account">
+                    <SubmitButton variant="destructive" match={intents.deleteAccount.match} pendingLabel="Deleting account">
                       <Trash2Icon aria-hidden="true" />
                       Delete
                     </SubmitButton>

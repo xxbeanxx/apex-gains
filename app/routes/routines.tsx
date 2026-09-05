@@ -3,7 +3,7 @@ import { IsString, MaxLength, MinLength } from 'class-validator';
 import { RepeatIcon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
@@ -34,13 +34,13 @@ class CreateRoutineDto {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const routineService = context.get(routineServiceContext);
   return { routines: await routineService.list(athlete) };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const user = context.get(userContext)!;
+  const user = requireAthlete(context);
   const formData = await request.formData();
   const result = validateForm(CreateRoutineDto, { name: formData.get('name') });
 

@@ -3,7 +3,7 @@ import { IsIn, IsUUID } from 'class-validator';
 import { ShieldCheckIcon, ShieldOffIcon, UsersIcon } from 'lucide-react';
 import { Form, Link, data } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { AccountIdentity } from '~/components/admin/account-identity';
 import { Page, PageHeader } from '~/components/layout/page';
 import { Button } from '~/components/ui/button';
@@ -40,7 +40,7 @@ class ChangeAdminAccessDto {
  * table stays server-rendered like every other list in the app.
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const administrator = context.get(userContext)!;
+  const administrator = requireAthlete(context);
   const query = new URL(request.url).searchParams.get('q')?.trim() ?? '';
 
   const accounts = await context.get(adminServiceContext).accounts(administrator);
@@ -58,7 +58,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const administrator = context.get(userContext)!;
+  const administrator = requireAthlete(context);
   const formData = await request.formData();
 
   const result = validateForm(ChangeAdminAccessDto, {

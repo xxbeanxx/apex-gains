@@ -1,4 +1,4 @@
-import { createContext } from 'react-router';
+import { createContext, type RouterContextProvider } from 'react-router';
 
 import type { Athlete } from '~/domain/athlete/athlete';
 
@@ -12,3 +12,20 @@ import type { Athlete } from '~/domain/athlete/athlete';
  * data.
  */
 export const userContext = createContext<Athlete | null>(null);
+
+/**
+ * The athlete on a route nested under the `_protected` layout, where
+ * `requireUserMiddleware` has already redirected anyone anonymous.
+ *
+ * The context is nullable because `loadUserMiddleware` runs on every request,
+ * signed in or not. Under the layout that guarantee has already been made and
+ * the null is unreachable, so this states it once rather than leaving a `!` at
+ * every loader and action that reads it.
+ */
+export function requireAthlete(context: Readonly<RouterContextProvider>): Athlete {
+  const athlete = context.get(userContext);
+  if (!athlete) {
+    throw new Error('requireAthlete outside the _protected layout - requireUserMiddleware has not run');
+  }
+  return athlete;
+}

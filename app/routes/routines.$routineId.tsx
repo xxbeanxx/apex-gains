@@ -22,7 +22,7 @@ import {
 } from 'class-validator';
 import { Link, data, redirect } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -34,8 +34,9 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { DateOnly } from '~/domain/values/date-only';
 import { requestLogger } from '~/lib/logger.server';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, trim } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
 
 import { routineServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
 
@@ -46,7 +47,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const routineService = context.get(routineServiceContext);
   const routine = await routineService.detail(athlete, params.routineId);
   if (!routine) {
@@ -117,92 +118,76 @@ function settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok
   return { ok: true };
 }
 
+const intents = {
+  delete: intent('delete'),
+  revert: intent('revert'),
+  rename: intent('rename', RenameRoutineDto, { invalidMessage: 'Invalid name' }),
+  reanchor: intent('reanchor', ReanchorRoutineDto, { invalidMessage: 'Invalid date' }),
+  activate: intent('activate'),
+  deactivate: intent('deactivate'),
+  addSlot: intent('addSlot', AddSlotDto, { invalidMessage: 'Invalid slot' }),
+  removeSlot: intent('removeSlot', SlotIdDto),
+  move: intent('move', MoveSlotDto),
+};
+
 export async function action({ request, params, context }: Route.ActionArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const routineId = params.routineId;
   const routineService = context.get(routineServiceContext);
 
-  const formData = await request.formData();
-  const intent = formData.get('intent');
-
-  if (intent === 'delete') {
-    const outcome = await routineService.remove(athlete, routineId);
-    if (!outcome.ok && outcome.error === 'not-found') {
-      throw data('Routine not found', { status: 404 });
-    }
-    if (!outcome.ok) {
-      return data({ error: "Sample routines can't be deleted.", intent: 'delete' }, { status: 400 });
-    }
-    requestLogger(context).log(`deleted routine ${routineId} for user ${athlete.id}`, 'Routines');
-    throw redirect('/routines');
-  }
-
-  if (intent === 'revert') {
-    const outcome = await routineService.revert(athlete, routineId);
-    if (!outcome.ok && outcome.error === 'not-found') {
-      throw data('Routine not found', { status: 404 });
-    }
-    if (!outcome.ok) {
-      return data({ error: 'Nothing to revert', intent: 'revert' }, { status: 400 });
-    }
-    throw redirect(`/routines/${outcome.value.forkedFromId}`);
-  }
-
-  if (intent === 'rename') {
-    const result = validateForm(RenameRoutineDto, { name: formData.get('name') });
-    if (!result.success) {
-      return data({ error: 'Invalid name', intent: 'rename' }, { status: 400 });
-    }
-    return settle(await routineService.rename(athlete, routineId, result.data.name));
-  }
-
-  if (intent === 'reanchor') {
-    const result = validateForm(ReanchorRoutineDto, { anchorDate: formData.get('anchorDate') });
-    if (!result.success) {
-      return data({ error: 'Invalid date', intent: 'reanchor' }, { status: 400 });
-    }
-    return settle(await routineService.reanchor(athlete, routineId, DateOnly.parse(result.data.anchorDate)));
-  }
-
-  if (intent === 'activate' || intent === 'deactivate') {
-    const outcome =
-      intent === 'activate'
-        ? await routineService.activate(athlete, routineId)
-        : await routineService.deactivate(athlete, routineId);
+  /** Activating and deactivating differ only in which method they call. */
+  const setActive = async (active: boolean) => {
+    const outcome = active
+      ? await routineService.activate(athlete, routineId)
+      : await routineService.deactivate(athlete, routineId);
 
     if (outcome.ok) {
-      requestLogger(context).log(`${intent}d routine ${routineId} for user ${athlete.id}`, 'Routines');
+      requestLogger(context).log(
+        `${active ? 'activated' : 'deactivated'} routine ${routineId} for user ${athlete.id}`,
+        'Routines',
+      );
     }
     return settle(outcome);
-  }
+  };
 
-  if (intent === 'addSlot') {
-    const result = validateForm(AddSlotDto, { templateId: formData.get('templateId') });
-    if (!result.success) {
-      return data({ error: 'Invalid slot', intent: 'addSlot' }, { status: 400 });
-    }
-    return settle(
-      await routineService.addSlot(athlete, routineId, result.data.templateId === 'rest' ? null : result.data.templateId),
-    );
-  }
+  return dispatch(request, [
+    handled(intents.delete, async () => {
+      const outcome = await routineService.remove(athlete, routineId);
+      if (!outcome.ok && outcome.error === 'not-found') {
+        throw data('Routine not found', { status: 404 });
+      }
+      if (!outcome.ok) {
+        return intents.delete.reject("Sample routines can't be deleted.");
+      }
+      requestLogger(context).log(`deleted routine ${routineId} for user ${athlete.id}`, 'Routines');
+      throw redirect('/routines');
+    }),
 
-  if (intent === 'removeSlot') {
-    const result = validateForm(SlotIdDto, { slotId: formData.get('slotId') });
-    if (!result.success) {
-      return data({ error: result.message, intent: 'removeSlot' }, { status: 400 });
-    }
-    return settle(await routineService.removeSlot(athlete, routineId, result.data.slotId));
-  }
+    handled(intents.revert, async () => {
+      const outcome = await routineService.revert(athlete, routineId);
+      if (!outcome.ok && outcome.error === 'not-found') {
+        throw data('Routine not found', { status: 404 });
+      }
+      if (!outcome.ok) {
+        return intents.revert.reject('Nothing to revert');
+      }
+      throw redirect(`/routines/${outcome.value.forkedFromId}`);
+    }),
 
-  if (intent === 'move') {
-    const result = validateForm(MoveSlotDto, { slotId: formData.get('slotId'), direction: formData.get('direction') });
-    if (!result.success) {
-      return data({ error: result.message, intent: 'move' }, { status: 400 });
-    }
-    return settle(await routineService.moveSlot(athlete, routineId, result.data.slotId, result.data.direction));
-  }
-
-  return data({ error: 'Unknown action', intent: 'unknown' }, { status: 400 });
+    handled(intents.rename, async ({ name }) => settle(await routineService.rename(athlete, routineId, name))),
+    handled(intents.reanchor, async ({ anchorDate }) =>
+      settle(await routineService.reanchor(athlete, routineId, DateOnly.parse(anchorDate))),
+    ),
+    handled(intents.activate, () => setActive(true)),
+    handled(intents.deactivate, () => setActive(false)),
+    handled(intents.addSlot, async ({ templateId }) =>
+      settle(await routineService.addSlot(athlete, routineId, templateId === 'rest' ? null : templateId)),
+    ),
+    handled(intents.removeSlot, async ({ slotId }) => settle(await routineService.removeSlot(athlete, routineId, slotId))),
+    handled(intents.move, async ({ slotId, direction }) =>
+      settle(await routineService.moveSlot(athlete, routineId, slotId, direction)),
+    ),
+  ]);
 }
 
 export default function RoutineDetail({ loaderData, actionData }: Route.ComponentProps) {
@@ -211,13 +196,11 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
   const slotCount = routine.slots.length;
   const { isSample, isCustomized } = routine;
 
-  const errorFor = (matchIntent: string) =>
-    actionData && 'error' in actionData && actionData.intent === matchIntent ? actionData.error : undefined;
-  const deleteError = errorFor('delete');
-  const revertError = errorFor('revert');
-  const renameError = errorFor('rename');
-  const reanchorError = errorFor('reanchor');
-  const addSlotError = errorFor('addSlot');
+  const deleteError = intents.delete.errorIn(actionData);
+  const revertError = intents.revert.errorIn(actionData);
+  const renameError = intents.rename.errorIn(actionData);
+  const reanchorError = intents.reanchor.errorIn(actionData);
+  const addSlotError = intents.addSlot.errorIn(actionData);
 
   return (
     <Page width="narrow">
@@ -241,13 +224,11 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
         actions={
           <>
             <form method="post">
-              <input type="hidden" name="intent" value={routine.isActive ? 'deactivate' : 'activate'} />
+              <input {...(routine.isActive ? intents.deactivate : intents.activate).field} />
               <SubmitButton
                 variant={routine.isActive ? 'outline' : 'brand'}
                 size="sm"
-                match={{
-                  intent: routine.isActive ? 'deactivate' : 'activate',
-                }}
+                match={(routine.isActive ? intents.deactivate : intents.activate).match}
                 pendingLabel="Updating routine"
               >
                 <PowerIcon aria-hidden="true" />
@@ -256,8 +237,8 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
             </form>
             {isSample ? null : isCustomized ? (
               <form method="post" className="flex flex-col items-end gap-1.5">
-                <input type="hidden" name="intent" value="revert" />
-                <SubmitButton variant="outline" size="sm" match={{ intent: 'revert' }} pendingLabel="Reverting">
+                <input {...intents.revert.field} />
+                <SubmitButton variant="outline" size="sm" match={intents.revert.match} pendingLabel="Reverting">
                   <RotateCcwIcon aria-hidden="true" />
                   Revert to sample
                 </SubmitButton>
@@ -265,8 +246,8 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
               </form>
             ) : (
               <form method="post" className="flex flex-col items-end gap-1.5">
-                <input type="hidden" name="intent" value="delete" />
-                <SubmitButton variant="destructive" size="sm" match={{ intent: 'delete' }} pendingLabel="Deleting routine">
+                <input {...intents.delete.field} />
+                <SubmitButton variant="destructive" size="sm" match={intents.delete.match} pendingLabel="Deleting routine">
                   <Trash2Icon aria-hidden="true" />
                   Delete routine
                 </SubmitButton>
@@ -293,12 +274,12 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
           </CardHeader>
           <CardContent>
             <form method="post">
-              <input type="hidden" name="intent" value="rename" />
+              <input {...intents.rename.field} />
               <Field
                 label="Name"
                 error={renameError}
                 action={
-                  <SubmitButton match={{ intent: 'rename' }} pendingLabel="Saving">
+                  <SubmitButton match={intents.rename.match} pendingLabel="Saving">
                     Save
                   </SubmitButton>
                 }
@@ -315,13 +296,13 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
           </CardHeader>
           <CardContent>
             <form method="post">
-              <input type="hidden" name="intent" value="reanchor" />
+              <input {...intents.reanchor.field} />
               <Field
                 label="Anchor date"
                 description={`Day 1 of the cycle falls on this date, and it repeats every ${slotCount || 'N'} days from there.`}
                 error={reanchorError}
                 action={
-                  <SubmitButton match={{ intent: 'reanchor' }} pendingLabel="Saving">
+                  <SubmitButton match={intents.reanchor.match} pendingLabel="Saving">
                     Save
                   </SubmitButton>
                 }
@@ -373,7 +354,7 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
                     <form method="post">
-                      <input type="hidden" name="intent" value="move" />
+                      <input {...intents.move.field} />
                       <input type="hidden" name="slotId" value={slot.id} />
                       <input type="hidden" name="direction" value="up" />
                       <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
@@ -382,7 +363,7 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
                       </Button>
                     </form>
                     <form method="post">
-                      <input type="hidden" name="intent" value="move" />
+                      <input {...intents.move.field} />
                       <input type="hidden" name="slotId" value={slot.id} />
                       <input type="hidden" name="direction" value="down" />
                       <Button type="submit" variant="ghost" size="icon-sm" disabled={index === slotCount - 1}>
@@ -391,7 +372,7 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
                       </Button>
                     </form>
                     <form method="post">
-                      <input type="hidden" name="intent" value="removeSlot" />
+                      <input {...intents.removeSlot.field} />
                       <input type="hidden" name="slotId" value={slot.id} />
                       <Button
                         type="submit"
@@ -416,12 +397,12 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <form method="post">
-              <input type="hidden" name="intent" value="addSlot" />
+              <input {...intents.addSlot.field} />
               <Field
                 label="Day type"
                 error={addSlotError}
                 action={
-                  <SubmitButton match={{ intent: 'addSlot' }} pendingLabel="Adding day">
+                  <SubmitButton match={intents.addSlot.match} pendingLabel="Adding day">
                     Add
                   </SubmitButton>
                 }

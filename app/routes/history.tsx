@@ -1,7 +1,7 @@
 import { HistoryIcon, MoonIcon, PlusIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { HistoryCharts } from '~/components/history/history-charts';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
@@ -19,7 +19,7 @@ export function meta() {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const athlete = context.get(userContext)!;
+  const athlete = requireAthlete(context);
   const progressService = context.get(progressServiceContext);
   return await progressService.history(athlete);
 }
