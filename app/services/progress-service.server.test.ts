@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~/domain/athlete/athlete';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
+import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
@@ -13,6 +14,7 @@ import { Weight } from '~/domain/values/weight';
 import { Workout } from '~/domain/workout/workout';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
+import { InMemoryPlansRepository } from '~/repositories/in-memory/plans-repository.server';
 import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
 
@@ -57,6 +59,7 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
 let sessions: InMemorySessionsRepository;
 let exercises: InMemoryExercisesRepository;
 let workouts: InMemoryWorkoutsRepository;
+let plans: InMemoryPlansRepository;
 let bodyWeight: InMemoryBodyWeightRepository;
 let service: ProgressService;
 
@@ -64,14 +67,96 @@ beforeEach(() => {
   sessions = new InMemorySessionsRepository();
   exercises = new InMemoryExercisesRepository();
   workouts = new InMemoryWorkoutsRepository();
+  plans = new InMemoryPlansRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
-  service = new ProgressService(sessions, exercises, workouts, bodyWeight);
+  service = new ProgressService(sessions, exercises, workouts, plans, bodyWeight);
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
   const opened = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay }, deps);
   return sessions.add(opened);
 }
+
+function plan(overrides: Partial<PlanSnapshot> = {}): Plan {
+  return Plan.fromSnapshot({
+    id: 'plan-1',
+    userId: 'user-1',
+    forkedFromId: null,
+    name: 'PPL',
+    isActive: true,
+    anchorDate: '2026-09-01',
+    shareToken: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    slots: [],
+    ...overrides,
+  });
+}
+
+describe('dashboard', () => {
+  it("reports this week's sessions and sets, workouts logged over the recent window, and the active plan", async () => {
+    await workouts.save(
+      Workout.fromSnapshot({
+        id: 'workout-1',
+        userId: 'user-1',
+        forkedFromId: null,
+        name: 'Push Day',
+        createdAt: NOW,
+        updatedAt: NOW,
+        exercises: [],
+      }),
+    );
+    await plans.save(plan());
+
+    // 2026-09-03 (NOW/TODAY) is a Thursday; its week runs Mon 2026-08-31
+    // through Sun 2026-09-06.
+    const inWeek = Session.open(
+      'user-1',
+      DateOnly.parse('2026-09-01'),
+      { planId: 'plan-1', workoutId: 'workout-1', isRestDay: false },
+      deps,
+    );
+    inWeek.logSet('bench', { reps: 8, weight: Weight.lb(135) }, deps);
+    await sessions.save(inWeek);
+
+    const restDay = Session.open(
+      'user-1',
+      DateOnly.parse('2026-09-02'),
+      { planId: 'plan-1', workoutId: null, isRestDay: true },
+      deps,
+    );
+    await sessions.save(restDay);
+
+    // Outside this week - counts toward workoutsLogged but not the weekly figures.
+    const lastWeek = Session.open(
+      'user-1',
+      DateOnly.parse('2026-08-20'),
+      { planId: 'plan-1', workoutId: 'workout-1', isRestDay: false },
+      deps,
+    );
+    lastWeek.logSet('bench', { reps: 5, weight: Weight.lb(200) }, deps);
+    await sessions.save(lastWeek);
+
+    const view = await service.dashboard(athlete());
+
+    expect(view.sessionsThisWeek).toBe(2);
+    expect(view.setsThisWeek).toBe(1);
+    expect(view.workoutsLogged).toBe(2);
+    expect(view.activePlanName).toBe('PPL');
+    // Newest first: the rest day, then the workout day, then last week's.
+    expect(view.recentSessions.map((s) => s.workoutName)).toEqual([null, 'Push Day', 'Push Day']);
+  });
+
+  it('reports no active plan when none is set', async () => {
+    const view = await service.dashboard(athlete());
+
+    expect(view.activePlanName).toBeNull();
+    expect(view.sessionsThisWeek).toBe(0);
+    expect(view.setsThisWeek).toBe(0);
+    expect(view.workoutsLogged).toBe(0);
+    expect(view.recentSessions).toEqual([]);
+  });
+});
 
 describe('history', () => {
   it('counts total sets and only workouts with at least one set', async () => {

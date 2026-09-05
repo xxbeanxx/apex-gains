@@ -14,9 +14,16 @@ import { Weight } from '~/domain/values/weight';
 import { formatMonthDay } from '~/lib/format';
 import type { BodyWeightRepository } from '~/repositories/body-weight-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { PlansRepository } from '~/repositories/plans-repository.server';
 import type { SessionsRepository } from '~/repositories/sessions-repository.server';
 import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
-import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, SESSIONS_REPOSITORY, WORKOUTS_REPOSITORY } from '~/repositories/tokens';
+import {
+  BODY_WEIGHT_REPOSITORY,
+  EXERCISES_REPOSITORY,
+  PLANS_REPOSITORY,
+  SESSIONS_REPOSITORY,
+  WORKOUTS_REPOSITORY,
+} from '~/repositories/tokens';
 
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 
@@ -60,6 +67,20 @@ export type HistoryView = {
   bodyWeight: ProgressSeriesView | null;
 };
 
+/**
+ * The signed-in home dashboard's headline numbers, deliberately not a
+ * streak - see the marketing page's own "no streak guilt" - plus the same
+ * dense rows `/history` renders, for a five-row recent list.
+ */
+export type DashboardView = {
+  sessionsThisWeek: number;
+  setsThisWeek: number;
+  /** Over the same recent window `/history`'s own totals use, not literally all-time. */
+  workoutsLogged: number;
+  activePlanName: string | null;
+  recentSessions: TimelineDay[];
+};
+
 export type BodyWeightEntryView = {
   id: string;
   date: string;
@@ -74,6 +95,7 @@ export type BodyWeightView = {
 
 const CHART_HISTORY_LIMIT = 250;
 const TIMELINE_LIMIT = 90;
+const DASHBOARD_RECENT_LIMIT = 5;
 const VOLUME_WEEKS = 12;
 const HEATMAP_WEEKS = 16;
 const MUSCLE_BALANCE_DAYS = 28;
@@ -132,9 +154,39 @@ export class ProgressService {
     private readonly sessions: SessionsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
+    @Inject(PLANS_REPOSITORY) private readonly plans: PlansRepository,
     @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
+
+  /**
+   * The signed-in home page's read model: this week's headline numbers, the
+   * active plan's name, and the same five most recent days `/history` would
+   * show first - one call rather than the page reaching into plans,
+   * workouts and sessions separately.
+   */
+  async dashboard(athlete: Athlete): Promise<DashboardView> {
+    const today = DateOnly.today(new Date(), athlete.preferences.timezone);
+    const weekStart = today.startOfWeek();
+    const weekEnd = weekStart.plusDays(6);
+
+    const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
+    const directory = await ExerciseDirectory.of(referencedExerciseIds(sessions), this.exercises);
+
+    const workoutNames = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
+    const workoutNameById = new Map(workoutNames.map((workout) => [workout.id, workout.name]));
+
+    const activePlan = await this.plans.findActive(athlete.id);
+    const thisWeek = sessions.filter((session) => session.date.isBetween(weekStart, weekEnd));
+
+    return {
+      sessionsThisWeek: thisWeek.filter((session) => session.status !== 'none').length,
+      setsThisWeek: thisWeek.reduce((sum, session) => sum + session.setCount, 0),
+      workoutsLogged: sessions.filter((session) => session.setCount > 0).length,
+      activePlanName: activePlan?.name ?? null,
+      recentSessions: this.timeline(athlete, sessions.slice(0, DASHBOARD_RECENT_LIMIT), directory, workoutNameById),
+    };
+  }
 
   async history(athlete: Athlete, asOf?: DateOnly): Promise<HistoryView> {
     const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);

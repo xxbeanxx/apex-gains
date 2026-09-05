@@ -1,8 +1,16 @@
-import { CalendarCheckIcon, DumbbellIcon, LineChartIcon, RepeatIcon } from 'lucide-react';
-import { redirect } from 'react-router';
+import { CalendarCheckIcon, CalendarPlusIcon, DumbbellIcon, LineChartIcon, MoonIcon, RepeatIcon } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { userContext } from '~/auth/user-context';
+import { SessionRow } from '~/components/history/session-row';
+import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EmptyState } from '~/components/ui/empty-state';
+import { Stat } from '~/components/ui/stat';
+import { DateOnly } from '~/domain/values/date-only';
+
+import { progressServiceContext, trainingPlanServiceContext } from '~/lib/nest-bridge.server';
 
 import type { Route } from './+types/home';
 
@@ -11,11 +19,16 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const user = context.get(userContext);
-  if (user) {
-    throw redirect('/today');
-  }
-  return null;
+  const athlete = context.get(userContext);
+  if (!athlete) return null;
+
+  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
+  const [dashboard, plan] = await Promise.all([
+    context.get(progressServiceContext).dashboard(athlete),
+    context.get(trainingPlanServiceContext).planFor(athlete, today),
+  ]);
+
+  return { name: athlete.name, dashboard, plan };
 }
 
 const FEATURES = [
@@ -41,7 +54,7 @@ const FEATURES = [
   },
 ];
 
-export default function Home() {
+function MarketingHome() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto w-full max-w-(--content-max) flex-1 px-(--page-px) outline-none">
       <section className="flex flex-col items-center gap-6 py-20 text-center sm:py-28">
@@ -84,5 +97,57 @@ export default function Home() {
         ))}
       </section>
     </main>
+  );
+}
+
+export default function Home({ loaderData }: Route.ComponentProps) {
+  if (!loaderData) return <MarketingHome />;
+
+  const { name, dashboard, plan } = loaderData;
+  const planLabel = plan.type === 'workout' ? plan.workoutName : plan.type === 'rest' ? 'Rest day' : 'No active plan';
+
+  return (
+    <Page>
+      <PageHeader title={`Welcome back, ${name}`} description="Here's where things stand." />
+
+      <div className="mt-(--section-gap) grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Sessions this week" value={dashboard.sessionsThisWeek} />
+        <Stat label="Sets this week" value={dashboard.setsThisWeek} />
+        <Stat label="Workouts logged" value={dashboard.workoutsLogged} />
+        <Stat label="Active plan" value={dashboard.activePlanName ?? 'None'} />
+      </div>
+
+      <Card interactive className="relative mt-(--section-gap)">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 font-heading text-lg font-semibold">
+            {plan.type === 'rest' ? <MoonIcon className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
+            {planLabel}
+          </span>
+          <Link to="/today" className="text-sm font-medium text-brand-strong after:absolute after:inset-0 after:content-['']">
+            Log it →
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Section title="Recent sessions">
+        {dashboard.recentSessions.length === 0 ? (
+          <EmptyState
+            icon={CalendarPlusIcon}
+            title="Nothing logged yet"
+            description="Log your first set on the Today page and it will appear here."
+            compact
+          />
+        ) : (
+          <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
+            {dashboard.recentSessions.map((session) => (
+              <SessionRow key={session.id} session={session} />
+            ))}
+          </ul>
+        )}
+      </Section>
+    </Page>
   );
 }

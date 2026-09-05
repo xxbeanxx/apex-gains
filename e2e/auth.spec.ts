@@ -41,12 +41,14 @@ test.describe('anonymous visitors', () => {
 });
 
 test.describe('test login', () => {
-  test('signs in, and the root then redirects to Today', async ({ page, athlete }) => {
+  test('signs in on Today, and the root shows a dashboard instead of the marketing page', async ({ page, athlete }) => {
     await expect(page).toHaveURL('/today');
 
     await page.goto('/');
-    await expect(page).toHaveURL('/today');
-    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: `Welcome back, ${athlete.name}` })).toBeVisible();
+    await expect(page.getByText('Sessions this week')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Sign in with Google' })).toHaveCount(0);
   });
 
   test('returns the same athlete on a second sign-in', async ({ page, athlete }) => {

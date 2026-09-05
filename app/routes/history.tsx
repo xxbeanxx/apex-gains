@@ -1,11 +1,11 @@
-import { HistoryIcon, MoonIcon } from 'lucide-react';
-import { Link } from 'react-router';
+import { HistoryIcon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
 import { HistoryCharts } from '~/components/history/history-charts';
+import { SessionRow } from '~/components/history/session-row';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { EmptyState } from '~/components/ui/empty-state';
-import { formatFullDate, formatMonthDay, formatMonthYear } from '~/lib/format';
+import { formatMonthYear } from '~/lib/format';
 
 import { progressServiceContext } from '~/lib/nest-bridge.server';
 
@@ -94,34 +94,9 @@ export default function History({ loaderData }: Route.ComponentProps) {
           </div>
 
           <ul className="flex flex-col divide-y divide-border">
-            {group.sessions.map((session) => {
-              const isRest = session.isRestDay && session.sets.length === 0;
-              const label = session.workoutName ?? (isRest ? 'Rest day' : 'Logged');
-
-              return (
-                <li key={session.id}>
-                  <Link
-                    to={`/today?date=${session.date}`}
-                    aria-label={`${formatFullDate(session.date)}: ${label}, ${session.sets.length} set${session.sets.length === 1 ? '' : 's'}${session.tonnage ? `, ${session.tonnage} lifted` : ''}. Edit this day.`}
-                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted"
-                  >
-                    <span aria-hidden="true" className="w-16 shrink-0 text-muted-foreground tabular-nums">
-                      {formatMonthDay(session.date)}
-                    </span>
-                    <span aria-hidden="true" className="flex min-w-0 flex-1 items-center gap-1.5 truncate font-medium">
-                      {isRest ? <MoonIcon className="size-3.5 shrink-0 text-muted-foreground" /> : null}
-                      {label}
-                    </span>
-                    <span aria-hidden="true" className="w-16 shrink-0 text-right text-muted-foreground tabular-nums">
-                      {session.sets.length} set{session.sets.length === 1 ? '' : 's'}
-                    </span>
-                    <span aria-hidden="true" className="w-20 shrink-0 text-right text-muted-foreground tabular-nums">
-                      {session.tonnage ?? '—'}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+            {group.sessions.map((session) => (
+              <SessionRow key={session.id} session={session} />
+            ))}
           </ul>
         </section>
       ))}
