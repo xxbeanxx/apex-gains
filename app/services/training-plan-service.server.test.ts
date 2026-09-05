@@ -150,7 +150,7 @@ describe('planFor', () => {
           exerciseId: 'exercise-1',
           exerciseName: 'Bench Press',
           exerciseType: 'strength',
-          equipmentCardioKinds: [null],
+          cardioFields: { showSpeed: true, showResistance: true },
           targetSummary: '3 x 10',
           targetSets: 3,
         },

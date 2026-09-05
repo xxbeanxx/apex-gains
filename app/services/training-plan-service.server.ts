@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
-import type { CardioKind } from '~/domain/equipment/equipment';
+import { cardioFieldsFor, type CardioFields } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import type { SessionPlan } from '~/domain/session/workout-session';
 import { DateOnly } from '~/domain/values/date-only';
@@ -22,8 +22,8 @@ export type PlanItem = {
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
-  /** `cardioKind` of each linked equipment, for deciding which cardio fields apply - see `cardioFieldsFor`. */
-  equipmentCardioKinds: (CardioKind | null)[];
+  /** Which cardio measurements the log form should offer - see `cardioFieldsFor`. */
+  cardioFields: CardioFields;
   /** Already formatted in the athlete's units. */
   targetSummary: string | null;
   /** Drives the "n of m sets" progress bar; null when nothing was targeted. */
@@ -115,7 +115,7 @@ export class TrainingPlanService {
           exerciseId: entry.exerciseId,
           exerciseName: exercise?.name ?? 'Unknown',
           exerciseType: exercise?.exerciseType ?? 'strength',
-          equipmentCardioKinds: (exercise?.equipmentIds ?? []).map((id) => cardioKindById.get(id) ?? null),
+          cardioFields: cardioFieldsFor((exercise?.equipmentIds ?? []).map((id) => cardioKindById.get(id) ?? null)),
           targetSummary: entry.target.format(athlete.preferences),
           targetSets: entry.target.sets,
         };

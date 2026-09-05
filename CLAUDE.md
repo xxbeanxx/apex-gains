@@ -408,7 +408,11 @@ per set). `exercises` carry an `exerciseType` (`strength` | `cardio`)
 and link to `equipment` via `exerciseEquipment`; cardio fields differ
 by equipment (treadmill: duration + speed; rowing: duration +
 resistance — no distance/pace, since neither is reliably derivable
-from what's tracked).
+from what's tracked). Which of the two a form offers is
+`cardioFieldsFor` in `domain/equipment/cardio-fields.ts`, decided once
+there: read models (`PlanItem`, `ExerciseView`) carry the resulting
+`cardioFields` rather than the raw list of `cardioKind`s, so no route
+re-derives it.
 
 **Routines are day-count cycles, not weekdays.** A routine's "today"
 slot is `(days since anchorDate) mod (slot count)` — `Routine.slotOn`

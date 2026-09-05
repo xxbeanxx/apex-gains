@@ -25,12 +25,11 @@ import { Input } from '~/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { CardioKind } from '~/domain/equipment/equipment';
+import type { CardioFields } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import { DateOnly } from '~/domain/values/date-only';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
 import { speedUnitLabel } from '~/domain/values/units';
-import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
@@ -56,7 +55,7 @@ type LoggableExercise = {
   id: string;
   name: string;
   exerciseType: ExerciseType;
-  equipmentCardioKinds: (CardioKind | null)[];
+  cardioFields: CardioFields;
 };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -285,7 +284,7 @@ function LogSetForm({
   const active = exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
-  const { showSpeed, showResistance } = cardioFieldsFor(active?.equipmentCardioKinds ?? []);
+  const { showSpeed, showResistance } = active?.cardioFields ?? { showSpeed: true, showResistance: true };
 
   return (
     <fetcher.Form method="post" className="flex flex-col gap-3">
@@ -727,7 +726,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                         id: item.exerciseId,
                         name: item.exerciseName,
                         exerciseType: item.exerciseType,
-                        equipmentCardioKinds: item.equipmentCardioKinds,
+                        cardioFields: item.cardioFields,
                       }}
                       date={date}
                       todayStr={todayStr}
@@ -759,7 +758,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                 id: e.id,
                 name: e.name,
                 exerciseType: e.exerciseType,
-                equipmentCardioKinds: e.equipment.map((item) => item.cardioKind),
+                cardioFields: e.cardioFields,
               }))}
               date={date}
               todayStr={todayStr}

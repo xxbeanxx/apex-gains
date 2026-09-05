@@ -7,7 +7,7 @@ import { Ownership } from '../shared/ownership';
  * restriction - either the equipment isn't cardio-specific (free weights),
  * or it reports both (a multi-purpose machine like the BowFlex). Cardio
  * logging and template-target forms use this to decide which of the two
- * fields to show; see `cardioFieldsFor` in `app/lib/cardio-equipment.ts`.
+ * fields to show; see `cardioFieldsFor` in ./cardio-fields.ts.
  */
 export const CARDIO_KINDS = ['speed', 'resistance'] as const;
 export type CardioKind = (typeof CARDIO_KINDS)[number];

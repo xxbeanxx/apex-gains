@@ -16,7 +16,6 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
 import { speedUnitLabel } from '~/domain/values/units';
-import { cardioFieldsFor } from '~/lib/cardio-equipment';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
@@ -206,7 +205,7 @@ function AddExerciseForm({
   const fetcher = useFetcher();
   const [exerciseId, setExerciseId] = useState<string>('');
   const selected = exerciseList.find((e) => e.id === exerciseId);
-  const { showSpeed, showResistance } = cardioFieldsFor(selected?.equipment.map((item) => item.cardioKind) ?? []);
+  const { showSpeed, showResistance } = selected?.cardioFields ?? { showSpeed: true, showResistance: true };
 
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;

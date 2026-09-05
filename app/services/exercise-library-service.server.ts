@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
+import { cardioFieldsFor, type CardioFields } from '~/domain/equipment/cardio-fields';
 import { type CardioKind, Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseDetails } from '~/domain/exercise/exercise';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
@@ -31,6 +32,8 @@ export type ExerciseView = {
   canRevert: boolean;
   /** Resolved names, because the library page searches and filters by them. */
   equipment: EquipmentView[];
+  /** Which cardio measurements a target or log form should offer - see `cardioFieldsFor`. */
+  cardioFields: CardioFields;
 };
 
 export type LibraryView = {
@@ -41,6 +44,10 @@ export type LibraryView = {
 export type ExerciseMutation = Result<{ forkedId: string | null }, 'not-found' | 'duplicate-name'>;
 
 function toView(exercise: Exercise, equipmentById: ReadonlyMap<string, EquipmentView>): ExerciseView {
+  const equipment = exercise.equipmentIds
+    .map((id) => equipmentById.get(id))
+    .filter((item): item is EquipmentView => item !== undefined);
+
   return {
     id: exercise.id,
     name: exercise.name,
@@ -49,9 +56,8 @@ function toView(exercise: Exercise, equipmentById: ReadonlyMap<string, Equipment
     description: exercise.description,
     isSample: exercise.ownership.isSample,
     canRevert: exercise.canRevert,
-    equipment: exercise.equipmentIds
-      .map((id) => equipmentById.get(id))
-      .filter((item): item is EquipmentView => item !== undefined),
+    equipment,
+    cardioFields: cardioFieldsFor(equipment.map((item) => item.cardioKind)),
   };
 }
 

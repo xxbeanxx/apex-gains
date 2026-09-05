@@ -1,4 +1,16 @@
-import type { CardioKind } from '~/domain/equipment/equipment';
+import type { CardioKind } from './equipment';
+
+/**
+ * Which of the two cardio measurements a form should offer.
+ *
+ * Read models carry this rather than the raw list of kinds, so the answer is
+ * decided once here instead of being re-derived by each form that renders
+ * one.
+ */
+export type CardioFields = {
+  readonly showSpeed: boolean;
+  readonly showResistance: boolean;
+};
 
 /**
  * Which cardio fields make sense for an exercise, from its linked
@@ -8,10 +20,7 @@ import type { CardioKind } from '~/domain/equipment/equipment';
  * an exercise links more than one kind - shows both rather than guessing
  * wrong and hiding a field a set actually needs.
  */
-export function cardioFieldsFor(equipmentCardioKinds: readonly (CardioKind | null)[]): {
-  showSpeed: boolean;
-  showResistance: boolean;
-} {
+export function cardioFieldsFor(equipmentCardioKinds: readonly (CardioKind | null)[]): CardioFields {
   const kinds = new Set(equipmentCardioKinds.filter((kind): kind is CardioKind => kind !== null));
 
   if (kinds.size === 1 && kinds.has('speed')) return { showSpeed: true, showResistance: false };
