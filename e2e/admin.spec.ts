@@ -49,7 +49,7 @@ test('an administrator cannot change their own access', async ({ page, administr
   const row = page.getByRole('row').filter({ hasText: administrator.email });
   await expect(row.getByRole('button', { name: /admin access/ })).toHaveCount(0);
 
-  await page.goto(`/admin/users/${await accountIdFor(page, administrator.email)}`);
+  await page.goto(`/admin/users/${await accountIdFor(page, administrator.email)}?section=account`);
   await expect(page.getByText('Your own account')).toBeVisible();
   await expect(page.getByRole('button', { name: /Delete/ })).toHaveCount(0);
 });
@@ -88,6 +88,8 @@ test('an account detail page shows what the athlete has logged', async ({ page }
   await expect(page.getByRole('heading', { name: subject.name })).toBeVisible();
   await expect(page.getByText(subject.email).first()).toBeVisible();
   await expect(page.getByText('Never')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Admin access' }).click();
   await expect(page.getByRole('button', { name: 'Grant admin access' })).toBeVisible();
 });
 
@@ -95,7 +97,7 @@ test('deleting an account requires its email and removes it from the list', asyn
   const subject = await newAthlete(page);
   await signInAsFreshAdministrator(page);
 
-  await page.goto(`/admin/users/${await accountIdFor(page, subject.email)}`);
+  await page.goto(`/admin/users/${await accountIdFor(page, subject.email)}?section=delete`);
 
   await page.getByLabel("Type the account's email to confirm").fill('wrong@example.test');
   await submitForm(page.getByRole('button', { name: 'Delete' }));

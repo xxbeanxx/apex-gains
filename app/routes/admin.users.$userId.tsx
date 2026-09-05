@@ -5,6 +5,7 @@ import { Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
+import { SettingsShell, type SettingsSection } from '~/components/settings/settings-shell';
 import { Avatar } from '~/components/ui/avatar';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -46,13 +47,18 @@ class DeleteAccountDto {
   readonly confirmEmail!: string;
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ params, request, context }: Route.LoaderArgs) {
   const administrator = requireAthlete(context);
   const account = await context.get(adminServiceContext).account(administrator, params.userId);
   if (!account) {
     throw data('User not found', { status: 404 });
   }
-  return { account };
+
+  const validIds = account.isSelf ? ['preferences', 'account'] : ['preferences', 'access', 'delete'];
+  const requested = new URL(request.url).searchParams.get('section');
+  const section = requested && validIds.includes(requested) ? requested : 'preferences';
+
+  return { account, section };
 }
 
 const intents = {
@@ -111,6 +117,144 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 export default function AdminUserDetail({ loaderData, actionData }: Route.ComponentProps) {
   const { account } = loaderData;
 
+  const preferences: SettingsSection = {
+    id: 'preferences',
+    label: 'Preferences',
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>What this athlete chose on their own settings page. Only they can change it.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm sm:grid-cols-3">
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-muted-foreground">Weight</dt>
+              <dd className="font-medium">{account.weightUnit === 'lb' ? 'Pounds (lb)' : 'Kilograms (kg)'}</dd>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-muted-foreground">Distance & speed</dt>
+              <dd className="font-medium">{account.distanceUnit === 'km' ? 'Kilometers (km/h)' : 'Miles (mph)'}</dd>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-muted-foreground">Sample data</dt>
+              <dd className="font-medium">{account.showSampleData ? 'Shown' : 'Hidden'}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+    ),
+  };
+
+  const sections: SettingsSection[] = account.isSelf
+    ? [
+        preferences,
+        {
+          id: 'account',
+          label: 'Your account',
+          content: (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your own account</CardTitle>
+                <CardDescription>
+                  An administrator can act on any account but their own, so there is nothing to do here. That is what guarantees
+                  this instance always has at least one administrator left. Your training preferences live on{' '}
+                  <Link
+                    to="/settings"
+                    className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+                  >
+                    your settings page
+                  </Link>
+                  .
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ),
+        },
+      ]
+    : [
+        preferences,
+        {
+          id: 'access',
+          label: 'Admin access',
+          content: (
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin access</CardTitle>
+                <CardDescription>
+                  {account.isAdmin
+                    ? `${account.name} can see this area and every account in it.`
+                    : `${account.name} is an ordinary athlete and can only see their own data.`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <form method="post">
+                  <input {...intents.changeAdminAccess.field} />
+                  <input type="hidden" name="isAdmin" value={account.isAdmin ? 'false' : 'true'} />
+                  <SubmitButton
+                    variant={account.isAdmin ? 'outline' : 'brand'}
+                    match={intents.changeAdminAccess.match}
+                    pendingLabel="Updating access"
+                  >
+                    {account.isAdmin ? (
+                      <>
+                        <ShieldOffIcon aria-hidden="true" />
+                        Revoke admin access
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheckIcon aria-hidden="true" />
+                        Grant admin access
+                      </>
+                    )}
+                  </SubmitButton>
+                </form>
+                <div aria-live="polite" className="empty:hidden">
+                  {intents.changeAdminAccess.errorIn(actionData) ? (
+                    <p className="text-sm font-medium text-destructive">{intents.changeAdminAccess.errorIn(actionData)}</p>
+                  ) : actionData && 'ok' in actionData && actionData.intent === 'changeAdminAccess' ? (
+                    <p className="animate-fade-in text-sm font-medium text-success">Saved.</p>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          ),
+        },
+        {
+          id: 'delete',
+          label: 'Delete account',
+          content: (
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <CardTitle>Delete account</CardTitle>
+                <CardDescription>
+                  Removes {account.name} along with every exercise, workout, plan, workout and weigh-in they own —{' '}
+                  {formatCount(account.setCount)} logged set{account.setCount === 1 ? '' : 's'} included. This cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form method="post">
+                  <input {...intents.deleteAccount.field} />
+                  <Field
+                    label="Type the account's email to confirm"
+                    description={account.email}
+                    error={intents.deleteAccount.errorIn(actionData)}
+                    action={
+                      <SubmitButton variant="destructive" match={intents.deleteAccount.match} pendingLabel="Deleting account">
+                        <Trash2Icon aria-hidden="true" />
+                        Delete
+                      </SubmitButton>
+                    }
+                  >
+                    <Input name="confirmEmail" type="email" autoComplete="off" required />
+                  </Field>
+                </form>
+              </CardContent>
+            </Card>
+          ),
+        },
+      ];
+
   return (
     <Page width="narrow">
       <PageHeader
@@ -144,118 +288,13 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
         <Stat label="Last active" value={account.lastActiveOn ? formatFullDate(account.lastActiveOn) : 'Never'} />
       </div>
 
-      <Card className="mt-(--section-gap)">
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-          <CardDescription>What this athlete chose on their own settings page. Only they can change it.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-3 text-sm sm:grid-cols-3">
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Weight</dt>
-              <dd className="font-medium">{account.weightUnit === 'lb' ? 'Pounds (lb)' : 'Kilograms (kg)'}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Distance & speed</dt>
-              <dd className="font-medium">{account.distanceUnit === 'km' ? 'Kilometers (km/h)' : 'Miles (mph)'}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Sample data</dt>
-              <dd className="font-medium">{account.showSampleData ? 'Shown' : 'Hidden'}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      {account.isSelf ? (
-        <Card className="mt-(--section-gap)">
-          <CardHeader>
-            <CardTitle>Your own account</CardTitle>
-            <CardDescription>
-              An administrator can act on any account but their own, so there is nothing to do here. That is what guarantees
-              this instance always has at least one administrator left. Your training preferences live on{' '}
-              <Link
-                to="/settings"
-                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
-              >
-                your settings page
-              </Link>
-              .
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <>
-          <Card className="mt-(--section-gap)">
-            <CardHeader>
-              <CardTitle>Admin access</CardTitle>
-              <CardDescription>
-                {account.isAdmin
-                  ? `${account.name} can see this area and every account in it.`
-                  : `${account.name} is an ordinary athlete and can only see their own data.`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <form method="post">
-                <input {...intents.changeAdminAccess.field} />
-                <input type="hidden" name="isAdmin" value={account.isAdmin ? 'false' : 'true'} />
-                <SubmitButton
-                  variant={account.isAdmin ? 'outline' : 'brand'}
-                  match={intents.changeAdminAccess.match}
-                  pendingLabel="Updating access"
-                >
-                  {account.isAdmin ? (
-                    <>
-                      <ShieldOffIcon aria-hidden="true" />
-                      Revoke admin access
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheckIcon aria-hidden="true" />
-                      Grant admin access
-                    </>
-                  )}
-                </SubmitButton>
-              </form>
-              <div aria-live="polite" className="empty:hidden">
-                {intents.changeAdminAccess.errorIn(actionData) ? (
-                  <p className="text-sm font-medium text-destructive">{intents.changeAdminAccess.errorIn(actionData)}</p>
-                ) : actionData && 'ok' in actionData && actionData.intent === 'changeAdminAccess' ? (
-                  <p className="animate-fade-in text-sm font-medium text-success">Saved.</p>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-(--section-gap) border-destructive/30">
-            <CardHeader>
-              <CardTitle>Delete account</CardTitle>
-              <CardDescription>
-                Removes {account.name} along with every exercise, workout, plan, workout and weigh-in they own —{' '}
-                {formatCount(account.setCount)} logged set{account.setCount === 1 ? '' : 's'} included. This cannot be undone.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form method="post">
-                <input {...intents.deleteAccount.field} />
-                <Field
-                  label="Type the account's email to confirm"
-                  description={account.email}
-                  error={intents.deleteAccount.errorIn(actionData)}
-                  action={
-                    <SubmitButton variant="destructive" match={intents.deleteAccount.match} pendingLabel="Deleting account">
-                      <Trash2Icon aria-hidden="true" />
-                      Delete
-                    </SubmitButton>
-                  }
-                >
-                  <Input name="confirmEmail" type="email" autoComplete="off" required />
-                </Field>
-              </form>
-            </CardContent>
-          </Card>
-        </>
-      )}
+      <div className="mt-(--section-gap)">
+        <SettingsShell
+          sections={sections}
+          activeId={loaderData.section}
+          hrefFor={(id) => `/admin/users/${account.id}?section=${id}`}
+        />
+      </div>
     </Page>
   );
 }

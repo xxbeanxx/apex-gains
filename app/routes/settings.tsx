@@ -3,8 +3,9 @@ import { IsIn } from 'class-validator';
 import { CheckCircle2Icon } from 'lucide-react';
 import { data } from 'react-router';
 
-import { requireAthlete, userContext } from '~/auth/user-context';
+import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
+import { SettingsShell, type SettingsSection } from '~/components/settings/settings-shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Field } from '~/components/ui/field';
@@ -64,9 +65,18 @@ function timezoneLabel(zone: string, region: string): string {
   return zone === region ? zone : zone.slice(region.length + 1).replaceAll('_', ' ');
 }
 
-export async function loader({ context }: Route.LoaderArgs) {
+const SECTION_IDS = ['units', 'timezone', 'sample-data'] as const;
+type SectionId = (typeof SECTION_IDS)[number];
+
+function sectionFrom(request: Request): SectionId {
+  const requested = new URL(request.url).searchParams.get('section');
+  return (SECTION_IDS as readonly string[]).includes(requested ?? '') ? (requested as SectionId) : 'units';
+}
+
+export async function loader({ request, context }: Route.LoaderArgs) {
   const { preferences } = requireAthlete(context);
   return {
+    section: sectionFrom(request),
     weightUnit: preferences.weightUnit,
     distanceUnit: preferences.distanceUnit,
     showSampleData: preferences.showSampleData,
@@ -110,147 +120,172 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function Settings({ loaderData, actionData }: Route.ComponentProps) {
   const error = intents.updateUnits.errorIn(actionData) ?? intents.updateSampleDataVisibility.errorIn(actionData);
 
+  // No `action` attribute on any of these forms: each submits to whatever
+  // URL is current, `?section=...` included, so a save lands back on the
+  // section that made it rather than resetting to the first one.
+  const sections: SettingsSection[] = [
+    {
+      id: 'units',
+      label: 'Units',
+      content: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Units</CardTitle>
+            <CardDescription>
+              Choose the unit for each measurement type. Weight and distance/speed can be set independently.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form method="post" className="flex flex-col gap-6">
+              <input {...intents.updateUnits.field} />
+              <Field label="Weight" error={error}>
+                {({ id, describedBy }) => (
+                  <Select name="weightUnit" defaultValue={loaderData.weightUnit}>
+                    <SelectTrigger id={id} aria-describedby={describedBy} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lb">Pounds (lb)</SelectItem>
+                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </Field>
+
+              <Field label="Distance & speed">
+                {({ id }) => (
+                  <Select name="distanceUnit" defaultValue={loaderData.distanceUnit}>
+                    <SelectTrigger id={id} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="km">Kilometers (km, km/h)</SelectItem>
+                      <SelectItem value="mi">Miles (mi, mph)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </Field>
+
+              {
+                // Both outcomes land in one live region so a screen reader hears
+                // the result of saving without moving focus.
+              }
+              <div aria-live="polite" className="empty:hidden">
+                {intents.updateUnits.succeededIn(actionData) ? (
+                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                    <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                    Saved.
+                  </p>
+                ) : null}
+              </div>
+
+              <SubmitButton match={intents.updateUnits.match} pendingLabel="Saving" className="self-start">
+                Save
+              </SubmitButton>
+            </form>
+          </CardContent>
+        </Card>
+      ),
+    },
+    {
+      id: 'timezone',
+      label: 'Timezone',
+      content: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Timezone</CardTitle>
+            <CardDescription>
+              Decides when your training day starts and ends, and which day a workout or weigh-in is logged against.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form method="post" className="flex flex-col gap-6">
+              <input {...intents.updateTimezone.field} />
+              <Field label="Timezone" error={intents.updateTimezone.errorIn(actionData)}>
+                {({ id, describedBy }) => (
+                  <select
+                    id={id}
+                    name="timezone"
+                    aria-describedby={describedBy}
+                    defaultValue={loaderData.timezone}
+                    className="h-9 w-full min-w-0 rounded-lg border border-input bg-card px-3 py-1 text-base shadow-xs transition-[color,background-color,border-color,box-shadow] duration-(--dur-fast) ease-(--ease-quint) outline-none pointer-coarse:h-11 hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+                  >
+                    {TIMEZONE_GROUPS.map(({ region, zones }) => (
+                      <optgroup key={region} label={region}>
+                        {zones.map((zone) => (
+                          <option key={zone} value={zone}>
+                            {timezoneLabel(zone, region)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
+              </Field>
+
+              <div aria-live="polite" className="empty:hidden">
+                {intents.updateTimezone.succeededIn(actionData) ? (
+                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                    <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                    Saved.
+                  </p>
+                ) : null}
+              </div>
+
+              <SubmitButton match={intents.updateTimezone.match} pendingLabel="Saving" className="self-start">
+                Save
+              </SubmitButton>
+            </form>
+          </CardContent>
+        </Card>
+      ),
+    },
+    {
+      id: 'sample-data',
+      label: 'Sample data',
+      content: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Sample data</CardTitle>
+            <CardDescription>
+              Apex Gains ships with sample exercises, workouts, and a plan so there's something to explore right away. Hide them
+              once you've built out your own — anything you've customized from a sample stays visible either way.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form method="post" className="flex flex-col gap-4">
+              <input {...intents.updateSampleDataVisibility.field} />
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+                <Checkbox name="showSampleData" value="true" defaultChecked={loaderData.showSampleData} />
+                Show sample data
+              </label>
+
+              <div aria-live="polite" className="empty:hidden">
+                {intents.updateSampleDataVisibility.succeededIn(actionData) ? (
+                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                    <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                    Saved.
+                  </p>
+                ) : null}
+              </div>
+
+              <SubmitButton match={intents.updateSampleDataVisibility.match} pendingLabel="Saving" className="self-start">
+                Save
+              </SubmitButton>
+            </form>
+          </CardContent>
+        </Card>
+      ),
+    },
+  ];
+
   return (
     <Page width="prose">
       <PageHeader title="Settings" description="Preferences that apply across every workout you log." />
 
-      <Card className="mt-(--section-gap)">
-        <CardHeader>
-          <CardTitle>Units</CardTitle>
-          <CardDescription>
-            Choose the unit for each measurement type. Weight and distance/speed can be set independently.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form method="post" className="flex flex-col gap-6">
-            <input {...intents.updateUnits.field} />
-            <Field label="Weight" error={error}>
-              {({ id, describedBy }) => (
-                <Select name="weightUnit" defaultValue={loaderData.weightUnit}>
-                  <SelectTrigger id={id} aria-describedby={describedBy} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lb">Pounds (lb)</SelectItem>
-                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </Field>
-
-            <Field label="Distance & speed">
-              {({ id }) => (
-                <Select name="distanceUnit" defaultValue={loaderData.distanceUnit}>
-                  <SelectTrigger id={id} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="km">Kilometers (km, km/h)</SelectItem>
-                    <SelectItem value="mi">Miles (mi, mph)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </Field>
-
-            {
-              // Both outcomes land in one live region so a screen reader hears
-              // the result of saving without moving focus.
-            }
-            <div aria-live="polite" className="empty:hidden">
-              {intents.updateUnits.succeededIn(actionData) ? (
-                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
-                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
-                  Saved.
-                </p>
-              ) : null}
-            </div>
-
-            <SubmitButton match={intents.updateUnits.match} pendingLabel="Saving" className="self-start">
-              Save
-            </SubmitButton>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-(--section-gap)">
-        <CardHeader>
-          <CardTitle>Timezone</CardTitle>
-          <CardDescription>
-            Decides when your training day starts and ends, and which day a workout or weigh-in is logged against.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form method="post" className="flex flex-col gap-6">
-            <input {...intents.updateTimezone.field} />
-            <Field label="Timezone" error={intents.updateTimezone.errorIn(actionData)}>
-              {({ id, describedBy }) => (
-                <select
-                  id={id}
-                  name="timezone"
-                  aria-describedby={describedBy}
-                  defaultValue={loaderData.timezone}
-                  className="h-9 w-full min-w-0 rounded-lg border border-input bg-card px-3 py-1 text-base shadow-xs transition-[color,background-color,border-color,box-shadow] duration-(--dur-fast) ease-(--ease-quint) outline-none pointer-coarse:h-11 hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
-                >
-                  {TIMEZONE_GROUPS.map(({ region, zones }) => (
-                    <optgroup key={region} label={region}>
-                      {zones.map((zone) => (
-                        <option key={zone} value={zone}>
-                          {timezoneLabel(zone, region)}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              )}
-            </Field>
-
-            <div aria-live="polite" className="empty:hidden">
-              {intents.updateTimezone.succeededIn(actionData) ? (
-                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
-                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
-                  Saved.
-                </p>
-              ) : null}
-            </div>
-
-            <SubmitButton match={intents.updateTimezone.match} pendingLabel="Saving" className="self-start">
-              Save
-            </SubmitButton>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-(--section-gap)">
-        <CardHeader>
-          <CardTitle>Sample data</CardTitle>
-          <CardDescription>
-            Apex Gains ships with sample exercises, workouts, and a plan so there's something to explore right away. Hide them
-            once you've built out your own — anything you've customized from a sample stays visible either way.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form method="post" className="flex flex-col gap-4">
-            <input {...intents.updateSampleDataVisibility.field} />
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
-              <Checkbox name="showSampleData" value="true" defaultChecked={loaderData.showSampleData} />
-              Show sample data
-            </label>
-
-            <div aria-live="polite" className="empty:hidden">
-              {intents.updateSampleDataVisibility.succeededIn(actionData) ? (
-                <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
-                  <CheckCircle2Icon className="size-4" aria-hidden="true" />
-                  Saved.
-                </p>
-              ) : null}
-            </div>
-
-            <SubmitButton match={intents.updateSampleDataVisibility.match} pendingLabel="Saving" className="self-start">
-              Save
-            </SubmitButton>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mt-(--section-gap)">
+        <SettingsShell sections={sections} activeId={loaderData.section} hrefFor={(id) => `/settings?section=${id}`} />
+      </div>
     </Page>
   );
 }
