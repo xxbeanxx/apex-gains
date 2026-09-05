@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
 import type { AthletePreferences } from '~/domain/athlete/preferences';
+import { cardioFieldsFor } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import type { MoveDirection } from '~/domain/shared/ordered';
 import { err, ok, type Result } from '~/domain/shared/result';
@@ -10,10 +11,11 @@ import { Workout } from '~/domain/workout/workout';
 import { Duration } from '~/domain/values/duration';
 import { Speed } from '~/domain/values/speed';
 import { Weight } from '~/domain/values/weight';
+import type { EquipmentRepository } from '~/repositories/equipment-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
 import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
 import type { UnitOfWork } from '~/repositories/unit-of-work.server';
-import { EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import { EQUIPMENT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
@@ -98,6 +100,7 @@ export class WorkoutService {
   constructor(
     @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {
@@ -165,6 +168,30 @@ export class WorkoutService {
       if (!exercise) return err('exercise-not-found' as const);
 
       copy.editable.addExercise(exerciseId, this.toTarget(athlete, input), this.deps);
+      await this.workouts.save(copy.editable);
+      return ok();
+    });
+  }
+
+  /** Replaces one entry's target in place - editing a sample forks it first, same as every other mutation here. */
+  async updateExerciseTarget(
+    athlete: Athlete,
+    workoutId: string,
+    entryId: string,
+    input: TargetInput,
+  ): Promise<WorkoutMutation> {
+    return this.editor.edit(athlete.id, workoutId, async (copy) => {
+      const translatedId = copy.translateChildId(entryId);
+      const entry = copy.editable.exercises.find((item) => item.id === translatedId);
+      // A stale form naming a since-removed entry is a no-op, same as
+      // removeExercise/moveExercise - not an error worth surfacing.
+      if (!entry) return ok();
+
+      const exercise = await this.exercises.findVisible(athlete.id, entry.exerciseId);
+      const equipment = await this.equipment.findManyByIds(exercise?.equipmentIds ?? []);
+      const cardioFields = cardioFieldsFor(equipment.map((item) => item.cardioKind));
+
+      copy.editable.updateTarget(translatedId, this.toTarget(athlete, input), cardioFields, this.deps.clock.now());
       await this.workouts.save(copy.editable);
       return ok();
     });

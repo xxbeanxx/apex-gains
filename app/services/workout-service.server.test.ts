@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~/domain/athlete/athlete';
+import { Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
 import { Workout, type WorkoutSnapshot } from '~/domain/workout/workout';
+import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
@@ -71,12 +73,14 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
 
 let workouts: InMemoryWorkoutsRepository;
 let exercises: InMemoryExercisesRepository;
+let equipment: InMemoryEquipmentRepository;
 let service: WorkoutService;
 
 beforeEach(() => {
   workouts = new InMemoryWorkoutsRepository();
   exercises = new InMemoryExercisesRepository();
-  service = new WorkoutService(workouts, exercises, new InMemoryUnitOfWork(), {
+  equipment = new InMemoryEquipmentRepository();
+  service = new WorkoutService(workouts, exercises, equipment, new InMemoryUnitOfWork(), {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
     secrets: sequentialSecrets('token'),
@@ -180,6 +184,73 @@ describe('addExercise on a sample', () => {
 
   it('reports the workout as not found when it is not visible', async () => {
     const outcome = await service.addExercise(athlete, 'nope', 'exercise-1', {});
+    expect(outcome).toEqual({ ok: false, error: 'not-found' });
+  });
+});
+
+describe('updateExerciseTarget', () => {
+  beforeEach(async () => {
+    await workouts.save(
+      sampleWorkout({
+        exercises: [
+          {
+            id: 'sample-entry-0',
+            exerciseId: 'exercise-1',
+            position: 0,
+            targetSets: null,
+            targetReps: null,
+            targetWeight: null,
+            targetDurationSeconds: null,
+            targetSpeed: null,
+            targetResistance: null,
+          },
+        ],
+      }),
+    );
+    await exercises.save(exercise());
+  });
+
+  it('forks the sample and replaces the target, translating the entry id', async () => {
+    const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'sample-entry-0', {
+      sets: 4,
+      reps: 6,
+      weight: 185,
+    });
+
+    expect(outcome.ok).toBe(true);
+    const forkedId = outcome.ok ? outcome.value.forkedId : null;
+    const fork = await workouts.findVisible(athlete.id, forkedId!);
+    expect(fork?.exercises[0].target.sets).toBe(4);
+    expect(fork?.exercises[0].target.reps).toBe(6);
+    expect(fork?.exercises[0].target.weight?.inPounds).toBe(185);
+  });
+
+  it('drops a cardio field the exercise’s equipment cannot report', async () => {
+    await exercises.save(exercise({ equipmentIds: ['rower'] }));
+    await equipment.save(
+      Equipment.fromSnapshot({ id: 'rower', userId: null, name: 'Rower', cardioKind: 'resistance', createdAt: NOW }),
+    );
+
+    const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'sample-entry-0', {
+      durationMinutes: 20,
+      speed: 8,
+      resistance: 5,
+    });
+
+    expect(outcome.ok).toBe(true);
+    const forkedId = outcome.ok ? outcome.value.forkedId : null;
+    const fork = await workouts.findVisible(athlete.id, forkedId!);
+    expect(fork?.exercises[0].target.speed).toBeNull();
+    expect(fork?.exercises[0].target.resistance).toBe(5);
+  });
+
+  it('is a no-op for a stale entry id', async () => {
+    const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'nope', { sets: 4 });
+    expect(outcome.ok).toBe(true);
+  });
+
+  it('reports the workout as not found when it is not visible', async () => {
+    const outcome = await service.updateExerciseTarget(athlete, 'nope', 'sample-entry-0', {});
     expect(outcome).toEqual({ ok: false, error: 'not-found' });
   });
 });

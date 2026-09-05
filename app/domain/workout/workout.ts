@@ -1,3 +1,4 @@
+import type { CardioFields } from '../equipment/cardio-fields';
 import type { Clock } from '../shared/clock';
 import { alreadyEditable, type EditableCopy, forkedFrom } from '../shared/forking';
 import type { IdGenerator } from '../shared/ids';
@@ -143,6 +144,32 @@ export class Workout {
     this.entries.append(entry);
     this.touch(deps.clock.now());
     return entry;
+  }
+
+  /**
+   * Replaces one entry's target. `cardioFields` is what the exercise's
+   * equipment allows - a speed or resistance the caller submitted anyway is
+   * dropped rather than stored, so a stale form can never leave a cardio
+   * exercise carrying a measurement it has no equipment to report.
+   *
+   * False when the entry isn't there - a stale form, not an error.
+   */
+  updateTarget(entryId: string, target: SetTarget, cardioFields: CardioFields, now: Date): boolean {
+    const entry = this.entries.find(entryId);
+    if (!entry) return false;
+
+    entry.retarget(
+      SetTarget.of({
+        sets: target.sets,
+        reps: target.reps,
+        weight: target.weight,
+        duration: target.duration,
+        speed: cardioFields.showSpeed ? target.speed : null,
+        resistance: cardioFields.showResistance ? target.resistance : null,
+      }),
+    );
+    this.touch(now);
+    return true;
   }
 
   /** False when the entry isn't there - a stale form, not an error. */

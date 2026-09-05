@@ -81,6 +81,53 @@ describe('exercises', () => {
   });
 });
 
+describe('updateTarget', () => {
+  const bothCardioFields = { showSpeed: true, showResistance: true };
+
+  it('replaces the entry’s target', () => {
+    const workout = withExercises(['bench']);
+    const target = SetTarget.of({ sets: 3, reps: 8, weight: Weight.lb(135) });
+
+    expect(workout.updateTarget('entry-0', target, bothCardioFields, NOW)).toBe(true);
+    expect(workout.exercises[0].target.sets).toBe(3);
+    expect(workout.exercises[0].target.reps).toBe(8);
+    expect(workout.exercises[0].target.weight?.inPounds).toBe(135);
+  });
+
+  it('reports an unknown entry as a no-op', () => {
+    const workout = withExercises(['bench']);
+    expect(workout.updateTarget('missing', SetTarget.none(), bothCardioFields, NOW)).toBe(false);
+  });
+
+  it('drops a speed the equipment has no way to report', () => {
+    const workout = withExercises(['row']);
+    const target = SetTarget.of({ duration: Duration.minutes(20), speed: Speed.kmh(8), resistance: 5 });
+
+    workout.updateTarget('entry-0', target, { showSpeed: false, showResistance: true }, NOW);
+
+    expect(workout.exercises[0].target.speed).toBeNull();
+    expect(workout.exercises[0].target.duration?.inMinutes).toBe(20);
+    expect(workout.exercises[0].target.resistance).toBe(5);
+  });
+
+  it('drops a resistance the equipment has no way to report', () => {
+    const workout = withExercises(['row']);
+    const target = SetTarget.of({ speed: Speed.kmh(8), resistance: 5 });
+
+    workout.updateTarget('entry-0', target, { showSpeed: true, showResistance: false }, NOW);
+
+    expect(workout.exercises[0].target.speed?.inKmPerHour).toBe(8);
+    expect(workout.exercises[0].target.resistance).toBeNull();
+  });
+
+  it('stamps the workout when a target changes', () => {
+    const workout = withExercises(['bench']);
+    const later = new Date('2026-09-04T09:00:00Z');
+    workout.updateTarget('entry-0', SetTarget.none(), bothCardioFields, later);
+    expect(workout.updatedAt).toEqual(later);
+  });
+});
+
 describe('fork on write', () => {
   it('returns the workout itself when the athlete already owns it', () => {
     const workout = withExercises(['bench']);
