@@ -23,7 +23,7 @@
 # Stage: Base image
 # Provides the Node.js runtime shared by the build and final stages. The
 # alpine variant keeps the production image small.
-FROM node:24-alpine AS base
+FROM docker.io/library/node:24.20.0-bookworm AS base
 
 # ---------------------------------------------------------------------------- #
 
