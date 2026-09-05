@@ -19,7 +19,7 @@ function TabCell({ children, isActive, label }: { children: React.ReactNode; isA
     <span
       aria-hidden={!isActive}
       className={cn(
-        'flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem]',
+        'flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[0.6875rem]',
         isActive ? 'text-brand-strong' : 'text-muted-foreground',
       )}
     >
@@ -37,7 +37,7 @@ function MoreMenu({ user, items }: { user: NavUser; items: NavItem[] }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] text-muted-foreground aria-expanded:text-foreground"
+          className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-expanded:text-foreground"
         >
           <MoreHorizontalIcon className="size-5" aria-hidden="true" />
           More
