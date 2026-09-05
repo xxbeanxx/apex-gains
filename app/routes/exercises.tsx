@@ -1,28 +1,27 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { ChevronRightIcon, DumbbellIcon, PlusIcon, RotateCcwIcon, SearchIcon, Settings2Icon, XIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { data, useFetcher } from 'react-router';
+import { DumbbellIcon, PlusIcon, SearchIcon, Settings2Icon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { data } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { EquipmentDialog } from '~/components/exercises/equipment-dialog';
+import { ExerciseCard } from '~/components/exercises/exercise-card';
+import { sourceOf, type ExerciseSource, SOURCE_LABEL } from '~/components/exercises/exercise-source';
+import { ExerciseTableRow } from '~/components/exercises/exercise-table-row';
+import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
 import { Page, PageHeader } from '~/components/layout/page';
-import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
-import { Checkbox } from '~/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { EmptyState } from '~/components/ui/empty-state';
-import { Field } from '~/components/ui/field';
+import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
-import { SubmitButton } from '~/components/ui/submit-button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { Textarea } from '~/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
 import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';
-import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
+import type { ExerciseView } from '~/services/exercise-library-service.server';
 
 import { exerciseLibraryServiceContext } from '~/lib/nest-bridge.server';
 
@@ -34,7 +33,7 @@ export function meta() {
 
 export const handle = { crumb: () => ({ label: 'Exercises' }) };
 
-const typeLabels: Record<string, string> = {
+export const typeLabels: Record<ExerciseType, string> = {
   strength: 'Strength',
   cardio: 'Cardio',
 };
@@ -45,9 +44,9 @@ const typeLabels: Record<string, string> = {
  * translated to `null` (the domain's actual "no restriction" value) at the
  * schema boundary.
  */
-const NO_CARDIO_KIND = 'none';
+export const NO_CARDIO_KIND = 'none';
 const cardioKindOptionValues = [...CARDIO_KINDS, NO_CARDIO_KIND] as const;
-const cardioKindLabels: Record<CardioKind, string> = {
+export const cardioKindLabels: Record<CardioKind, string> = {
   speed: 'Speed only',
   resistance: 'Resistance only',
 };
@@ -145,7 +144,7 @@ class ExerciseIdDto {
   readonly exerciseId!: string;
 }
 
-const intents = {
+export const intents = {
   addEquipment: intent('addEquipment', AddEquipmentDto),
   deleteEquipment: intent('deleteEquipment', EquipmentIdDto),
   setEquipmentCardioKind: intent('setEquipmentCardioKind', SetCardioKindDto, { invalidMessage: 'Invalid cardio fields' }),
@@ -224,468 +223,95 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
-function ExerciseDetailsFields({
-  defaultValues,
-  error,
-}: {
-  defaultValues?: {
-    name: string;
-    exerciseType: string;
-    muscleGroup: string | null;
-    description: string | null;
-  };
-  error?: string;
-}) {
-  // Every id here comes from `Field`'s `useId`, so rendering this block twice
-  // on one page (the create form and an edit dialog) no longer produces
-  // colliding ids or labels pointing at the wrong input.
+function matchesQuery(exercise: ExerciseView, needle: string): boolean {
+  if (needle === '') return true;
   return (
-    <div className="flex flex-col gap-4">
-      <Field label="Name" error={error}>
-        <Input name="name" defaultValue={defaultValues?.name} placeholder="Cable Crossover" required />
-      </Field>
-      <Field label="Type">
-        {({ id }) => (
-          <Select name="exerciseType" defaultValue={defaultValues?.exerciseType ?? 'strength'}>
-            <SelectTrigger id={id} className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="strength">Strength</SelectItem>
-              <SelectItem value="cardio">Cardio</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </Field>
-      <Field label="Muscle group">
-        <Input name="muscleGroup" defaultValue={defaultValues?.muscleGroup ?? ''} placeholder="chest" />
-      </Field>
-      <Field label="Description">
-        <Textarea
-          name="description"
-          defaultValue={defaultValues?.description ?? ''}
-          placeholder="How to perform this exercise, form cues, etc."
-          rows={3}
-        />
-      </Field>
-    </div>
+    exercise.name.toLowerCase().includes(needle) ||
+    (exercise.muscleGroup ?? '').toLowerCase().includes(needle) ||
+    exercise.equipment.some((item) => item.name.toLowerCase().includes(needle))
   );
 }
 
-function ExerciseEditorDialog({
-  exercise,
-  allEquipment,
-  children,
-}: {
-  exercise: ExerciseView;
-  allEquipment: EquipmentView[];
-  /** The trigger. The whole library row is the control that opens this. */
-  children: ReactNode;
-}) {
-  const fetcher = useFetcher();
-  const revertFetcher = useFetcher();
-  const linkedIds = new Set(exercise.equipment.map((item) => item.id));
-  const isCustomized = exercise.canRevert;
-
-  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
-  const revertError = revertFetcher.data && 'error' in revertFetcher.data ? revertFetcher.data.error : undefined;
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{exercise.name}</DialogTitle>
-        </DialogHeader>
-        {isCustomized ? (
-          <div className="flex flex-col gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm">
-            <p className="text-muted-foreground">
-              This is your customized copy of a sample exercise. The original sample is unaffected.
-            </p>
-            <revertFetcher.Form method="post" className="flex flex-col gap-2">
-              <input {...intents.revertExercise.field} />
-              <input type="hidden" name="exerciseId" value={exercise.id} />
-              {revertError ? <p className="text-destructive">{revertError}</p> : null}
-              <SubmitButton
-                variant="outline"
-                size="sm"
-                pending={revertFetcher.state !== 'idle'}
-                pendingLabel="Reverting"
-                className="self-start"
-              >
-                <RotateCcwIcon aria-hidden="true" />
-                Revert to sample
-              </SubmitButton>
-            </revertFetcher.Form>
-          </div>
-        ) : null}
-        <fetcher.Form method="post" className="flex flex-col gap-4">
-          <input {...intents.updateExercise.field} />
-          <input type="hidden" name="exerciseId" value={exercise.id} />
-          <ExerciseDetailsFields defaultValues={exercise} error={error} />
-          <SubmitButton pending={fetcher.state !== 'idle'} pendingLabel="Saving exercise" className="self-start">
-            Save
-          </SubmitButton>
-        </fetcher.Form>
-
-        <div className="flex flex-col gap-3 border-t border-border pt-4">
-          <p className="text-sm font-medium">Equipment</p>
-          {allEquipment.map((eq) => (
-            <EquipmentCheckboxRow
-              key={eq.id}
-              exerciseId={exercise.id}
-              equipmentId={eq.id}
-              name={eq.name}
-              defaultChecked={linkedIds.has(eq.id)}
-            />
-          ))}
-          {allEquipment.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No equipment yet — add some with “Manage equipment” first.</p>
-          ) : null}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+function matchesTypes(exercise: ExerciseView, types: ReadonlySet<string>): boolean {
+  return types.size === 0 || types.has(exercise.exerciseType);
 }
 
-function EquipmentCheckboxRow({
-  exerciseId,
-  equipmentId,
-  name,
-  defaultChecked,
-}: {
-  exerciseId: string;
-  equipmentId: string;
-  name: string;
-  defaultChecked: boolean;
-}) {
-  const fetcher = useFetcher();
-  const [checked, setChecked] = useState(defaultChecked);
-
-  return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted has-[:focus-visible]:bg-muted">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(value) => {
-          const isChecked = value === true;
-          setChecked(isChecked);
-          fetcher.submit(
-            {
-              intent: intents.toggleExerciseEquipment.name,
-              exerciseId,
-              equipmentId,
-              checked: String(isChecked),
-            },
-            { method: 'post' },
-          );
-        }}
-      />
-      {name}
-    </label>
-  );
+function matchesEquipment(exercise: ExerciseView, equipmentIds: ReadonlySet<string>): boolean {
+  return equipmentIds.size === 0 || exercise.equipment.some((item) => equipmentIds.has(item.id));
 }
 
-function NewExerciseForm({ onCreated }: { onCreated: () => void }) {
-  const fetcher = useFetcher();
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !('error' in fetcher.data)) {
-      formRef.current?.reset();
-      onCreated();
-    }
-  }, [fetcher.state, fetcher.data, onCreated]);
-
-  const pending = fetcher.state !== 'idle';
-  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
-
-  return (
-    <fetcher.Form ref={formRef} method="post" className="flex flex-col gap-4">
-      <input {...intents.createExercise.field} />
-      <ExerciseDetailsFields error={error} />
-      <SubmitButton pending={pending} pendingLabel="Creating exercise" variant="brand" className="self-start">
-        {pending ? null : <PlusIcon aria-hidden="true" />}
-        Create exercise
-      </SubmitButton>
-    </fetcher.Form>
-  );
+function matchesSources(exercise: ExerciseView, sources: ReadonlySet<string>): boolean {
+  return sources.size === 0 || sources.has(sourceOf(exercise));
 }
 
-/**
- * The create form lives behind this dialog rather than on the page: creating an
- * exercise is rare, browsing the library is not, so the library gets the space.
- * The form is only mounted while the dialog is open, which is what resets its
- * fetcher state between openings.
- */
-function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  // Stable identity: the form has this in an effect's dependencies.
-  const close = useCallback(() => setOpen(false), []);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New exercise</DialogTitle>
-          <DialogDescription>Equipment is linked afterward, from the exercise’s own editor.</DialogDescription>
-        </DialogHeader>
-        <NewExerciseForm onCreated={close} />
-      </DialogContent>
-    </Dialog>
-  );
+function countBy<T extends string>(exercises: ExerciseView[], values: readonly T[], key: (exercise: ExerciseView) => T) {
+  const counts = Object.fromEntries(values.map((value) => [value, 0])) as Record<T, number>;
+  for (const exercise of exercises) counts[key(exercise)]++;
+  return counts;
 }
-
-function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
-  const deleteFetcher = useFetcher();
-  const cardioKindFetcher = useFetcher();
-  const [cardioKind, setCardioKind] = useState(equipment.cardioKind ?? NO_CARDIO_KIND);
-
-  return (
-    // Hidden while its own delete is in flight so the row goes away on click
-    // rather than at the end of the revalidation round-trip.
-    <li className="flex items-center gap-2 px-3 py-2" hidden={deleteFetcher.state !== 'idle'}>
-      <span className="min-w-0 flex-1 text-pretty">{equipment.name}</span>
-      {equipment.isSample ? (
-        <>
-          {equipment.cardioKind ? <Badge variant="outline">{cardioKindLabels[equipment.cardioKind]}</Badge> : null}
-          <Badge variant="outline">Sample</Badge>
-        </>
-      ) : (
-        <>
-          <Select
-            value={cardioKind}
-            onValueChange={(value) => {
-              setCardioKind(value);
-              cardioKindFetcher.submit(
-                { intent: intents.setEquipmentCardioKind.name, equipmentId: equipment.id, cardioKind: value },
-                { method: 'post' },
-              );
-            }}
-          >
-            <SelectTrigger size="sm" aria-label={`Cardio fields for ${equipment.name}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_CARDIO_KIND}>Speed & resistance</SelectItem>
-              <SelectItem value="speed">Speed only</SelectItem>
-              <SelectItem value="resistance">Resistance only</SelectItem>
-            </SelectContent>
-          </Select>
-          <deleteFetcher.Form method="post" className="flex">
-            <input {...intents.deleteEquipment.field} />
-            <input type="hidden" name="equipmentId" value={equipment.id} />
-            <Button type="submit" variant="ghost" size="icon-sm">
-              <XIcon aria-hidden="true" />
-              <span className="sr-only">Remove {equipment.name}</span>
-            </Button>
-          </deleteFetcher.Form>
-        </>
-      )}
-    </li>
-  );
-}
-
-function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; trigger: ReactNode }) {
-  const fetcher = useFetcher();
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !('error' in fetcher.data)) {
-      formRef.current?.reset();
-    }
-  }, [fetcher.state, fetcher.data]);
-
-  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Equipment</DialogTitle>
-          <DialogDescription>
-            Add the equipment you own, then link it to exercises from each exercise’s editor. An exercise can use more than one
-            — e.g. Standing Biceps Curl on both the BowFlex and free weights.
-          </DialogDescription>
-        </DialogHeader>
-
-        {equipment.length > 0 ? (
-          <ul className="divide-y divide-border/60 overflow-hidden rounded-lg ring-1 ring-foreground/10">
-            {equipment.map((eq) => (
-              <EquipmentRow key={eq.id} equipment={eq} />
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">No equipment yet. Add your first one below.</p>
-        )}
-
-        <fetcher.Form ref={formRef} method="post" className="flex flex-wrap items-end gap-3">
-          <input {...intents.addEquipment.field} />
-          <Field label="Add equipment" error={error} className="min-w-40 flex-1">
-            <Input name="name" placeholder="Free Weights" required />
-          </Field>
-          <Field label="Cardio fields" className="w-44">
-            {({ id }) => (
-              <Select name="cardioKind" defaultValue={NO_CARDIO_KIND}>
-                <SelectTrigger id={id} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_CARDIO_KIND}>Speed & resistance</SelectItem>
-                  <SelectItem value="speed">Speed only</SelectItem>
-                  <SelectItem value="resistance">Resistance only</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </Field>
-          <SubmitButton pending={fetcher.state !== 'idle'} pendingLabel="Adding equipment">
-            Add
-          </SubmitButton>
-        </fetcher.Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * Muscle groups read in body order rather than alphabetically. Anything the
- * user typed that isn't in here sorts alphabetically after these, and the two
- * synthetic buckets below always come last.
- */
-const muscleGroupOrder = ['chest', 'back', 'shoulders', 'arms', 'core', 'legs'];
-
-/** Cardio movements carry no muscle group, so they get a bucket of their own. */
-const cardioGroup = 'cardio';
-const ungroupedGroup = 'other';
-
-function groupKeyFor(exercise: ExerciseView) {
-  if (exercise.muscleGroup?.trim()) {
-    return exercise.muscleGroup.trim().toLowerCase();
-  }
-  return exercise.exerciseType === 'cardio' ? cardioGroup : ungroupedGroup;
-}
-
-function groupRank(key: string) {
-  if (key === ungroupedGroup) return muscleGroupOrder.length + 2;
-  if (key === cardioGroup) return muscleGroupOrder.length + 1;
-  const index = muscleGroupOrder.indexOf(key);
-  return index === -1 ? muscleGroupOrder.length : index;
-}
-
-function groupExercises(exercises: ExerciseView[]) {
-  const groups = new Map<string, ExerciseView[]>();
-  for (const exercise of exercises) {
-    const key = groupKeyFor(exercise);
-    const list = groups.get(key);
-    if (list) list.push(exercise);
-    else groups.set(key, [exercise]);
-  }
-
-  return [...groups.entries()]
-    .map(([key, list]) => ({
-      key,
-      exercises: [...list].sort((a, b) => a.name.localeCompare(b.name)),
-    }))
-    .sort((a, b) => groupRank(a.key) - groupRank(b.key) || a.key.localeCompare(b.key));
-}
-
-/** A filter pill row. Radix `Tabs` would imply panels; these only filter. */
-function TypeFilter({
-  value,
-  onChange,
-  counts,
-}: {
-  value: TypeFilterValue;
-  onChange: (value: TypeFilterValue) => void;
-  counts: Record<TypeFilterValue, number>;
-}) {
-  return (
-    <div
-      role="group"
-      aria-label="Filter by type"
-      className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-lg bg-muted p-[3px] pointer-coarse:h-11"
-    >
-      {(['all', 'strength', 'cardio'] as const).map((option) => (
-        <button
-          key={option}
-          type="button"
-          aria-pressed={value === option}
-          onClick={() => onChange(option)}
-          className="inline-flex h-full items-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-foreground/60 transition-colors duration-(--dur-fast) hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm dark:aria-pressed:bg-input/30"
-        >
-          {option === 'all' ? 'All' : typeLabels[option]}
-          <span className="text-xs tabular-nums opacity-60">{counts[option]}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ExerciseRow({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
-  return (
-    <li>
-      <ExerciseEditorDialog exercise={exercise} allEquipment={allEquipment}>
-        <button
-          type="button"
-          className="group/row flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors duration-(--dur-fast) hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none pointer-coarse:py-3"
-        >
-          <span className="min-w-0 flex-1 font-medium text-pretty">{exercise.name}</span>
-          {exercise.isSample ? null : exercise.canRevert ? (
-            <Badge variant="secondary">Customized</Badge>
-          ) : (
-            <Badge variant="brand-subtle">Yours</Badge>
-          )}
-          <ChevronRightIcon
-            className="size-4 shrink-0 text-muted-foreground/60 transition-transform duration-(--dur-fast) group-hover/row:translate-x-0.5 group-hover/row:text-foreground"
-            aria-hidden="true"
-          />
-        </button>
-      </ExerciseEditorDialog>
-    </li>
-  );
-}
-
-type TypeFilterValue = 'all' | 'strength' | 'cardio';
 
 export default function Exercises({ loaderData }: Route.ComponentProps) {
   const { equipment: equipmentList, exercises: exerciseList } = loaderData;
 
   const [query, setQuery] = useState('');
-  const [type, setType] = useState<TypeFilterValue>('all');
-  const [equipmentId, setEquipmentId] = useState('all');
+  const [types, setTypes] = useState<Set<string>>(new Set());
+  const [equipmentIds, setEquipmentIds] = useState<Set<string>>(new Set());
+  const [sources, setSources] = useState<Set<string>>(new Set());
 
-  // Search and the equipment picker narrow the pool; the type counts are then
-  // taken from that pool so each pill shows what it would actually reveal.
-  const pool = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return exerciseList.filter((exercise) => {
-      if (equipmentId !== 'all' && !exercise.equipment.some((item) => item.id === equipmentId)) {
-        return false;
-      }
-      if (needle === '') return true;
-      return (
-        exercise.name.toLowerCase().includes(needle) ||
-        (exercise.muscleGroup ?? '').toLowerCase().includes(needle) ||
-        exercise.equipment.some((item) => item.name.toLowerCase().includes(needle))
-      );
-    });
-  }, [exerciseList, query, equipmentId]);
+  const needle = query.trim().toLowerCase();
+  const searched = useMemo(() => exerciseList.filter((exercise) => matchesQuery(exercise, needle)), [exerciseList, needle]);
 
-  const counts: Record<TypeFilterValue, number> = {
-    all: pool.length,
-    strength: pool.filter((e) => e.exerciseType === 'strength').length,
-    cardio: pool.filter((e) => e.exerciseType === 'cardio').length,
-  };
+  // Each facet's counts come from the pool the *other* facets already
+  // narrow to, not the fully-filtered result - otherwise every chip would
+  // converge on the same final count instead of showing what it would add.
+  const poolForType = useMemo(
+    () => searched.filter((e) => matchesEquipment(e, equipmentIds) && matchesSources(e, sources)),
+    [searched, equipmentIds, sources],
+  );
+  const poolForEquipment = useMemo(
+    () => searched.filter((e) => matchesTypes(e, types) && matchesSources(e, sources)),
+    [searched, types, sources],
+  );
+  const poolForSource = useMemo(
+    () => searched.filter((e) => matchesTypes(e, types) && matchesEquipment(e, equipmentIds)),
+    [searched, types, equipmentIds],
+  );
 
-  const visible = type === 'all' ? pool : pool.filter((e) => e.exerciseType === type);
-  const groups = useMemo(() => groupExercises(visible), [visible]);
+  const visible = useMemo(
+    () =>
+      searched
+        .filter((e) => matchesTypes(e, types) && matchesEquipment(e, equipmentIds) && matchesSources(e, sources))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [searched, types, equipmentIds, sources],
+  );
 
-  const isFiltered = query.trim() !== '' || type !== 'all' || equipmentId !== 'all';
+  const typeCounts = countBy(poolForType, EXERCISE_TYPES, (e) => e.exerciseType);
+  const typeOptions: FacetOption[] = EXERCISE_TYPES.map((value) => ({
+    value,
+    label: typeLabels[value],
+    count: typeCounts[value],
+  }));
+
+  const equipmentOptions: FacetOption[] = equipmentList.map((eq) => ({
+    value: eq.id,
+    label: eq.name,
+    count: poolForEquipment.filter((e) => e.equipment.some((item) => item.id === eq.id)).length,
+  }));
+
+  const sourceValues: ExerciseSource[] = ['sample', 'mine', 'customized'];
+  const sourceCounts = countBy(poolForSource, sourceValues, sourceOf);
+  const sourceOptions: FacetOption[] = sourceValues.map((value) => ({
+    value,
+    label: SOURCE_LABEL[value],
+    count: sourceCounts[value],
+  }));
+
+  const isFiltered = needle !== '' || types.size > 0 || equipmentIds.size > 0 || sources.size > 0;
   const clearFilters = () => {
     setQuery('');
-    setType('all');
-    setEquipmentId('all');
+    setTypes(new Set());
+    setEquipmentIds(new Set());
+    setSources(new Set());
   };
 
   return (
@@ -736,7 +362,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
         </div>
       ) : (
         <>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             <div className="relative min-w-56 flex-1 sm:max-w-xs">
               <SearchIcon
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -752,26 +378,14 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
               />
             </div>
 
-            <TypeFilter value={type} onChange={setType} counts={counts} />
-
+            <FacetFilter label="Type" options={typeOptions} selected={types} onChange={setTypes} />
             {equipmentList.length > 0 ? (
-              <Select value={equipmentId} onValueChange={setEquipmentId}>
-                <SelectTrigger aria-label="Filter by equipment" className="w-auto min-w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All equipment</SelectItem>
-                  {equipmentList.map((eq) => (
-                    <SelectItem key={eq.id} value={eq.id}>
-                      {eq.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FacetFilter label="Equipment" options={equipmentOptions} selected={equipmentIds} onChange={setEquipmentIds} />
             ) : null}
+            <FacetFilter label="Source" options={sourceOptions} selected={sources} onChange={setSources} />
           </div>
 
-          {groups.length === 0 ? (
+          {visible.length === 0 ? (
             <div className="mt-6">
               <EmptyState
                 icon={SearchIcon}
@@ -785,27 +399,32 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
               />
             </div>
           ) : (
-            /* CSS columns rather than a grid: muscle groups vary a lot in size
-               (legs has 10 movements, arms 4), and columns balance their
-               heights instead of leaving every grid row as tall as its tallest
-               group. Deliberately no `stagger` - a per-child transform is what
-               tips multicol into Chrome's mis-paint, and `Page` already
-               animates the whole view in on arrival. */
-            <div className="mt-6 gap-x-6 sm:columns-2 xl:columns-3">
-              {groups.map((group) => (
-                <section key={group.key} className="mb-8 flex break-inside-avoid flex-col gap-2">
-                  <h2 className="flex items-baseline gap-2 px-1 font-heading text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                    {group.key}
-                    <span className="font-normal tabular-nums opacity-70">{group.exercises.length}</span>
-                  </h2>
-                  <ul className="divide-y divide-border/60 overflow-hidden rounded-xl bg-card shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 dark:shadow-black/20">
-                    {group.exercises.map((exercise) => (
-                      <ExerciseRow key={exercise.id} exercise={exercise} allEquipment={equipmentList} />
+            <>
+              <div className="mt-6 hidden overflow-hidden rounded-xl bg-card shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 md:block dark:shadow-black/20">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Equipment</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visible.map((exercise) => (
+                      <ExerciseTableRow key={exercise.id} exercise={exercise} allEquipment={equipmentList} />
                     ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="stagger mt-6 flex flex-col gap-2 md:hidden">
+                {visible.map((exercise) => (
+                  <ExerciseCard key={exercise.id} exercise={exercise} allEquipment={equipmentList} />
+                ))}
+              </div>
+            </>
           )}
 
           {isFiltered ? (

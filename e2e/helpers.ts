@@ -85,7 +85,8 @@ export function exerciseDialog(page: Page, name: string): Locator {
 
 export async function openExercise(page: Page, name: string): Promise<Locator> {
   await waitForHydration(page);
-  await page.getByRole('button', { name, exact: false }).click();
+  await page.getByRole('button', { name: `Actions for ${name}` }).click();
+  await page.getByRole('menuitem', { name: 'Edit' }).click();
   const dialog = exerciseDialog(page, name);
   await expect(dialog).toBeVisible();
   return dialog;

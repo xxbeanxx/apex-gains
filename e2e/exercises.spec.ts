@@ -14,17 +14,18 @@ test.describe('exercise library', () => {
     const name = uniqueName('Bench Press');
     await createExercise(page, { name, muscleGroup: 'chest', description: 'Press the handles forward.' });
 
-    await expect(page.getByRole('button', { name })).toBeVisible();
+    const row = page.getByRole('row', { name: new RegExp(name) });
+    await expect(row).toBeVisible();
     // Own exercises are badged to separate them from sample rows.
-    await expect(page.getByRole('listitem').filter({ hasText: name }).getByText('Yours')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'chest' })).toBeVisible();
+    await expect(row.getByText('Mine', { exact: true })).toBeVisible();
+    await expect(row.getByText('chest', { exact: true })).toBeVisible();
   });
 
-  test('groups a cardio exercise under its own bucket', async ({ page, athlete }) => {
+  test('shows an exercise’s type in its row', async ({ page, athlete }) => {
     const name = uniqueName('Treadmill Run');
     await createExercise(page, { name, type: 'Cardio' });
 
-    await expect(page.getByRole('heading', { name: 'cardio' })).toBeVisible();
+    await expect(page.getByRole('row', { name: new RegExp(name) })).toContainText('Cardio');
   });
 
   test('edits an exercise through its editor dialog', async ({ page, athlete }) => {
@@ -37,8 +38,23 @@ test.describe('exercise library', () => {
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
     await closeDialog(page);
-    await expect(page.getByRole('button', { name: renamed })).toBeVisible();
-    await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
+    await expect(page.getByRole('row', { name: new RegExp(renamed) })).toBeVisible();
+    await expect(page.getByRole('row', { name: new RegExp(`^${name} `) })).toHaveCount(0);
+  });
+
+  test('filters by type using the Type facet', async ({ page, athlete }) => {
+    const strength = uniqueName('Squat');
+    const cardio = uniqueName('Row Erg');
+    await createExercise(page, { name: strength });
+    await createExercise(page, { name: cardio, type: 'Cardio' });
+
+    await page.goto('/exercises');
+    await page.getByRole('button', { name: 'Type' }).click();
+    await page.getByRole('checkbox', { name: /Cardio/ }).click();
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByRole('row', { name: new RegExp(cardio) })).toBeVisible();
+    await expect(page.getByRole('row', { name: new RegExp(`^${strength} `) })).toHaveCount(0);
   });
 
   test('rejects a blank exercise name', async ({ page, athlete }) => {
