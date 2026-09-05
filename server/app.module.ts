@@ -15,13 +15,12 @@ import { ServicesModule } from './services/services.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      // A `registerAs()` factory only becomes an injectable token once it is
-      // listed here, so every slice a provider injects via
-      // `@Inject(xConfig.KEY)` has to appear in this array.
+      // A `registerAs()` factory only becomes an injectable token once it is listed here,
+      // so every slice a provider injects via `@Inject(xConfig.KEY)` has to appear in this array.
       load: [coreConfig, databaseConfig, googleOAuthConfig, sessionConfig, testLoginConfig],
     }),
-    LoggingModule,
     AuthModule,
+    LoggingModule,
     ServicesModule,
   ],
 })
