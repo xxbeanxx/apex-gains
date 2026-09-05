@@ -31,8 +31,8 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 const NAV_ITEMS: NavItem[] = [
   { to: '/today', label: 'Today', icon: CalendarCheckIcon },
   { to: '/exercises', label: 'Exercises', icon: DumbbellIcon },
-  { to: '/templates', label: 'Templates', icon: ClipboardListIcon },
-  { to: '/routines', label: 'Routines', icon: RepeatIcon },
+  { to: '/workouts', label: 'Workouts', icon: ClipboardListIcon },
+  { to: '/plans', label: 'Plans', icon: RepeatIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
   { to: '/weight', label: 'Weight', icon: ScaleIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },

@@ -223,7 +223,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
             <CardHeader>
               <CardTitle>Delete account</CardTitle>
               <CardDescription>
-                Removes {account.name} along with every exercise, template, routine, workout and weigh-in they own —{' '}
+                Removes {account.name} along with every exercise, workout, plan, workout and weigh-in they own —{' '}
                 {formatCount(account.setCount)} logged set{account.setCount === 1 ? '' : 's'} included. This cannot be undone.
               </CardDescription>
             </CardHeader>

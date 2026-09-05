@@ -1,4 +1,4 @@
-import { createRoutine, createTemplate, orderedRows, selectOption, submitForm } from './helpers';
+import { createPlan, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 // Chrome DevTools' responsive mode, with no device preset picked, is desktop
@@ -14,12 +14,12 @@ for (const mobile of [false, true]) {
     });
 
     test('measure', async ({ page, athlete }) => {
-      const template = uniqueName('Push');
-      await createTemplate(page, template);
+      const workout = uniqueName('Push');
+      await createWorkout(page, workout);
 
-      await createRoutine(page, 'My Routine');
+      await createPlan(page, 'My Plan');
       for (let i = 0; i < 4; i++) {
-        await selectOption(page.getByLabel('Day type'), i % 2 === 0 ? template : 'Rest day');
+        await selectOption(page.getByLabel('Day type'), i % 2 === 0 ? workout : 'Rest day');
         await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
         await expect(orderedRows(page)).toHaveCount(i + 1);
       }

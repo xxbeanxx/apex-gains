@@ -1,14 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import {
-  addEquipment,
-  createExercise,
-  createRoutine,
-  createTemplate,
-  linkEquipment,
-  selectOption,
-  submitForm,
-} from './helpers';
+import { addEquipment, createExercise, createPlan, createWorkout, linkEquipment, selectOption, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 /** Logged sets render as an `ol`; the two week rails above them are `ul`s. */
@@ -16,31 +8,31 @@ function loggedSets(page: Page) {
   return page.locator('ol > li');
 }
 
-/** Builds a one-day routine around `exercise` and makes it the active one. */
+/** Builds a one-day plan around `exercise` and makes it the active one. */
 async function activePlanWith(page: Page, exercise: string, targets?: { sets?: string; reps?: string }) {
-  const template = uniqueName('Day');
-  await createTemplate(page, template);
+  const workout = uniqueName('Day');
+  await createWorkout(page, workout);
   await selectOption(page.getByLabel('Exercise'), exercise);
   if (targets?.sets) await page.getByLabel('Sets').fill(targets.sets);
   if (targets?.reps) await page.getByLabel('Reps').fill(targets.reps);
   await page.getByRole('button', { name: 'Add exercise' }).click();
   await expect(page.locator('ol > li').filter({ hasText: exercise })).toBeVisible();
 
-  await createRoutine(page, uniqueName('Routine'));
-  await selectOption(page.getByLabel('Day type'), template);
+  await createPlan(page, uniqueName('Plan'));
+  await selectOption(page.getByLabel('Day type'), workout);
   await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
   await expect(page.locator('ol > li')).toHaveCount(1);
   await submitForm(page.getByRole('button', { name: 'Set active' }));
   await expect(page.getByText('Active', { exact: true })).toBeVisible();
 
-  return template;
+  return workout;
 }
 
-test('shows no active routine until one is set', async ({ page, athlete }) => {
+test('shows no active plan until one is set', async ({ page, athlete }) => {
   await page.goto('/today');
 
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  await expect(page.getByText('No routine is active, so log whatever you like for today.')).toBeVisible();
+  await expect(page.getByText('No plan is active, so log whatever you like for today.')).toBeVisible();
   await expect(page.getByText('Next seven days')).toBeVisible();
   await expect(page.getByText('0 workouts scheduled')).toBeVisible();
 });
@@ -87,14 +79,14 @@ test('logs several sets so pyramids record as they were lifted', async ({ page, 
   await expect(loggedSets(page).filter({ hasText: /lb x \d+/ })).toHaveCount(3);
 });
 
-test("surfaces the active routine's template and tracks set progress", async ({ page, athlete }) => {
+test("surfaces the active plan's workout and tracks set progress", async ({ page, athlete }) => {
   const exercise = uniqueName('Overhead Press');
   await createExercise(page, { name: exercise });
-  const template = await activePlanWith(page, exercise, { sets: '3', reps: '10' });
+  const workout = await activePlanWith(page, exercise, { sets: '3', reps: '10' });
 
   await page.goto('/today');
-  await expect(page.getByText(template).first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: "Today's workout" })).toBeVisible();
+  await expect(page.getByText(workout).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Today's session" })).toBeVisible();
 
   // Matched on the card's title, not on its text: Radix renders a hidden
   // native `<select>` holding every exercise name, so a `hasText` filter
@@ -113,7 +105,7 @@ test("surfaces the active routine's template and tracks set progress", async ({ 
 });
 
 test('marks a rest day but still allows logging', async ({ page, athlete }) => {
-  await createRoutine(page, uniqueName('Rest Cycle'));
+  await createPlan(page, uniqueName('Rest Cycle'));
   await selectOption(page.getByLabel('Day type'), 'Rest day');
   await submitForm(page.getByRole('button', { name: 'Add', exact: true }));
   await expect(page.locator('ol > li')).toHaveCount(1);
@@ -121,7 +113,7 @@ test('marks a rest day but still allows logging', async ({ page, athlete }) => {
 
   await page.goto('/today');
   await expect(page.getByText('Rest day').first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Log a workout anyway' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Log a session anyway' })).toBeVisible();
 });
 
 test('offers only the cardio fields the equipment supports', async ({ page, athlete }) => {
@@ -158,7 +150,7 @@ test('walks back to an earlier day and logs against it', async ({ page, athlete 
     .first()
     .click();
 
-  await expect(page.getByRole('heading', { name: 'Log a workout' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Log a session' })).toBeVisible();
   await expect(page).toHaveURL(/\/today\?date=\d{4}-\d{2}-\d{2}/);
 
   await selectOption(page.getByLabel('Exercise'), exercise);

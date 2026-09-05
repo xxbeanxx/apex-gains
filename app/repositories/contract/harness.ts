@@ -2,12 +2,12 @@ import { Athlete } from '~/domain/athlete/athlete';
 import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
 import { Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
-import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
+import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
 import { fixedClock } from '~/domain/shared/clock';
 import type { IdGenerator } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
-import { WorkoutSession, type WorkoutSessionSnapshot } from '~/domain/session/workout-session';
-import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
+import { Session, type SessionSnapshot } from '~/domain/session/session';
+import { Workout, type WorkoutSnapshot } from '~/domain/workout/workout';
 import { DateOnly } from '~/domain/values/date-only';
 import { Weight } from '~/domain/values/weight';
 
@@ -15,10 +15,10 @@ import type { AthletesRepository } from '../athletes-repository.server';
 import type { BodyWeightRepository } from '../body-weight-repository.server';
 import type { EquipmentRepository } from '../equipment-repository.server';
 import type { ExercisesRepository } from '../exercises-repository.server';
-import type { RoutinesRepository } from '../routines-repository.server';
-import type { TemplatesRepository } from '../templates-repository.server';
+import type { PlansRepository } from '../plans-repository.server';
+import type { WorkoutsRepository } from '../workouts-repository.server';
 import type { UnitOfWork } from '../unit-of-work.server';
-import type { WorkoutSessionsRepository } from '../workout-sessions-repository.server';
+import type { SessionsRepository } from '../sessions-repository.server';
 
 /**
  * Every port at once. A contract seeds through the same interfaces it
@@ -30,9 +30,9 @@ export type RepositorySet = {
   bodyWeight: BodyWeightRepository;
   equipment: EquipmentRepository;
   exercises: ExercisesRepository;
-  routines: RoutinesRepository;
-  templates: TemplatesRepository;
-  sessions: WorkoutSessionsRepository;
+  plans: PlansRepository;
+  workouts: WorkoutsRepository;
+  sessions: SessionsRepository;
   unitOfWork: UnitOfWork;
 };
 
@@ -112,8 +112,8 @@ export function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
   });
 }
 
-export function template(overrides: Partial<TemplateSnapshot> = {}): WorkoutTemplate {
-  return WorkoutTemplate.fromSnapshot({
+export function workout(overrides: Partial<WorkoutSnapshot> = {}): Workout {
+  return Workout.fromSnapshot({
     id: ids.own,
     userId: ids.athlete,
     forkedFromId: null,
@@ -125,8 +125,8 @@ export function template(overrides: Partial<TemplateSnapshot> = {}): WorkoutTemp
   });
 }
 
-export function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
-  return Routine.fromSnapshot({
+export function plan(overrides: Partial<PlanSnapshot> = {}): Plan {
+  return Plan.fromSnapshot({
     id: ids.own,
     userId: ids.athlete,
     forkedFromId: null,
@@ -141,13 +141,13 @@ export function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
   });
 }
 
-export function session(overrides: Partial<WorkoutSessionSnapshot> = {}): WorkoutSession {
-  return WorkoutSession.fromSnapshot({
+export function session(overrides: Partial<SessionSnapshot> = {}): Session {
+  return Session.fromSnapshot({
     id: ids.own,
     userId: ids.athlete,
     date: '2026-09-03',
-    routineId: null,
-    templateId: null,
+    planId: null,
+    workoutId: null,
     isRestDay: false,
     createdAt: NOW,
     updatedAt: NOW,

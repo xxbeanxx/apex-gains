@@ -8,10 +8,10 @@ import { DrizzleAthletesRepository } from '../drizzle/athletes-repository.server
 import { DrizzleBodyWeightRepository } from '../drizzle/body-weight-repository.server';
 import { DrizzleEquipmentRepository } from '../drizzle/equipment-repository.server';
 import { DrizzleExercisesRepository } from '../drizzle/exercises-repository.server';
-import { DrizzleRoutinesRepository } from '../drizzle/routines-repository.server';
-import { DrizzleTemplatesRepository } from '../drizzle/templates-repository.server';
+import { DrizzlePlansRepository } from '../drizzle/plans-repository.server';
+import { DrizzleWorkoutsRepository } from '../drizzle/workouts-repository.server';
 import { DrizzleUnitOfWork } from '../drizzle/unit-of-work.server';
-import { DrizzleWorkoutSessionsRepository } from '../drizzle/workout-sessions-repository.server';
+import { DrizzleSessionsRepository } from '../drizzle/sessions-repository.server';
 
 import { describeRepositoryContract, type RepositorySet } from './index';
 
@@ -33,11 +33,11 @@ const url = process.env.TEST_DATABASE_URL;
 /** Every table, children first, so a truncate needs no cascade reasoning. */
 const TABLES = [
   'session_sets',
-  'workout_sessions',
-  'routine_slots',
-  'routines',
-  'template_exercises',
-  'templates',
+  'sessions',
+  'plan_slots',
+  'plans',
+  'workout_exercises',
+  'workouts',
   'exercise_equipment',
   'exercises',
   'equipment',
@@ -51,9 +51,9 @@ function build(): RepositorySet {
     bodyWeight: new DrizzleBodyWeightRepository(),
     equipment: new DrizzleEquipmentRepository(),
     exercises: new DrizzleExercisesRepository(),
-    routines: new DrizzleRoutinesRepository(),
-    templates: new DrizzleTemplatesRepository(),
-    sessions: new DrizzleWorkoutSessionsRepository(),
+    plans: new DrizzlePlansRepository(),
+    workouts: new DrizzleWorkoutsRepository(),
+    sessions: new DrizzleSessionsRepository(),
     unitOfWork: new DrizzleUnitOfWork(),
   };
 }

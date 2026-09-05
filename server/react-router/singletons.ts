@@ -6,11 +6,11 @@ import { AthleteService } from '~/services/athlete-service.server';
 import { BodyWeightService } from '~/services/body-weight-service.server';
 import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import { ProgressService } from '~/services/progress-service.server';
-import { RoutineImportService } from '~/services/routine-import-service.server';
-import { RoutineService } from '~/services/routine-service.server';
-import { TemplateService } from '~/services/template-service.server';
+import { PlanImportService } from '~/services/plan-import-service.server';
+import { PlanService } from '~/services/plan-service.server';
+import { WorkoutService } from '~/services/workout-service.server';
 import { TrainingPlanService } from '~/services/training-plan-service.server';
-import { WorkoutLogService } from '~/services/workout-log-service.server';
+import { SessionService } from '~/services/session-service.server';
 
 import { OIDC_CLIENT_CONFIG, OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
 import { testLoginConfig } from '../config/test-login.config';
@@ -28,11 +28,11 @@ export function collectNestSingletons(app: INestApplication): NestSingletons {
     bodyWeightService: app.get(BodyWeightService),
     exerciseLibraryService: app.get(ExerciseLibraryService),
     progressService: app.get(ProgressService),
-    routineImportService: app.get(RoutineImportService),
-    routineService: app.get(RoutineService),
-    templateService: app.get(TemplateService),
+    planImportService: app.get(PlanImportService),
+    planService: app.get(PlanService),
+    workoutService: app.get(WorkoutService),
     trainingPlanService: app.get(TrainingPlanService),
-    workoutLogService: app.get(WorkoutLogService),
+    sessionService: app.get(SessionService),
     sessionStorage: app.get(SESSION_STORAGE),
     oidcConfig: app.get(OIDC_CLIENT_CONFIG),
     oidcStateCookie: app.get(OIDC_STATE_COOKIE),

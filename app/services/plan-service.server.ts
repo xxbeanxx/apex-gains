@@ -1,0 +1,203 @@
+import { Inject, Injectable } from '@nestjs/common';
+
+import type { Athlete } from '~/domain/athlete/athlete';
+import { activatePlan } from '~/domain/plan/activation';
+import { Plan } from '~/domain/plan/plan';
+import type { MoveDirection } from '~/domain/shared/ordered';
+import { err, ok, type Result } from '~/domain/shared/result';
+import { DateOnly } from '~/domain/values/date-only';
+import type { PlansRepository } from '~/repositories/plans-repository.server';
+import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
+import { PLANS_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import { DOMAIN_DEPS } from '~/services/shared/tokens';
+
+import type { DomainDeps } from './shared/deps.server';
+import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
+
+export type PlanSummary = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  anchorDate: string;
+  slotCount: number;
+  isSample: boolean;
+  /** Non-null once the athlete has minted a share link for this plan. */
+  shareToken: string | null;
+  /** A personal copy of a sample - shown as "Customized" rather than "Sample". */
+  isCustomized: boolean;
+};
+
+export type PlanSlotView = {
+  id: string;
+  position: number;
+  workoutId: string | null;
+  workoutName: string | null;
+  isRestDay: boolean;
+};
+
+export type PlanDetail = PlanSummary & {
+  canRevert: boolean;
+  isDeletable: boolean;
+  slots: PlanSlotView[];
+};
+
+export type PlanMutation = ForkMutation;
+
+function toSummary(plan: Plan): PlanSummary {
+  return {
+    id: plan.id,
+    name: plan.name,
+    isActive: plan.isActive,
+    anchorDate: plan.anchorDate.value,
+    slotCount: plan.cycleLength,
+    isSample: plan.ownership.isSample,
+    shareToken: plan.shareToken,
+    isCustomized: plan.canRevert,
+  };
+}
+
+/**
+ * Use cases for building and scheduling plans.
+ *
+ * The service orchestrates - load, hand off to the aggregate, save - and
+ * owns none of the rules itself. Reordering, appending, forking and
+ * activation all belong to `Plan` and to domain/plan/activation.ts;
+ * what lives here is the sequencing that needs a repository or a
+ * transaction.
+ */
+@Injectable()
+export class PlanService {
+  constructor(
+    @Inject(PLANS_REPOSITORY) private readonly plans: PlansRepository,
+    @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
+    @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
+  ) {
+    this.editor = new ForkableLibrary(this.plans, this.unitOfWork, this.deps, (plan) => plan.slots);
+  }
+
+  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  private readonly editor: ForkableLibrary<Plan>;
+
+  async list(athlete: Athlete): Promise<PlanSummary[]> {
+    const plans = await this.plans.listFor(athlete.id, athlete.preferences.showSampleData);
+    return plans.map(toSummary);
+  }
+
+  /**
+   * A plan plus the names of the workouts its slots point at.
+   *
+   * A slot holds a workout id, not a workout - they are separate
+   * aggregates - so the name is joined in here for display rather than being
+   * carried around inside the plan.
+   */
+  async detail(athlete: Athlete, planId: string): Promise<PlanDetail | null> {
+    const plan = await this.plans.findVisible(athlete.id, planId);
+    if (!plan) return null;
+
+    const names = await this.workoutNames(athlete);
+
+    return {
+      ...toSummary(plan),
+      canRevert: plan.canRevert,
+      isDeletable: plan.isDeletable,
+      slots: plan.slots.map((slot) => ({
+        id: slot.id,
+        position: slot.position,
+        workoutId: slot.workoutId,
+        workoutName: slot.workoutId ? (names.get(slot.workoutId) ?? 'Unknown') : null,
+        isRestDay: slot.isRestDay,
+      })),
+    };
+  }
+
+  async create(athlete: Athlete, name: string, anchorDate: DateOnly): Promise<PlanSummary> {
+    const plan = Plan.create(athlete.id, name, anchorDate, this.deps);
+    await this.unitOfWork.run(() => this.plans.save(plan));
+    return toSummary(plan);
+  }
+
+  async rename(athlete: Athlete, planId: string, name: string): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan) => plan.rename(name, this.deps.clock.now()));
+  }
+
+  async reanchor(athlete: Athlete, planId: string, anchorDate: DateOnly): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan) => plan.reanchor(anchorDate, this.deps.clock.now()));
+  }
+
+  /**
+   * Makes this the athlete's active plan, standing down whatever was
+   * active before. Both plans are saved in the same transaction, because
+   * a partial unique index refuses two active rows for one athlete - so the
+   * intermediate state must never be committed.
+   */
+  async activate(athlete: Athlete, planId: string): Promise<PlanMutation> {
+    return this.editor.edit(athlete.id, planId, async (copy) => {
+      const currentlyActive = await this.plans.findActive(athlete.id);
+
+      for (const plan of activatePlan(copy.editable, currentlyActive, this.deps.clock.now())) {
+        await this.plans.save(plan);
+      }
+      return ok();
+    });
+  }
+
+  async deactivate(athlete: Athlete, planId: string): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan) => plan.deactivate(this.deps.clock.now()));
+  }
+
+  /**
+   * Mints - or hands back - the token a share link and QR code carry.
+   *
+   * Goes through the same editor as every other mutation, so sharing a
+   * sample forks it first: a token names one row, and a sample belongs to
+   * everyone. The caller has to follow `forkedId`, because the token it gets
+   * back belongs to the fork, not to the sample it was asked about.
+   */
+  async share(athlete: Athlete, planId: string): Promise<Result<{ forkedId: string | null; token: string }, 'not-found'>> {
+    let token = '';
+    const outcome: PlanMutation = await this.editor.edit(athlete.id, planId, async (copy) => {
+      token = copy.editable.share(this.deps);
+      await this.plans.save(copy.editable);
+      return ok<void>(undefined);
+    });
+
+    return outcome.ok ? ok({ forkedId: outcome.value.forkedId, token }) : err(outcome.error);
+  }
+
+  /** Revokes the link. The token is dropped, never reissued. */
+  async unshare(athlete: Athlete, planId: string): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan) => plan.unshare(this.deps.clock.now()));
+  }
+
+  async addSlot(athlete: Athlete, planId: string, workoutId: string | null): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan) => plan.addSlot(workoutId, this.deps));
+  }
+
+  async removeSlot(athlete: Athlete, planId: string, slotId: string): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan, translate) =>
+      plan.removeSlot(translate(slotId), this.deps.clock.now()),
+    );
+  }
+
+  async moveSlot(athlete: Athlete, planId: string, slotId: string, direction: MoveDirection): Promise<PlanMutation> {
+    return this.editor.mutate(athlete.id, planId, (plan, translate) =>
+      plan.moveSlot(translate(slotId), direction, this.deps.clock.now()),
+    );
+  }
+
+  async remove(athlete: Athlete, planId: string): Promise<Result<void, 'not-found' | 'sample'>> {
+    return this.editor.remove(athlete.id, planId);
+  }
+
+  /** See `ForkableLibrary.revert` - the caller redirects to the original. */
+  async revert(athlete: Athlete, planId: string): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
+    return this.editor.revert(athlete.id, planId);
+  }
+
+  private async workoutNames(athlete: Athlete): Promise<Map<string, string>> {
+    const workouts = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
+    return new Map(workouts.map((workout) => [workout.id, workout.name]));
+  }
+}

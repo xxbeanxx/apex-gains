@@ -6,27 +6,27 @@ import { DrizzleAthletesRepository } from '~/repositories/drizzle/athletes-repos
 import { DrizzleBodyWeightRepository } from '~/repositories/drizzle/body-weight-repository.server';
 import { DrizzleEquipmentRepository } from '~/repositories/drizzle/equipment-repository.server';
 import { DrizzleExercisesRepository } from '~/repositories/drizzle/exercises-repository.server';
-import { DrizzleRoutinesRepository } from '~/repositories/drizzle/routines-repository.server';
-import { DrizzleTemplatesRepository } from '~/repositories/drizzle/templates-repository.server';
+import { DrizzlePlansRepository } from '~/repositories/drizzle/plans-repository.server';
+import { DrizzleWorkoutsRepository } from '~/repositories/drizzle/workouts-repository.server';
 import { DrizzleUnitOfWork } from '~/repositories/drizzle/unit-of-work.server';
-import { DrizzleWorkoutSessionsRepository } from '~/repositories/drizzle/workout-sessions-repository.server';
+import { DrizzleSessionsRepository } from '~/repositories/drizzle/sessions-repository.server';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
-import { InMemoryRoutinesRepository } from '~/repositories/in-memory/routines-repository.server';
-import { InMemoryTemplatesRepository } from '~/repositories/in-memory/templates-repository.server';
+import { InMemoryPlansRepository } from '~/repositories/in-memory/plans-repository.server';
+import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
-import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/workout-sessions-repository.server';
+import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 import {
   ATHLETES_REPOSITORY,
   BODY_WEIGHT_REPOSITORY,
   EQUIPMENT_REPOSITORY,
   EXERCISES_REPOSITORY,
-  ROUTINES_REPOSITORY,
-  TEMPLATES_REPOSITORY,
+  PLANS_REPOSITORY,
+  WORKOUTS_REPOSITORY,
   UNIT_OF_WORK,
-  WORKOUT_SESSIONS_REPOSITORY,
+  SESSIONS_REPOSITORY,
 } from '~/repositories/tokens';
 
 import { databaseConfig } from '../config/database.config';
@@ -68,15 +68,15 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
 function buildInMemory() {
   const athletes = new InMemoryAthletesRepository();
   const exercises = new InMemoryExercisesRepository();
-  const templates = new InMemoryTemplatesRepository();
-  const routines = new InMemoryRoutinesRepository();
-  const sessions = new InMemoryWorkoutSessionsRepository();
+  const workouts = new InMemoryWorkoutsRepository();
+  const plans = new InMemoryPlansRepository();
+  const sessions = new InMemorySessionsRepository();
   const bodyWeight = new InMemoryBodyWeightRepository();
 
-  exercises.referencedBy(templates, sessions);
-  athletes.ownedBy(exercises, templates, routines, sessions, bodyWeight);
+  exercises.referencedBy(workouts, sessions);
+  athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight);
 
-  return { athletes, exercises, templates, routines, sessions, bodyWeight, equipment: new InMemoryEquipmentRepository() };
+  return { athletes, exercises, workouts, plans, sessions, bodyWeight, equipment: new InMemoryEquipmentRepository() };
 }
 
 let inMemoryFamily: ReturnType<typeof buildInMemory> | undefined;
@@ -100,14 +100,12 @@ const providers: Provider[] = [
   repositoryProvider(EXERCISES_REPOSITORY, (dbConfig) =>
     dbConfig.databaseUrl ? new DrizzleExercisesRepository() : inMemory().exercises,
   ),
-  repositoryProvider(ROUTINES_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleRoutinesRepository() : inMemory().routines,
+  repositoryProvider(PLANS_REPOSITORY, (dbConfig) => (dbConfig.databaseUrl ? new DrizzlePlansRepository() : inMemory().plans)),
+  repositoryProvider(WORKOUTS_REPOSITORY, (dbConfig) =>
+    dbConfig.databaseUrl ? new DrizzleWorkoutsRepository() : inMemory().workouts,
   ),
-  repositoryProvider(TEMPLATES_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleTemplatesRepository() : inMemory().templates,
-  ),
-  repositoryProvider(WORKOUT_SESSIONS_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleWorkoutSessionsRepository() : inMemory().sessions,
+  repositoryProvider(SESSIONS_REPOSITORY, (dbConfig) =>
+    dbConfig.databaseUrl ? new DrizzleSessionsRepository() : inMemory().sessions,
   ),
   repositoryProvider(UNIT_OF_WORK, (dbConfig) => (dbConfig.databaseUrl ? new DrizzleUnitOfWork() : new InMemoryUnitOfWork())),
 ];

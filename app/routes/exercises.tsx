@@ -214,7 +214,7 @@ export async function action({ request, context }: Route.ActionArgs) {
         return intents.revertExercise.reject(
           outcome.error === 'nothing-to-revert'
             ? 'Nothing to revert'
-            : 'This customization is used in a template or logged workout — remove it from those first.',
+            : 'This customization is used in a workout or logged workout — remove it from those first.',
         );
       }
       return { ok: true };
@@ -719,7 +719,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
           <EmptyState
             icon={DumbbellIcon}
             title="No exercises yet"
-            description="Build the library one movement at a time — each one can be dropped into any template."
+            description="Build the library one movement at a time — each one can be dropped into any workout."
             action={
               <NewExerciseDialog
                 trigger={

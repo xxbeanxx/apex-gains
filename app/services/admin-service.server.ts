@@ -6,8 +6,8 @@ import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
-import { ATHLETES_REPOSITORY, WORKOUT_SESSIONS_REPOSITORY } from '~/repositories/tokens';
-import type { TrainingTotals, WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
+import { ATHLETES_REPOSITORY, SESSIONS_REPOSITORY } from '~/repositories/tokens';
+import type { TrainingTotals, SessionsRepository } from '~/repositories/sessions-repository.server';
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
@@ -69,7 +69,7 @@ const NO_TRAINING: TrainingTotals = { workoutCount: 0, setCount: 0, lastActiveOn
 export class AdminService {
   constructor(
     @Inject(ATHLETES_REPOSITORY) private readonly athletes: AthletesRepository,
-    @Inject(WORKOUT_SESSIONS_REPOSITORY) private readonly sessions: WorkoutSessionsRepository,
+    @Inject(SESSIONS_REPOSITORY) private readonly sessions: SessionsRepository,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 

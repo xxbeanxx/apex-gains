@@ -7,15 +7,15 @@ import { muscleGroupBalance } from '~/domain/progress/muscle-balance';
 import { personalRecords, progressSeries, type ProgressMetricKind } from '~/domain/progress/personal-records';
 import { TrainingHistory } from '~/domain/progress/training-history';
 import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~/domain/progress/weekly-volume';
-import type { WorkoutSession } from '~/domain/session/workout-session';
+import type { Session } from '~/domain/session/session';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
 import { Weight } from '~/domain/values/weight';
 import { formatMonthDay } from '~/lib/format';
 import type { BodyWeightRepository } from '~/repositories/body-weight-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
-import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
-import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUT_SESSIONS_REPOSITORY } from '~/repositories/tokens';
+import type { SessionsRepository } from '~/repositories/sessions-repository.server';
+import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, SESSIONS_REPOSITORY } from '~/repositories/tokens';
 
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 
@@ -123,8 +123,8 @@ function round(value: number): number {
 @Injectable()
 export class ProgressService {
   constructor(
-    @Inject(WORKOUT_SESSIONS_REPOSITORY)
-    private readonly sessions: WorkoutSessionsRepository,
+    @Inject(SESSIONS_REPOSITORY)
+    private readonly sessions: SessionsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly bodyWeight: BodyWeightRepository,
@@ -240,7 +240,7 @@ export class ProgressService {
     };
   }
 
-  private timeline(athlete: Athlete, sessions: readonly WorkoutSession[], directory: ExerciseDirectory): TimelineDay[] {
+  private timeline(athlete: Athlete, sessions: readonly Session[], directory: ExerciseDirectory): TimelineDay[] {
     return sessions.map((session) => ({
       id: session.id,
       date: session.date.value,
@@ -255,6 +255,6 @@ export class ProgressService {
   }
 }
 
-function referencedExerciseIds(sessions: readonly WorkoutSession[]): string[] {
+function referencedExerciseIds(sessions: readonly Session[]): string[] {
   return sessions.flatMap((session) => session.sets.map((set) => set.exerciseId));
 }

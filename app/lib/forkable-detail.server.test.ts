@@ -4,9 +4,9 @@ import { forkableDetail, type ForkableDetail } from './forkable-detail.server';
 import { intent } from './intent';
 
 const page: ForkableDetail = forkableDetail({
-  noun: 'Routine',
-  indexPath: '/routines',
-  pathFor: (id) => `/routines/${id}`,
+  noun: 'Plan',
+  indexPath: '/plans',
+  pathFor: (id) => `/plans/${id}`,
 });
 
 const remove = intent('delete');
@@ -57,7 +57,7 @@ describe('settle', () => {
     const thrown = thrownBy(() => page.settle({ ok: true, value: { forkedId: 'fork-1' } }));
 
     expect(statusOf(thrown)).toBe(302);
-    expect(locationOf(thrown)).toBe('/routines/fork-1');
+    expect(locationOf(thrown)).toBe('/plans/fork-1');
   });
 
   it('is a 404 when the row was not there', () => {
@@ -71,14 +71,14 @@ describe('deleted', () => {
 
     const thrown = thrownBy(() => page.deleted(remove, { ok: true }, log));
 
-    expect(locationOf(thrown)).toBe('/routines');
+    expect(locationOf(thrown)).toBe('/plans');
     expect(log).toHaveBeenCalledOnce();
   });
 
   it('refuses a shared sample, tagged on the intent that asked', () => {
     const rejection = page.deleted(remove, { ok: false, error: 'sample' });
 
-    expect(rejection.data).toEqual({ error: "Sample routines can't be deleted.", intent: 'delete' });
+    expect(rejection.data).toEqual({ error: "Sample plans can't be deleted.", intent: 'delete' });
     expect(rejection.init?.status).toBe(400);
   });
 
@@ -94,7 +94,7 @@ describe('reverted', () => {
   it('redirects to the sample, which reappears now that nothing forks from it', () => {
     const thrown = thrownBy(() => page.reverted(revert, { ok: true, value: { forkedFromId: 'sample-1' } }));
 
-    expect(locationOf(thrown)).toBe('/routines/sample-1');
+    expect(locationOf(thrown)).toBe('/plans/sample-1');
   });
 
   it('refuses a row that was never a copy of anything', () => {
@@ -110,13 +110,13 @@ describe('reverted', () => {
 
 describe('another page', () => {
   it('says its own noun and lands on its own index', () => {
-    const templates: ForkableDetail = forkableDetail({
-      noun: 'Template',
-      indexPath: '/templates',
-      pathFor: (id) => `/templates/${id}`,
+    const workouts: ForkableDetail = forkableDetail({
+      noun: 'Workout',
+      indexPath: '/workouts',
+      pathFor: (id) => `/workouts/${id}`,
     });
 
-    expect(templates.deleted(remove, { ok: false, error: 'sample' }).data.error).toBe("Sample templates can't be deleted.");
-    expect(locationOf(thrownBy(() => templates.deleted(remove, { ok: true })))).toBe('/templates');
+    expect(workouts.deleted(remove, { ok: false, error: 'sample' }).data.error).toBe("Sample workouts can't be deleted.");
+    expect(locationOf(thrownBy(() => workouts.deleted(remove, { ok: true })))).toBe('/workouts');
   });
 });

@@ -27,7 +27,7 @@ const FEATURES = [
   {
     icon: RepeatIcon,
     title: 'Cycles, not weekdays',
-    body: 'Arrange templates into a repeating cycle that counts from an anchor date, so a 5-day split never drifts.',
+    body: 'Arrange workouts into a repeating cycle that counts from an anchor date, so a 5-day split never drifts.',
   },
   {
     icon: CalendarCheckIcon,
@@ -55,7 +55,7 @@ export default function Home() {
         </h1>
 
         <p className="animate-rise-in max-w-xl text-lg text-pretty text-muted-foreground">
-          Build reusable templates, cycle them on your own schedule, and log every set as you lift it.
+          Build reusable workouts, cycle them on your own schedule, and log every set as you lift it.
         </p>
 
         <div className="animate-rise-in flex flex-col items-center gap-3">

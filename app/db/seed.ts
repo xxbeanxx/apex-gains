@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { db } from './index.server';
-import { equipment, exerciseEquipment, exercises, routineSlots, routines, templateExercises, templates } from './schema';
+import { equipment, exerciseEquipment, exercises, planSlots, plans, workoutExercises, workouts } from './schema';
 
 const equipmentNames = ['BowFlex PR1000', 'Rowing Machine', 'Treadmill', 'Bodyweight'] as const;
 
@@ -307,7 +307,7 @@ const seedExercises: SeedExercise[] = [
   },
 ];
 
-type SeedTemplateExercise = {
+type SeedWorkoutExercise = {
   exerciseName: (typeof seedExercises)[number]['name'];
   targetSets?: number;
   targetReps?: number;
@@ -316,7 +316,7 @@ type SeedTemplateExercise = {
   targetResistance?: number;
 };
 
-const seedTemplates: { name: string; exercises: SeedTemplateExercise[] }[] = [
+const seedWorkouts: { name: string; exercises: SeedWorkoutExercise[] }[] = [
   {
     name: 'Push Day',
     exercises: [
@@ -367,10 +367,10 @@ const seedTemplates: { name: string; exercises: SeedTemplateExercise[] }[] = [
 ];
 
 // null = a rest day. A fixed placeholder anchor date is fine since this
-// sample routine is never activated directly - only a user's fork (created
+// sample plan is never activated directly - only a user's fork (created
 // on the "activate" action) gets reanchored, via the existing Anchor date
 // form.
-const seedRoutine = {
+const seedPlan = {
   name: 'Push/Pull/Legs + Cardio',
   anchorDate: '2024-01-01',
   days: ['Push Day', 'Pull Day', 'Leg Day', 'Easy Row', null],
@@ -421,37 +421,37 @@ async function seed() {
       });
   }
 
-  // Sample templates/routine. Idempotent by name (scoped to sample rows via
-  // the partial unique indexes on schema.ts) - once a template/routine has
+  // Sample workouts/plan. Idempotent by name (scoped to sample rows via
+  // the partial unique indexes on schema.ts) - once a workout/plan has
   // its child rows populated, later reseeds leave it alone rather than
   // fighting with a user's fork or overwriting seed content in place.
   await db
-    .insert(templates)
-    .values(seedTemplates.map((t) => ({ userId: null, name: t.name })))
+    .insert(workouts)
+    .values(seedWorkouts.map((t) => ({ userId: null, name: t.name })))
     .onConflictDoNothing({
-      target: templates.name,
-      where: sql`${templates.userId} is null`,
+      target: workouts.name,
+      where: sql`${workouts.userId} is null`,
     });
 
-  const templateRows = await db.query.templates.findMany({
+  const workoutRows = await db.query.workouts.findMany({
     where: and(
-      isNull(templates.userId),
+      isNull(workouts.userId),
       inArray(
-        templates.name,
-        seedTemplates.map((t) => t.name),
+        workouts.name,
+        seedWorkouts.map((t) => t.name),
       ),
     ),
-    with: { templateExercises: true },
+    with: { workoutExercises: true },
   });
-  const templateRowByName = new Map(templateRows.map((t) => [t.name, t]));
+  const workoutRowByName = new Map(workoutRows.map((t) => [t.name, t]));
 
-  for (const seedTemplate of seedTemplates) {
-    const templateRow = templateRowByName.get(seedTemplate.name);
-    if (!templateRow || templateRow.templateExercises.length > 0) continue;
+  for (const seedWorkout of seedWorkouts) {
+    const workoutRow = workoutRowByName.get(seedWorkout.name);
+    if (!workoutRow || workoutRow.workoutExercises.length > 0) continue;
 
-    await db.insert(templateExercises).values(
-      seedTemplate.exercises.map((te, position) => ({
-        templateId: templateRow.id,
+    await db.insert(workoutExercises).values(
+      seedWorkout.exercises.map((te, position) => ({
+        workoutId: workoutRow.id,
         exerciseId: exerciseIdByName.get(te.exerciseName)!,
         position,
         targetSets: te.targetSets ?? null,
@@ -464,34 +464,34 @@ async function seed() {
   }
 
   await db
-    .insert(routines)
+    .insert(plans)
     .values({
       userId: null,
-      name: seedRoutine.name,
-      anchorDate: seedRoutine.anchorDate,
+      name: seedPlan.name,
+      anchorDate: seedPlan.anchorDate,
     })
     .onConflictDoNothing({
-      target: routines.name,
-      where: sql`${routines.userId} is null`,
+      target: plans.name,
+      where: sql`${plans.userId} is null`,
     });
 
-  const routineRow = await db.query.routines.findFirst({
-    where: and(isNull(routines.userId), eq(routines.name, seedRoutine.name)),
+  const planRow = await db.query.plans.findFirst({
+    where: and(isNull(plans.userId), eq(plans.name, seedPlan.name)),
     with: { slots: true },
   });
 
-  if (routineRow && routineRow.slots.length === 0) {
-    await db.insert(routineSlots).values(
-      seedRoutine.days.map((templateName, position) => ({
-        routineId: routineRow.id,
+  if (planRow && planRow.slots.length === 0) {
+    await db.insert(planSlots).values(
+      seedPlan.days.map((workoutName, position) => ({
+        planId: planRow.id,
         position,
-        templateId: templateName === null ? null : (templateRowByName.get(templateName)?.id ?? null),
+        workoutId: workoutName === null ? null : (workoutRowByName.get(workoutName)?.id ?? null),
       })),
     );
   }
 
   console.log(
-    `Seeded/updated ${exerciseRows.length} exercise(s), linked to ${equipmentRows.length} equipment, ${templateRows.length} sample template(s), and 1 sample routine.`,
+    `Seeded/updated ${exerciseRows.length} exercise(s), linked to ${equipmentRows.length} equipment, ${workoutRows.length} sample workout(s), and 1 sample plan.`,
   );
   process.exit(0);
 }

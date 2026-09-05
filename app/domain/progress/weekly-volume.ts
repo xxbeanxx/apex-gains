@@ -1,4 +1,4 @@
-import type { WorkoutSession } from '../session/workout-session';
+import type { Session } from '../session/session';
 import { DateOnly } from '../values/date-only';
 import { Weight } from '../values/weight';
 import type { TrainingHistory } from './training-history';
@@ -28,7 +28,7 @@ function weekly<T>(
   weeks: number,
   today: DateOnly,
   empty: T,
-  accumulate: (running: T, session: WorkoutSession) => T,
+  accumulate: (running: T, session: Session) => T,
 ): WeeklyPoint<T>[] {
   const currentWeekStart = today.startOfWeek();
   const values = new Map<string, T>();

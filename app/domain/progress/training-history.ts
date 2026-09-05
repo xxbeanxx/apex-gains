@@ -1,6 +1,6 @@
 import type { Exercise } from '../exercise/exercise';
 import type { LoggedSet } from '../session/logged-set';
-import type { WorkoutSession } from '../session/workout-session';
+import type { Session } from '../session/session';
 import type { DateOnly } from '../values/date-only';
 
 /**
@@ -13,11 +13,11 @@ import type { DateOnly } from '../values/date-only';
  */
 export class TrainingHistory {
   constructor(
-    readonly sessions: readonly WorkoutSession[],
+    readonly sessions: readonly Session[],
     private readonly exercises: ReadonlyMap<string, Exercise>,
   ) {}
 
-  static of(sessions: readonly WorkoutSession[], exercises: readonly Exercise[]): TrainingHistory {
+  static of(sessions: readonly Session[], exercises: readonly Exercise[]): TrainingHistory {
     return new TrainingHistory(sessions, new Map(exercises.map((exercise) => [exercise.id, exercise])));
   }
 
@@ -30,7 +30,7 @@ export class TrainingHistory {
   }
 
   /** Every set in the span, paired with the session it belongs to. */
-  *entries(): Generator<{ session: WorkoutSession; set: LoggedSet }> {
+  *entries(): Generator<{ session: Session; set: LoggedSet }> {
     for (const session of this.sessions) {
       for (const set of session.sets) {
         yield { session, set };

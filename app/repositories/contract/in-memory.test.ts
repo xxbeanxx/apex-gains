@@ -4,10 +4,10 @@ import { InMemoryAthletesRepository } from '../in-memory/athletes-repository.ser
 import { InMemoryBodyWeightRepository } from '../in-memory/body-weight-repository.server';
 import { InMemoryEquipmentRepository } from '../in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '../in-memory/exercises-repository.server';
-import { InMemoryRoutinesRepository } from '../in-memory/routines-repository.server';
-import { InMemoryTemplatesRepository } from '../in-memory/templates-repository.server';
+import { InMemoryPlansRepository } from '../in-memory/plans-repository.server';
+import { InMemoryWorkoutsRepository } from '../in-memory/workouts-repository.server';
 import { InMemoryUnitOfWork } from '../in-memory/unit-of-work.server';
-import { InMemoryWorkoutSessionsRepository } from '../in-memory/workout-sessions-repository.server';
+import { InMemorySessionsRepository } from '../in-memory/sessions-repository.server';
 
 import { describeRepositoryContract, type RepositorySet } from './index';
 
@@ -21,25 +21,25 @@ import { describeRepositoryContract, type RepositorySet } from './index';
 function build(): RepositorySet {
   const athletes = new InMemoryAthletesRepository();
   const exercises = new InMemoryExercisesRepository();
-  const templates = new InMemoryTemplatesRepository();
-  const sessions = new InMemoryWorkoutSessionsRepository();
+  const workouts = new InMemoryWorkoutsRepository();
+  const sessions = new InMemorySessionsRepository();
   const bodyWeight = new InMemoryBodyWeightRepository();
-  const routines = new InMemoryRoutinesRepository();
+  const plans = new InMemoryPlansRepository();
 
-  // Postgres refuses to delete an exercise a template or a logged set still
+  // Postgres refuses to delete an exercise a workout or a logged set still
   // points at (`on delete restrict`). Nothing enforces that here unless the
   // referencing stores are named, so they are.
-  exercises.referencedBy(templates, sessions);
+  exercises.referencedBy(workouts, sessions);
   // `athletes.remove` stands in for `on delete cascade`.
-  athletes.ownedBy(exercises, templates, routines, sessions, bodyWeight);
+  athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight);
 
   return {
     athletes,
     bodyWeight,
     equipment: new InMemoryEquipmentRepository(),
     exercises,
-    routines,
-    templates,
+    plans,
+    workouts,
     sessions,
     unitOfWork: new InMemoryUnitOfWork(),
   };

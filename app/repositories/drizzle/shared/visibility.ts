@@ -6,7 +6,7 @@ import type { LibraryVisibility } from '~/domain/shared/ownership';
 
 /**
  * The columns a visibility clause reads, named rather than inferred from the
- * table so `exercises`, `templates` and `routines` can share one builder
+ * table so `exercises`, `workouts` and `plans` can share one builder
  * despite having nothing else in common.
  */
 type OwnedColumns = {

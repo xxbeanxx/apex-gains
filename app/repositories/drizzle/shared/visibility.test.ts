@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { db } from '~/db/index.server';
-import { equipment, exercises, routines, templates } from '~/db/schema';
+import { equipment, exercises, plans, workouts } from '~/db/schema';
 import { LibraryVisibility } from '~/domain/shared/ownership';
 
 import { ownOrSampleWhere, visibleRowsWhere, visibleRowWhere } from './visibility';
@@ -14,8 +14,8 @@ import { ownOrSampleWhere, visibleRowsWhere, visibleRowWhere } from './visibilit
  */
 const forkable = {
   exercises: { table: exercises, id: exercises.id, userId: exercises.userId, forkedFromId: exercises.forkedFromId },
-  routines: { table: routines, id: routines.id, userId: routines.userId, forkedFromId: routines.forkedFromId },
-  templates: { table: templates, id: templates.id, userId: templates.userId, forkedFromId: templates.forkedFromId },
+  plans: { table: plans, id: plans.id, userId: plans.userId, forkedFromId: plans.forkedFromId },
+  workouts: { table: workouts, id: workouts.id, userId: workouts.userId, forkedFromId: workouts.forkedFromId },
 } as const;
 
 describe('visibleRowsWhere', () => {

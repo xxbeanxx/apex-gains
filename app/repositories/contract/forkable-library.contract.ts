@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { exercise, ids, routine, seedAthletes, template, type ContractSubject, type RepositorySet } from './harness';
+import { exercise, ids, plan, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
 
 /**
  * What `LibraryVisibility` promises, asked of a real adapter.
  *
- * Exercises, templates and routines answer the same three questions - what
+ * Exercises, workouts and plans answer the same three questions - what
  * does a list show, what can be fetched by id, and which fork stands in for
  * which sample - so they are asked once and run three times. The Drizzle
  * side reads the rule out of a `where` clause and the in-memory side out of
@@ -31,20 +31,20 @@ const libraries: Library[] = [
     findForkOf: (r, userId, sampleId) => r.exercises.findForkOf(userId, sampleId),
   },
   {
-    label: 'templates',
-    make: (id, userId, forkedFromId = null) => template({ id, userId, forkedFromId, name: `Template ${id.slice(0, 4)}` }),
-    save: (r, a) => r.templates.save(a as never),
-    listFor: (r, userId, show) => r.templates.listFor(userId, show),
-    findVisible: (r, userId, id) => r.templates.findVisible(userId, id),
-    findForkOf: (r, userId, sampleId) => r.templates.findForkOf(userId, sampleId),
+    label: 'workouts',
+    make: (id, userId, forkedFromId = null) => workout({ id, userId, forkedFromId, name: `Workout ${id.slice(0, 4)}` }),
+    save: (r, a) => r.workouts.save(a as never),
+    listFor: (r, userId, show) => r.workouts.listFor(userId, show),
+    findVisible: (r, userId, id) => r.workouts.findVisible(userId, id),
+    findForkOf: (r, userId, sampleId) => r.workouts.findForkOf(userId, sampleId),
   },
   {
-    label: 'routines',
-    make: (id, userId, forkedFromId = null) => routine({ id, userId, forkedFromId, name: `Routine ${id.slice(0, 4)}` }),
-    save: (r, a) => r.routines.save(a as never),
-    listFor: (r, userId, show) => r.routines.listFor(userId, show),
-    findVisible: (r, userId, id) => r.routines.findVisible(userId, id),
-    findForkOf: (r, userId, sampleId) => r.routines.findForkOf(userId, sampleId),
+    label: 'plans',
+    make: (id, userId, forkedFromId = null) => plan({ id, userId, forkedFromId, name: `Plan ${id.slice(0, 4)}` }),
+    save: (r, a) => r.plans.save(a as never),
+    listFor: (r, userId, show) => r.plans.listFor(userId, show),
+    findVisible: (r, userId, id) => r.plans.findVisible(userId, id),
+    findForkOf: (r, userId, sampleId) => r.plans.findForkOf(userId, sampleId),
   },
 ];
 

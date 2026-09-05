@@ -1,5 +1,5 @@
 /**
- * Routine slots and template exercises are both ordered lists persisted as a
+ * Plan slots and workout exercises are both ordered lists persisted as a
  * `position` column under a `(parentId, position)` unique constraint, and
  * both need the same three operations: append at the end, remove and close
  * the gap, swap with a neighbour.

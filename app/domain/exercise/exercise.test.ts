@@ -90,7 +90,7 @@ describe('fork on write', () => {
 
   /**
    * Equipment links are keyed by equipment id, which the copy shares with
-   * the sample - so unlike routine slots there is nothing to translate.
+   * the sample - so unlike plan slots there is nothing to translate.
    */
   it('needs no child id translation', () => {
     const sample = Exercise.fromSnapshot(snapshot({ userId: null }));
@@ -140,7 +140,7 @@ describe('copy for import', () => {
   });
 
   /**
-   * Unlike templates and routines, the link back is kept: it can only name a
+   * Unlike workouts and plans, the link back is kept: it can only name a
    * sample, and a per-athlete unique name means there is never a second copy
    * to make `findForkOf` ambiguous. Keeping it is what stops the copy and the
    * sample it descends from listing side by side under one name.

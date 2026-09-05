@@ -13,10 +13,10 @@ test.describe('anonymous visitors', () => {
   test('are bounced from a protected page to Google, keeping their destination', async ({ page }) => {
     // Deliberately not `page.goto`: following the redirect would have the
     // server perform real OIDC discovery against Google.
-    const response = await page.request.get('/routines', { maxRedirects: 0 });
+    const response = await page.request.get('/plans', { maxRedirects: 0 });
 
     expect(response.status()).toBe(302);
-    expect(response.headers()['location']).toBe('/auth/google?redirectTo=%2Froutines');
+    expect(response.headers()['location']).toBe('/auth/google?redirectTo=%2Fplans');
   });
 
   test('keep the query string of the page they were headed for', async ({ page }) => {

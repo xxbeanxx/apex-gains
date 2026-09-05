@@ -5,7 +5,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * A calendar day with no time and no zone - what the `date` columns hold and
- * what routine cycles count in.
+ * what plan cycles count in.
  *
  * The arithmetic is done in UTC on the `YYYY-MM-DD` string so that adding a
  * day never lands on a 23- or 25-hour day, while "today" is read in an

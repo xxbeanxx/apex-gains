@@ -6,7 +6,7 @@ import type { ExercisesRepository } from '~/repositories/exercises-repository.se
  * What an exercise id resolves to, for the read models that only need to
  * label one.
  *
- * A logged set, a template entry and a routine slot all hold an exercise id
+ * A logged set, a workout entry and a plan slot all hold an exercise id
  * rather than an exercise - they are separate aggregates - so every read
  * model that renders one has to join the name back in. Doing that by hand
  * meant four services each collecting ids, calling `findManyByIds`, building

@@ -5,7 +5,7 @@ import { waitForHydration } from './fixtures';
 
 /**
  * Actions a spec needs but is not itself testing - creating the exercise a
- * template spec then arranges, and so on. Each one drives the real UI rather
+ * workout spec then arranges, and so on. Each one drives the real UI rather
  * than seeding through a back door, so a broken create surfaces as a failure
  * in whichever spec depends on it too.
  */
@@ -106,29 +106,29 @@ export async function closeDialog(page: Page): Promise<void> {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
-/** Creates a template and lands on its detail page, returning its id. */
-export async function createTemplate(page: Page, name: string): Promise<string> {
-  await page.goto('/templates');
+/** Creates a workout and lands on its detail page, returning its id. */
+export async function createWorkout(page: Page, name: string): Promise<string> {
+  await page.goto('/workouts');
   await page.getByLabel('Name').fill(name);
   await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/\/templates\/[0-9a-f-]+$/);
+  await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
   await waitForHydration(page);
   return page.url().split('/').pop()!;
 }
 
-/** Creates a routine and lands on its detail page, returning its id. */
-export async function createRoutine(page: Page, name: string): Promise<string> {
-  await page.goto('/routines');
+/** Creates a plan and lands on its detail page, returning its id. */
+export async function createPlan(page: Page, name: string): Promise<string> {
+  await page.goto('/plans');
   await page.getByLabel('Name').fill(name);
   await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/\/routines\/[0-9a-f-]+$/);
+  await page.waitForURL(/\/plans\/[0-9a-f-]+$/);
   await waitForHydration(page);
   return page.url().split('/').pop()!;
 }
 
 /**
- * The rows of a detail page's ordered list - a template's exercises, or a
- * routine's day-slots.
+ * The rows of a detail page's ordered list - a workout's exercises, or a
+ * plan's day-slots.
  *
  * Scoped to `ol` on purpose: the main nav is a `ul` of list items, so a bare
  * `getByRole('listitem')` would count "Today", "Exercises" and the rest as

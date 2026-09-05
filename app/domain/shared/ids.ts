@@ -1,6 +1,6 @@
 /**
- * Aggregates mint their own identifiers - forking a sample routine creates a
- * routine and a slot per cycle day, all before anything touches the
+ * Aggregates mint their own identifiers - forking a sample plan creates a
+ * plan and a slot per cycle day, all before anything touches the
  * database. That has to work without I/O, so identity generation is a port
  * the domain is handed rather than something it reaches for.
  *

@@ -166,7 +166,7 @@ describe('dispatch', () => {
   });
 
   it('lets a handler answer by throwing, which is how a redirect or a 404 leaves', async () => {
-    const thrown = new Response(null, { status: 302, headers: { Location: '/routines' } });
+    const thrown = new Response(null, { status: 302, headers: { Location: '/plans' } });
 
     await expect(
       dispatch(post({ intent: 'delete' }), [

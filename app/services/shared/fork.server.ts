@@ -8,7 +8,7 @@ import type { DomainDeps } from './deps.server';
 
 /**
  * What an aggregate must offer to take part in fork-on-write. Exercises,
- * templates and routines all satisfy it.
+ * workouts and plans all satisfy it.
  */
 export type Forkable<A> = {
   readonly id: string;
@@ -70,8 +70,8 @@ export async function resolveEditableCopy<A extends Forkable<A>>(
 /**
  * Editing one kind of forkable aggregate.
  *
- * The sequence a mutation goes through is the same for exercises, templates
- * and routines - open a transaction, load the row the athlete can see,
+ * The sequence a mutation goes through is the same for exercises, workouts
+ * and plans - open a transaction, load the row the athlete can see,
  * resolve which copy the edit lands on, apply, save, and report whether a
  * fork happened. Only the aggregate type and the repository differ, so a
  * service constructs one of these instead of restating the sequence.
@@ -139,11 +139,11 @@ export class ForkableEditor<A extends Forkable<A>> {
 }
 
 /**
- * A forkable library whose rows can simply be deleted: templates and
- * routines.
+ * A forkable library whose rows can simply be deleted: workouts and
+ * plans.
  *
  * Exercises are deliberately not one of these. `on delete restrict` means an
- * exercise still named by a template or a logged set refuses to go, and what
+ * exercise still named by a workout or a logged set refuses to go, and what
  * to tell the athlete about that is a decision only `ExerciseLibraryService`
  * can make - so it keeps its own `revert`.
  */

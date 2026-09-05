@@ -7,7 +7,7 @@ import type { Athlete } from './athlete';
  *
  * Neither belongs on `Athlete`: each is about a *pair* of athletes, and the
  * "at least one administrator survives" guarantee below is about the whole
- * set of them - the same reason `domain/routine/activation.ts` is a domain
+ * set of them - the same reason `domain/plan/activation.ts` is a domain
  * service rather than a method.
  */
 

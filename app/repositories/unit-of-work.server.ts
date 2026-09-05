@@ -3,7 +3,7 @@
  *
  * Two things need it. Saving one aggregate writes a root row and its
  * children as several statements. And a handful of use cases save two
- * aggregates - activating a routine stands the previous one down, and
+ * aggregates - activating a plan stands the previous one down, and
  * forking a sample then mutating the fork must not be able to leave the copy
  * behind without the edit that caused it.
  *

@@ -6,7 +6,7 @@ import { Ownership } from '../shared/ownership';
  * Which cardio measurement a piece of equipment reports. `null` means no
  * restriction - either the equipment isn't cardio-specific (free weights),
  * or it reports both (a multi-purpose machine like the BowFlex). Cardio
- * logging and template-target forms use this to decide which of the two
+ * logging and workout-target forms use this to decide which of the two
  * fields to show; see `cardioFieldsFor` in ./cardio-fields.ts.
  */
 export const CARDIO_KINDS = ['speed', 'resistance'] as const;
@@ -23,7 +23,7 @@ export type EquipmentSnapshot = {
 /**
  * A machine or implement an exercise can be performed on.
  *
- * Unlike exercises, templates and routines, equipment has no fork-on-write
+ * Unlike exercises, workouts and plans, equipment has no fork-on-write
  * rule: names are globally unique (see the `unique()` on `equipment.name`),
  * so a sample is shared as-is rather than copied per user.
  */

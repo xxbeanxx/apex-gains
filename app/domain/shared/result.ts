@@ -1,6 +1,6 @@
 /**
  * The domain never throws for outcomes a caller is expected to handle - a
- * routine that isn't there, a name already taken, a sample row that can't be
+ * plan that isn't there, a name already taken, a sample row that can't be
  * deleted. Those come back as values, so a route action has to acknowledge
  * every branch before TypeScript will let it build a response.
  *

@@ -44,7 +44,7 @@ describe('requireUserMiddleware', () => {
   });
 
   it('redirects to just the pathname when there is no query string', async () => {
-    const args = argsFor('http://localhost/routines', null);
+    const args = argsFor('http://localhost/plans', null);
 
     let thrown: unknown;
     try {
@@ -56,6 +56,6 @@ describe('requireUserMiddleware', () => {
     if (!(thrown instanceof Response)) {
       throw new Error('expected requireUserMiddleware to throw a Response');
     }
-    expect(thrown.headers.get('Location')).toBe('/auth/google?redirectTo=%2Froutines');
+    expect(thrown.headers.get('Location')).toBe('/auth/google?redirectTo=%2Fplans');
   });
 });

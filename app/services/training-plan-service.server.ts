@@ -3,21 +3,21 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Athlete } from '~/domain/athlete/athlete';
 import { cardioFieldsFor, type CardioFields } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
-import type { SessionPlan } from '~/domain/session/workout-session';
+import type { SessionPlan } from '~/domain/session/session';
 import { DateOnly } from '~/domain/values/date-only';
 import type { EquipmentRepository } from '~/repositories/equipment-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
-import type { RoutinesRepository } from '~/repositories/routines-repository.server';
-import type { TemplatesRepository } from '~/repositories/templates-repository.server';
-import type { WorkoutSessionsRepository } from '~/repositories/workout-sessions-repository.server';
+import type { PlansRepository } from '~/repositories/plans-repository.server';
+import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
+import type { SessionsRepository } from '~/repositories/sessions-repository.server';
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 
 import {
   EQUIPMENT_REPOSITORY,
   EXERCISES_REPOSITORY,
-  ROUTINES_REPOSITORY,
-  TEMPLATES_REPOSITORY,
-  WORKOUT_SESSIONS_REPOSITORY,
+  PLANS_REPOSITORY,
+  WORKOUTS_REPOSITORY,
+  SESSIONS_REPOSITORY,
 } from '~/repositories/tokens';
 
 export type PlanItem = {
@@ -33,24 +33,24 @@ export type PlanItem = {
 };
 
 /**
- * What the active routine says a given day is.
+ * What the active plan says a given day is.
  *
- * "none" covers both having no active routine and having one with no slots -
+ * "none" covers both having no active plan and having one with no slots -
  * from the athlete's point of view the app has nothing to suggest either way.
  */
 export type DayPlan =
   | { type: 'none' }
-  | { type: 'rest'; routineId: string }
+  | { type: 'rest'; planId: string }
   | {
-      type: 'template';
-      routineId: string;
-      templateId: string;
-      templateName: string;
+      type: 'workout';
+      planId: string;
+      workoutId: string;
+      workoutName: string;
       items: PlanItem[];
     };
 
 export type WeekPlanDay =
-  { date: string; type: 'none' } | { date: string; type: 'rest' } | { date: string; type: 'template'; templateName: string };
+  { date: string; type: 'none' } | { date: string; type: 'rest' } | { date: string; type: 'workout'; workoutName: string };
 
 export type WeekHistoryDay = {
   date: string;
@@ -65,50 +65,50 @@ const WEEK = 7;
  * Reads the schedule: what to train today, what is coming, what actually
  * happened.
  *
- * Purely a read model - it composes routines, templates and sessions into
+ * Purely a read model - it composes plans, workouts and sessions into
  * the shapes the pages render, and mutates nothing. The rule it leans on,
- * "which slot does this date fall on", belongs to `Routine.slotOn`.
+ * "which slot does this date fall on", belongs to `Plan.slotOn`.
  */
 @Injectable()
 export class TrainingPlanService {
   constructor(
-    @Inject(ROUTINES_REPOSITORY) private readonly routines: RoutinesRepository,
-    @Inject(TEMPLATES_REPOSITORY) private readonly templates: TemplatesRepository,
+    @Inject(PLANS_REPOSITORY) private readonly plans: PlansRepository,
+    @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
-    @Inject(WORKOUT_SESSIONS_REPOSITORY)
-    private readonly sessions: WorkoutSessionsRepository,
+    @Inject(SESSIONS_REPOSITORY)
+    private readonly sessions: SessionsRepository,
   ) {}
 
   async planFor(athlete: Athlete, date: DateOnly): Promise<DayPlan> {
-    const routine = await this.routines.findActive(athlete.id);
-    if (!routine) return { type: 'none' };
+    const plan = await this.plans.findActive(athlete.id);
+    if (!plan) return { type: 'none' };
 
-    const slot = routine.slotOn(date);
+    const slot = plan.slotOn(date);
     if (!slot) return { type: 'none' };
-    if (slot.isRestDay || !slot.templateId) {
-      return { type: 'rest', routineId: routine.id };
+    if (slot.isRestDay || !slot.workoutId) {
+      return { type: 'rest', planId: plan.id };
     }
 
-    const template = await this.templates.findVisible(athlete.id, slot.templateId);
-    // The slot points at a template the athlete can no longer see (deleted,
+    const workout = await this.workouts.findVisible(athlete.id, slot.workoutId);
+    // The slot points at a workout the athlete can no longer see (deleted,
     // or hidden with sample data). Nothing to train, so the day reads as
     // rest rather than as an error.
-    if (!template) return { type: 'rest', routineId: routine.id };
+    if (!workout) return { type: 'rest', planId: plan.id };
 
     const directory = await ExerciseDirectory.of(
-      template.exercises.map((entry) => entry.exerciseId),
+      workout.exercises.map((entry) => entry.exerciseId),
       this.exercises,
     );
     const equipment = await this.equipment.findManyByIds(directory.allEquipmentIds);
     const cardioKindById = new Map(equipment.map((item) => [item.id, item.cardioKind]));
 
     return {
-      type: 'template',
-      routineId: routine.id,
-      templateId: template.id,
-      templateName: template.name,
-      items: template.exercises.map((entry) => ({
+      type: 'workout',
+      planId: plan.id,
+      workoutId: workout.id,
+      workoutName: workout.name,
+      items: workout.exercises.map((entry) => ({
         exerciseId: entry.exerciseId,
         exerciseName: directory.nameOf(entry.exerciseId),
         exerciseType: directory.typeOf(entry.exerciseId),
@@ -122,32 +122,32 @@ export class TrainingPlanService {
   /** What a session opened on `date` should record about the day's plan. */
   static sessionPlanFrom(plan: DayPlan): SessionPlan {
     return {
-      routineId: plan.type === 'none' ? null : plan.routineId,
-      templateId: plan.type === 'template' ? plan.templateId : null,
+      planId: plan.type === 'none' ? null : plan.planId,
+      workoutId: plan.type === 'workout' ? plan.workoutId : null,
       isRestDay: plan.type === 'rest',
     };
   }
 
-  /** The next seven days according to the active routine's cycle. */
+  /** The next seven days according to the active plan's cycle. */
   async upcomingWeek(athlete: Athlete, from: DateOnly): Promise<WeekPlanDay[]> {
     const dates = from.range(WEEK);
-    const routine = await this.routines.findActive(athlete.id);
-    if (!routine || routine.cycleLength === 0) {
+    const plan = await this.plans.findActive(athlete.id);
+    if (!plan || plan.cycleLength === 0) {
       return dates.map((date) => ({ date: date.value, type: 'none' }));
     }
 
-    const templates = await this.templates.listNamesFor(athlete.id, athlete.preferences.showSampleData);
-    const names = new Map(templates.map((t) => [t.id, t.name]));
+    const workouts = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
+    const names = new Map(workouts.map((t) => [t.id, t.name]));
 
     return dates.map((date) => {
-      const slot = routine.slotOn(date);
-      if (!slot || slot.isRestDay || !slot.templateId) {
+      const slot = plan.slotOn(date);
+      if (!slot || slot.isRestDay || !slot.workoutId) {
         return { date: date.value, type: 'rest' as const };
       }
       return {
         date: date.value,
-        type: 'template' as const,
-        templateName: names.get(slot.templateId) ?? 'Unknown',
+        type: 'workout' as const,
+        workoutName: names.get(slot.workoutId) ?? 'Unknown',
       };
     });
   }

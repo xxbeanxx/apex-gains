@@ -59,7 +59,7 @@ export class InMemoryExercisesRepository implements ExercisesRepository, Athlete
 
   /**
    * There are no foreign keys here to refuse the delete, so "in use" is
-   * checked directly. Templates and sessions live in sibling adapters that
+   * checked directly. Workouts and sessions live in sibling adapters that
    * this one can't see, so it only enforces what it can - the Drizzle
    * adapter, which is what production runs, gets the real answer from the
    * `on delete restrict` constraints.

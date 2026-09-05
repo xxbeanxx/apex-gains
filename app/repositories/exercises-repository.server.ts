@@ -1,7 +1,7 @@
 import type { Exercise } from '~/domain/exercise/exercise';
 
 /**
- * Deleting a personal exercise fails when a template or a logged set still
+ * Deleting a personal exercise fails when a workout or a logged set still
  * points at it - the FKs are `on delete restrict` precisely so history can't
  * be silently rewritten.
  */

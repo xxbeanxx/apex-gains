@@ -1,13 +1,13 @@
 /**
  * Where a share token lives on the web.
  *
- * Both ends need to agree: the routine page builds the URL to hand out, and
- * `routines.import.$shareToken` is what the link resolves to. Stating the
+ * Both ends need to agree: the plan page builds the URL to hand out, and
+ * `plans.import.$shareToken` is what the link resolves to. Stating the
  * path once is what keeps a QR code already printed on someone's phone
  * pointing at a route that still exists.
  */
 export function sharePathFor(shareToken: string): string {
-  return `/routines/import/${shareToken}`;
+  return `/plans/import/${shareToken}`;
 }
 
 /**

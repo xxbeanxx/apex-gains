@@ -8,7 +8,7 @@ import type { Transaction } from './index.server';
  * Carries the open transaction for the current request.
  *
  * A repository's `save(aggregate)` writes a root row and its children, and
- * some use cases save two aggregates together (activating a routine stands
+ * some use cases save two aggregates together (activating a plan stands
  * the previous one down). All of that has to be one transaction, but
  * threading a `tx` handle through `save` would put Drizzle's type in the
  * port and force every caller to know whether it was inside one.

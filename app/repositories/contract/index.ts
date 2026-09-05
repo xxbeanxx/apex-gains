@@ -7,9 +7,9 @@ import {
   describeEquipmentContract,
   describeUnitOfWorkContract,
 } from './misc.contract';
-import { describeRoutinesContract } from './routines.contract';
-import { describeTemplatesContract } from './templates.contract';
-import { describeWorkoutSessionsContract } from './workout-sessions.contract';
+import { describePlansContract } from './plans.contract';
+import { describeWorkoutsContract } from './workouts.contract';
+import { describeSessionsContract } from './sessions.contract';
 
 /**
  * What every repository adapter has to do, stated once.
@@ -30,9 +30,9 @@ export function describeRepositoryContract(subject: ContractSubject): void {
   describeAthletesContract(subject);
   describeForkableLibraryContract(subject);
   describeExercisesContract(subject);
-  describeTemplatesContract(subject);
-  describeRoutinesContract(subject);
-  describeWorkoutSessionsContract(subject);
+  describeWorkoutsContract(subject);
+  describePlansContract(subject);
+  describeSessionsContract(subject);
   describeEquipmentContract(subject);
   describeBodyWeightContract(subject);
   describeUnitOfWorkContract(subject);

@@ -4,7 +4,7 @@ import { safeRedirect } from './safe-redirect.server';
 
 describe('safeRedirect', () => {
   it('keeps an in-app absolute path', () => {
-    expect(safeRedirect('/routines/abc?edit=1')).toBe('/routines/abc?edit=1');
+    expect(safeRedirect('/plans/abc?edit=1')).toBe('/plans/abc?edit=1');
   });
 
   it('falls back when nothing was requested', () => {
@@ -30,6 +30,6 @@ describe('safeRedirect', () => {
   });
 
   it('honours an explicit fallback', () => {
-    expect(safeRedirect('https://evil.example', '/routines')).toBe('/routines');
+    expect(safeRedirect('https://evil.example', '/plans')).toBe('/plans');
   });
 });

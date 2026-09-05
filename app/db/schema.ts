@@ -78,32 +78,32 @@ export const exerciseEquipment = pgTable(
   (table) => [primaryKey({ columns: [table.exerciseId, table.equipmentId] })],
 );
 
-export const templates = pgTable(
-  'templates',
+export const workouts = pgTable(
+  'workouts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
-    forkedFromId: uuid('forked_from_id').references((): AnyPgColumn => templates.id, { onDelete: 'set null' }),
+    forkedFromId: uuid('forked_from_id').references((): AnyPgColumn => workouts.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('templates_sample_name_unique')
+    uniqueIndex('workouts_sample_name_unique')
       .on(table.name)
       .where(sql`${table.userId} is null`),
   ],
 );
 
-export const templateExercises = pgTable(
-  'template_exercises',
+export const workoutExercises = pgTable(
+  'workout_exercises',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    templateId: uuid('template_id')
+    workoutId: uuid('workout_id')
       .notNull()
-      .references(() => templates.id, { onDelete: 'cascade' }),
+      .references(() => workouts.id, { onDelete: 'cascade' }),
     exerciseId: uuid('exercise_id')
       .notNull()
       .references(() => exercises.id, { onDelete: 'restrict' }),
@@ -115,22 +115,22 @@ export const templateExercises = pgTable(
     targetSpeed: numeric('target_speed', { precision: 5, scale: 2 }),
     targetResistance: integer('target_resistance'),
   },
-  (table) => [unique('template_exercises_template_position_unique').on(table.templateId, table.position)],
+  (table) => [unique('workout_exercises_workout_position_unique').on(table.workoutId, table.position)],
 );
 
-export const routines = pgTable(
-  'routines',
+export const plans = pgTable(
+  'plans',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
-    forkedFromId: uuid('forked_from_id').references((): AnyPgColumn => routines.id, { onDelete: 'set null' }),
+    forkedFromId: uuid('forked_from_id').references((): AnyPgColumn => plans.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     isActive: boolean('is_active').notNull().default(false),
     anchorDate: date('anchor_date').notNull(),
     /**
-     * Minted on demand so a routine can be handed to someone else by link or
+     * Minted on demand so a plan can be handed to someone else by link or
      * QR code, and cleared to revoke it. Unique across the table because it
      * is looked up on its own, without a `userId` to scope it - the token is
      * the whole of the authorization to import.
@@ -140,49 +140,49 @@ export const routines = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('routines_one_active_per_user')
+    uniqueIndex('plans_one_active_per_user')
       .on(table.userId)
       .where(sql`${table.isActive} = true`),
-    uniqueIndex('routines_sample_name_unique')
+    uniqueIndex('plans_sample_name_unique')
       .on(table.name)
       .where(sql`${table.userId} is null`),
   ],
 );
 
-export const routineSlots = pgTable(
-  'routine_slots',
+export const planSlots = pgTable(
+  'plan_slots',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    routineId: uuid('routine_id')
+    planId: uuid('plan_id')
       .notNull()
-      .references(() => routines.id, { onDelete: 'cascade' }),
+      .references(() => plans.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
-    templateId: uuid('template_id').references(() => templates.id, {
+    workoutId: uuid('workout_id').references(() => workouts.id, {
       onDelete: 'set null',
     }),
   },
-  (table) => [unique('routine_slots_routine_position_unique').on(table.routineId, table.position)],
+  (table) => [unique('plan_slots_plan_position_unique').on(table.planId, table.position)],
 );
 
-export const workoutSessions = pgTable(
-  'workout_sessions',
+export const sessions = pgTable(
+  'sessions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     date: date('date').notNull(),
-    routineId: uuid('routine_id').references(() => routines.id, {
+    planId: uuid('plan_id').references(() => plans.id, {
       onDelete: 'set null',
     }),
-    templateId: uuid('template_id').references(() => templates.id, {
+    workoutId: uuid('workout_id').references(() => workouts.id, {
       onDelete: 'set null',
     }),
     isRestDay: boolean('is_rest_day').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique('workout_sessions_user_date_unique').on(table.userId, table.date)],
+  (table) => [unique('sessions_user_date_unique').on(table.userId, table.date)],
 );
 
 export const bodyWeightLogs = pgTable(
@@ -203,7 +203,7 @@ export const sessionSets = pgTable('session_sets', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id')
     .notNull()
-    .references(() => workoutSessions.id, { onDelete: 'cascade' }),
+    .references(() => sessions.id, { onDelete: 'cascade' }),
   exerciseId: uuid('exercise_id')
     .notNull()
     .references(() => exercises.id, { onDelete: 'restrict' }),
@@ -217,9 +217,9 @@ export const sessionSets = pgTable('session_sets', {
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-  templates: many(templates),
-  routines: many(routines),
-  workoutSessions: many(workoutSessions),
+  workouts: many(workouts),
+  plans: many(plans),
+  sessions: many(sessions),
   bodyWeightLogs: many(bodyWeightLogs),
 }));
 
@@ -234,7 +234,7 @@ export const exercisesRelations = relations(exercises, ({ one, many }) => ({
     relationName: 'exerciseFork',
   }),
   forks: many(exercises, { relationName: 'exerciseFork' }),
-  templateExercises: many(templateExercises),
+  workoutExercises: many(workoutExercises),
   sessionSets: many(sessionSets),
   equipmentLinks: many(exerciseEquipment),
 }));
@@ -258,77 +258,77 @@ export const exerciseEquipmentRelations = relations(exerciseEquipment, ({ one })
   }),
 }));
 
-export const templatesRelations = relations(templates, ({ one, many }) => ({
+export const workoutsRelations = relations(workouts, ({ one, many }) => ({
   user: one(users, {
-    fields: [templates.userId],
+    fields: [workouts.userId],
     references: [users.id],
   }),
-  forkedFrom: one(templates, {
-    fields: [templates.forkedFromId],
-    references: [templates.id],
-    relationName: 'templateFork',
+  forkedFrom: one(workouts, {
+    fields: [workouts.forkedFromId],
+    references: [workouts.id],
+    relationName: 'workoutFork',
   }),
-  forks: many(templates, { relationName: 'templateFork' }),
-  templateExercises: many(templateExercises),
-  routineSlots: many(routineSlots),
+  forks: many(workouts, { relationName: 'workoutFork' }),
+  workoutExercises: many(workoutExercises),
+  planSlots: many(planSlots),
 }));
 
-export const templateExercisesRelations = relations(templateExercises, ({ one }) => ({
-  template: one(templates, {
-    fields: [templateExercises.templateId],
-    references: [templates.id],
+export const workoutExercisesRelations = relations(workoutExercises, ({ one }) => ({
+  workout: one(workouts, {
+    fields: [workoutExercises.workoutId],
+    references: [workouts.id],
   }),
   exercise: one(exercises, {
-    fields: [templateExercises.exerciseId],
+    fields: [workoutExercises.exerciseId],
     references: [exercises.id],
   }),
 }));
 
-export const routinesRelations = relations(routines, ({ one, many }) => ({
+export const plansRelations = relations(plans, ({ one, many }) => ({
   user: one(users, {
-    fields: [routines.userId],
+    fields: [plans.userId],
     references: [users.id],
   }),
-  forkedFrom: one(routines, {
-    fields: [routines.forkedFromId],
-    references: [routines.id],
-    relationName: 'routineFork',
+  forkedFrom: one(plans, {
+    fields: [plans.forkedFromId],
+    references: [plans.id],
+    relationName: 'planFork',
   }),
-  forks: many(routines, { relationName: 'routineFork' }),
-  slots: many(routineSlots),
+  forks: many(plans, { relationName: 'planFork' }),
+  slots: many(planSlots),
 }));
 
-export const routineSlotsRelations = relations(routineSlots, ({ one }) => ({
-  routine: one(routines, {
-    fields: [routineSlots.routineId],
-    references: [routines.id],
+export const planSlotsRelations = relations(planSlots, ({ one }) => ({
+  plan: one(plans, {
+    fields: [planSlots.planId],
+    references: [plans.id],
   }),
-  template: one(templates, {
-    fields: [routineSlots.templateId],
-    references: [templates.id],
+  workout: one(workouts, {
+    fields: [planSlots.workoutId],
+    references: [workouts.id],
   }),
 }));
 
-export const workoutSessionsRelations = relations(workoutSessions, ({ one, many }) => ({
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
   user: one(users, {
-    fields: [workoutSessions.userId],
+    fields: [sessions.userId],
     references: [users.id],
   }),
-  routine: one(routines, {
-    fields: [workoutSessions.routineId],
-    references: [routines.id],
+  plan: one(plans, {
+    fields: [sessions.planId],
+    references: [plans.id],
   }),
-  template: one(templates, {
-    fields: [workoutSessions.templateId],
-    references: [templates.id],
+  workout: one(workouts, {
+    fields: [sessions.workoutId],
+    references: [workouts.id],
   }),
   sets: many(sessionSets),
 }));
 
 export const sessionSetsRelations = relations(sessionSets, ({ one }) => ({
-  session: one(workoutSessions, {
+  session: one(sessions, {
     fields: [sessionSets.sessionId],
-    references: [workoutSessions.id],
+    references: [sessions.id],
   }),
   exercise: one(exercises, {
     fields: [sessionSets.exerciseId],
@@ -346,10 +346,10 @@ export const bodyWeightLogsRelations = relations(bodyWeightLogs, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
-export type Template = typeof templates.$inferSelect;
-export type TemplateExercise = typeof templateExercises.$inferSelect;
-export type Routine = typeof routines.$inferSelect;
-export type RoutineSlot = typeof routineSlots.$inferSelect;
-export type WorkoutSession = typeof workoutSessions.$inferSelect;
+export type Workout = typeof workouts.$inferSelect;
+export type WorkoutExercise = typeof workoutExercises.$inferSelect;
+export type Plan = typeof plans.$inferSelect;
+export type PlanSlot = typeof planSlots.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
 export type SessionSet = typeof sessionSets.$inferSelect;
 export type BodyWeightLog = typeof bodyWeightLogs.$inferSelect;

@@ -9,7 +9,7 @@ import type { Intent } from '~/lib/intent';
  * ownership is, and the one action that follows from it.
  *
  * `Ownership` in the domain decides what a sample is; these two say what
- * that looks like, once, so a routine and a template can't drift into
+ * that looks like, once, so a plan and a workout can't drift into
  * describing the same state differently.
  */
 
@@ -39,7 +39,7 @@ export function RevertOrDeleteForm({
   remove,
   actionData,
 }: Ownership & {
-  /** Lower-case, as a button says it: "Delete routine". */
+  /** Lower-case, as a button says it: "Delete plan". */
   noun: string;
   revert: Intent<void>;
   remove: Intent<void>;

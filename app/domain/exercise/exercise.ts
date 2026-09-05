@@ -135,7 +135,7 @@ export class Exercise {
     );
 
     // Equipment links are keyed by equipment id, which the fork shares with
-    // the sample, so unlike routine slots there is nothing to translate.
+    // the sample, so unlike plan slots there is nothing to translate.
     return {
       editable: fork,
       forkedId: fork.id,
@@ -145,9 +145,9 @@ export class Exercise {
 
   /**
    * A copy of this exercise for a *different* athlete, who reached it
-   * through a shared routine.
+   * through a shared plan.
    *
-   * `forkedFromId` carries over, which templates and routines deliberately
+   * `forkedFromId` carries over, which workouts and plans deliberately
    * do not do. It is only ever non-null when it names a sample - nothing
    * else is forkable - and `exercises_user_name_unique` means the importer
    * can hold at most one row of this name, so there is no second copy to

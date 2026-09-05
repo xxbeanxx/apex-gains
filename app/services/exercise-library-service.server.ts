@@ -166,7 +166,7 @@ export class ExerciseLibraryService {
 
   /**
    * Discards a personal customisation so the shared original applies again.
-   * Refused when a template or a logged set still points at the copy - the
+   * Refused when a workout or a logged set still points at the copy - the
    * FK is `on delete restrict` so that history can't be rewritten by a
    * revert.
    */

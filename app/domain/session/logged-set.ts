@@ -28,7 +28,7 @@ export type SetMeasurements = {
  *
  * One row per set rather than per exercise is what makes pyramids and
  * drop-sets representable, and it is why nothing here is derived from the
- * template's target: the target only pre-filled the form, and every field
+ * workout's target: the target only pre-filled the form, and every field
  * was editable before it was submitted.
  */
 export class LoggedSet {

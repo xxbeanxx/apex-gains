@@ -20,7 +20,7 @@ export type SignIn = {
  *
  * The settings reach further than they look: the unit preferences decide how
  * every weight and speed in the app is rendered, and the sample-data flag
- * decides what the exercise, template and routine lists contain.
+ * decides what the exercise, workout and plan lists contain.
  */
 @Injectable()
 export class AthleteService {

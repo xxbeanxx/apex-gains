@@ -1,17 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { SetTarget } from '~/domain/template/set-target';
+import { SetTarget } from '~/domain/workout/set-target';
 
-import {
-  deps,
-  equipmentItem,
-  exercise,
-  ids,
-  seedAthletes,
-  template,
-  type ContractSubject,
-  type RepositorySet,
-} from './harness';
+import { deps, equipmentItem, exercise, ids, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
 
 export function describeExercisesContract(subject: ContractSubject): void {
   describe('ExercisesRepository', () => {
@@ -132,11 +123,11 @@ export function describeExercisesContract(subject: ContractSubject): void {
         expect(await repositories.exercises.findById(ids.own)).toBeNull();
       });
 
-      it('refuses to delete an exercise a template still points at', async () => {
+      it('refuses to delete an exercise a workout still points at', async () => {
         await repositories.exercises.save(exercise({ id: ids.own }));
-        const owningTemplate = template({ id: ids.extra });
-        owningTemplate.addExercise(ids.own, SetTarget.none(), deps);
-        await repositories.templates.save(owningTemplate);
+        const owningWorkout = workout({ id: ids.extra });
+        owningWorkout.addExercise(ids.own, SetTarget.none(), deps);
+        await repositories.workouts.save(owningWorkout);
 
         expect(await repositories.exercises.delete(ids.own)).toBe('in-use');
         expect(await repositories.exercises.findById(ids.own)).not.toBeNull();

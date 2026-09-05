@@ -1,5 +1,5 @@
 /**
- * Unguessable strings that appear in URLs - a routine's share token is the
+ * Unguessable strings that appear in URLs - a plan's share token is the
  * only one so far.
  *
  * A port rather than a call to `crypto`, for the same reason `IdGenerator`
@@ -7,7 +7,7 @@
  * without stubbing a global.
  *
  * Deliberately not `IdGenerator`. A share token is bearer authorization -
- * whoever holds it may import the routine - so it must never be confusable
+ * whoever holds it may import the plan - so it must never be confusable
  * with a row id that leaks through a URL or a log line, and it is short
  * enough to keep a scannable QR code small.
  */

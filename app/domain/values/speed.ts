@@ -6,7 +6,7 @@ const MI_PER_KM = 0.621371;
  * A treadmill or rowing speed, held canonically in km/h.
  *
  * Same story as `Weight`: `session_sets.speed` and
- * `template_exercises.target_speed` are unitless `numeric` columns. Storing
+ * `workout_exercises.target_speed` are unitless `numeric` columns. Storing
  * canonically and converting at the edge is what carries the athlete's
  * distance preference through to the treadmill readout.
  */

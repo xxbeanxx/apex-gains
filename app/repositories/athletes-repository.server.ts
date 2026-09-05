@@ -25,7 +25,7 @@ export interface AthletesRepository {
   /**
    * Closes an account for good. Everything an athlete owns hangs off their
    * `users` row with `on delete cascade`, so this removes their exercises,
-   * templates, routines, sessions and weigh-ins with them.
+   * workouts, plans, sessions and weigh-ins with them.
    */
   remove(athlete: Athlete): Promise<void>;
 }

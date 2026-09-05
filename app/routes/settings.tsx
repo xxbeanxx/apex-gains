@@ -222,8 +222,8 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
         <CardHeader>
           <CardTitle>Sample data</CardTitle>
           <CardDescription>
-            Apex Gains ships with sample exercises, templates, and a routine so there's something to explore right away. Hide
-            them once you've built out your own — anything you've customized from a sample stays visible either way.
+            Apex Gains ships with sample exercises, workouts, and a plan so there's something to explore right away. Hide them
+            once you've built out your own — anything you've customized from a sample stays visible either way.
           </CardDescription>
         </CardHeader>
         <CardContent>

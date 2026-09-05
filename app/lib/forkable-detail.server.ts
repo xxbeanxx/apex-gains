@@ -4,7 +4,7 @@ import type { Intent } from './intent';
 import type { IntentResponse } from './intent.server';
 
 /**
- * What a fork-on-write detail page - a routine's, a template's - answers
+ * What a fork-on-write detail page - a plan's, a workout's - answers
  * with.
  *
  * Both pages map the same four outcomes onto HTTP, and the mapping is the
@@ -13,8 +13,8 @@ import type { IntentResponse } from './intent.server';
  * staring at the untouched sample. Stating it once is what keeps a third
  * such page from having to rediscover that.
  *
- * What the page's *own* intents do is not in here - reanchoring a routine
- * and adding an exercise to a template have nothing in common.
+ * What the page's *own* intents do is not in here - reanchoring a plan
+ * and adding an exercise to a workout have nothing in common.
  */
 export type ForkableDetail = {
   /** A row the athlete cannot see is a 404, in a loader or mid-action. */
@@ -49,7 +49,7 @@ export type ForkableDetail = {
 };
 
 export function forkableDetail(page: {
-  /** Capitalised, as a message says it: "Routine not found". */
+  /** Capitalised, as a message says it: "Plan not found". */
   noun: string;
   /** Where a deletion lands. */
   indexPath: string;

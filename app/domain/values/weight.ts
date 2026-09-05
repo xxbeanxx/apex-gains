@@ -6,7 +6,7 @@ const KG_PER_LB = 0.45359237;
  * A weight, held canonically in pounds.
  *
  * The `numeric` columns that store weights (`session_sets.weight`,
- * `template_exercises.target_weight`, `body_weight_logs.weight`) carry no
+ * `workout_exercises.target_weight`, `body_weight_logs.weight`) carry no
  * unit, and postgres-js hands them back as strings. Everything crossing that
  * boundary goes through here: parsed once on the way in, converted to the
  * athlete's chosen unit once on the way out.

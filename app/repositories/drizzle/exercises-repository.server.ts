@@ -145,7 +145,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
   }
 
   /**
-   * `on delete restrict` on the template and logged-set FKs means a movement
+   * `on delete restrict` on the workout and logged-set FKs means a movement
    * still referenced by history refuses to go. That rejection is the answer,
    * not an error to propagate - reverting a customisation that is still in
    * use should tell the athlete why.
@@ -155,7 +155,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
       await dbScope.delete(exercises).where(eq(exercises.id, exerciseId));
       return 'deleted';
     } catch (error) {
-      // Only a foreign-key violation means "a template or a logged set still
+      // Only a foreign-key violation means "a workout or a logged set still
       // points at this". Anything else - a dropped connection, a deadlock -
       // is a failure, and reporting it as `in-use` would tell the athlete
       // their exercise is referenced by something that does not exist.

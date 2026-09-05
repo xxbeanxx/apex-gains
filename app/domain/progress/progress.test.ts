@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Exercise, type ExerciseSnapshot } from '../exercise/exercise';
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
-import { WorkoutSession } from '../session/workout-session';
+import { Session } from '../session/session';
 import { DateOnly } from '../values/date-only';
 import { Duration } from '../values/duration';
 import { Weight } from '../values/weight';
@@ -38,9 +38,9 @@ type SetSpec = {
   minutes?: number;
 };
 
-function session(date: string, sets: SetSpec[], isRestDay = false): WorkoutSession {
+function session(date: string, sets: SetSpec[], isRestDay = false): Session {
   const deps = { ids: sequentialIds(`s-${date}`), clock: fixedClock(NOW) };
-  const built = WorkoutSession.open('user-1', DateOnly.parse(date), { routineId: null, templateId: null, isRestDay }, deps);
+  const built = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay }, deps);
   for (const spec of sets) {
     built.logSet(
       spec.exerciseId,

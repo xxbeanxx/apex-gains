@@ -6,13 +6,13 @@ import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
 import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
-import { WorkoutSession } from '~/domain/session/workout-session';
+import { Session } from '~/domain/session/session';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
 import { Weight } from '~/domain/values/weight';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
-import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/workout-sessions-repository.server';
+import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 
 import { ProgressService } from './progress-service.server';
 
@@ -52,20 +52,20 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
   });
 }
 
-let sessions: InMemoryWorkoutSessionsRepository;
+let sessions: InMemorySessionsRepository;
 let exercises: InMemoryExercisesRepository;
 let bodyWeight: InMemoryBodyWeightRepository;
 let service: ProgressService;
 
 beforeEach(() => {
-  sessions = new InMemoryWorkoutSessionsRepository();
+  sessions = new InMemorySessionsRepository();
   exercises = new InMemoryExercisesRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
   service = new ProgressService(sessions, exercises, bodyWeight);
 });
 
-async function openSession(date: string, isRestDay = false): Promise<WorkoutSession> {
-  const opened = WorkoutSession.open('user-1', DateOnly.parse(date), { routineId: null, templateId: null, isRestDay }, deps);
+async function openSession(date: string, isRestDay = false): Promise<Session> {
+  const opened = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay }, deps);
   return sessions.add(opened);
 }
 

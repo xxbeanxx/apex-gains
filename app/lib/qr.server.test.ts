@@ -23,7 +23,7 @@ function modulesFromPath(code: { size: number; path: string }): boolean[][] {
 }
 
 describe('encodeQr', () => {
-  const url = 'https://apex.atomic-nucleus.com/routines/import/6Bx1_qZk3pQeR7tYuVwXyA';
+  const url = 'https://apex.atomic-nucleus.com/plans/import/6Bx1_qZk3pQeR7tYuVwXyA';
   const code = encodeQr(url);
 
   it('paints exactly the modules the encoder marked dark', () => {

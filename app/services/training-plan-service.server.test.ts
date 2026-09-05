@@ -3,18 +3,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Athlete } from '~/domain/athlete/athlete';
 import { Equipment, type EquipmentSnapshot } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
-import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
+import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
-import { WorkoutSession } from '~/domain/session/workout-session';
-import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
+import { Session } from '~/domain/session/session';
+import { Workout, type WorkoutSnapshot } from '~/domain/workout/workout';
 import { DateOnly } from '~/domain/values/date-only';
 import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
-import { InMemoryRoutinesRepository } from '~/repositories/in-memory/routines-repository.server';
-import { InMemoryTemplatesRepository } from '~/repositories/in-memory/templates-repository.server';
-import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/workout-sessions-repository.server';
+import { InMemoryPlansRepository } from '~/repositories/in-memory/plans-repository.server';
+import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
+import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 
 import { TrainingPlanService } from './training-plan-service.server';
 
@@ -36,9 +36,9 @@ const athlete = Athlete.fromSnapshot({
   updatedAt: NOW,
 });
 
-function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
-  return Routine.fromSnapshot({
-    id: 'routine-1',
+function plan(overrides: Partial<PlanSnapshot> = {}): Plan {
+  return Plan.fromSnapshot({
+    id: 'plan-1',
     userId: 'user-1',
     forkedFromId: null,
     name: 'PPL',
@@ -48,16 +48,16 @@ function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
     createdAt: NOW,
     updatedAt: NOW,
     slots: [
-      { id: 'slot-0', position: 0, templateId: 'template-1' },
-      { id: 'slot-1', position: 1, templateId: null },
+      { id: 'slot-0', position: 0, workoutId: 'workout-1' },
+      { id: 'slot-1', position: 1, workoutId: null },
     ],
     ...overrides,
   });
 }
 
-function template(overrides: Partial<TemplateSnapshot> = {}): WorkoutTemplate {
-  return WorkoutTemplate.fromSnapshot({
-    id: 'template-1',
+function workout(overrides: Partial<WorkoutSnapshot> = {}): Workout {
+  return Workout.fromSnapshot({
+    id: 'workout-1',
     userId: 'user-1',
     forkedFromId: null,
     name: 'Push Day',
@@ -106,48 +106,48 @@ function equipment(overrides: Partial<EquipmentSnapshot> = {}): Equipment {
   });
 }
 
-let routines: InMemoryRoutinesRepository;
-let templates: InMemoryTemplatesRepository;
+let plans: InMemoryPlansRepository;
+let workouts: InMemoryWorkoutsRepository;
 let exercises: InMemoryExercisesRepository;
 let equipmentRepo: InMemoryEquipmentRepository;
-let sessions: InMemoryWorkoutSessionsRepository;
+let sessions: InMemorySessionsRepository;
 let service: TrainingPlanService;
 
 beforeEach(() => {
-  routines = new InMemoryRoutinesRepository();
-  templates = new InMemoryTemplatesRepository();
+  plans = new InMemoryPlansRepository();
+  workouts = new InMemoryWorkoutsRepository();
   exercises = new InMemoryExercisesRepository();
   equipmentRepo = new InMemoryEquipmentRepository();
-  sessions = new InMemoryWorkoutSessionsRepository();
-  service = new TrainingPlanService(routines, templates, exercises, equipmentRepo, sessions);
+  sessions = new InMemorySessionsRepository();
+  service = new TrainingPlanService(plans, workouts, exercises, equipmentRepo, sessions);
 });
 
 describe('planFor', () => {
-  it('reports "none" when the athlete has no active routine', async () => {
+  it('reports "none" when the athlete has no active plan', async () => {
     expect(await service.planFor(athlete, DateOnly.parse('2026-09-01'))).toEqual({ type: 'none' });
   });
 
   it('reports "rest" on a rest-day slot', async () => {
-    await routines.save(routine());
+    await plans.save(plan());
 
-    const plan = await service.planFor(athlete, DateOnly.parse('2026-09-02'));
+    const result = await service.planFor(athlete, DateOnly.parse('2026-09-02'));
 
-    expect(plan).toEqual({ type: 'rest', routineId: 'routine-1' });
+    expect(result).toEqual({ type: 'rest', planId: 'plan-1' });
   });
 
-  it('reports the template and its exercises on a training-day slot', async () => {
-    await routines.save(routine());
-    await templates.save(template());
+  it('reports the workout and its exercises on a training-day slot', async () => {
+    await plans.save(plan());
+    await workouts.save(workout());
     await exercises.save(exercise());
     await equipmentRepo.save(equipment({ cardioKind: null }));
 
-    const plan = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
+    const result = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
 
-    expect(plan).toEqual({
-      type: 'template',
-      routineId: 'routine-1',
-      templateId: 'template-1',
-      templateName: 'Push Day',
+    expect(result).toEqual({
+      type: 'workout',
+      planId: 'plan-1',
+      workoutId: 'workout-1',
+      workoutName: 'Push Day',
       items: [
         {
           exerciseId: 'exercise-1',
@@ -161,77 +161,77 @@ describe('planFor', () => {
     });
   });
 
-  it('degrades a slot pointing at an invisible template to a rest day', async () => {
-    await routines.save(routine());
-    // Template deliberately not saved - simulates a deleted/hidden template.
+  it('degrades a slot pointing at an invisible workout to a rest day', async () => {
+    await plans.save(plan());
+    // Workout deliberately not saved - simulates a deleted/hidden workout.
 
-    const plan = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
+    const result = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
 
-    expect(plan).toEqual({ type: 'rest', routineId: 'routine-1' });
+    expect(result).toEqual({ type: 'rest', planId: 'plan-1' });
   });
 
-  it('reports "none" for a routine with no slots', async () => {
-    await routines.save(routine({ slots: [] }));
+  it('reports "none" for a plan with no slots', async () => {
+    await plans.save(plan({ slots: [] }));
 
     expect(await service.planFor(athlete, DateOnly.parse('2026-09-01'))).toEqual({ type: 'none' });
   });
 });
 
 describe('sessionPlanFrom', () => {
-  it('captures a template day', () => {
+  it('captures a workout day', () => {
     expect(
       TrainingPlanService.sessionPlanFrom({
-        type: 'template',
-        routineId: 'r',
-        templateId: 't',
-        templateName: 'Push',
+        type: 'workout',
+        planId: 'r',
+        workoutId: 't',
+        workoutName: 'Push',
         items: [],
       }),
-    ).toEqual({ routineId: 'r', templateId: 't', isRestDay: false });
+    ).toEqual({ planId: 'r', workoutId: 't', isRestDay: false });
   });
 
   it('captures a rest day', () => {
-    expect(TrainingPlanService.sessionPlanFrom({ type: 'rest', routineId: 'r' })).toEqual({
-      routineId: 'r',
-      templateId: null,
+    expect(TrainingPlanService.sessionPlanFrom({ type: 'rest', planId: 'r' })).toEqual({
+      planId: 'r',
+      workoutId: null,
       isRestDay: true,
     });
   });
 
   it('captures no active plan', () => {
     expect(TrainingPlanService.sessionPlanFrom({ type: 'none' })).toEqual({
-      routineId: null,
-      templateId: null,
+      planId: null,
+      workoutId: null,
       isRestDay: false,
     });
   });
 });
 
 describe('upcomingWeek', () => {
-  it('reports "none" for every day when there is no active routine', async () => {
+  it('reports "none" for every day when there is no active plan', async () => {
     const week = await service.upcomingWeek(athlete, DateOnly.parse('2026-09-01'));
 
     expect(week).toHaveLength(7);
     expect(week.every((day) => day.type === 'none')).toBe(true);
   });
 
-  it('names the template for a training day and marks rest days', async () => {
-    await routines.save(routine());
-    await templates.save(template());
+  it('names the workout for a training day and marks rest days', async () => {
+    await plans.save(plan());
+    await workouts.save(workout());
 
     const week = await service.upcomingWeek(athlete, DateOnly.parse('2026-09-01'));
 
-    expect(week[0]).toEqual({ date: '2026-09-01', type: 'template', templateName: 'Push Day' });
+    expect(week[0]).toEqual({ date: '2026-09-01', type: 'workout', workoutName: 'Push Day' });
     expect(week[1]).toEqual({ date: '2026-09-02', type: 'rest' });
   });
 });
 
 describe('pastWeek', () => {
   it('reports what was actually logged, and "none" for days with nothing', async () => {
-    const session = WorkoutSession.open(
+    const session = Session.open(
       'user-1',
       DateOnly.parse('2026-08-30'),
-      { routineId: 'routine-1', templateId: 'template-1', isRestDay: false },
+      { planId: 'plan-1', workoutId: 'workout-1', isRestDay: false },
       deps,
     );
     session.logSet('exercise-1', { reps: 8 }, deps);

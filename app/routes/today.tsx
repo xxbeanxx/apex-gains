@@ -37,9 +37,9 @@ import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toOptionalNumber } from '~/lib/validate-form';
 import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
-import type { LoggedSetView, RecentSetView } from '~/services/workout-log-service.server';
+import type { LoggedSetView, RecentSetView } from '~/services/session-service.server';
 
-import { exerciseLibraryServiceContext, trainingPlanServiceContext, workoutLogServiceContext } from '~/lib/nest-bridge.server';
+import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/lib/nest-bridge.server';
 
 import type { Route } from './+types/today';
 
@@ -68,7 +68,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const date = requested?.isOnOrBefore(today) ? requested : today;
 
   const planService = context.get(trainingPlanServiceContext);
-  const logService = context.get(workoutLogServiceContext);
+  const logService = context.get(sessionServiceContext);
   const libraryService = context.get(exerciseLibraryServiceContext);
 
   const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] = await Promise.all([
@@ -156,7 +156,7 @@ const intents = {
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
   const today = DateOnly.today(new Date(), athlete.preferences.timezone);
-  const logService = context.get(workoutLogServiceContext);
+  const logService = context.get(sessionServiceContext);
 
   return dispatch(request, [
     handled(intents.logSet, async (input) => {
@@ -474,7 +474,7 @@ function WeekRail({ children }: { children: React.ReactNode }) {
 }
 
 function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
-  const planned = days.filter((d) => d.type === 'template').length;
+  const planned = days.filter((d) => d.type === 'workout').length;
 
   return (
     <Card>
@@ -487,7 +487,7 @@ function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
       <CardContent>
         <WeekRail>
           {days.map((day, index) => {
-            const what = day.type === 'template' ? day.templateName : day.type === 'rest' ? 'Rest day' : 'Nothing scheduled';
+            const what = day.type === 'workout' ? day.workoutName : day.type === 'rest' ? 'Rest day' : 'Nothing scheduled';
             return (
               <DayCell
                 key={day.date}
@@ -499,9 +499,9 @@ function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
                   <Badge variant="secondary" className="text-[0.625rem]">
                     Rest
                   </Badge>
-                ) : day.type === 'template' ? (
-                  <span className="block w-full truncate text-xs font-medium" title={day.templateName}>
-                    {day.templateName}
+                ) : day.type === 'workout' ? (
+                  <span className="block w-full truncate text-xs font-medium" title={day.workoutName}>
+                    {day.workoutName}
                   </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>
@@ -566,7 +566,7 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
   );
 }
 
-/** "2 of 3 sets" plus a bar, when the template names a set target. */
+/** "2 of 3 sets" plus a bar, when the workout names a set target. */
 function SetProgress({ done, target }: { done: number; target: number }) {
   const pct = Math.min(100, Math.round((done / target) * 100));
   const complete = done >= target;
@@ -625,17 +625,17 @@ export default function Today({ loaderData }: Route.ComponentProps) {
     setsByExercise.set(set.exerciseId, list);
   }
 
-  // Exercises already shown by the template grid above, so the section at the
+  // Exercises already shown by the workout grid above, so the section at the
   // bottom can list only what that grid does not cover.
-  const plannedExerciseIds = new Set(plan.type === 'template' ? plan.items.map((item) => item.exerciseId) : []);
+  const plannedExerciseIds = new Set(plan.type === 'workout' ? plan.items.map((item) => item.exerciseId) : []);
   const extraEntries = [...setsByExercise.entries()].filter(([exerciseId]) => !plannedExerciseIds.has(exerciseId));
 
-  const planLabel = plan.type === 'template' ? plan.templateName : plan.type === 'rest' ? 'Rest day' : 'No active routine';
+  const planLabel = plan.type === 'workout' ? plan.workoutName : plan.type === 'rest' ? 'Rest day' : 'No active plan';
 
   return (
     <Page>
       <PageHeader
-        title={isToday ? 'Today' : 'Log a workout'}
+        title={isToday ? 'Today' : 'Log a session'}
         description={formatFullDate(date)}
         badge={
           plan.type === 'rest' ? (
@@ -643,7 +643,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               <MoonIcon aria-hidden="true" />
               Rest day
             </Badge>
-          ) : plan.type === 'template' ? (
+          ) : plan.type === 'workout' ? (
             <Badge variant="brand-subtle">{planLabel}</Badge>
           ) : null
         }
@@ -695,10 +695,10 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         <PastWeekCard days={pastWeek} />
       </div>
 
-      {plan.type === 'template' ? (
+      {plan.type === 'workout' ? (
         <Section
-          title={isToday ? "Today's workout" : "That day's workout"}
-          description={`${plan.items.length} exercise${plan.items.length === 1 ? '' : 's'} in ${plan.templateName}.`}
+          title={isToday ? "Today's session" : "That day's session"}
+          description={`${plan.items.length} exercise${plan.items.length === 1 ? '' : 's'} in ${plan.workoutName}.`}
         >
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {plan.items.map((item) => {
@@ -742,13 +742,13 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       ) : null}
 
       <Section
-        title={plan.type === 'rest' ? 'Log a workout anyway' : 'Log an exercise'}
+        title={plan.type === 'rest' ? 'Log a session anyway' : 'Log an exercise'}
         description={
           plan.type === 'none'
-            ? `No routine is active, so log whatever you like for ${dayWord}.`
+            ? `No plan is active, so log whatever you like for ${dayWord}.`
             : plan.type === 'rest'
               ? `${isToday ? 'Today is' : 'That day was'} scheduled as rest, but nothing stops you.`
-              : `Anything outside ${isToday ? "today's" : "that day's"} template goes here.`
+              : `Anything outside ${isToday ? "today's" : "that day's"} workout goes here.`
         }
       >
         <Card className="max-w-2xl">
@@ -770,15 +770,15 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       </Section>
 
       {
-        // Anything logged that day that its template does not cover. Without
-        // this, sets for an off-template exercise were logged successfully and
-        // then displayed nowhere at all whenever a template was active.
+        // Anything logged that day that its workout does not cover. Without
+        // this, sets for an off-workout exercise were logged successfully and
+        // then displayed nowhere at all whenever a workout was active.
       }
-      {extraEntries.length > 0 || plan.type !== 'template' ? (
+      {extraEntries.length > 0 || plan.type !== 'workout' ? (
         <Section
-          title={plan.type === 'template' ? `Also logged ${dayWord}` : `Logged ${dayWord}`}
+          title={plan.type === 'workout' ? `Also logged ${dayWord}` : `Logged ${dayWord}`}
           description={
-            plan.type === 'template' ? `Sets you recorded outside ${isToday ? "today's" : "that day's"} template.` : undefined
+            plan.type === 'workout' ? `Sets you recorded outside ${isToday ? "today's" : "that day's"} workout.` : undefined
           }
         >
           {extraEntries.length > 0 ? (

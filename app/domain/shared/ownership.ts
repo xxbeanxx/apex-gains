@@ -1,5 +1,5 @@
 /**
- * Exercises, templates and routines are either a user's own or shared
+ * Exercises, workouts and plans are either a user's own or shared
  * sample data (a null `userId`), and a user edits a sample by forking it
  * into a personal copy - see CLAUDE.md's "Sample data and fork-on-write".
  *

@@ -1,10 +1,10 @@
 /**
  * "Fork on first edit" - a user editing a shared sample gets a personal copy
  * of it, and the sample is left alone - is the same rule for exercises,
- * templates and routines. Each aggregate implements it as
+ * workouts and plans. Each aggregate implements it as
  * `editableCopyFor(userId, ...)`; this is the shape they all return.
  *
- * The awkward part is child identity. Forking a routine gives its slots new
+ * The awkward part is child identity. Forking a plan gives its slots new
  * ids, so a `slotId` that arrived on the form refers to a slot on the
  * *sample*, not on the copy the mutation will actually apply to.
  * `translateChildId` closes that gap: it maps a child id on the original

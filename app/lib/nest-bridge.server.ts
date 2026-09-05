@@ -7,11 +7,11 @@ import type { AthleteService } from '~/services/athlete-service.server';
 import type { BodyWeightService } from '~/services/body-weight-service.server';
 import type { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import type { ProgressService } from '~/services/progress-service.server';
-import type { RoutineImportService } from '~/services/routine-import-service.server';
-import type { RoutineService } from '~/services/routine-service.server';
-import type { TemplateService } from '~/services/template-service.server';
+import type { PlanImportService } from '~/services/plan-import-service.server';
+import type { PlanService } from '~/services/plan-service.server';
+import type { WorkoutService } from '~/services/workout-service.server';
 import type { TrainingPlanService } from '~/services/training-plan-service.server';
-import type { WorkoutLogService } from '~/services/workout-log-service.server';
+import type { SessionService } from '~/services/session-service.server';
 
 import type { OidcClientProvider } from '~server/auth/oidc-client.provider';
 import type { AppSessionStorage } from '~server/auth/session-storage.provider';
@@ -51,11 +51,11 @@ const contexts = {
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
   progressService: createContext<ProgressService>(),
-  routineImportService: createContext<RoutineImportService>(),
-  routineService: createContext<RoutineService>(),
-  templateService: createContext<TemplateService>(),
+  planImportService: createContext<PlanImportService>(),
+  planService: createContext<PlanService>(),
+  workoutService: createContext<WorkoutService>(),
   trainingPlanService: createContext<TrainingPlanService>(),
-  workoutLogService: createContext<WorkoutLogService>(),
+  sessionService: createContext<SessionService>(),
   sessionStorage: createContext<AppSessionStorage>(),
   oidcConfig: createContext<OidcClientProvider>(),
   oidcStateCookie: createContext<Cookie>(),
@@ -70,11 +70,11 @@ export const {
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,
   progressService: progressServiceContext,
-  routineImportService: routineImportServiceContext,
-  routineService: routineServiceContext,
-  templateService: templateServiceContext,
+  planImportService: planImportServiceContext,
+  planService: planServiceContext,
+  workoutService: workoutServiceContext,
   trainingPlanService: trainingPlanServiceContext,
-  workoutLogService: workoutLogServiceContext,
+  sessionService: sessionServiceContext,
   sessionStorage: sessionStorageContext,
   oidcConfig: oidcConfigContext,
   oidcStateCookie: oidcStateCookieContext,

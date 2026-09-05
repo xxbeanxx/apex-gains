@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~/domain/athlete/athlete';
-import { WorkoutSession } from '~/domain/session/workout-session';
+import { Session } from '~/domain/session/session';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
 import { DateOnly } from '~/domain/values/date-only';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
-import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/workout-sessions-repository.server';
+import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 
 import { AdminService } from './admin-service.server';
 
@@ -16,7 +16,7 @@ const TODAY = DateOnly.parse('2026-09-04');
 const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 let athletes: InMemoryAthletesRepository;
-let sessions: InMemoryWorkoutSessionsRepository;
+let sessions: InMemorySessionsRepository;
 let service: AdminService;
 
 /** Registers an athlete, back-dating the account so ordering is assertable. */
@@ -33,7 +33,7 @@ async function register(name: string, options: { isAdmin?: boolean; joinedDaysAg
 
 /** Opens a day for an athlete and logs `setCount` sets into it. */
 async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestDay = false): Promise<void> {
-  const session = WorkoutSession.open(athlete.id, date, { routineId: null, templateId: null, isRestDay }, deps);
+  const session = Session.open(athlete.id, date, { planId: null, workoutId: null, isRestDay }, deps);
   for (let i = 0; i < setCount; i += 1) {
     session.logSet('exercise-1', { reps: 10 }, deps);
   }
@@ -43,7 +43,7 @@ async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestD
 
 beforeEach(() => {
   athletes = new InMemoryAthletesRepository();
-  sessions = new InMemoryWorkoutSessionsRepository();
+  sessions = new InMemorySessionsRepository();
   service = new AdminService(athletes, sessions, deps);
 });
 
