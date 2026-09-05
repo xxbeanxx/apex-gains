@@ -24,6 +24,8 @@ export function meta() {
   return [{ title: 'Plans - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Plans' }) };
+
 class CreatePlanDto {
   @Expose()
   @Transform(trim())

@@ -47,6 +47,8 @@ export function meta() {
   return [{ title: 'Today - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Today' }) };
+
 /**
  * The minimum an exercise has to offer for the log form to render the right
  * fields for it. Both the plan's items and the full library satisfy it.

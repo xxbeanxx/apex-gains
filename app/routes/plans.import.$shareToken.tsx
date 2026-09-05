@@ -35,6 +35,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.shared.name ?? 'Shared plan'} - Apex Gains` }];
 }
 
+export const handle = {
+  crumb: (data: Awaited<ReturnType<typeof loader>>) => [
+    { label: 'Plans', to: '/plans' },
+    { label: `Import ${data.shared.name}` },
+  ],
+};
+
 function notFound(): never {
   throw data('This share link is no longer valid', { status: 404 });
 }

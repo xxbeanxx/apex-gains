@@ -26,6 +26,14 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.account.name ?? 'User'} - Apex Gains` }];
 }
 
+export const handle = {
+  crumb: (data: Awaited<ReturnType<typeof loader>>) => [
+    { label: 'Admin', to: '/admin' },
+    { label: 'Users', to: '/admin/users' },
+    { label: data.account.name },
+  ],
+};
+
 class ChangeAdminAccessDto {
   @Expose()
   @IsIn(['true', 'false'])

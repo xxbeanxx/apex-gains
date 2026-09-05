@@ -18,6 +18,8 @@ export function meta() {
   return [{ title: 'Admin - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Admin' }) };
+
 export async function loader({ context }: Route.LoaderArgs) {
   const administrator = requireAthlete(context);
   return { overview: await context.get(adminServiceContext).overview(administrator) };

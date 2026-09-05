@@ -32,6 +32,8 @@ export function meta() {
   return [{ title: 'Exercises - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Exercises' }) };
+
 const typeLabels: Record<string, string> = {
   strength: 'Strength',
   cardio: 'Cardio',

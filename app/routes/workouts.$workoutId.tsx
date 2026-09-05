@@ -33,6 +33,10 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.workout.name ?? 'Workout'} - Apex Gains` }];
 }
 
+export const handle = {
+  crumb: (data: Awaited<ReturnType<typeof loader>>) => [{ label: 'Workouts', to: '/workouts' }, { label: data.workout.name }],
+};
+
 export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const workoutService = context.get(workoutServiceContext);

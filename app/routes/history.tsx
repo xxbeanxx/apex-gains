@@ -18,6 +18,8 @@ export function meta() {
   return [{ title: 'History - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'History' }) };
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const progressService = context.get(progressServiceContext);

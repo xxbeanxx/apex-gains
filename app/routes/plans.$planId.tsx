@@ -52,6 +52,10 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.plan.name ?? 'Plan'} - Apex Gains` }];
 }
 
+export const handle = {
+  crumb: (data: Awaited<ReturnType<typeof loader>>) => [{ label: 'Plans', to: '/plans' }, { label: data.plan.name }],
+};
+
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const planService = context.get(planServiceContext);

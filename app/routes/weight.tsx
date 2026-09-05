@@ -27,6 +27,8 @@ export function meta() {
   return [{ title: 'Weight - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Weight' }) };
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const progressService = context.get(progressServiceContext);

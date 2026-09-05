@@ -23,6 +23,8 @@ export function meta() {
   return [{ title: 'Settings - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Settings' }) };
+
 class UpdateUnitsDto {
   @Expose()
   @IsIn(WEIGHT_UNITS)

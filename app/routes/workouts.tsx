@@ -23,6 +23,8 @@ export function meta() {
   return [{ title: 'Workouts - Apex Gains' }];
 }
 
+export const handle = { crumb: () => ({ label: 'Workouts' }) };
+
 class CreateWorkoutDto {
   @Expose()
   @Transform(trim())

@@ -276,7 +276,6 @@
     scroll-padding-top: calc(var(--header-h) + 1rem);
   }
 
-
   body {
     @apply min-h-dvh bg-background text-foreground antialiased;
     text-rendering: optimizeLegibility;

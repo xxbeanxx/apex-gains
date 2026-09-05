@@ -1,6 +1,7 @@
 import { DumbbellIcon, LogOutIcon } from 'lucide-react';
 import { Link, useSubmit } from 'react-router';
 
+import { Breadcrumbs } from '~/components/shell/breadcrumbs';
 import { ThemeToggle } from '~/components/theme-toggle';
 import { Avatar } from '~/components/ui/avatar';
 import {
@@ -49,7 +50,9 @@ function TopBar({ user }: { user: NavUser | null }) {
   return (
     <header className="sticky top-0 z-30 flex h-(--header-h) items-center gap-2 border-b border-border bg-background/80 px-(--page-px) backdrop-blur-md supports-backdrop-filter:bg-background/65">
       {user ? (
-        <div className="flex-1" />
+        <div className="min-w-0 flex-1">
+          <Breadcrumbs />
+        </div>
       ) : (
         <Link to="/" className="mr-auto flex items-center gap-2 font-heading text-base font-semibold tracking-tight">
           <span

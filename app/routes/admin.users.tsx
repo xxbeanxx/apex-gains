@@ -24,6 +24,10 @@ export function meta() {
   return [{ title: 'Users - Apex Gains' }];
 }
 
+export const handle = {
+  crumb: () => [{ label: 'Admin', to: '/admin' }, { label: 'Users' }],
+};
+
 class ChangeAdminAccessDto {
   @Expose()
   @IsUUID()
