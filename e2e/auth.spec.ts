@@ -1,3 +1,4 @@
+import { signOut } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 test.describe('anonymous visitors', () => {
@@ -75,7 +76,7 @@ test.describe('test login', () => {
 
 test('signing out ends the session', async ({ page, athlete }) => {
   await page.goto('/today');
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await signOut(page);
 
   await page.waitForURL('/');
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();

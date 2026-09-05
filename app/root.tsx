@@ -1,8 +1,9 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
-import { AppNav } from '~/components/app-nav';
 import { ErrorPage } from '~/components/error-page';
 import { NavProgress } from '~/components/nav-progress';
+import { AppShell } from '~/components/shell/app-shell';
+import { sidebarInitScript } from '~/components/shell/shell-init';
 import { themeInitScript } from '~/components/theme-toggle';
 import { loadUserMiddleware } from '~/auth/current-user.server';
 import { userContext } from '~/auth/user-context';
@@ -40,6 +41,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // light-mode flash on a dark-mode load.
         }
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {
+          // Same reasoning as the theme script: read before first paint so
+          // a collapsed sidebar does not flash open, ahead of hydration.
+        }
+        <script dangerouslySetInnerHTML={{ __html: sidebarInitScript }} />
         <Meta />
         <Links />
       </head>
@@ -56,14 +62,12 @@ export default function App({ loaderData }: Route.ComponentProps) {
   const user = loaderData?.user ?? null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <>
       <NavProgress />
-      <AppNav user={user} />
-      <Outlet />
-      <footer className="border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground">
-        {loaderData?.buildInfo ?? 'unknown'}
-      </footer>
-    </div>
+      <AppShell user={user} buildInfo={loaderData?.buildInfo ?? 'unknown'}>
+        <Outlet />
+      </AppShell>
+    </>
   );
 }
 

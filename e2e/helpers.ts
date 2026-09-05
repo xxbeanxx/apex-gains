@@ -154,3 +154,9 @@ export async function submitForm(control: Locator): Promise<void> {
   await waitForHydration(control.page());
   await control.click();
 }
+
+/** Signs out through the top bar's account menu, present at every viewport. */
+export async function signOut(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+}

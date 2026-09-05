@@ -1,4 +1,4 @@
-import { createPlan, submitForm } from './helpers';
+import { createPlan, signOut, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 /**
@@ -43,7 +43,7 @@ test('a routine share link still lands a signed-out scanner on the import page',
   const legacyPath = `/routines/import/${token}`;
 
   await page.goto('/today');
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await signOut(page);
   await page.waitForURL('/');
 
   const redirected = await page.request.get(legacyPath, { maxRedirects: 0 });

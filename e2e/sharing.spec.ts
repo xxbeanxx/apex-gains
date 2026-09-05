@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { createExercise, createPlan, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
+import { createExercise, createPlan, createWorkout, orderedRows, selectOption, signOut, submitForm } from './helpers';
 import { expect, newAthlete, signIn, test, uniqueName, waitForHydration } from './fixtures';
 
 /**
@@ -170,7 +170,7 @@ test.describe('signing in on the way to a shared plan', () => {
     const path = new URL(link).pathname;
 
     await page.goto('/today');
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await signOut(page);
     await page.waitForURL('/');
 
     // Deliberately not `page.goto`: following the redirect would have the

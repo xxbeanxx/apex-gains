@@ -182,6 +182,21 @@
   --sidebar-ring: oklch(0.62 0.16 133);
 }
 
+/*
+ * The sidebar collapse toggle sets this attribute directly (see
+ * `shell/shell-init.ts`) rather than through React state, so the width and
+ * label visibility it drives never cause a hydration mismatch. Unlayered,
+ * like the token declarations above it - `@layer base` styles never win
+ * against them regardless of source order or specificity.
+ */
+[data-sidebar='collapsed'] {
+  --sidebar-w: var(--sidebar-w-collapsed);
+}
+
+[data-sidebar='collapsed'] [data-sidebar-label] {
+  display: none;
+}
+
 .dark {
   --background: oklch(0.155 0.008 95);
   --foreground: oklch(0.965 0.004 95);
@@ -260,6 +275,7 @@
     /* Keep anchored targets clear of the sticky header. */
     scroll-padding-top: calc(var(--header-h) + 1rem);
   }
+
 
   body {
     @apply min-h-dvh bg-background text-foreground antialiased;
