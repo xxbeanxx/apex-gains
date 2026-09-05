@@ -11,6 +11,7 @@ import { Checkbox } from '~/components/ui/checkbox';
 import { Field } from '~/components/ui/field';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { TimezonePicker } from '~/components/settings/timezone-picker';
 import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from '~/domain/values/units';
 import { TIMEZONES } from '~/domain/values/timezone';
 import { intent } from '~/lib/intent';
@@ -46,23 +47,6 @@ class UpdateTimezoneDto {
   @Expose()
   @IsIn(TIMEZONES)
   readonly timezone!: string;
-}
-
-/** Timezones grouped by their IANA region, for the settings dropdown. */
-const TIMEZONE_GROUPS: ReadonlyArray<{ region: string; zones: readonly string[] }> = (() => {
-  const groups = new Map<string, string[]>();
-  for (const zone of TIMEZONES) {
-    const region = zone.includes('/') ? zone.slice(0, zone.indexOf('/')) : zone;
-    const zones = groups.get(region) ?? [];
-    zones.push(zone);
-    groups.set(region, zones);
-  }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-})().map(([region, zones]) => ({ region, zones }));
-
-/** "America/Argentina/Buenos_Aires" -> "Argentina/Buenos Aires"; "UTC" -> "UTC". */
-function timezoneLabel(zone: string, region: string): string {
-  return zone === region ? zone : zone.slice(region.length + 1).replaceAll('_', ' ');
 }
 
 const SECTION_IDS = ['units', 'timezone', 'sample-data'] as const;
@@ -203,23 +187,13 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <input {...intents.updateTimezone.field} />
               <Field label="Timezone" error={intents.updateTimezone.errorIn(actionData)}>
                 {({ id, describedBy }) => (
-                  <select
+                  <TimezonePicker
                     id={id}
                     name="timezone"
-                    aria-describedby={describedBy}
+                    zones={TIMEZONES}
                     defaultValue={loaderData.timezone}
-                    className="h-9 w-full min-w-0 rounded-lg border border-input bg-card px-3 py-1 text-base shadow-xs transition-[color,background-color,border-color,box-shadow] duration-(--dur-fast) ease-(--ease-quint) outline-none pointer-coarse:h-11 hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
-                  >
-                    {TIMEZONE_GROUPS.map(({ region, zones }) => (
-                      <optgroup key={region} label={region}>
-                        {zones.map((zone) => (
-                          <option key={zone} value={zone}>
-                            {timezoneLabel(zone, region)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                    describedBy={describedBy}
+                  />
                 )}
               </Field>
 
