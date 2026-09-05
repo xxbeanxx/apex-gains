@@ -18,7 +18,7 @@ shadcn/ui, Podman.
 
 ```bash
 npm run build        # production build (application, then server runtime)
-npm run build:application  # react-router build -> build/client + build/server/index.js
+npm run build:app  # react-router build -> build/client + build/server/index.js
 npm run build:server # bundle the Nest runtime -> build/server/main.js
 npm run db:generate  # generate a Drizzle migration from app/db/schema.ts
 npm run db:migrate   # apply pending migrations

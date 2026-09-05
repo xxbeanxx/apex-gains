@@ -62,7 +62,7 @@ App is at `http://localhost:3000/`.
 | Script                      | Purpose                                                                 |
 | --------------------------- | ----------------------------------------------------------------------- |
 | `npm run build`             | Production build (application, then server runtime)                     |
-| `npm run build:application` | Build the React Router app into `build/`                                |
+| `npm run build:app`         | Build the React Router app into `build/`                                |
 | `npm run build:server`      | Bundle the Nest server runtime into `build/server/main.js`              |
 | `npm run db:generate`       | Generate a Drizzle migration from `app/db/schema.ts`                    |
 | `npm run db:migrate`        | Apply pending migrations                                                |
