@@ -31,6 +31,11 @@ export class InMemoryRoutinesRepository implements RoutinesRepository, AthleteOw
     return snapshot ? Routine.fromSnapshot(snapshot) : null;
   }
 
+  async findByShareToken(shareToken: string): Promise<Routine | null> {
+    const snapshot = [...this.byId.values()].find((candidate) => candidate.shareToken === shareToken);
+    return snapshot ? Routine.fromSnapshot(snapshot) : null;
+  }
+
   async findForkOf(userId: string, sampleId: string): Promise<Routine | null> {
     const snapshot = [...this.byId.values()].find(
       (candidate) => candidate.userId === userId && candidate.forkedFromId === sampleId,

@@ -28,6 +28,7 @@ function toRoutine(row: RowWithSlots): Routine {
     name: row.name,
     isActive: row.isActive,
     anchorDate: row.anchorDate,
+    shareToken: row.shareToken,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     slots: row.slots.map((slot) => ({
@@ -64,6 +65,14 @@ export class DrizzleRoutinesRepository implements RoutinesRepository {
     return row ? toRoutine(row) : null;
   }
 
+  async findByShareToken(shareToken: string): Promise<Routine | null> {
+    const row = await dbScope.query.routines.findFirst({
+      where: eq(routines.shareToken, shareToken),
+      with: { slots: { orderBy: asc(routineSlots.position) } },
+    });
+    return row ? toRoutine(row) : null;
+  }
+
   async findForkOf(userId: string, sampleId: string): Promise<Routine | null> {
     const row = await dbScope.query.routines.findFirst({
       where: and(eq(routines.userId, userId), eq(routines.forkedFromId, sampleId)),
@@ -89,6 +98,7 @@ export class DrizzleRoutinesRepository implements RoutinesRepository {
         name: snapshot.name,
         isActive: snapshot.isActive,
         anchorDate: snapshot.anchorDate,
+        shareToken: snapshot.shareToken,
         createdAt: snapshot.createdAt,
         updatedAt: snapshot.updatedAt,
       })
@@ -98,6 +108,7 @@ export class DrizzleRoutinesRepository implements RoutinesRepository {
           name: snapshot.name,
           isActive: snapshot.isActive,
           anchorDate: snapshot.anchorDate,
+          shareToken: snapshot.shareToken,
           updatedAt: snapshot.updatedAt,
         },
       });

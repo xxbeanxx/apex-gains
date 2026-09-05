@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Routine } from '~/domain/routine/routine';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { err, ok } from '~/domain/shared/result';
 import { InMemoryRoutinesRepository } from '~/repositories/in-memory/routines-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
@@ -16,7 +17,7 @@ import { ForkableLibrary } from './fork.server';
  * nothing about whether a second fork gets minted.
  */
 const NOW = new Date('2026-09-03T12:00:00Z');
-const deps = { ids: sequentialIds('generated'), clock: fixedClock(NOW) };
+const deps = { ids: sequentialIds('generated'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 function routine(overrides: { id: string; userId: string | null; forkedFromId?: string | null; slots?: string[] }): Routine {
   return Routine.fromSnapshot({
@@ -26,6 +27,7 @@ function routine(overrides: { id: string; userId: string | null; forkedFromId?: 
     name: 'PPL',
     isActive: false,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: (overrides.slots ?? []).map((id, position) => ({ id, position, templateId: null })),

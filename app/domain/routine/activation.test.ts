@@ -13,6 +13,7 @@ function routine(id: string, isActive = false): Routine {
     name: id,
     isActive,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: [],

@@ -5,6 +5,7 @@ import {
   MoonIcon,
   PowerIcon,
   RotateCcwIcon,
+  Share2Icon,
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
@@ -20,11 +21,12 @@ import {
   type ValidatorConstraintInterface,
   ValidatorConstraint,
 } from 'class-validator';
-import { Link, data, redirect } from 'react-router';
+import { Link, data, redirect, useSearchParams } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
+import { ShareRoutineDialog } from '~/components/share-routine-dialog';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
@@ -38,6 +40,8 @@ import { requestLogger } from '~/lib/logger.server';
 import { intent } from '~/lib/intent';
 import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
 import { dispatch, handled } from '~/lib/intent.server';
+import { encodeQr } from '~/lib/qr.server';
+import { shareUrlFor } from '~/lib/share-link.server';
 import { IsDateOnly, trim } from '~/lib/validate-form';
 
 import { routineServiceContext, templateServiceContext } from '~/lib/nest-bridge.server';
@@ -48,16 +52,22 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.routine.name ?? 'Routine'} - Apex Gains` }];
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ request, params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const routineService = context.get(routineServiceContext);
   const routine = await routineService.detail(athlete, params.routineId);
   if (!routine) page.notFound();
 
   const templateService = context.get(templateServiceContext);
+
+  // Encoded here rather than in the browser: the library stays out of the
+  // client bundle, and the dialog has a scannable code on first paint.
+  const shareUrl = routine.shareToken === null ? null : shareUrlFor(request, routine.shareToken);
+
   return {
     routine,
     templates: await templateService.listForPicker(athlete),
+    share: shareUrl === null ? null : { url: shareUrl, qr: encodeQr(shareUrl) },
   };
 }
 
@@ -114,6 +124,8 @@ const intents = {
   reanchor: intent('reanchor', ReanchorRoutineDto, { invalidMessage: 'Invalid date' }),
   activate: intent('activate'),
   deactivate: intent('deactivate'),
+  share: intent('share'),
+  unshare: intent('unshare'),
   addSlot: intent('addSlot', AddSlotDto, { invalidMessage: 'Invalid slot' }),
   removeSlot: intent('removeSlot', SlotIdDto),
   move: intent('move', MoveSlotDto),
@@ -154,6 +166,27 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     ),
     handled(intents.activate, () => setActive(true)),
     handled(intents.deactivate, () => setActive(false)),
+
+    // Sharing answers with a redirect rather than `settle`, so the page it
+    // lands on can open the dialog. Sharing a *sample* forks it first, and
+    // then the link belongs to the fork - `forkedId` is the row the token
+    // was actually minted on, and the one whose URL has to be shown.
+    handled(intents.share, async () => {
+      const outcome = await routineService.share(athlete, routineId);
+      if (!outcome.ok) page.notFound();
+
+      const sharedId = outcome.value.forkedId ?? routineId;
+      requestLogger(context).log(`shared routine ${sharedId} for user ${athlete.id}`, 'Routines');
+      throw redirect(`/routines/${sharedId}?share`);
+    }),
+
+    handled(intents.unshare, async () => {
+      const outcome = await routineService.unshare(athlete, routineId);
+      if (outcome.ok) {
+        requestLogger(context).log(`revoked the share link for routine ${routineId} for user ${athlete.id}`, 'Routines');
+      }
+      return settle(outcome);
+    }),
     handled(intents.addSlot, async ({ templateId }) =>
       settle(await routineService.addSlot(athlete, routineId, templateId === 'rest' ? null : templateId)),
     ),
@@ -165,10 +198,27 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 }
 
 export default function RoutineDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { routine, templates: templateList } = loaderData;
+  const { routine, templates: templateList, share } = loaderData;
 
   const slotCount = routine.slots.length;
   const { isSample, isCustomized } = routine;
+
+  // The share action redirects back here with `?share`, which is what opens
+  // the dialog - a plain form post navigates, so there is no component state
+  // that survives minting the link. Closing drops the parameter so a reload
+  // doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const shareOpen = share !== null && searchParams.has('share');
+  const setShareOpen = (open: boolean) => {
+    if (open) return;
+    setSearchParams(
+      (params) => {
+        params.delete('share');
+        return params;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  };
 
   const renameError = intents.rename.errorIn(actionData);
   const reanchorError = intents.reanchor.errorIn(actionData);
@@ -201,6 +251,13 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
               >
                 <PowerIcon aria-hidden="true" />
                 {routine.isActive ? 'Deactivate' : 'Set active'}
+              </SubmitButton>
+            </form>
+            <form method="post">
+              <input {...intents.share.field} />
+              <SubmitButton variant="outline" size="sm" match={intents.share.match} pendingLabel="Building share link">
+                <Share2Icon aria-hidden="true" />
+                {share ? 'Show link' : 'Share'}
               </SubmitButton>
             </form>
             <RevertOrDeleteForm
@@ -396,6 +453,17 @@ export default function RoutineDetail({ loaderData, actionData }: Route.Componen
           </CardContent>
         </Card>
       </Section>
+
+      {share ? (
+        <ShareRoutineDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          routineName={routine.name}
+          shareUrl={share.url}
+          qr={share.qr}
+          unshare={intents.unshare}
+        />
+      ) : null}
     </Page>
   );
 }

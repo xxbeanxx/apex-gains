@@ -6,6 +6,7 @@ import { AthleteService } from '~/services/athlete-service.server';
 import { BodyWeightService } from '~/services/body-weight-service.server';
 import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import { ProgressService } from '~/services/progress-service.server';
+import { RoutineImportService } from '~/services/routine-import-service.server';
 import { RoutineService } from '~/services/routine-service.server';
 import { TemplateService } from '~/services/template-service.server';
 import { TrainingPlanService } from '~/services/training-plan-service.server';
@@ -27,6 +28,7 @@ export function collectNestSingletons(app: INestApplication): NestSingletons {
     bodyWeightService: app.get(BodyWeightService),
     exerciseLibraryService: app.get(ExerciseLibraryService),
     progressService: app.get(ProgressService),
+    routineImportService: app.get(RoutineImportService),
     routineService: app.get(RoutineService),
     templateService: app.get(TemplateService),
     trainingPlanService: app.get(TrainingPlanService),

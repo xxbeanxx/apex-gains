@@ -5,6 +5,7 @@ import { Exercise } from '~/domain/exercise/exercise';
 import { Routine } from '~/domain/routine/routine';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { SetTarget } from '~/domain/template/set-target';
 import { WorkoutTemplate } from '~/domain/template/workout-template';
 import { DateOnly } from '~/domain/values/date-only';
@@ -20,7 +21,7 @@ import { WorkoutLogService } from './workout-log-service.server';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-03');
-const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW) };
+const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 function athleteWith(overrides: Partial<AthleteSnapshot> = {}): Athlete {
   return Athlete.fromSnapshot({

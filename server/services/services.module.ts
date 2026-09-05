@@ -5,6 +5,7 @@ import { AthleteService } from '~/services/athlete-service.server';
 import { BodyWeightService } from '~/services/body-weight-service.server';
 import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import { ProgressService } from '~/services/progress-service.server';
+import { RoutineImportService } from '~/services/routine-import-service.server';
 import { RoutineService } from '~/services/routine-service.server';
 import { productionDeps } from '~/services/shared/deps.server';
 import { TemplateService } from '~/services/template-service.server';
@@ -20,6 +21,7 @@ const services = [
   BodyWeightService,
   ExerciseLibraryService,
   ProgressService,
+  RoutineImportService,
   RoutineService,
   TemplateService,
   TrainingPlanService,

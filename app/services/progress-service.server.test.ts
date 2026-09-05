@@ -4,6 +4,7 @@ import { Athlete } from '~/domain/athlete/athlete';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
 import { WorkoutSession } from '~/domain/session/workout-session';
 import { DateOnly } from '~/domain/values/date-only';
@@ -17,7 +18,7 @@ import { ProgressService } from './progress-service.server';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-03');
-const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW) };
+const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 function athlete(overrides: { weightUnit?: 'lb' | 'kg' } = {}): Athlete {
   return Athlete.fromSnapshot({

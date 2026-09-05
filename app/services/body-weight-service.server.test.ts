@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Athlete } from '~/domain/athlete/athlete';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { DateOnly } from '~/domain/values/date-only';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
@@ -36,6 +37,7 @@ beforeEach(() => {
   service = new BodyWeightService(entries, new InMemoryUnitOfWork(), {
     ids: sequentialIds('entry'),
     clock: fixedClock(NOW),
+    secrets: sequentialSecrets('token'),
   });
 });
 

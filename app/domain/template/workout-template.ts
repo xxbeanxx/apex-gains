@@ -186,6 +186,43 @@ export class WorkoutTemplate {
     return forkedFrom(fork, this.entries.items, copiedEntries);
   }
 
+  /**
+   * A copy of this template for a *different* athlete, who reached it
+   * through a shared routine.
+   *
+   * `forkedFromId` stays null even when this template is itself a fork of a
+   * sample. It means "my personal copy of a sample", and a shared routine
+   * can be imported twice - two rows forked from one sample would leave
+   * `findForkOf` with two answers and hide the sample behind both. The copy
+   * is a plain template of the importer's own. (An imported *exercise* does
+   * carry it, because a per-athlete unique name makes a second copy
+   * impossible - see `Exercise.copyForImport`.)
+   *
+   * `exerciseIdFor` maps each entry's exercise onto whatever stands in for
+   * it in the importer's library; the caller resolves that, because it needs
+   * queries.
+   */
+  copyForImport(
+    userId: string,
+    exerciseIdFor: (exerciseId: string) => string,
+    deps: { ids: IdGenerator; clock: Clock },
+  ): WorkoutTemplate {
+    const now = deps.clock.now();
+    const copiedEntries = this.entries.map(
+      (entry) => new TemplateExerciseEntry(deps.ids.next(), exerciseIdFor(entry.exerciseId), entry.position, entry.target),
+    );
+
+    return new WorkoutTemplate(
+      deps.ids.next(),
+      Ownership.of(userId),
+      null,
+      this.currentName,
+      now,
+      now,
+      new OrderedChildren(copiedEntries),
+    );
+  }
+
   private touch(now: Date): void {
     this.lastUpdatedAt = now;
   }

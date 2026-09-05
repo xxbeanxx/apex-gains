@@ -4,6 +4,7 @@ import { Athlete } from '~/domain/athlete/athlete';
 import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { DateOnly } from '~/domain/values/date-only';
 import { InMemoryRoutinesRepository } from '~/repositories/in-memory/routines-repository.server';
 import { InMemoryTemplatesRepository } from '~/repositories/in-memory/templates-repository.server';
@@ -35,6 +36,7 @@ function sampleRoutine(overrides: Partial<RoutineSnapshot> = {}): Routine {
     name: 'Sample PPL',
     isActive: false,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: [
@@ -53,6 +55,7 @@ beforeEach(() => {
   service = new RoutineService(routines, new InMemoryTemplatesRepository(), new InMemoryUnitOfWork(), {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
+    secrets: sequentialSecrets('token'),
   });
 });
 
@@ -208,5 +211,70 @@ describe('deleting and reverting', () => {
       ok: false,
       error: 'nothing-to-revert',
     });
+  });
+});
+
+describe('sharing', () => {
+  it('mints a token on the athlete s own routine and reports no fork', async () => {
+    await routines.save(sampleRoutine({ id: 'own-1', userId: 'user-1', slots: [] }));
+
+    const outcome = await service.share(athlete, 'own-1');
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.ok && outcome.value.forkedId).toBeNull();
+    expect((await routines.findVisible(athlete.id, 'own-1'))?.shareToken).toBe(outcome.ok ? outcome.value.token : null);
+  });
+
+  it('hands back the same token when shared again', async () => {
+    await routines.save(sampleRoutine({ id: 'own-1', userId: 'user-1', slots: [] }));
+
+    const first = await service.share(athlete, 'own-1');
+    const second = await service.share(athlete, 'own-1');
+
+    expect(second.ok && second.value.token).toBe(first.ok ? first.value.token : null);
+  });
+
+  /**
+   * A token names one row, and a sample belongs to everyone - so sharing one
+   * forks it first, exactly as renaming it would. The token then belongs to
+   * the fork, which is why the caller has to follow `forkedId`.
+   */
+  it('forks a sample first, and mints the token on the fork', async () => {
+    await routines.save(sampleRoutine());
+
+    const outcome = await service.share(athlete, 'sample-1');
+
+    expect(outcome.ok).toBe(true);
+    const forkedId = outcome.ok ? outcome.value.forkedId : null;
+    expect(forkedId).not.toBeNull();
+
+    expect((await routines.findVisible(athlete.id, forkedId!))?.shareToken).toBe(outcome.ok ? outcome.value.token : null);
+    expect((await routines.findVisible(athlete.id, 'sample-1'))?.shareToken).toBeNull();
+  });
+
+  it('revoking drops the token, so the link resolves to nothing', async () => {
+    await routines.save(sampleRoutine({ id: 'own-1', userId: 'user-1', slots: [] }));
+    const shared = await service.share(athlete, 'own-1');
+    const token = shared.ok ? shared.value.token : '';
+
+    expect(await service.unshare(athlete, 'own-1')).toEqual({ ok: true, value: { forkedId: null } });
+
+    expect(await routines.findByShareToken(token)).toBeNull();
+  });
+
+  it('reports not-found for a routine the athlete cannot see', async () => {
+    await routines.save(sampleRoutine({ id: 'theirs', userId: 'someone-else', slots: [] }));
+
+    expect(await service.share(athlete, 'theirs')).toEqual({ ok: false, error: 'not-found' });
+    expect(await service.unshare(athlete, 'theirs')).toEqual({ ok: false, error: 'not-found' });
+  });
+
+  it('carries the token into the routine summary the page renders', async () => {
+    await routines.save(sampleRoutine({ id: 'own-1', userId: 'user-1', slots: [] }));
+    const shared = await service.share(athlete, 'own-1');
+
+    const detail = await service.detail(athlete, 'own-1');
+
+    expect(detail?.shareToken).toBe(shared.ok ? shared.value.token : null);
   });
 });

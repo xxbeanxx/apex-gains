@@ -128,6 +128,13 @@ export const routines = pgTable(
     name: text('name').notNull(),
     isActive: boolean('is_active').notNull().default(false),
     anchorDate: date('anchor_date').notNull(),
+    /**
+     * Minted on demand so a routine can be handed to someone else by link or
+     * QR code, and cleared to revoke it. Unique across the table because it
+     * is looked up on its own, without a `userId` to scope it - the token is
+     * the whole of the authorization to import.
+     */
+    shareToken: text('share_token').unique(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

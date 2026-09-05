@@ -6,6 +6,7 @@ import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { WorkoutSession } from '~/domain/session/workout-session';
 import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
 import { DateOnly } from '~/domain/values/date-only';
@@ -18,7 +19,7 @@ import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/work
 import { TrainingPlanService } from './training-plan-service.server';
 
 const NOW = new Date('2026-09-01T12:00:00Z');
-const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW) };
+const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 const athlete = Athlete.fromSnapshot({
   id: 'user-1',
@@ -42,6 +43,7 @@ function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
     name: 'PPL',
     isActive: true,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: [

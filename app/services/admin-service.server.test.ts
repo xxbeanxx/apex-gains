@@ -4,6 +4,7 @@ import { Athlete } from '~/domain/athlete/athlete';
 import { WorkoutSession } from '~/domain/session/workout-session';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { DateOnly } from '~/domain/values/date-only';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
 import { InMemoryWorkoutSessionsRepository } from '~/repositories/in-memory/workout-sessions-repository.server';
@@ -12,7 +13,7 @@ import { AdminService } from './admin-service.server';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-04');
-const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW) };
+const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 let athletes: InMemoryAthletesRepository;
 let sessions: InMemoryWorkoutSessionsRepository;

@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
+import { sequentialSecrets } from '../shared/secrets';
 import { DateOnly } from '../values/date-only';
 import { Routine, type RoutineSnapshot } from './routine';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
-const deps = () => ({ ids: sequentialIds('id'), clock: fixedClock(NOW) });
+const deps = () => ({ ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('tok') });
 
 function snapshot(overrides: Partial<RoutineSnapshot> = {}): RoutineSnapshot {
   return {
@@ -16,6 +17,7 @@ function snapshot(overrides: Partial<RoutineSnapshot> = {}): RoutineSnapshot {
     name: 'Push/Pull/Legs',
     isActive: false,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: [],
@@ -173,6 +175,97 @@ describe('fork on write', () => {
       isActive: true,
     });
     expect(sample.editableCopyFor('user-1', deps()).editable.isActive).toBe(false);
+  });
+});
+
+describe('sharing', () => {
+  it('starts unshared and mints a token on request', () => {
+    const routine = withSlots(['push']);
+    expect(routine.isShared).toBe(false);
+
+    expect(routine.share(deps())).toBe('tok-1');
+    expect(routine.shareToken).toBe('tok-1');
+    expect(routine.isShared).toBe(true);
+  });
+
+  /**
+   * Re-sharing must not invalidate a link the athlete has already sent
+   * someone, so it hands back the token already in circulation.
+   */
+  it('hands back the same token when shared again', () => {
+    const routine = withSlots(['push']);
+    const first = routine.share(deps());
+
+    expect(routine.share(deps())).toBe(first);
+  });
+
+  it('drops the token when unshared, and mints a fresh one afterwards', () => {
+    // One generator across the whole test, so a second token is genuinely a
+    // second value rather than a restarted sequence.
+    const shared = deps();
+    const routine = withSlots(['push']);
+    const first = routine.share(shared);
+
+    routine.unshare(NOW);
+    expect(routine.shareToken).toBeNull();
+    expect(routine.isShared).toBe(false);
+
+    expect(routine.share(shared)).not.toBe(first);
+  });
+
+  it('does not carry the token onto a fork of a sample', () => {
+    const sample = withSlots(['push'], { userId: null, id: 'sample-1' });
+    sample.share(deps());
+
+    expect(sample.editableCopyFor('user-1', deps()).editable.shareToken).toBeNull();
+  });
+});
+
+describe('copy for import', () => {
+  const shared = () => withSlots(['push', null, 'pull'], { userId: 'user-1', id: 'theirs' });
+
+  it("becomes the importing athlete's own routine, not a fork", () => {
+    const copy = shared().copyForImport('user-2', DateOnly.parse('2026-10-01'), (id) => `mine-${id}`, deps());
+
+    expect(copy.ownership.userId).toBe('user-2');
+    // Not a fork: `forkedFromId` means "my copy of a sample", and a revert
+    // would otherwise land on a row the importer cannot see.
+    expect(copy.forkedFromId).toBeNull();
+    expect(copy.canRevert).toBe(false);
+    expect(copy.isDeletable).toBe(true);
+  });
+
+  it("remaps each slot onto the importer's own template, keeping rest days", () => {
+    const copy = shared().copyForImport('user-2', DateOnly.parse('2026-10-01'), (id) => `mine-${id}`, deps());
+
+    expect(copy.slots.map((slot) => slot.templateId)).toEqual(['mine-push', null, 'mine-pull']);
+    expect(copy.slots.map((slot) => slot.position)).toEqual([0, 1, 2]);
+  });
+
+  it('gives the slots new ids so the original keeps its own', () => {
+    const original = shared();
+    const copy = original.copyForImport('user-2', DateOnly.parse('2026-10-01'), (id) => id, deps());
+
+    const originalIds = original.slots.map((slot) => slot.id);
+    expect(copy.slots.map((slot) => slot.id).some((id) => originalIds.includes(id))).toBe(false);
+    expect(copy.id).not.toBe(original.id);
+  });
+
+  it('anchors to the date the importer chose', () => {
+    const copy = shared().copyForImport('user-2', DateOnly.parse('2026-10-05'), (id) => id, deps());
+
+    expect(copy.anchorDate.value).toBe('2026-10-05');
+    expect(copy.slotOn(DateOnly.parse('2026-10-05'))?.templateId).toBe('push');
+  });
+
+  it('starts inactive and unshared, whatever the original was', () => {
+    const original = withSlots(['push'], { userId: 'user-1', id: 'theirs', isActive: true });
+    original.share(deps());
+
+    const copy = original.copyForImport('user-2', DateOnly.parse('2026-10-01'), (id) => id, deps());
+
+    expect(copy.isActive).toBe(false);
+    expect(copy.shareToken).toBeNull();
   });
 });
 

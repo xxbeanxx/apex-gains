@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Apex Gains: a personal workout tracker (exercise library for a BowFlex
 PR1000, rowing machine, and treadmill; reusable workout templates;
-day-slot routines that cycle from an anchor date; per-set logging;
-history). Auth is Google OIDC with open signup. Administrators get an
+day-slot routines that cycle from an anchor date, shareable by link or
+QR code; per-set logging; history). Auth is Google OIDC with open signup. Administrators get an
 `/admin` area on top: instance-wide stats and a user manager.
 
 Stack: React Router v8 (Framework Mode), NestJS (server runtime/DI),
@@ -322,9 +322,14 @@ the two production bundles side by side.
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
 `Weight`, `Speed`, `Duration`, `SetTarget`, `Ownership`) stop raw
 strings and unitless numbers leaking upward. Aggregates never reach for
-identity or time — both arrive as ports (`IdGenerator`, `Clock`, bundled
-as `DomainDeps` in `app/services/shared/deps.server.ts`), which is what
-lets every rule be tested with no database and no mocks. Two shared
+identity, time, or randomness — all three arrive as ports
+(`IdGenerator`, `Clock`, `SecretGenerator`, bundled as `DomainDeps` in
+`app/services/shared/deps.server.ts`), which is what lets every rule be
+tested with no database and no mocks. `SecretGenerator`
+(`domain/shared/secrets.ts`) is deliberately not `IdGenerator`: a share
+token is bearer authorization, so it must never be confusable with a row
+id, and it is short enough (128 bits, base64url) to keep a scannable QR
+code small. Two shared
 pieces carry most of the weight: `shared/ordered.ts` (`OrderedChildren`)
 is the single implementation of append / remove-and-close-the-gap /
 swap, and `shared/forking.ts` is the shape every `editableCopyFor`
@@ -351,7 +356,8 @@ through `dbScope`, never `db`, so writes stay inside it.
 **Services.** `app/services/*.server.ts` are the use cases routes call
 — `RoutineService`, `TemplateService`, `WorkoutLogService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
-`AthleteService`, `BodyWeightService`, `AdminService`. They orchestrate
+`AthleteService`, `BodyWeightService`, `AdminService`,
+`RoutineImportService`. They orchestrate
 (load → hand off to the aggregate → save) and own no rules themselves.
 `shared/exercise-directory.server.ts` is the read-side counterpart to
 `shared/fork.server.ts`: a logged set, a template entry and a routine
@@ -403,6 +409,45 @@ tables share. The two readings are kept in step by tests, not by the
 compiler. So "does this row's `userId` match the current user" isn't
 quite the whole authorization story — scoped loaders must also decide
 whether to include the null-`userId` sample rows.
+
+**Sharing a routine, and importing one.** `routines.share_token` is a
+nullable, unique, revocable bearer token minted by `Routine.share`
+(idempotent, so re-sharing never invalidates a link already sent) and
+dropped by `unshare`. It is looked up by
+`RoutinesRepository.findByShareToken`, which is deliberately unscoped by
+`userId` — the token _is_ the authorization, and the importer is by
+definition not the owner. `RoutineService.share` goes through the same
+`ForkableLibrary` as every other mutation, so sharing a sample forks it
+first and the token lands on the fork; the caller has to follow
+`forkedId`. `app/lib/share-link.server.ts` states the link's shape once,
+and `app/lib/qr.server.ts` encodes it server-side so `qrcode-generator`
+stays out of the client bundle — only a `QrCode` (`app/lib/qr.ts`, no
+`.server` suffix precisely so the component can import it) crosses to
+the browser.
+
+`RoutineImportService` is the other half. A routine is only slot
+positions and template ids, so an import is a deep copy — routine, then
+templates, then exercises — and the interesting part is how much to
+_skip_: a sample, the importer's own fork of that sample, or an exercise
+of theirs under the same name all stand in for the shared row. That last
+one is not a nicety: `exercises_user_name_unique` means copying over a
+name they already hold is a constraint violation. The copies come from
+`copyForImport` on each aggregate, which is **not** `editableCopyFor` —
+`forkedFromId` means "my personal copy of a sample", and pointing it at
+another athlete's row would offer a revert that lands on a 404. Only
+_exercises_ carry `forkedFromId` through, because it can only ever name
+a sample and the unique name means there is never a second copy to make
+`findForkOf` ambiguous; a template or routine can be imported twice, so
+theirs is dropped. Templates are always copied rather than matched by
+name (a familiar name can hold quite different exercises), which is why
+`/routines/import/:shareToken` confirms the counts before writing.
+Equipment is never copied at all — `equipment.name` is globally unique,
+so a row is the same row for everyone and the ids carry over untouched.
+That route sits under `_protected` on purpose: `requireUserMiddleware`
+already redirects an anonymous scanner to
+`/auth/google?redirectTo=<the link>`, and the OIDC state cookie carries
+that destination across the round-trip, so signing in — or signing up —
+lands them back on the right token.
 
 **Domain model shape**, roughly nested:
 `templates` (a named list of exercises with target sets/reps/weight or

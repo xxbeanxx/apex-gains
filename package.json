@@ -43,6 +43,7 @@
     "nprogress": "^0.2.0",
     "openid-client": "^6.8.7",
     "postgres": "^3.4.9",
+    "qrcode-generator": "^2.0.4",
     "radix-ui": "^1.6.7",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

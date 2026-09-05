@@ -36,6 +36,48 @@ export function describeRoutinesContract(subject: ContractSubject): void {
       expect(found?.anchorDate.value).toBe('2026-01-31');
     });
 
+    describe('share tokens', () => {
+      /**
+       * The lookup is deliberately unscoped by user - the token is the whole
+       * of the authorization, and the athlete importing is never the owner.
+       */
+      it('finds a routine by its share token, whoever owns it', async () => {
+        const shared = routine({ id: ids.own });
+        shared.share(deps);
+        await repositories.routines.save(shared);
+
+        const found = await repositories.routines.findByShareToken(shared.shareToken!);
+
+        expect(found?.id).toBe(ids.own);
+      });
+
+      it('answers with nothing for a token that was revoked', async () => {
+        const shared = routine({ id: ids.own });
+        const token = shared.share(deps);
+        await repositories.routines.save(shared);
+
+        shared.unshare(NOW);
+        await repositories.routines.save(shared);
+
+        expect(await repositories.routines.findByShareToken(token)).toBeNull();
+        expect((await repositories.routines.findVisible(ids.athlete, ids.own))?.shareToken).toBeNull();
+      });
+
+      it('round-trips a token through save and load', async () => {
+        const shared = routine({ id: ids.own });
+        const token = shared.share(deps);
+        await repositories.routines.save(shared);
+
+        expect((await repositories.routines.findVisible(ids.athlete, ids.own))?.shareToken).toBe(token);
+      });
+
+      it('answers with nothing for an unknown token', async () => {
+        await repositories.routines.save(routine({ id: ids.own }));
+
+        expect(await repositories.routines.findByShareToken('nobody-minted-this')).toBeNull();
+      });
+    });
+
     describe('slots', () => {
       it('round-trips slots and their positions, rest days included', async () => {
         const [first] = await seedTemplates(1);

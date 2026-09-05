@@ -50,6 +50,13 @@
       "when": 1788564790333,
       "tag": "0006_nasty_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788609576246,
+      "tag": "0007_exotic_veda",
+      "breakpoints": true
     }
   ]
 }

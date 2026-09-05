@@ -32,6 +32,11 @@ export class InMemoryTemplatesRepository implements TemplatesRepository, Exercis
     return visible ? WorkoutTemplate.fromSnapshot(snapshot) : null;
   }
 
+  async findManyByIds(templateIds: readonly string[]): Promise<WorkoutTemplate[]> {
+    const wanted = new Set(templateIds);
+    return [...this.byId.values()].filter((snapshot) => wanted.has(snapshot.id)).map(WorkoutTemplate.fromSnapshot);
+  }
+
   async findForkOf(userId: string, sampleId: string): Promise<WorkoutTemplate | null> {
     const snapshot = [...this.byId.values()].find(
       (candidate) => candidate.userId === userId && candidate.forkedFromId === sampleId,

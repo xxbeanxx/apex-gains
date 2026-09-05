@@ -3,6 +3,7 @@ import { alreadyEditable, type EditableCopy, forkedFrom } from '../shared/forkin
 import type { IdGenerator } from '../shared/ids';
 import { type MoveDirection, OrderedChildren } from '../shared/ordered';
 import { Ownership } from '../shared/ownership';
+import type { SecretGenerator } from '../shared/secrets';
 import { DateOnly } from '../values/date-only';
 
 export type RoutineSlotSnapshot = {
@@ -18,6 +19,7 @@ export type RoutineSnapshot = {
   readonly name: string;
   readonly isActive: boolean;
   readonly anchorDate: string;
+  readonly shareToken: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly slots: readonly RoutineSlotSnapshot[];
@@ -71,6 +73,7 @@ export class Routine {
     private currentName: string,
     private active: boolean,
     private anchor: DateOnly,
+    private token: string | null,
     readonly createdAt: Date,
     private lastUpdatedAt: Date,
     private readonly slotList: OrderedChildren<RoutineSlot>,
@@ -78,7 +81,18 @@ export class Routine {
 
   static create(userId: string, name: string, anchorDate: DateOnly, deps: { ids: IdGenerator; clock: Clock }): Routine {
     const now = deps.clock.now();
-    return new Routine(deps.ids.next(), Ownership.of(userId), null, name, false, anchorDate, now, now, new OrderedChildren([]));
+    return new Routine(
+      deps.ids.next(),
+      Ownership.of(userId),
+      null,
+      name,
+      false,
+      anchorDate,
+      null,
+      now,
+      now,
+      new OrderedChildren([]),
+    );
   }
 
   static fromSnapshot(snapshot: RoutineSnapshot): Routine {
@@ -89,6 +103,7 @@ export class Routine {
       snapshot.name,
       snapshot.isActive,
       DateOnly.parse(snapshot.anchorDate),
+      snapshot.shareToken,
       snapshot.createdAt,
       snapshot.updatedAt,
       new OrderedChildren(snapshot.slots.map((slot) => new RoutineSlot(slot.id, slot.position, slot.templateId))),
@@ -103,6 +118,7 @@ export class Routine {
       name: this.currentName,
       isActive: this.active,
       anchorDate: this.anchor.value,
+      shareToken: this.token,
       createdAt: this.createdAt,
       updatedAt: this.lastUpdatedAt,
       slots: this.slotList.map((slot) => slot.toSnapshot()),
@@ -123,6 +139,15 @@ export class Routine {
 
   get forkedFromId(): string | null {
     return this.forkedFrom;
+  }
+
+  /** Non-null once shared: the bearer token in the link and the QR code. */
+  get shareToken(): string | null {
+    return this.token;
+  }
+
+  get isShared(): boolean {
+    return this.token !== null;
   }
 
   get updatedAt(): Date {
@@ -196,6 +221,26 @@ export class Routine {
     this.touch(now);
   }
 
+  /**
+   * Mints the bearer token that a share link and QR code carry, and returns
+   * it. Idempotent: re-sharing hands back the token already in circulation
+   * rather than invalidating the link the athlete has just sent someone.
+   */
+  share(deps: { secrets: SecretGenerator; clock: Clock }): string {
+    if (this.token === null) {
+      this.token = deps.secrets.next();
+      this.touch(deps.clock.now());
+    }
+    return this.token;
+  }
+
+  /** Revokes the link. A token is never reissued, so a leaked one stays dead. */
+  unshare(now: Date): void {
+    if (this.token === null) return;
+    this.token = null;
+    this.touch(now);
+  }
+
   /** A null `templateId` adds a rest day. */
   addSlot(templateId: string | null, deps: { ids: IdGenerator; clock: Clock }): RoutineSlot {
     const slot = new RoutineSlot(deps.ids.next(), this.slotList.size, templateId);
@@ -227,6 +272,8 @@ export class Routine {
     const now = deps.clock.now();
     const copiedSlots = this.slotList.map((slot) => new RoutineSlot(deps.ids.next(), slot.position, slot.templateId));
 
+    // The fork carries no share token. A token names one row, and the
+    // athlete forking a sample has published nothing.
     const fork = new Routine(
       deps.ids.next(),
       Ownership.of(userId),
@@ -234,12 +281,56 @@ export class Routine {
       this.currentName,
       false,
       this.anchor,
+      null,
       now,
       now,
       new OrderedChildren(copiedSlots),
     );
 
     return forkedFrom(fork, this.slotList.items, copiedSlots);
+  }
+
+  /**
+   * A copy of this routine for a *different* athlete, who reached it through
+   * a share link.
+   *
+   * Unlike `editableCopyFor` this is not a fork: `forkedFromId` stays null,
+   * because it means "my personal copy of a sample" and drives both
+   * `canRevert` and which rows a library lists. Pointing it at another
+   * athlete's row would offer a revert that lands on a 404, and a routine
+   * can be imported twice, which would leave `findForkOf` with two answers.
+   * The copy is simply the importer's own routine.
+   *
+   * It starts inactive - activation is per-athlete state, coordinated by
+   * ./activation - and unshared, since the importer has published nothing.
+   * `templateIdFor` maps each slot's template onto whatever stands in for it
+   * in the importer's library; the caller resolves that, because it needs
+   * queries.
+   */
+  copyForImport(
+    userId: string,
+    anchorDate: DateOnly,
+    templateIdFor: (templateId: string) => string,
+    deps: { ids: IdGenerator; clock: Clock },
+  ): Routine {
+    const now = deps.clock.now();
+    const copiedSlots = this.slotList.map(
+      (slot) =>
+        new RoutineSlot(deps.ids.next(), slot.position, slot.templateId === null ? null : templateIdFor(slot.templateId)),
+    );
+
+    return new Routine(
+      deps.ids.next(),
+      Ownership.of(userId),
+      null,
+      this.currentName,
+      false,
+      anchorDate,
+      null,
+      now,
+      now,
+      new OrderedChildren(copiedSlots),
+    );
   }
 
   private touch(now: Date): void {

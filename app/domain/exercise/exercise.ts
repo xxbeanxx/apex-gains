@@ -142,4 +142,31 @@ export class Exercise {
       translateChildId: identityTranslation,
     };
   }
+
+  /**
+   * A copy of this exercise for a *different* athlete, who reached it
+   * through a shared routine.
+   *
+   * `forkedFromId` carries over, which templates and routines deliberately
+   * do not do. It is only ever non-null when it names a sample - nothing
+   * else is forkable - and `exercises_user_name_unique` means the importer
+   * can hold at most one row of this name, so there is no second copy to
+   * make `findForkOf` ambiguous. Keeping it is what stops the imported copy
+   * and the sample it descends from appearing side by side under the same
+   * name, and leaves the copy revertible like any other.
+   *
+   * Equipment ids carry over untouched. Equipment names are globally unique
+   * (see the `unique()` on `equipment.name`), so a row is the same row for
+   * everyone; there is nothing to copy and nothing to remap.
+   */
+  copyForImport(userId: string, deps: { ids: IdGenerator; clock: Clock }): Exercise {
+    return new Exercise(
+      deps.ids.next(),
+      Ownership.of(userId),
+      this.forkedFrom,
+      { ...this.details },
+      deps.clock.now(),
+      new Set(this.equipment),
+    );
+  }
 }

@@ -95,6 +95,16 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
     return row ? toTemplate(row) : null;
   }
 
+  async findManyByIds(templateIds: readonly string[]): Promise<WorkoutTemplate[]> {
+    if (templateIds.length === 0) return [];
+
+    const rows = await dbScope.query.templates.findMany({
+      where: inArray(templates.id, [...templateIds]),
+      with: { templateExercises: { orderBy: asc(templateExercises.position) } },
+    });
+    return rows.map(toTemplate);
+  }
+
   async findForkOf(userId: string, sampleId: string): Promise<WorkoutTemplate | null> {
     const row = await dbScope.query.templates.findFirst({
       where: and(eq(templates.userId, userId), eq(templates.forkedFromId, sampleId)),

@@ -3,8 +3,9 @@
 A personal workout tracker: an exercise library for a BowFlex PR1000,
 rowing machine, treadmill, and bodyweight exercises, reusable workout
 templates, day-slot routines that cycle from an anchor date, per-set
-logging, workout history and progress charts, body weight tracking, and
-custom equipment management. Auth is Google OIDC (open signup).
+logging, workout history and progress charts, body weight tracking,
+shareable routines (link or QR code), and custom equipment management.
+Auth is Google OIDC (open signup).
 
 Stack: React Router v8 (framework mode), NestJS (server runtime/DI),
 TypeScript, PostgreSQL (hosted on [Supabase](https://supabase.com)),
@@ -335,6 +336,21 @@ There's no separate staging slot or manual promotion step.
   calendar-day math: it does not pause for missed days, and a
   routine's anchor date can be set independently of when it was
   activated.
+- **A routine can be shared by link or QR code.** Sharing mints a
+  revocable token on the routine (`routines.share_token`); the link it
+  makes, `/routines/import/<token>`, is rendered as both a URL and a
+  QR code so a training partner can scan it. Importing deep-copies the
+  routine, the templates its slots schedule, and the exercises those
+  name into the recipient's own account - skipping anything they can
+  already use: a sample, their own fork of that sample, or an exercise
+  of theirs under the same name (which the per-athlete unique name
+  makes mandatory rather than merely tidy). Templates are always
+  copied, since a familiar name can hold quite different exercises, so
+  the confirmation page says what the import will add before it writes
+  anything. The import page sits behind the normal auth gate, so a
+  recipient who is not signed in is sent to Google and returned to the
+  link afterwards - the account can be brand new. See
+  `app/services/routine-import-service.server.ts`.
 - **Sets are logged individually**, not as one row per exercise, so
   pyramids/drop-sets are representable. Template "targets" pre-fill
   the logging form but every field is editable per set.

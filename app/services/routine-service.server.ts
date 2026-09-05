@@ -22,6 +22,8 @@ export type RoutineSummary = {
   anchorDate: string;
   slotCount: number;
   isSample: boolean;
+  /** Non-null once the athlete has minted a share link for this routine. */
+  shareToken: string | null;
   /** A personal copy of a sample - shown as "Customized" rather than "Sample". */
   isCustomized: boolean;
 };
@@ -50,6 +52,7 @@ function toSummary(routine: Routine): RoutineSummary {
     anchorDate: routine.anchorDate.value,
     slotCount: routine.cycleLength,
     isSample: routine.ownership.isSample,
+    shareToken: routine.shareToken,
     isCustomized: routine.canRevert,
   };
 }
@@ -142,6 +145,30 @@ export class RoutineService {
 
   async deactivate(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
     return this.editor.mutate(athlete.id, routineId, (routine) => routine.deactivate(this.deps.clock.now()));
+  }
+
+  /**
+   * Mints - or hands back - the token a share link and QR code carry.
+   *
+   * Goes through the same editor as every other mutation, so sharing a
+   * sample forks it first: a token names one row, and a sample belongs to
+   * everyone. The caller has to follow `forkedId`, because the token it gets
+   * back belongs to the fork, not to the sample it was asked about.
+   */
+  async share(athlete: Athlete, routineId: string): Promise<Result<{ forkedId: string | null; token: string }, 'not-found'>> {
+    let token = '';
+    const outcome: RoutineMutation = await this.editor.edit(athlete.id, routineId, async (copy) => {
+      token = copy.editable.share(this.deps);
+      await this.routines.save(copy.editable);
+      return ok<void>(undefined);
+    });
+
+    return outcome.ok ? ok({ forkedId: outcome.value.forkedId, token }) : err(outcome.error);
+  }
+
+  /** Revokes the link. The token is dropped, never reissued. */
+  async unshare(athlete: Athlete, routineId: string): Promise<RoutineMutation> {
+    return this.editor.mutate(athlete.id, routineId, (routine) => routine.unshare(this.deps.clock.now()));
   }
 
   async addSlot(athlete: Athlete, routineId: string, templateId: string | null): Promise<RoutineMutation> {

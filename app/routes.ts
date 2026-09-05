@@ -13,6 +13,7 @@ export default [
     route('templates', 'routes/templates.tsx'),
     route('templates/:templateId', 'routes/templates.$templateId.tsx'),
     route('routines', 'routes/routines.tsx'),
+    route('routines/import/:shareToken', 'routes/routines.import.$shareToken.tsx'),
     route('routines/:routineId', 'routes/routines.$routineId.tsx'),
     route('history', 'routes/history.tsx'),
     route('weight', 'routes/weight.tsx'),

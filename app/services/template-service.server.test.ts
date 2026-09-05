@@ -4,6 +4,7 @@ import { Athlete } from '~/domain/athlete/athlete';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemoryTemplatesRepository } from '~/repositories/in-memory/templates-repository.server';
@@ -77,6 +78,7 @@ beforeEach(() => {
   service = new TemplateService(templates, exercises, new InMemoryUnitOfWork(), {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
+    secrets: sequentialSecrets('token'),
   });
 });
 

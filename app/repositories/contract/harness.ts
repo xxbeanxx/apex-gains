@@ -5,6 +5,7 @@ import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
 import { fixedClock } from '~/domain/shared/clock';
 import type { IdGenerator } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { WorkoutSession, type WorkoutSessionSnapshot } from '~/domain/session/workout-session';
 import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
 import { DateOnly } from '~/domain/values/date-only';
@@ -60,7 +61,7 @@ export function sequentialUuids(): IdGenerator {
   return { next: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}` };
 }
 
-export const deps = { ids: sequentialUuids(), clock: fixedClock(NOW) };
+export const deps = { ids: sequentialUuids(), clock: fixedClock(NOW), secrets: sequentialSecrets('share') };
 
 /**
  * Ids are uuids because Postgres columns are `uuid` and will reject anything
@@ -131,6 +132,7 @@ export function routine(overrides: Partial<RoutineSnapshot> = {}): Routine {
     name: 'PPL',
     isActive: false,
     anchorDate: '2026-09-01',
+    shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
     slots: [],

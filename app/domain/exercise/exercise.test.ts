@@ -124,6 +124,53 @@ describe('ownership', () => {
   });
 });
 
+describe('copy for import', () => {
+  it("becomes the importing athlete's own exercise, details and equipment intact", () => {
+    const source = Exercise.fromSnapshot(snapshot({ id: 'theirs', userId: 'user-1', equipmentIds: ['barbell', 'bench'] }));
+
+    const copy = source.copyForImport('user-2', deps());
+
+    expect(copy.id).not.toBe('theirs');
+    expect(copy.ownership.isOwnedBy('user-2')).toBe(true);
+    expect(copy.name).toBe('Bench Press');
+    expect(copy.muscleGroup).toBe('chest');
+    // Equipment names are globally unique, so a row is the same row for
+    // everyone - the ids carry over rather than being remapped.
+    expect(copy.equipmentIds).toEqual(['barbell', 'bench']);
+  });
+
+  /**
+   * Unlike templates and routines, the link back is kept: it can only name a
+   * sample, and a per-athlete unique name means there is never a second copy
+   * to make `findForkOf` ambiguous. Keeping it is what stops the copy and the
+   * sample it descends from listing side by side under one name.
+   */
+  it('keeps the link back to the sample the original was forked from', () => {
+    const source = Exercise.fromSnapshot(snapshot({ id: 'theirs', userId: 'user-1', forkedFromId: 'sample-1' }));
+
+    const copy = source.copyForImport('user-2', deps());
+
+    expect(copy.forkedFromId).toBe('sample-1');
+    expect(copy.canRevert).toBe(true);
+  });
+
+  it('leaves a copy of a plain exercise with nothing to revert to', () => {
+    const source = Exercise.fromSnapshot(snapshot({ id: 'theirs', userId: 'user-1' }));
+
+    expect(source.copyForImport('user-2', deps()).canRevert).toBe(false);
+  });
+
+  it('does not disturb the original', () => {
+    const source = Exercise.fromSnapshot(snapshot({ id: 'theirs', userId: 'user-1', equipmentIds: ['barbell'] }));
+
+    const copy = source.copyForImport('user-2', deps());
+    copy.setEquipment('dumbbell', true);
+
+    expect(source.equipmentIds).toEqual(['barbell']);
+    expect(source.ownership.isOwnedBy('user-1')).toBe(true);
+  });
+});
+
 describe('snapshots', () => {
   it('round-trips', () => {
     const original = snapshot({ equipmentIds: ['barbell'] });

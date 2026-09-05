@@ -21,6 +21,46 @@ export function describeTemplatesContract(subject: ContractSubject): void {
       await seedAthletes(repositories);
     });
 
+    describe('findManyByIds', () => {
+      /**
+       * Importing a shared routine reads the templates its slots name, and
+       * those belong to whoever shared it - the share token is what gates
+       * the read, not this method.
+       */
+      it('ignores visibility, so a shared routine can be read before it is imported', async () => {
+        await repositories.templates.save(template({ id: ids.theirs, userId: ids.otherAthlete, name: 'Theirs' }));
+        await repositories.templates.save(template({ id: ids.sample, userId: null, name: 'Sample day' }));
+
+        const found = await repositories.templates.findManyByIds([ids.theirs, ids.sample]);
+
+        expect(found.map((one) => one.id).sort()).toEqual([ids.theirs, ids.sample].sort());
+      });
+
+      it('carries the exercise entries, in position order', async () => {
+        const [first, second] = await seedExercises(2);
+        const saved = template({ id: ids.own });
+        saved.addExercise(first!, SetTarget.none(), deps);
+        saved.addExercise(second!, SetTarget.none(), deps);
+        await repositories.templates.save(saved);
+
+        const [found] = await repositories.templates.findManyByIds([ids.own]);
+
+        expect(found?.exercises.map((entry) => entry.exerciseId)).toEqual([first, second]);
+      });
+
+      it('is empty for an empty id list, without querying', async () => {
+        expect(await repositories.templates.findManyByIds([])).toEqual([]);
+      });
+
+      it('skips ids that do not exist rather than returning a hole', async () => {
+        await repositories.templates.save(template({ id: ids.own }));
+
+        const found = await repositories.templates.findManyByIds([ids.own, ids.extra]);
+
+        expect(found.map((one) => one.id)).toEqual([ids.own]);
+      });
+    });
+
     it('lists most recently updated first', async () => {
       await repositories.templates.save(template({ id: ids.own, name: 'Older', updatedAt: new Date('2026-08-01T00:00:00Z') }));
       await repositories.templates.save(

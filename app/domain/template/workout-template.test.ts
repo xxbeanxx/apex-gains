@@ -141,6 +141,63 @@ describe('fork on write', () => {
   });
 });
 
+describe('copy for import', () => {
+  const shared = () => withExercises(['bench', 'row'], { userId: 'user-1', id: 'theirs', forkedFromId: 'sample-1' });
+
+  it("becomes the importing athlete's own template", () => {
+    const copy = shared().copyForImport('user-2', (id) => `mine-${id}`, deps());
+
+    expect(copy.ownership.userId).toBe('user-2');
+    expect(copy.name).toBe('Push Day');
+    expect(copy.isDeletable).toBe(true);
+  });
+
+  /**
+   * A shared routine can be imported twice, and two rows forked from one
+   * sample would make `findForkOf` ambiguous - so the link back is dropped
+   * even though the template it was copied from had one.
+   */
+  it('drops the link back to the sample the original was forked from', () => {
+    const original = shared();
+    expect(original.canRevert).toBe(true);
+
+    const copy = original.copyForImport('user-2', (id) => id, deps());
+
+    expect(copy.forkedFromId).toBeNull();
+    expect(copy.canRevert).toBe(false);
+  });
+
+  it("remaps each entry onto the importer's own exercise, in order", () => {
+    const copy = shared().copyForImport('user-2', (id) => `mine-${id}`, deps());
+
+    expect(copy.exercises.map((entry) => entry.exerciseId)).toEqual(['mine-bench', 'mine-row']);
+    expect(copy.exercises.map((entry) => entry.position)).toEqual([0, 1]);
+  });
+
+  it('keeps the targets the original set', () => {
+    const original = shared();
+    original.addExercise('squat', SetTarget.of({ sets: 3, reps: 10, weight: Weight.lb(135) }), deps());
+
+    const copy = original.copyForImport('user-2', (id) => id, deps());
+
+    expect(copy.exercises[2]!.target.format(new AthletePreferences('lb', 'km', true))).toBe('3 x 10, 135 lb');
+  });
+
+  it('gives the entries new ids so the original keeps its own', () => {
+    const original = shared();
+    // A generator of its own: the shared `deps()` restarts at entry-1, which
+    // is an id `withExercises` has already handed the original.
+    const copy = original.copyForImport('user-2', (id) => id, {
+      ids: sequentialIds('copied'),
+      clock: fixedClock(NOW),
+    });
+
+    const originalIds = original.exercises.map((entry) => entry.id);
+    expect(copy.exercises.map((entry) => entry.id).some((id) => originalIds.includes(id))).toBe(false);
+    expect(copy.id).not.toBe(original.id);
+  });
+});
+
 describe('SetTarget', () => {
   const imperial = new AthletePreferences('lb', 'km', true);
   const metric = new AthletePreferences('kg', 'mi', true);

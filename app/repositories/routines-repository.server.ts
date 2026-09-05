@@ -13,6 +13,14 @@ export interface RoutinesRepository {
   findVisible(userId: string, routineId: string): Promise<Routine | null>;
   /** At most one per user - the partial unique index enforces it. */
   findActive(userId: string): Promise<Routine | null>;
+  /**
+   * The routine a share token names, whoever owns it.
+   *
+   * Deliberately unscoped by `userId`: the token *is* the authorization, and
+   * the athlete importing a shared routine is by definition not its owner.
+   * The token column is unique, so at most one row can answer.
+   */
+  findByShareToken(shareToken: string): Promise<Routine | null>;
   findForkOf(userId: string, sampleId: string): Promise<Routine | null>;
   save(routine: Routine): Promise<void>;
   delete(routineId: string): Promise<void>;

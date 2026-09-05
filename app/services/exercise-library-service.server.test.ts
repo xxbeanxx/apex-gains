@@ -5,6 +5,7 @@ import { Equipment, type EquipmentSnapshot } from '~/domain/equipment/equipment'
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
@@ -63,6 +64,7 @@ beforeEach(() => {
   service = new ExerciseLibraryService(exercises, equipment, new InMemoryUnitOfWork(), {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
+    secrets: sequentialSecrets('token'),
   });
 });
 

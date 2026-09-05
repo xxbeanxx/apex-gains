@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
+import { sequentialSecrets } from '~/domain/shared/secrets';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
 
@@ -24,6 +25,7 @@ beforeEach(() => {
   service = new AthleteService(athletes, new InMemoryUnitOfWork(), {
     ids: sequentialIds('athlete'),
     clock: fixedClock(NOW),
+    secrets: sequentialSecrets('token'),
   });
 });
 

@@ -25,6 +25,15 @@ export interface TemplatesRepository {
    */
   listNamesFor(userId: string, showSampleData: boolean): Promise<TemplateName[]>;
   findVisible(userId: string, templateId: string): Promise<WorkoutTemplate | null>;
+  /**
+   * Exactly these templates, ignoring visibility - the counterpart to
+   * `ExercisesRepository.findManyByIds`.
+   *
+   * Importing a shared routine has to read the templates its slots name, and
+   * those belong to the athlete who shared it. Reaching them is gated by the
+   * share token the caller already resolved, not by this method.
+   */
+  findManyByIds(templateIds: readonly string[]): Promise<WorkoutTemplate[]>;
   findForkOf(userId: string, sampleId: string): Promise<WorkoutTemplate | null>;
   save(template: WorkoutTemplate): Promise<void>;
   delete(templateId: string): Promise<void>;
