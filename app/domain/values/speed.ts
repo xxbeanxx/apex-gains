@@ -52,8 +52,4 @@ export class Speed {
   format(unit: DistanceUnit): string {
     return `${formatNumber(this.as(unit))} ${speedUnitLabel(unit)}`;
   }
-
-  equals(other: Speed): boolean {
-    return this.kmPerHour === other.kmPerHour;
-  }
 }

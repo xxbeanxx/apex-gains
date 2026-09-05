@@ -51,21 +51,6 @@ describe('isVisibleTo', () => {
   });
 });
 
-describe('equals', () => {
-  it('is equal when both sides are the same sample', () => {
-    expect(Ownership.sample().equals(Ownership.sample())).toBe(true);
-  });
-
-  it('is equal when both sides are owned by the same user', () => {
-    expect(Ownership.of('user-1').equals(Ownership.of('user-1'))).toBe(true);
-  });
-
-  it('is not equal across different users, or a user and a sample', () => {
-    expect(Ownership.of('user-1').equals(Ownership.of('user-2'))).toBe(false);
-    expect(Ownership.of('user-1').equals(Ownership.sample())).toBe(false);
-  });
-});
-
 describe('LibraryVisibility', () => {
   const own = { id: 'own-1', userId: 'user-1', forkedFromId: null };
   const sample = { id: 'sample-1', userId: null, forkedFromId: null };

@@ -106,15 +106,7 @@ export class DateOnly {
     return this.value === other.value;
   }
 
-  compareTo(other: DateOnly): number {
-    return this.value < other.value ? -1 : this.value > other.value ? 1 : 0;
-  }
-
   toString(): string {
-    return this.value;
-  }
-
-  toJSON(): string {
     return this.value;
   }
 }

@@ -34,11 +34,15 @@ import type { AppLogger } from '~server/logging/logger.provider';
  */
 
 /**
- * Every value Nest hands over, keyed by name. This object is the single
- * declaration: the context tokens, the `NestSingletons` shape Nest must
- * supply, and `nestLoadContext` are all derived from it, so adding a service
- * is one edit here and a missing one is a type error rather than an
- * `undefined` at request time.
+ * Every value Nest hands over, keyed by name. The context tokens, the
+ * `NestSingletons` shape Nest must supply, and `nestLoadContext` are all
+ * derived from this object, so a value Nest forgets to supply is a type
+ * error rather than an `undefined` at request time.
+ *
+ * The name itself is still written in three more places - the destructured
+ * exports below, `server/services/services.module.ts`'s provider list, and
+ * `server/react-router/singletons.ts` - but only the first of those can be
+ * got wrong silently, and the compiler catches the other two.
  */
 const contexts = {
   adminService: createContext<AdminService>(),

@@ -2,7 +2,7 @@ import type { Clock } from '../shared/clock';
 import { alreadyEditable, type EditableCopy, identityTranslation } from '../shared/forking';
 import type { IdGenerator } from '../shared/ids';
 import { Ownership } from '../shared/ownership';
-import { type ExerciseType, type Metrics, metricsFor } from './exercise-type';
+import type { ExerciseType } from './exercise-type';
 
 export type ExerciseDetails = {
   readonly name: string;
@@ -99,11 +99,6 @@ export class Exercise {
     return [...this.equipment];
   }
 
-  /** Which measurements a set of this exercise may carry. */
-  get metrics(): Metrics {
-    return metricsFor(this.details.exerciseType);
-  }
-
   get isCardio(): boolean {
     return this.details.exerciseType === 'cardio';
   }
@@ -115,10 +110,6 @@ export class Exercise {
 
   updateDetails(details: ExerciseDetails): void {
     this.details = details;
-  }
-
-  usesEquipment(equipmentId: string): boolean {
-    return this.equipment.has(equipmentId);
   }
 
   setEquipment(equipmentId: string, linked: boolean): void {

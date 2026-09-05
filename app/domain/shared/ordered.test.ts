@@ -76,7 +76,7 @@ describe('OrderedChildren', () => {
     const children = new OrderedChildren([child('a', 0), child('b', 1)]);
     expect(children.find('b')?.id).toBe('b');
     expect(children.at(0)?.id).toBe('a');
-    expect(children.indexOf('b')).toBe(1);
+    expect(children.at(1)?.id).toBe('b');
     expect(children.find('nope')).toBeUndefined();
   });
 });

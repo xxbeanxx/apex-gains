@@ -38,16 +38,4 @@ export class Duration {
   format(): string {
     return `${formatNumber(this.inMinutes)} min`;
   }
-
-  plus(other: Duration): Duration {
-    return new Duration(this.totalSeconds + other.totalSeconds);
-  }
-
-  isLongerThan(other: Duration): boolean {
-    return this.totalSeconds > other.totalSeconds;
-  }
-
-  equals(other: Duration): boolean {
-    return this.totalSeconds === other.totalSeconds;
-  }
 }

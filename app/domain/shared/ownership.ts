@@ -41,10 +41,6 @@ export class Ownership {
   isVisibleTo(userId: string): boolean {
     return this.isSample || this.isOwnedBy(userId);
   }
-
-  equals(other: Ownership): boolean {
-    return this.userId === other.userId;
-  }
 }
 
 /**

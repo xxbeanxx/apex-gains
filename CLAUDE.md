@@ -233,9 +233,12 @@ React Router's load context is the _only_ conduit from Nest to the app
 The whole bridge is three pieces. `app/lib/nest-bridge.server.ts`
 declares one `contexts` map, and derives from it the exported tokens,
 the `NestSingletons` type, and `nestLoadContext(singletons)`, which
-builds a populated `RouterContextProvider`; adding a service is one
-edit there, and a missing one is a type error rather than an
-`undefined` at request time.
+builds a populated `RouterContextProvider`; a value Nest forgets to
+supply is a type error rather than an `undefined` at request time.
+Adding a service means naming it in four places — that map, the
+destructured exports beside it, `server/services/services.module.ts`,
+and `server/react-router/singletons.ts` — but the compiler catches
+every omission except the export.
 `server/react-router/singletons.ts` pulls those values out of the DI
 container at bootstrap (`collectNestSingletons(app)`).
 `server/react-router/handler.ts` joins them: it is the React Router

@@ -45,7 +45,7 @@ export class OrderedChildren<T extends Positioned> {
     return this.children.find((child) => child.id === id);
   }
 
-  indexOf(id: string): number {
+  private indexOf(id: string): number {
     return this.children.findIndex((child) => child.id === id);
   }
 

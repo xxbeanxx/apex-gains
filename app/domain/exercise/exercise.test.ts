@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
 import { Exercise, type ExerciseSnapshot } from './exercise';
-import { metricsFor } from './exercise-type';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = () => ({ ids: sequentialIds('ex'), clock: fixedClock(NOW) });
@@ -23,23 +22,10 @@ function snapshot(overrides: Partial<ExerciseSnapshot> = {}): ExerciseSnapshot {
   };
 }
 
-describe('measurements by type', () => {
-  it('measures strength work in reps and weight', () => {
-    const metrics = metricsFor('strength');
-    expect(metrics.reps && metrics.weight).toBe(true);
-    expect(metrics.duration || metrics.speed || metrics.resistance).toBe(false);
-  });
-
-  it('measures cardio work in duration, speed and resistance', () => {
-    const metrics = metricsFor('cardio');
-    expect(metrics.duration && metrics.speed && metrics.resistance).toBe(true);
-    expect(metrics.reps || metrics.weight).toBe(false);
-  });
-
-  it('exposes its own metrics', () => {
-    const cardio = Exercise.fromSnapshot(snapshot({ exerciseType: 'cardio' }));
-    expect(cardio.isCardio).toBe(true);
-    expect(cardio.metrics.duration).toBe(true);
+describe('exerciseType', () => {
+  it('reads cardio work back as cardio', () => {
+    expect(Exercise.fromSnapshot(snapshot({ exerciseType: 'cardio' })).isCardio).toBe(true);
+    expect(Exercise.fromSnapshot(snapshot({ exerciseType: 'strength' })).isCardio).toBe(false);
   });
 });
 
@@ -48,10 +34,10 @@ describe('equipment links', () => {
     const exercise = Exercise.fromSnapshot(snapshot());
 
     exercise.setEquipment('barbell', true);
-    expect(exercise.usesEquipment('barbell')).toBe(true);
+    expect(exercise.equipmentIds).toEqual(['barbell']);
 
     exercise.setEquipment('barbell', false);
-    expect(exercise.usesEquipment('barbell')).toBe(false);
+    expect(exercise.equipmentIds).toEqual([]);
   });
 
   it('ignores linking the same equipment twice', () => {

@@ -66,12 +66,4 @@ export class Weight {
   plus(other: Weight): Weight {
     return new Weight(this.pounds + other.pounds);
   }
-
-  isGreaterThan(other: Weight): boolean {
-    return this.pounds > other.pounds;
-  }
-
-  equals(other: Weight): boolean {
-    return this.pounds === other.pounds;
-  }
 }

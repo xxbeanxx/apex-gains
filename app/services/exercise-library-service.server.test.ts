@@ -185,7 +185,7 @@ describe('setExerciseEquipment', () => {
 
     expect(outcome).toEqual({ ok: true, value: { forkedId: null } });
     const updated = await exercises.findVisible(athlete.id, 'own-1');
-    expect(updated?.usesEquipment('equip-1')).toBe(true);
+    expect(updated?.equipmentIds).toContain('equip-1');
   });
 
   it('forks a sample before linking equipment on it', async () => {
@@ -196,7 +196,7 @@ describe('setExerciseEquipment', () => {
     const forkedId = outcome.ok ? outcome.value.forkedId : null;
     expect(forkedId).not.toBeNull();
     const fork = await exercises.findVisible(athlete.id, forkedId!);
-    expect(fork?.usesEquipment('equip-1')).toBe(true);
+    expect(fork?.equipmentIds).toContain('equip-1');
   });
 });
 

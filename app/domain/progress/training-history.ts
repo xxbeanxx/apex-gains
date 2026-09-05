@@ -29,10 +29,6 @@ export class TrainingHistory {
     return this.exercises.get(exerciseId);
   }
 
-  sessionOn(date: DateOnly): WorkoutSession | undefined {
-    return this.sessions.find((session) => session.date.equals(date));
-  }
-
   /** Every set in the span, paired with the session it belongs to. */
   *entries(): Generator<{ session: WorkoutSession; set: LoggedSet }> {
     for (const session of this.sessions) {
