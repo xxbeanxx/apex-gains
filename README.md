@@ -97,6 +97,10 @@ Config values are validated at server startup using `class-validator`:
   credentials (required).
 - `PORT` - HTTP port to listen on (optional, defaults to `3000`).
 - `HOST` - Bind address override (optional, binds to all interfaces if unset).
+- `TRUST_PROXY` - Number of reverse-proxy hops in front of the app whose
+  `X-Forwarded-*` headers Express should trust (optional, defaults to
+  `0` - trust none). The deployed app sets this to `1` for Azure
+  Container Apps' single ingress hop.
 - `LOG_LEVEL` - Least severe NestJS log level to print (`verbose`,
   `debug`, `log`, `warn`, `error`, `fatal`; defaults to `log`).
 - `ENABLE_TEST_LOGIN=true` - Turns on `GET /auth/test-login?email=...`,
@@ -278,8 +282,9 @@ which still works directly too). The image is public on GHCR
 (`ghcr.io/xxbeanxx/apex-gains`), so the Container App pulls it without
 registry credentials. `DATABASE_URL`, `SESSION_SECRET`, and
 `GOOGLE_CLIENT_SECRET` are stored as Container App secrets;
-`GOOGLE_CLIENT_ID` and `PORT` are plain env vars. The app derives its
-own origin from the request rather than an env var (Express's "trust
+`GOOGLE_CLIENT_ID`, `PORT`, and `TRUST_PROXY` (set to `1`, for Azure's
+single ingress hop) are plain env vars. The app derives its own origin
+from the request rather than a separate env var (Express's "trust
 proxy" setting, since Azure's ingress terminates TLS and forwards
 plain HTTP - see `server/main.ts`), so Google's OAuth redirect URI
 (`https://apex.atomic-nucleus.com/auth/google/callback`) just needs to

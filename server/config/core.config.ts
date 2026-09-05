@@ -39,6 +39,20 @@ export class CoreConfig {
   @IsOptional()
   @IsString({ message: 'HOST must be a string' })
   readonly host?: string;
+
+  /**
+   * Number of reverse-proxy hops in front of the app whose
+   * `X-Forwarded-*` headers Express should trust - see `server.set('trust
+   * proxy', ...)` in `server/main.ts`. Defaults to 0 (trust none), matching
+   * Express's own default for a server reached directly. Azure Container
+   * Apps puts exactly one hop (its ingress) in front of the app, so the
+   * deployed instance sets this to 1.
+   */
+  @Transform(toNumber())
+  @Expose({ name: 'TRUST_PROXY' })
+  @IsInt({ message: 'TRUST_PROXY must be an integer' })
+  @Min(0, { message: 'TRUST_PROXY must be >= 0' })
+  readonly trustProxy: number = 0;
 }
 
 /**

@@ -10,6 +10,9 @@
  * React Router builds) correctly report "https". React Router's CSRF check
  * on document actions compares that origin against the browser's `Origin`
  * header, so without it every form submission would be rejected with a 400.
+ * The setting is a hop count (`TRUST_PROXY`, see `core.config.ts`) rather
+ * than `true`, which would trust `X-Forwarded-*` from any client directly -
+ * letting a request forge its own origin/protocol/IP.
  */
 
 import 'reflect-metadata';
@@ -144,8 +147,9 @@ async function bootstrap() {
 
   const adapter = app.getHttpAdapter();
   const server = adapter.getInstance();
+  const core = app.get(coreConfig.KEY);
 
-  server.set('trust proxy', true);
+  server.set('trust proxy', core.trustProxy);
   server.disable('x-powered-by');
   server.use(compression());
 
@@ -166,7 +170,6 @@ async function bootstrap() {
     next();
   });
 
-  const core = app.get(coreConfig.KEY);
   const singletons = collectNestSingletons(app);
 
   // This app's fallback is the React Router handler, not Nest's 404. Nest
