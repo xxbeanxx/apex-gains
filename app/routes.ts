@@ -6,6 +6,10 @@ export default [
   route('auth/google/callback', 'routes/auth.google.callback.tsx'),
   route('auth/logout', 'routes/auth.logout.tsx'),
   route('auth/test-login', 'routes/auth.test-login.tsx'),
+  route('routines', 'routes/legacy-redirect.tsx', { id: 'legacy-routines' }),
+  route('routines/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-routine' }),
+  route('templates', 'routes/legacy-redirect.tsx', { id: 'legacy-templates' }),
+  route('templates/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-template' }),
   layout('routes/_protected.tsx', [
     route('today', 'routes/today.tsx'),
     route('exercises', 'routes/exercises.tsx'),
