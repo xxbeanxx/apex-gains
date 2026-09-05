@@ -39,6 +39,13 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = isDark ? 'dark' : 'light';
 }
 
+/** Flips light/dark from wherever the theme currently resolves to - used by the command palette's "Toggle theme" action. */
+export function toggleTheme() {
+  const next: Theme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+  localStorage.setItem(STORAGE_KEY, next);
+  applyTheme(next);
+}
+
 function ThemeToggle() {
   // Starts null so the first client render matches the server's (no checkmark
   // rendered yet). The visible icon is driven by CSS, not by this state, so

@@ -2,6 +2,7 @@ import { DumbbellIcon, LogOutIcon } from 'lucide-react';
 import { Link, useSubmit } from 'react-router';
 
 import { Breadcrumbs } from '~/components/shell/breadcrumbs';
+import { CommandPalette } from '~/components/shell/command-palette';
 import { ThemeToggle } from '~/components/theme-toggle';
 import { Avatar } from '~/components/ui/avatar';
 import {
@@ -65,6 +66,7 @@ function TopBar({ user }: { user: NavUser | null }) {
         </Link>
       )}
       <div className="flex items-center gap-2">
+        {user ? <CommandPalette user={user} /> : null}
         <ThemeToggle />
         {user ? (
           <AccountMenu user={user} />
