@@ -1,43 +1,30 @@
-import {
-  CalendarIcon,
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CircleHelpIcon,
-  MoonIcon,
-  PlusIcon,
-  XIcon,
-} from 'lucide-react';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
 import { Expose, Transform } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 import { useState } from 'react';
-import { data, Link, useFetcher, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { ExerciseHistoryButton } from '~/components/session/exercise-history-button';
+import { LoggedSetsList } from '~/components/session/logged-sets-list';
+import { LogSetForm } from '~/components/session/log-set-form';
+import { SetProgress } from '~/components/session/set-progress';
+import { PastWeekCard, UpcomingWeekCard } from '~/components/session/week-rail';
 import { Page, PageHeader, Section } from '~/components/layout/page';
+import { TargetChips } from '~/components/target-chips';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Calendar } from '~/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { SubmitButton } from '~/components/ui/submit-button';
-import type { CardioFields } from '~/domain/equipment/cardio-fields';
-import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import { DateOnly } from '~/domain/values/date-only';
-import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
-import { speedUnitLabel } from '~/domain/values/units';
-import { formatFullDate, formatMonthDay, formatRelativeDate, formatWeekday } from '~/lib/format';
+import { formatFullDate } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toOptionalNumber } from '~/lib/validate-form';
-import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
-import type { LoggedSetView, RecentSetView } from '~/services/session-service.server';
 
 import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/lib/nest-bridge.server';
 
@@ -48,17 +35,6 @@ export function meta() {
 }
 
 export const handle = { crumb: () => ({ label: 'Today' }) };
-
-/**
- * The minimum an exercise has to offer for the log form to render the right
- * fields for it. Both the plan's items and the full library satisfy it.
- */
-type LoggableExercise = {
-  id: string;
-  name: string;
-  exerciseType: ExerciseType;
-  cardioFields: CardioFields;
-};
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
@@ -191,417 +167,18 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
-/** Groups a newest-first flat set list into one entry per day it was logged. */
-function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: string[] }[] {
-  const groups: { date: string; summaries: string[] }[] = [];
-  for (const set of sets) {
-    const current = groups.at(-1);
-    if (current && current.date === set.date) {
-      current.summaries.push(set.summary);
-    } else {
-      groups.push({ date: set.date, summaries: [set.summary] });
-    }
-  }
-  return groups;
-}
-
-/**
- * A "?" that opens an overlay of the last few times this exercise was
- * logged, so the reps/weight fields below don't have to be filled in blind.
- * Fetched lazily on first open rather than up front for every exercise on
- * the page.
- */
-function ExerciseHistoryButton({
-  exerciseId,
-  exerciseName,
-  todayStr,
+/** The two week rails, shared by the always-visible desktop copy and the collapsed mobile one. */
+function WeekOverview({
+  upcomingWeek,
+  pastWeek,
 }: {
-  exerciseId: string;
-  exerciseName: string;
-  todayStr: string;
+  upcomingWeek: Route.ComponentProps['loaderData']['upcomingWeek'];
+  pastWeek: Route.ComponentProps['loaderData']['pastWeek'];
 }) {
-  const fetcher = useFetcher<{ sets: RecentSetView[] }>();
-  const [open, setOpen] = useState(false);
-
-  function handleOpenChange(next: boolean) {
-    setOpen(next);
-    if (next && fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(`/exercises/${exerciseId}/history`);
-    }
-  }
-
-  const groups = fetcher.data ? groupSetsByDate(fetcher.data.sets) : [];
-
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground"
-          aria-label={`Show recent history for ${exerciseName}`}
-        >
-          <CircleHelpIcon aria-hidden="true" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-72">
-        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{exerciseName}: recent sets</p>
-        {fetcher.state !== 'idle' ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : groups.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {groups.map((group) => (
-              <li key={group.date} className="text-sm">
-                <span className="font-medium">{formatRelativeDate(group.date, todayStr)}</span>
-                <span className="text-muted-foreground tabular-nums"> · {group.summaries.join(', ')}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">Nothing logged for this exercise yet.</p>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function LogSetForm({
-  exercise,
-  exerciseOptions,
-  date,
-  todayStr,
-  weightUnit,
-  distanceUnit,
-}: {
-  exercise?: LoggableExercise;
-  exerciseOptions?: LoggableExercise[];
-  date: string;
-  todayStr: string;
-  weightUnit: WeightUnit;
-  distanceUnit: DistanceUnit;
-}) {
-  const fetcher = useFetcher();
-  const [selectedId, setSelectedId] = useState(exercise?.id ?? '');
-  const active = exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
-  const pending = fetcher.state !== 'idle';
-  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
-  const { showSpeed, showResistance } = active?.cardioFields ?? { showSpeed: true, showResistance: true };
-
-  return (
-    <fetcher.Form method="post" className="flex flex-col gap-3">
-      <input {...intents.logSet.field} />
-      <input type="hidden" name="date" value={date} />
-      {exercise ? (
-        <input type="hidden" name="exerciseId" value={exercise.id} />
-      ) : (
-        <Field
-          label="Exercise"
-          className="sm:max-w-xs"
-          action={
-            active ? <ExerciseHistoryButton exerciseId={active.id} exerciseName={active.name} todayStr={todayStr} /> : null
-          }
-        >
-          {({ id }) => (
-            <Select name="exerciseId" value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger id={id} className="w-full">
-                <SelectValue placeholder="Choose an exercise" />
-              </SelectTrigger>
-              <SelectContent>
-                {exerciseOptions?.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </Field>
-      )}
-
-      {active?.exerciseType === 'strength' ? (
-        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-          <Field label="Reps">
-            <Input name="reps" type="number" min={1} inputMode="numeric" placeholder="reps" />
-          </Field>
-          <Field label={`Weight (${weightUnit})`}>
-            <Input name="weight" type="number" min={0} step="0.5" inputMode="decimal" placeholder={weightUnit} />
-          </Field>
-        </div>
-      ) : null}
-
-      {active?.exerciseType === 'cardio' ? (
-        <div
-          className={cn(
-            'grid grid-cols-2 gap-3 sm:max-w-md',
-            showSpeed && showResistance ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
-          )}
-        >
-          <Field label="Minutes">
-            <Input name="durationMinutes" type="number" min={1} inputMode="numeric" placeholder="min" />
-          </Field>
-          {showSpeed ? (
-            <Field label={`Speed (${speedUnitLabel(distanceUnit)})`}>
-              <Input
-                name="speed"
-                type="number"
-                min={0}
-                step="0.1"
-                inputMode="decimal"
-                placeholder={speedUnitLabel(distanceUnit)}
-              />
-            </Field>
-          ) : null}
-          {showResistance ? (
-            <Field label="Resistance">
-              <Input name="resistance" type="number" min={1} inputMode="numeric" placeholder="level" />
-            </Field>
-          ) : null}
-        </div>
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="text-sm font-medium text-destructive">
-          {error}
-        </p>
-      ) : null}
-
-      <SubmitButton
-        pending={pending}
-        pendingLabel="Logging set"
-        disabled={!active}
-        size="sm"
-        variant="brand"
-        className="self-start"
-      >
-        {pending ? null : <PlusIcon aria-hidden="true" />}
-        Log set
-      </SubmitButton>
-    </fetcher.Form>
-  );
-}
-
-function LoggedSetsList({ sets, date }: { sets: LoggedSetView[]; date: string }) {
-  if (sets.length === 0) return null;
-  return (
-    <ol className="flex flex-col gap-1.5">
-      {sets.map((set, index) => (
-        <li key={set.id} className="flex items-center gap-2.5 rounded-lg bg-muted/60 py-1.5 pr-1.5 pl-2.5 text-sm">
-          <span
-            aria-hidden="true"
-            className="flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-muted text-[0.6875rem] font-semibold text-brand-strong tabular-nums"
-          >
-            {index + 1}
-          </span>
-          <span className="min-w-0 flex-1 truncate tabular-nums">
-            <span className="sr-only">Set {index + 1}: </span>
-            {set.summary}
-          </span>
-          <form method="post" className="contents">
-            <input {...intents.removeSet.field} />
-            <input type="hidden" name="date" value={date} />
-            <input type="hidden" name="setId" value={set.id} />
-            <button
-              type="submit"
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-destructive/10 hover:text-destructive pointer-coarse:size-8"
-            >
-              <XIcon className="size-3.5" aria-hidden="true" />
-              <span className="sr-only">
-                Remove set {index + 1}, {set.summary}
-              </span>
-            </button>
-          </form>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** One day in a week rail. Shared by the upcoming plan and the past summary. */
-function DayCell({
-  date,
-  isToday = false,
-  label,
-  to,
-  children,
-}: {
-  date: string;
-  isToday?: boolean;
-  /** Full sentence for screen readers, e.g. "Tuesday 2 September, Push Day". */
-  label: string;
-  /** When set, the whole cell links here (e.g. to log that day). */
-  to?: string;
-  children: React.ReactNode;
-}) {
-  const cellClassName = cn(
-    'relative flex min-w-18 flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-(--dur)',
-    isToday ? 'border-brand/40 bg-brand-muted' : 'border-border bg-card/50',
-    to ? 'outline-none hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50' : null,
-  );
-
-  const content = (
-    <>
-      {isToday ? <span aria-hidden="true" className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-brand-strong" /> : null}
-      <span aria-hidden="true" className={cn('text-xs font-medium', isToday ? 'text-brand-strong' : 'text-muted-foreground')}>
-        {formatWeekday(date)}
-      </span>
-      <span aria-hidden="true" className="text-[0.625rem] text-muted-foreground tabular-nums">
-        {formatMonthDay(date)}
-      </span>
-      <div aria-hidden="true" className="mt-0.5 w-full">
-        {children}
-      </div>
-    </>
-  );
-
-  if (to) {
-    return (
-      <li className="flex min-w-18 flex-1">
-        <Link to={to} aria-label={label} className={cellClassName}>
-          {content}
-        </Link>
-      </li>
-    );
-  }
-
-  return (
-    <li aria-label={label} className={cellClassName}>
-      {content}
-    </li>
-  );
-}
-
-function WeekRail({ children }: { children: React.ReactNode }) {
-  return <ul className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">{children}</ul>;
-}
-
-function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
-  const planned = days.filter((d) => d.type === 'workout').length;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Next seven days</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {planned} workout{planned === 1 ? '' : 's'} scheduled
-        </p>
-      </CardHeader>
-      <CardContent>
-        <WeekRail>
-          {days.map((day, index) => {
-            const what = day.type === 'workout' ? day.workoutName : day.type === 'rest' ? 'Rest day' : 'Nothing scheduled';
-            return (
-              <DayCell
-                key={day.date}
-                date={day.date}
-                isToday={index === 0}
-                label={`${index === 0 ? 'Today, ' : ''}${formatFullDate(day.date)}: ${what}`}
-              >
-                {day.type === 'rest' ? (
-                  <Badge variant="secondary" className="text-[0.625rem]">
-                    Rest
-                  </Badge>
-                ) : day.type === 'workout' ? (
-                  <span className="block w-full truncate text-xs font-medium" title={day.workoutName}>
-                    {day.workoutName}
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
-              </DayCell>
-            );
-          })}
-        </WeekRail>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
-  const workouts = days.filter((d) => d.status === 'workout').length;
-  const rests = days.filter((d) => d.status === 'rest').length;
-  const totalSets = days.reduce((sum, d) => sum + d.setCount, 0);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Last seven days</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {workouts} workout{workouts === 1 ? '' : 's'}, {rests} rest day
-          {rests === 1 ? '' : 's'}, {totalSets} set{totalSets === 1 ? '' : 's'} logged
-        </p>
-      </CardHeader>
-      <CardContent>
-        <WeekRail>
-          {days.map((day) => {
-            const what =
-              day.status === 'workout'
-                ? `${day.setCount} set${day.setCount === 1 ? '' : 's'} logged`
-                : day.status === 'rest'
-                  ? 'Rest day'
-                  : 'Nothing logged';
-            return (
-              <DayCell
-                key={day.date}
-                date={day.date}
-                to={`/today?date=${day.date}`}
-                label={`${formatFullDate(day.date)}: ${what}. Log a set for this day.`}
-              >
-                {day.status === 'workout' ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums">
-                    <CheckIcon className="size-3 text-success" />
-                    {day.setCount}
-                  </span>
-                ) : day.status === 'rest' ? (
-                  <Badge variant="secondary" className="text-[0.625rem]">
-                    Rest
-                  </Badge>
-                ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
-              </DayCell>
-            );
-          })}
-        </WeekRail>
-      </CardContent>
-    </Card>
-  );
-}
-
-/** "2 of 3 sets" plus a bar, when the workout names a set target. */
-function SetProgress({ done, target }: { done: number; target: number }) {
-  const pct = Math.min(100, Math.round((done / target) * 100));
-  const complete = done >= target;
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className={cn('font-medium tabular-nums', complete ? 'text-success' : 'text-muted-foreground')}>
-          {done} of {target} sets
-        </span>
-        {complete ? (
-          <span className="inline-flex items-center gap-1 font-medium text-success">
-            <CheckIcon className="size-3" aria-hidden="true" />
-            Done
-          </span>
-        ) : null}
-      </div>
-      <div
-        role="progressbar"
-        aria-valuenow={done}
-        aria-valuemin={0}
-        aria-valuemax={target}
-        aria-label={`${done} of ${target} sets logged`}
-        className="h-1.5 overflow-hidden rounded-full bg-muted"
-      >
-        <div
-          className={cn(
-            'h-full rounded-full transition-[width] duration-(--dur-slow) ease-(--ease-quint)',
-            complete ? 'bg-success' : 'bg-brand-strong',
-          )}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="grid gap-4 lg:grid-cols-2">
+      <UpcomingWeekCard days={upcomingWeek} />
+      <PastWeekCard days={pastWeek} />
     </div>
   );
 }
@@ -692,21 +269,34 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         }
       />
 
-      <div className="mt-(--section-gap) grid gap-4 lg:grid-cols-2">
-        <UpcomingWeekCard days={upcomingWeek} />
-        <PastWeekCard days={pastWeek} />
-      </div>
-
       {plan.type === 'workout' ? (
         <Section
           title={isToday ? "Today's session" : "That day's session"}
           description={`${plan.items.length} exercise${plan.items.length === 1 ? '' : 's'} in ${plan.workoutName}.`}
+          className="mt-(--section-gap)"
         >
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {plan.items.map((item) => {
               const done = setsByExercise.get(item.exerciseId)?.length ?? 0;
+              const complete = item.target?.sets != null && done >= item.target.sets;
+              const form = (
+                <LogSetForm
+                  logSet={intents.logSet}
+                  exercise={{
+                    id: item.exerciseId,
+                    name: item.exerciseName,
+                    exerciseType: item.exerciseType,
+                    cardioFields: item.cardioFields,
+                  }}
+                  date={date}
+                  todayStr={todayStr}
+                  weightUnit={weightUnit}
+                  distanceUnit={distanceUnit}
+                />
+              );
+
               return (
-                <Card key={item.exerciseId}>
+                <Card key={item.exerciseId} className={cn(complete && 'border-brand-strong')}>
                   <CardHeader>
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-base">{item.exerciseName}</CardTitle>
@@ -716,25 +306,39 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                         todayStr={todayStr}
                       />
                     </div>
-                    {item.targetSummary ? (
-                      <p className="text-sm text-muted-foreground tabular-nums">Target: {item.targetSummary}</p>
+                    {item.target ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <TargetChips target={item.target} />
+                      </div>
                     ) : null}
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
-                    {item.targetSets ? <SetProgress done={done} target={item.targetSets} /> : null}
-                    <LoggedSetsList sets={setsByExercise.get(item.exerciseId) ?? []} date={date} />
-                    <LogSetForm
-                      exercise={{
-                        id: item.exerciseId,
-                        name: item.exerciseName,
-                        exerciseType: item.exerciseType,
-                        cardioFields: item.cardioFields,
-                      }}
+                    {item.target?.sets ? <SetProgress done={done} target={item.target.sets} /> : null}
+                    <LoggedSetsList
+                      sets={setsByExercise.get(item.exerciseId) ?? []}
                       date={date}
-                      todayStr={todayStr}
-                      weightUnit={weightUnit}
-                      distanceUnit={distanceUnit}
+                      removeSet={intents.removeSet}
                     />
+                    {complete ? (
+                      // The common case once a card is complete is *not*
+                      // logging another set - collapse the form rather than
+                      // leaving it open by default.
+                      <details>
+                        <summary
+                          role="button"
+                          className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+                        >
+                          <ChevronRightIcon
+                            className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
+                            aria-hidden="true"
+                          />
+                          Log another set
+                        </summary>
+                        <div className="mt-3">{form}</div>
+                      </details>
+                    ) : (
+                      form
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -756,6 +360,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
         <Card className="max-w-2xl">
           <CardContent>
             <LogSetForm
+              logSet={intents.logSet}
               exerciseOptions={allExercises.map((e) => ({
                 id: e.id,
                 name: e.name,
@@ -791,7 +396,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                     <CardTitle className="text-base">{sets[0].exerciseName}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <LoggedSetsList sets={sets} date={date} />
+                    <LoggedSetsList sets={sets} date={date} removeSet={intents.removeSet} />
                   </CardContent>
                 </Card>
               ))}
@@ -805,6 +410,37 @@ export default function Today({ loaderData }: Route.ComponentProps) {
           )}
         </Section>
       ) : null}
+
+      {
+        // The rails are the least actionable thing on the page - useful for
+        // orientation, not for logging - so they sink to the bottom and, on
+        // a phone, start collapsed behind a single disclosure rather than
+        // pushing the log form below the fold. A closed <details> hides its
+        // content by the HTML rendering rules, not by a CSS `display` that
+        // author styles could override - there is no way to make one element
+        // open at `md:` and closed below it, so `md:` gets its own
+        // permanently-expanded copy instead, `md:hidden` below it hands off
+        // to the collapsible one. Both read the same two cards; only one is
+        // ever visible at a given width.
+      }
+      <div className="mt-(--section-gap) hidden md:block">
+        <WeekOverview upcomingWeek={upcomingWeek} pastWeek={pastWeek} />
+      </div>
+      <details className="mt-(--section-gap) md:hidden">
+        <summary
+          role="button"
+          className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+        >
+          <ChevronRightIcon
+            className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
+            aria-hidden="true"
+          />
+          This week
+        </summary>
+        <div className="mt-3">
+          <WeekOverview upcomingWeek={upcomingWeek} pastWeek={pastWeek} />
+        </div>
+      </details>
     </Page>
   );
 }

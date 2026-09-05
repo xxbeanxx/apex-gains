@@ -11,6 +11,7 @@ import type { PlansRepository } from '~/repositories/plans-repository.server';
 import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
 import type { SessionsRepository } from '~/repositories/sessions-repository.server';
 import { ExerciseDirectory } from './shared/exercise-directory.server';
+import { toTargetView, type TargetView } from './shared/target-view.server';
 
 import {
   EQUIPMENT_REPOSITORY,
@@ -26,10 +27,8 @@ export type PlanItem = {
   exerciseType: ExerciseType;
   /** Which cardio measurements the log form should offer - see `cardioFieldsFor`. */
   cardioFields: CardioFields;
-  /** Already formatted in the athlete's units. */
-  targetSummary: string | null;
-  /** Drives the "n of m sets" progress bar; null when nothing was targeted. */
-  targetSets: number | null;
+  /** Null when the exercise carries no target at all. */
+  target: TargetView | null;
 };
 
 /**
@@ -113,8 +112,7 @@ export class TrainingPlanService {
         exerciseName: directory.nameOf(entry.exerciseId),
         exerciseType: directory.typeOf(entry.exerciseId),
         cardioFields: cardioFieldsFor(directory.equipmentIdsOf(entry.exerciseId).map((id) => cardioKindById.get(id) ?? null)),
-        targetSummary: entry.target.format(athlete.preferences),
-        targetSets: entry.target.sets,
+        target: toTargetView(entry.target, athlete.preferences),
       })),
     };
   }

@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
-import type { AthletePreferences } from '~/domain/athlete/preferences';
 import { cardioFieldsFor } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
 import type { MoveDirection } from '~/domain/shared/ordered';
@@ -21,6 +20,7 @@ import { DOMAIN_DEPS } from '~/services/shared/tokens';
 import type { DomainDeps } from './shared/deps.server';
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
+import { toTargetView, type TargetView } from './shared/target-view.server';
 
 export type WorkoutSummary = {
   id: string;
@@ -46,17 +46,7 @@ export type WorkoutExerciseView = {
    * an edit form's number input - `weight`/`duration`/`speed` alone are
    * display strings a form can't parse back into one.
    */
-  target: {
-    sets: number | null;
-    reps: number | null;
-    weight: string | null;
-    weightValue: number | null;
-    duration: string | null;
-    durationMinutesValue: number | null;
-    speed: string | null;
-    speedValue: number | null;
-    resistance: number | null;
-  } | null;
+  target: TargetView | null;
 };
 
 export type WorkoutDetail = WorkoutSummary & {
@@ -80,21 +70,6 @@ export type TargetInput = {
 };
 
 export type WorkoutMutation = ForkMutation;
-
-function toTargetChips(target: SetTarget, preferences: AthletePreferences): WorkoutExerciseView['target'] {
-  if (target.isEmpty) return null;
-  return {
-    sets: target.sets,
-    reps: target.reps,
-    weight: preferences.formatWeight(target.weight),
-    weightValue: target.weight ? preferences.weightValue(target.weight) : null,
-    duration: preferences.formatDuration(target.duration),
-    durationMinutesValue: target.duration?.inMinutes ?? null,
-    speed: preferences.formatSpeed(target.speed),
-    speedValue: target.speed ? preferences.speedValue(target.speed) : null,
-    resistance: target.resistance,
-  };
-}
 
 function toSummary(workout: Workout): WorkoutSummary {
   return {
@@ -154,7 +129,7 @@ export class WorkoutService {
         exerciseName: directory.nameOf(entry.exerciseId),
         exerciseType: directory.typeOf(entry.exerciseId),
         targetSummary: entry.target.format(athlete.preferences),
-        target: toTargetChips(entry.target, athlete.preferences),
+        target: toTargetView(entry.target, athlete.preferences),
       })),
     };
   }

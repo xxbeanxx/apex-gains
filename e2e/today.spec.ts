@@ -46,8 +46,11 @@ test('shows no active plan until one is set', async ({ page, athlete }) => {
 
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(page.getByText('No plan is active, so log whatever you like for today.')).toBeVisible();
-  await expect(page.getByText('Next seven days')).toBeVisible();
-  await expect(page.getByText('0 workouts scheduled')).toBeVisible();
+  // The week rails render twice - once always-expanded for `md:` and up,
+  // once behind a mobile-only `<details>` - so `.first()` picks whichever
+  // copy this viewport actually shows.
+  await expect(page.getByText('Next seven days').first()).toBeVisible();
+  await expect(page.getByText('0 workouts scheduled').first()).toBeVisible();
 });
 
 test('logs a strength set from the free-form form and removes it', async ({ page, athlete }) => {
@@ -115,6 +118,24 @@ test("surfaces the active plan's workout and tracks set progress", async ({ page
 
   await expect(card.getByText('1 of 3 sets')).toBeVisible();
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
+
+  // Two more sets complete the target.
+  for (let i = 0; i < 2; i++) {
+    await card.getByLabel('Reps').fill('10');
+    await card.getByLabel(/^Weight \(/).fill('65');
+    await card.getByRole('button', { name: 'Log set' }).click();
+  }
+  await expect(card.getByText('3 of 3 sets')).toBeVisible();
+
+  // Complete, so the card calls it out and the form collapses behind a
+  // disclosure rather than staying open for the now-uncommon "one more set".
+  await expect(card).toHaveClass(/border-brand-strong/);
+  await expect(card.getByLabel('Reps')).toBeHidden();
+  await card.getByText('Log another set').click();
+  await card.getByLabel('Reps').fill('8');
+  await card.getByLabel(/^Weight \(/).fill('65');
+  await card.getByRole('button', { name: 'Log set' }).click();
+  await expect(card.getByText('4 of 3 sets')).toBeVisible();
 });
 
 test('marks a rest day but still allows logging', async ({ page, athlete }) => {
