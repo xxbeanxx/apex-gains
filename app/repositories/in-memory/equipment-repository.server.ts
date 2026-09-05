@@ -1,4 +1,5 @@
 import { Equipment, type EquipmentSnapshot } from '~/domain/equipment/equipment';
+import { Ownership } from '~/domain/shared/ownership';
 
 import type { EquipmentRepository } from '../equipment-repository.server';
 
@@ -8,9 +9,17 @@ import type { EquipmentRepository } from '../equipment-repository.server';
 export class InMemoryEquipmentRepository implements EquipmentRepository {
   private readonly byId = new Map<string, EquipmentSnapshot>();
 
+  /**
+   * Equipment has no fork-on-write rule, so its list is `isVisibleTo`
+   * narrowed by the athlete's sample-data preference - not the forkable
+   * libraries' `LibraryVisibility`.
+   */
   async listFor(userId: string, showSampleData: boolean): Promise<Equipment[]> {
     return [...this.byId.values()]
-      .filter((snapshot) => snapshot.userId === userId || (showSampleData && snapshot.userId === null))
+      .filter((snapshot) => {
+        const ownership = Ownership.fromUserId(snapshot.userId);
+        return showSampleData ? ownership.isVisibleTo(userId) : ownership.isOwnedBy(userId);
+      })
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(Equipment.fromSnapshot);
   }

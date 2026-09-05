@@ -366,11 +366,16 @@ one — needs a query, so it lives in
 `app/services/shared/fork.server.ts` (`resolveEditableCopy`), which
 every mutating service goes through. Because a fork's children get new
 ids, an id that arrived on a form names a child of the _sample_; the
-returned `translateChildId` maps it onto the copy by position. The
-`sampleOrOwn*Where` query builders (in each Drizzle adapter) list own
-rows plus not-yet-forked samples. So "does this row's `userId` match the
-current user" isn't quite the whole authorization story — scoped loaders
-must also decide whether to include the null-`userId` sample rows.
+returned `translateChildId` maps it onto the copy by position. Which
+rows a list shows — own rows plus not-yet-forked samples — is
+`LibraryVisibility` in `domain/shared/ownership.ts`, beside `Ownership`
+itself: `selectFrom` answers it for the in-memory adapters, and because
+SQL cannot call a predicate, `repositories/drizzle/shared/visibility.ts`
+translates the same rule into one `where` builder the three forkable
+tables share. The two readings are kept in step by tests, not by the
+compiler. So "does this row's `userId` match the current user" isn't
+quite the whole authorization story — scoped loaders must also decide
+whether to include the null-`userId` sample rows.
 
 **Domain model shape**, roughly nested:
 `templates` (a named list of exercises with target sets/reps/weight or

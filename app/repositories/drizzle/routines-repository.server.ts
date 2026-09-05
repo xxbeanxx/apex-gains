@@ -1,26 +1,22 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 
-import { db, dbScope } from '~/db/index.server';
+import { dbScope } from '~/db/index.server';
 import { routineSlots, routines, type Routine as RoutineRow, type RoutineSlot as RoutineSlotRow } from '~/db/schema';
 import { Routine } from '~/domain/routine/routine';
+import { LibraryVisibility } from '~/domain/shared/ownership';
 
 import type { RoutinesRepository } from '../routines-repository.server';
 import { diffChildren } from '../shared/diff-children';
 import { writePositions } from '../shared/write-positions';
+import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
 
-export function sampleOrOwnRoutinesWhere(userId: string, showSampleData: boolean): SQL {
-  const ownCondition = eq(routines.userId, userId);
-  if (!showSampleData) return ownCondition;
-  const forkedSampleIds = db
-    .select({ id: routines.forkedFromId })
-    .from(routines)
-    .where(and(eq(routines.userId, userId), isNotNull(routines.forkedFromId)));
-  return or(ownCondition, and(isNull(routines.userId), notInArray(routines.id, forkedSampleIds)))!;
-}
-
-function visibleToUserWhere(userId: string, routineId: string): SQL {
-  return and(eq(routines.id, routineId), or(eq(routines.userId, userId), isNull(routines.userId)))!;
-}
+/** The columns `shared/visibility.ts` reads to build this table's clauses. */
+const visibility = {
+  table: routines,
+  id: routines.id,
+  userId: routines.userId,
+  forkedFromId: routines.forkedFromId,
+};
 
 type RowWithSlots = RoutineRow & { slots: RoutineSlotRow[] };
 
@@ -45,7 +41,7 @@ function toRoutine(row: RowWithSlots): Routine {
 export class DrizzleRoutinesRepository implements RoutinesRepository {
   async listFor(userId: string, showSampleData: boolean): Promise<Routine[]> {
     const rows = await dbScope.query.routines.findMany({
-      where: sampleOrOwnRoutinesWhere(userId, showSampleData),
+      where: visibleRowsWhere(visibility, LibraryVisibility.for(userId, showSampleData)),
       orderBy: desc(routines.updatedAt),
       with: { slots: { orderBy: asc(routineSlots.position) } },
     });
@@ -54,7 +50,7 @@ export class DrizzleRoutinesRepository implements RoutinesRepository {
 
   async findVisible(userId: string, routineId: string): Promise<Routine | null> {
     const row = await dbScope.query.routines.findFirst({
-      where: visibleToUserWhere(userId, routineId),
+      where: visibleRowWhere(visibility, userId, routineId),
       with: { slots: { orderBy: asc(routineSlots.position) } },
     });
     return row ? toRoutine(row) : null;

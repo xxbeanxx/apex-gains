@@ -1,4 +1,5 @@
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
+import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 
 import type { DeleteExerciseOutcome, ExercisesRepository } from '../exercises-repository.server';
 
@@ -9,14 +10,7 @@ export class InMemoryExercisesRepository implements ExercisesRepository {
   private readonly byId = new Map<string, ExerciseSnapshot>();
 
   async listFor(userId: string, showSampleData: boolean): Promise<Exercise[]> {
-    const all = [...this.byId.values()];
-    const own = all.filter((snapshot) => snapshot.userId === userId);
-    const forkedSampleIds = new Set(own.map((snapshot) => snapshot.forkedFromId).filter((id): id is string => id !== null));
-
-    const visible = showSampleData
-      ? [...own, ...all.filter((snapshot) => snapshot.userId === null && !forkedSampleIds.has(snapshot.id))]
-      : own;
-
+    const visible = LibraryVisibility.for(userId, showSampleData).selectFrom([...this.byId.values()]);
     return visible.sort((a, b) => a.name.localeCompare(b.name)).map(Exercise.fromSnapshot);
   }
 
@@ -35,7 +29,7 @@ export class InMemoryExercisesRepository implements ExercisesRepository {
   async findVisible(userId: string, exerciseId: string): Promise<Exercise | null> {
     const snapshot = this.byId.get(exerciseId);
     if (!snapshot) return null;
-    const visible = snapshot.userId === userId || snapshot.userId === null;
+    const visible = Ownership.fromUserId(snapshot.userId).isVisibleTo(userId);
     return visible ? Exercise.fromSnapshot(snapshot) : null;
   }
 

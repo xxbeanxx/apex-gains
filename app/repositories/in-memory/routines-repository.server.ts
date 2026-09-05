@@ -1,4 +1,5 @@
 import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
+import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 
 import type { RoutinesRepository } from '../routines-repository.server';
 
@@ -13,21 +14,14 @@ export class InMemoryRoutinesRepository implements RoutinesRepository {
   private readonly byId = new Map<string, RoutineSnapshot>();
 
   async listFor(userId: string, showSampleData: boolean): Promise<Routine[]> {
-    const all = [...this.byId.values()];
-    const own = all.filter((snapshot) => snapshot.userId === userId);
-    const forkedSampleIds = new Set(own.map((snapshot) => snapshot.forkedFromId).filter((id): id is string => id !== null));
-
-    const visible = showSampleData
-      ? [...own, ...all.filter((snapshot) => snapshot.userId === null && !forkedSampleIds.has(snapshot.id))]
-      : own;
-
+    const visible = LibraryVisibility.for(userId, showSampleData).selectFrom([...this.byId.values()]);
     return visible.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).map(Routine.fromSnapshot);
   }
 
   async findVisible(userId: string, routineId: string): Promise<Routine | null> {
     const snapshot = this.byId.get(routineId);
     if (!snapshot) return null;
-    const visible = snapshot.userId === userId || snapshot.userId === null;
+    const visible = Ownership.fromUserId(snapshot.userId).isVisibleTo(userId);
     return visible ? Routine.fromSnapshot(snapshot) : null;
   }
 

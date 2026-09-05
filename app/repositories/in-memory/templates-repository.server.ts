@@ -1,3 +1,4 @@
+import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
 
 import type { TemplateName, TemplatesRepository } from '../templates-repository.server';
@@ -14,14 +15,7 @@ export class InMemoryTemplatesRepository implements TemplatesRepository {
   private readonly byId = new Map<string, TemplateSnapshot>();
 
   async listFor(userId: string, showSampleData: boolean): Promise<WorkoutTemplate[]> {
-    const all = [...this.byId.values()];
-    const own = all.filter((snapshot) => snapshot.userId === userId);
-    const forkedSampleIds = new Set(own.map((snapshot) => snapshot.forkedFromId).filter((id): id is string => id !== null));
-
-    const visible = showSampleData
-      ? [...own, ...all.filter((snapshot) => snapshot.userId === null && !forkedSampleIds.has(snapshot.id))]
-      : own;
-
+    const visible = LibraryVisibility.for(userId, showSampleData).selectFrom([...this.byId.values()]);
     return visible.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).map(WorkoutTemplate.fromSnapshot);
   }
 
@@ -33,7 +27,7 @@ export class InMemoryTemplatesRepository implements TemplatesRepository {
   async findVisible(userId: string, templateId: string): Promise<WorkoutTemplate | null> {
     const snapshot = this.byId.get(templateId);
     if (!snapshot) return null;
-    const visible = snapshot.userId === userId || snapshot.userId === null;
+    const visible = Ownership.fromUserId(snapshot.userId).isVisibleTo(userId);
     return visible ? WorkoutTemplate.fromSnapshot(snapshot) : null;
   }
 

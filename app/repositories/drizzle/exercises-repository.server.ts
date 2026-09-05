@@ -1,29 +1,20 @@
-import { and, asc, eq, inArray, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
+import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 
-import { db, dbScope } from '~/db/index.server';
+import { dbScope } from '~/db/index.server';
 import { exerciseEquipment, exercises, type Exercise as ExerciseRow } from '~/db/schema';
 import { Exercise } from '~/domain/exercise/exercise';
+import { LibraryVisibility } from '~/domain/shared/ownership';
 
 import type { DeleteExerciseOutcome, ExercisesRepository } from '../exercises-repository.server';
+import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
 
-/**
- * Own rows, plus - when the athlete wants them - the samples they have not
- * forked. A forked sample is excluded so the same logical exercise doesn't
- * appear twice, once as the shared original and once as the personal copy.
- */
-export function sampleOrOwnExercisesWhere(userId: string, showSampleData: boolean): SQL {
-  const ownCondition = eq(exercises.userId, userId);
-  if (!showSampleData) return ownCondition;
-  const forkedSampleIds = db
-    .select({ id: exercises.forkedFromId })
-    .from(exercises)
-    .where(and(eq(exercises.userId, userId), isNotNull(exercises.forkedFromId)));
-  return or(ownCondition, and(isNull(exercises.userId), notInArray(exercises.id, forkedSampleIds)))!;
-}
-
-function visibleToUserWhere(userId: string, exerciseId: string): SQL {
-  return and(eq(exercises.id, exerciseId), or(eq(exercises.userId, userId), isNull(exercises.userId)))!;
-}
+/** The columns `shared/visibility.ts` reads to build this table's clauses. */
+const visibility = {
+  table: exercises,
+  id: exercises.id,
+  userId: exercises.userId,
+  forkedFromId: exercises.forkedFromId,
+};
 
 type RowWithLinks = ExerciseRow & {
   equipmentLinks: { equipmentId: string }[];
@@ -46,7 +37,7 @@ function toExercise(row: RowWithLinks): Exercise {
 export class DrizzleExercisesRepository implements ExercisesRepository {
   async listFor(userId: string, showSampleData: boolean): Promise<Exercise[]> {
     const rows = await dbScope.query.exercises.findMany({
-      where: sampleOrOwnExercisesWhere(userId, showSampleData),
+      where: visibleRowsWhere(visibility, LibraryVisibility.for(userId, showSampleData)),
       orderBy: asc(exercises.name),
       with: { equipmentLinks: true },
     });
@@ -72,7 +63,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
 
   async findVisible(userId: string, exerciseId: string): Promise<Exercise | null> {
     const row = await dbScope.query.exercises.findFirst({
-      where: visibleToUserWhere(userId, exerciseId),
+      where: visibleRowWhere(visibility, userId, exerciseId),
       with: { equipmentLinks: true },
     });
     return row ? toExercise(row) : null;

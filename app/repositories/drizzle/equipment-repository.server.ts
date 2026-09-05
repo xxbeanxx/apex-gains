@@ -1,18 +1,19 @@
-import { asc, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 
 import { dbScope } from '~/db/index.server';
 import { equipment, type Equipment as EquipmentRow } from '~/db/schema';
 import { Equipment } from '~/domain/equipment/equipment';
 
 import type { EquipmentRepository } from '../equipment-repository.server';
+import { ownOrSampleWhere } from './shared/visibility';
 
-export function sampleOrOwnEquipmentWhere(userId: string, showSampleData: boolean): SQL {
-  const ownCondition = eq(equipment.userId, userId);
-  if (!showSampleData) return ownCondition;
-  // Equipment has no fork-on-write rule (names are globally unique), so
-  // unlike the other libraries there are no forked samples to exclude.
-  return or(ownCondition, isNull(equipment.userId))!;
-}
+/**
+ * Equipment has no fork-on-write rule - names are globally unique, so there
+ * is no personal copy for a sample to be hidden behind. Its list is exactly
+ * `Ownership.isVisibleTo`, which is why it reaches for `ownOrSampleWhere`
+ * rather than the forkable libraries' `visibleRowsWhere`.
+ */
+const visibility = { id: equipment.id, userId: equipment.userId };
 
 function toEquipment(row: EquipmentRow): Equipment {
   return Equipment.fromSnapshot({
@@ -29,7 +30,7 @@ export class DrizzleEquipmentRepository implements EquipmentRepository {
     const rows = await dbScope
       .select()
       .from(equipment)
-      .where(sampleOrOwnEquipmentWhere(userId, showSampleData))
+      .where(showSampleData ? ownOrSampleWhere(visibility, userId) : eq(equipment.userId, userId))
       .orderBy(asc(equipment.name));
     return rows.map(toEquipment);
   }

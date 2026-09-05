@@ -1,31 +1,27 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 
-import { db, dbScope } from '~/db/index.server';
+import { dbScope } from '~/db/index.server';
 import {
   templateExercises,
   templates,
   type Template as TemplateRow,
   type TemplateExercise as TemplateExerciseRow,
 } from '~/db/schema';
+import { LibraryVisibility } from '~/domain/shared/ownership';
 import { WorkoutTemplate, type TemplateExerciseSnapshot } from '~/domain/template/workout-template';
 
 import { diffChildren } from '../shared/diff-children';
 import { writePositions } from '../shared/write-positions';
 import type { TemplateName, TemplatesRepository } from '../templates-repository.server';
+import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
 
-export function sampleOrOwnTemplatesWhere(userId: string, showSampleData: boolean): SQL {
-  const ownCondition = eq(templates.userId, userId);
-  if (!showSampleData) return ownCondition;
-  const forkedSampleIds = db
-    .select({ id: templates.forkedFromId })
-    .from(templates)
-    .where(and(eq(templates.userId, userId), isNotNull(templates.forkedFromId)));
-  return or(ownCondition, and(isNull(templates.userId), notInArray(templates.id, forkedSampleIds)))!;
-}
-
-function visibleToUserWhere(userId: string, templateId: string): SQL {
-  return and(eq(templates.id, templateId), or(eq(templates.userId, userId), isNull(templates.userId)))!;
-}
+/** The columns `shared/visibility.ts` reads to build this table's clauses. */
+const visibility = {
+  table: templates,
+  id: templates.id,
+  userId: templates.userId,
+  forkedFromId: templates.forkedFromId,
+};
 
 type RowWithExercises = TemplateRow & {
   templateExercises: TemplateExerciseRow[];
@@ -71,7 +67,7 @@ function toRow(templateId: string, entry: TemplateExerciseSnapshot) {
 export class DrizzleTemplatesRepository implements TemplatesRepository {
   async listFor(userId: string, showSampleData: boolean): Promise<WorkoutTemplate[]> {
     const rows = await dbScope.query.templates.findMany({
-      where: sampleOrOwnTemplatesWhere(userId, showSampleData),
+      where: visibleRowsWhere(visibility, LibraryVisibility.for(userId, showSampleData)),
       orderBy: desc(templates.updatedAt),
       with: {
         templateExercises: { orderBy: asc(templateExercises.position) },
@@ -85,13 +81,13 @@ export class DrizzleTemplatesRepository implements TemplatesRepository {
     return dbScope
       .select({ id: templates.id, name: templates.name })
       .from(templates)
-      .where(sampleOrOwnTemplatesWhere(userId, showSampleData))
+      .where(visibleRowsWhere(visibility, LibraryVisibility.for(userId, showSampleData)))
       .orderBy(desc(templates.updatedAt));
   }
 
   async findVisible(userId: string, templateId: string): Promise<WorkoutTemplate | null> {
     const row = await dbScope.query.templates.findFirst({
-      where: visibleToUserWhere(userId, templateId),
+      where: visibleRowWhere(visibility, userId, templateId),
       with: {
         templateExercises: { orderBy: asc(templateExercises.position) },
       },
