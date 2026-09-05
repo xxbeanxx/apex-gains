@@ -15,7 +15,8 @@ import { formatMonthDay } from '~/lib/format';
 import type { BodyWeightRepository } from '~/repositories/body-weight-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
 import type { SessionsRepository } from '~/repositories/sessions-repository.server';
-import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, SESSIONS_REPOSITORY } from '~/repositories/tokens';
+import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
+import { BODY_WEIGHT_REPOSITORY, EXERCISES_REPOSITORY, SESSIONS_REPOSITORY, WORKOUTS_REPOSITORY } from '~/repositories/tokens';
 
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 
@@ -38,6 +39,10 @@ export type TimelineDay = {
   id: string;
   date: string;
   isRestDay: boolean;
+  /** The workout the session snapshot named, if any - null for a rest day or a plan-less one. */
+  workoutName: string | null;
+  /** Formatted in the athlete's weight unit; null when nothing weighted was logged. */
+  tonnage: string | null;
   sets: TimelineSet[];
 };
 
@@ -126,6 +131,7 @@ export class ProgressService {
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessions: SessionsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
+    @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
     @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
@@ -141,10 +147,13 @@ export class ProgressService {
     const history = TrainingHistory.of(sessions, directory.exercises);
     const preferences = athlete.preferences;
 
+    const workoutNames = await this.workouts.listNamesFor(athlete.id, preferences.showSampleData);
+    const workoutNameById = new Map(workoutNames.map((workout) => [workout.id, workout.name]));
+
     const bodyWeight = await this.bodyWeightSeries(athlete);
 
     return {
-      timeline: this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT), directory),
+      timeline: this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT), directory, workoutNameById),
       totalSets: sessions.reduce((sum, s) => sum + s.setCount, 0),
       workoutCount: sessions.filter((s) => s.setCount > 0).length,
 
@@ -240,11 +249,18 @@ export class ProgressService {
     };
   }
 
-  private timeline(athlete: Athlete, sessions: readonly Session[], directory: ExerciseDirectory): TimelineDay[] {
+  private timeline(
+    athlete: Athlete,
+    sessions: readonly Session[],
+    directory: ExerciseDirectory,
+    workoutNameById: Map<string, string>,
+  ): TimelineDay[] {
     return sessions.map((session) => ({
       id: session.id,
       date: session.date.value,
       isRestDay: session.isRestDay,
+      workoutName: session.plan.workoutId ? (workoutNameById.get(session.plan.workoutId) ?? 'Unknown') : null,
+      tonnage: session.tonnage.inPounds > 0 ? athlete.preferences.formatWeight(session.tonnage) : null,
       sets: session.sets.map((set) => ({
         id: set.id,
         exerciseId: set.exerciseId,

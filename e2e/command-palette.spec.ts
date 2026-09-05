@@ -16,6 +16,7 @@ test('opens on ⌘K, navigates on a typed match plus Enter', async ({ page, athl
 
 test('does not open while typing in a text field', async ({ page, athlete }) => {
   await page.goto('/plans');
+  await page.getByRole('button', { name: 'New plan' }).first().click();
   await page.getByLabel('Name').fill('a');
 
   await page.keyboard.press('ControlOrMeta+k');

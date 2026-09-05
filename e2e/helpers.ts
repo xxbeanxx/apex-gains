@@ -110,6 +110,9 @@ export async function closeDialog(page: Page): Promise<void> {
 /** Creates a workout and lands on its detail page, returning its id. */
 export async function createWorkout(page: Page, name: string): Promise<string> {
   await page.goto('/workouts');
+  // Two triggers carry this label once the list isn't empty - the header
+  // action and the dashed "New workout" grid cell.
+  await page.getByRole('button', { name: 'New workout' }).first().click();
   await page.getByLabel('Name').fill(name);
   await page.getByRole('button', { name: 'Create' }).click();
   await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
@@ -120,6 +123,9 @@ export async function createWorkout(page: Page, name: string): Promise<string> {
 /** Creates a plan and lands on its detail page, returning its id. */
 export async function createPlan(page: Page, name: string): Promise<string> {
   await page.goto('/plans');
+  // Two triggers carry this label once the list isn't empty - the header
+  // action and the dashed "New plan" grid cell.
+  await page.getByRole('button', { name: 'New plan' }).first().click();
   await page.getByLabel('Name').fill(name);
   await page.getByRole('button', { name: 'Create' }).click();
   await page.waitForURL(/\/plans\/[0-9a-f-]+$/);

@@ -1,12 +1,14 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
-import { ClipboardListIcon } from 'lucide-react';
+import { ClipboardListIcon, PlusIcon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
-import { Badge } from '~/components/ui/badge';
+import { OwnershipBadge } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent } from '~/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
@@ -61,75 +63,102 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
   const error = actionData && 'error' in actionData ? actionData.error : undefined;
   const { workouts: workoutList } = loaderData;
 
+  const createForm = (
+    <form method="post">
+      <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
+        <Input name="name" placeholder="Push Day" required />
+      </Field>
+    </form>
+  );
+
   return (
-    <Page>
-      <PageHeader
-        title="Workouts"
-        description={
-          <>
-            A workout is a reusable list of exercises with target sets, reps, and weight — a single workout, like “Push Day” or
-            “Leg Day”. Build workouts here, then arrange them into a cycle on the{' '}
-            <Link
-              to="/plans"
-              className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
-            >
-              Plans
-            </Link>{' '}
-            page.
-          </>
-        }
-      />
+    <Dialog defaultOpen={Boolean(error)}>
+      <Page>
+        <PageHeader
+          title="Workouts"
+          description={
+            <>
+              A workout is a reusable list of exercises with target sets, reps, and weight — a single workout, like “Push Day”
+              or “Leg Day”. Build workouts here, then arrange them into a cycle on the{' '}
+              <Link
+                to="/plans"
+                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+              >
+                Plans
+              </Link>{' '}
+              page.
+            </>
+          }
+          actions={
+            <DialogTrigger asChild>
+              <Button variant="brand">
+                <PlusIcon aria-hidden="true" />
+                New workout
+              </Button>
+            </DialogTrigger>
+          }
+        />
 
-      <Card className="mt-(--section-gap) max-w-md">
-        <CardHeader>
-          <CardTitle>New workout</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form method="post">
-            <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
-              <Input name="name" placeholder="Push Day" required />
-            </Field>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Section title="Your workouts">
-        {workoutList.length === 0 ? (
-          <EmptyState
-            icon={ClipboardListIcon}
-            title="No workouts yet"
-            description="Create one above, then fill it with exercises and targets."
-          />
-        ) : (
-          <ul className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {workoutList.map((workout) => (
-              <li key={workout.id}>
-                <Card interactive size="sm" className="relative h-full">
-                  <CardContent className="flex h-full flex-col justify-between gap-2">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/workouts/${workout.id}`}
-                        className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
-                      >
-                        {workout.name}
-                      </Link>
-                      {workout.isSample ? (
-                        <Badge variant="outline">Sample</Badge>
-                      ) : workout.isCustomized ? (
-                        <Badge variant="secondary">Customized</Badge>
-                      ) : null}
-                    </span>
-                    <span className="text-sm text-muted-foreground tabular-nums">
-                      {workout.exerciseCount} exercise
-                      {workout.exerciseCount === 1 ? '' : 's'}
-                    </span>
-                  </CardContent>
-                </Card>
+        <Section title="Your workouts">
+          {workoutList.length === 0 ? (
+            <EmptyState
+              icon={ClipboardListIcon}
+              title="No workouts yet"
+              description="Create one, then fill it with exercises and targets."
+              action={
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <PlusIcon aria-hidden="true" />
+                    New workout
+                  </Button>
+                </DialogTrigger>
+              }
+            />
+          ) : (
+            <ul className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {workoutList.map((workout) => (
+                <li key={workout.id}>
+                  <Card interactive size="sm" className="relative h-full">
+                    <CardContent className="flex h-full flex-col justify-between gap-2">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Link
+                          to={`/workouts/${workout.id}`}
+                          className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
+                        >
+                          {workout.name}
+                        </Link>
+                        <OwnershipBadge isSample={workout.isSample} isCustomized={workout.isCustomized} />
+                      </span>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        {workout.exerciseCount} exercise
+                        {workout.exerciseCount === 1 ? '' : 's'}
+                      </span>
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+              <li>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors duration-(--dur) hover:border-ring/40 hover:text-foreground"
+                  >
+                    <PlusIcon className="size-5" aria-hidden="true" />
+                    New workout
+                  </button>
+                </DialogTrigger>
               </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-    </Page>
+            </ul>
+          )}
+        </Section>
+      </Page>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New workout</DialogTitle>
+        </DialogHeader>
+        {createForm}
+      </DialogContent>
+    </Dialog>
   );
 }

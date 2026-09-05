@@ -10,9 +10,11 @@ import { Session } from '~/domain/session/session';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
 import { Weight } from '~/domain/values/weight';
+import { Workout } from '~/domain/workout/workout';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
+import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
 
 import { ProgressService } from './progress-service.server';
 
@@ -54,14 +56,16 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
 
 let sessions: InMemorySessionsRepository;
 let exercises: InMemoryExercisesRepository;
+let workouts: InMemoryWorkoutsRepository;
 let bodyWeight: InMemoryBodyWeightRepository;
 let service: ProgressService;
 
 beforeEach(() => {
   sessions = new InMemorySessionsRepository();
   exercises = new InMemoryExercisesRepository();
+  workouts = new InMemoryWorkoutsRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
-  service = new ProgressService(sessions, exercises, bodyWeight);
+  service = new ProgressService(sessions, exercises, workouts, bodyWeight);
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
@@ -98,6 +102,42 @@ describe('history', () => {
       isRestDay: false,
       sets: [{ exerciseId: 'bench', exerciseName: 'Bench Press', summary: '135 lb x 8' }],
     });
+  });
+
+  it('names the session’s workout and totals its tonnage in the timeline', async () => {
+    await exercises.save(exercise());
+    await workouts.save(
+      Workout.fromSnapshot({
+        id: 'workout-1',
+        userId: 'user-1',
+        forkedFromId: null,
+        name: 'Push Day',
+        createdAt: NOW,
+        updatedAt: NOW,
+        exercises: [],
+      }),
+    );
+    const opened = Session.open(
+      'user-1',
+      DateOnly.parse('2026-09-01'),
+      { planId: 'plan-1', workoutId: 'workout-1', isRestDay: false },
+      deps,
+    );
+    opened.logSet('bench', { reps: 8, weight: Weight.lb(135) }, deps);
+    opened.logSet('bench', { reps: 6, weight: Weight.lb(145) }, deps);
+    await sessions.save(opened);
+
+    const view = await service.history(athlete(), TODAY);
+
+    expect(view.timeline[0]).toMatchObject({ workoutName: 'Push Day', tonnage: '1950 lb' });
+  });
+
+  it('reports no workout name and no tonnage for a rest day with nothing logged', async () => {
+    await openSession('2026-09-01', true);
+
+    const view = await service.history(athlete(), TODAY);
+
+    expect(view.timeline[0]).toMatchObject({ workoutName: null, tonnage: null });
   });
 
   it('falls back to "Unknown" in the timeline for a set whose exercise is gone', async () => {

@@ -39,9 +39,11 @@ test('shows a logged session, its sets, and the running totals', async ({ page, 
 
   // Month groups are the only `<section>`s with an aria-label, so they are
   // the only regions - which keeps this off the Trends cards above them.
-  const session = timeline(page).locator('[data-slot="card"]').filter({ hasText: exercise });
-  await expect(session).toContainText('225 lb x 5');
-  await expect(session).toContainText('245 lb x 5');
+  // The row itself carries only the day's totals; per-set detail lives at
+  // the /today?date=... it links to.
+  const session = timeline(page).getByRole('link');
+  await expect(session).toContainText('2 sets');
+  await expect(session).toContainText('2350 lb');
 });
 
 test("shows an exercise's recent sets in the Today popover", async ({ page, athlete }) => {

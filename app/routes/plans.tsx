@@ -1,17 +1,21 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
-import { RepeatIcon } from 'lucide-react';
+import { PlusIcon, RepeatIcon } from 'lucide-react';
 import { Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { OwnershipBadge } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Badge } from '~/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent } from '~/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { DateOnly } from '~/domain/values/date-only';
+import { formatMonthDay, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
 import { trim } from '~/lib/validate-form';
 import { validateForm } from '~/lib/validate-form.server';
@@ -60,79 +64,114 @@ export async function action({ request, context }: Route.ActionArgs) {
   throw redirect(`/plans/${plan.id}`);
 }
 
+function PlanSummaryLine({ plan }: { plan: Route.ComponentProps['loaderData']['plans'][number] }) {
+  if (plan.slotCount === 0) return <>No days yet</>;
+  return (
+    <>
+      {plan.slotCount}-day cycle · anchored {formatWeekday(plan.anchorDate)} {formatMonthDay(plan.anchorDate)}
+    </>
+  );
+}
+
 export default function Plans({ loaderData, actionData }: Route.ComponentProps) {
   const error = actionData && 'error' in actionData ? actionData.error : undefined;
   const { plans: planList } = loaderData;
 
+  const createForm = (
+    <form method="post">
+      <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
+        <Input name="name" placeholder="Push/Pull/Legs" required />
+      </Field>
+    </form>
+  );
+
   return (
-    <Page>
-      <PageHeader
-        title="Plans"
-        description={
-          <>
-            A plan is a repeating cycle of days — each day is either one of your{' '}
-            <Link
-              to="/workouts"
-              className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
-            >
-              workouts
-            </Link>{' '}
-            or a rest day. Only one plan can be active at a time; the active plan drives what shows up on the Today page.
-          </>
-        }
-      />
+    <Dialog defaultOpen={Boolean(error)}>
+      <Page>
+        <PageHeader
+          title="Plans"
+          description={
+            <>
+              A plan is a repeating cycle of days — each day is either one of your{' '}
+              <Link
+                to="/workouts"
+                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+              >
+                workouts
+              </Link>{' '}
+              or a rest day. Only one plan can be active at a time; the active plan drives what shows up on the Today page.
+            </>
+          }
+          actions={
+            <DialogTrigger asChild>
+              <Button variant="brand">
+                <PlusIcon aria-hidden="true" />
+                New plan
+              </Button>
+            </DialogTrigger>
+          }
+        />
 
-      <Card className="mt-(--section-gap) max-w-md">
-        <CardHeader>
-          <CardTitle>New plan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form method="post">
-            <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
-              <Input name="name" placeholder="Push/Pull/Legs" required />
-            </Field>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Section title="Your plans">
-        {planList.length === 0 ? (
-          <EmptyState
-            icon={RepeatIcon}
-            title="No plans yet"
-            description="Create one above, then add day-slots and set it active."
-          />
-        ) : (
-          <ul className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {planList.map((plan) => (
-              <li key={plan.id}>
-                <Card interactive size="sm" className="relative h-full">
-                  <CardContent className="flex h-full flex-col justify-between gap-2">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/plans/${plan.id}`}
-                        className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
-                      >
-                        {plan.name}
-                      </Link>
-                      {plan.isActive ? <Badge variant="brand">Active</Badge> : null}
-                      {plan.isSample ? (
-                        <Badge variant="outline">Sample</Badge>
-                      ) : plan.isCustomized ? (
-                        <Badge variant="secondary">Customized</Badge>
-                      ) : null}
-                    </span>
-                    <span className="text-sm text-muted-foreground tabular-nums">
-                      {plan.slotCount} day
-                      {plan.slotCount === 1 ? '' : 's'}
-                    </span>
-                  </CardContent>
-                </Card>
+        <Section title="Your plans">
+          {planList.length === 0 ? (
+            <EmptyState
+              icon={RepeatIcon}
+              title="No plans yet"
+              description="Create one, then add day-slots and set it active."
+              action={
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <PlusIcon aria-hidden="true" />
+                    New plan
+                  </Button>
+                </DialogTrigger>
+              }
+            />
+          ) : (
+            <ul className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {planList.map((plan) => (
+                <li key={plan.id}>
+                  <Card interactive size="sm" className="relative h-full">
+                    <CardContent className="flex h-full flex-col justify-between gap-2">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Link
+                          to={`/plans/${plan.id}`}
+                          className="font-heading font-medium after:absolute after:inset-0 after:content-['']"
+                        >
+                          {plan.name}
+                        </Link>
+                        {plan.isActive ? <Badge variant="brand">Active</Badge> : null}
+                        <OwnershipBadge isSample={plan.isSample} isCustomized={plan.isCustomized} />
+                      </span>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        <PlanSummaryLine plan={plan} />
+                      </span>
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+              <li>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors duration-(--dur) hover:border-ring/40 hover:text-foreground"
+                  >
+                    <PlusIcon className="size-5" aria-hidden="true" />
+                    New plan
+                  </button>
+                </DialogTrigger>
               </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-    </Page>
+            </ul>
+          )}
+        </Section>
+      </Page>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New plan</DialogTitle>
+        </DialogHeader>
+        {createForm}
+      </DialogContent>
+    </Dialog>
   );
 }
