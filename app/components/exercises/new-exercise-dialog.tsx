@@ -24,7 +24,7 @@ function NewExerciseForm({ onCreated }: { onCreated: () => void }) {
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
 
   return (
-    <fetcher.Form ref={formRef} method="post" className="flex flex-col gap-4">
+    <fetcher.Form ref={formRef} method="post" action="/exercises" className="flex flex-col gap-4">
       <input {...intents.createExercise.field} />
       <ExerciseDetailsFields error={error} />
       <SubmitButton pending={pending} pendingLabel="Creating exercise" variant="brand" className="self-start">

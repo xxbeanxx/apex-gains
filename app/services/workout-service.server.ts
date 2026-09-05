@@ -39,13 +39,22 @@ export type WorkoutExerciseView = {
   exerciseType: ExerciseType;
   /** Already formatted in the athlete's units; null when nothing is targeted. */
   targetSummary: string | null;
-  /** The same target, broken into chips ("3 sets", "8 reps", "135 lb"); a field is null when untargeted. */
+  /**
+   * The same target, broken into chips ("3 sets", "8 reps", "135 lb"); a
+   * field is null when untargeted. The `*Value` fields carry the bare
+   * number behind each formatted string, in the athlete's own units, for
+   * an edit form's number input - `weight`/`duration`/`speed` alone are
+   * display strings a form can't parse back into one.
+   */
   target: {
     sets: number | null;
     reps: number | null;
     weight: string | null;
+    weightValue: number | null;
     duration: string | null;
+    durationMinutesValue: number | null;
     speed: string | null;
+    speedValue: number | null;
     resistance: number | null;
   } | null;
 };
@@ -78,8 +87,11 @@ function toTargetChips(target: SetTarget, preferences: AthletePreferences): Work
     sets: target.sets,
     reps: target.reps,
     weight: preferences.formatWeight(target.weight),
+    weightValue: target.weight ? preferences.weightValue(target.weight) : null,
     duration: preferences.formatDuration(target.duration),
+    durationMinutesValue: target.duration?.inMinutes ?? null,
     speed: preferences.formatSpeed(target.speed),
+    speedValue: target.speed ? preferences.speedValue(target.speed) : null,
     resistance: target.resistance,
   };
 }

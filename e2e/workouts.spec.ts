@@ -1,18 +1,29 @@
-import { createExercise, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
+import type { Page } from '@playwright/test';
+
+import { createExercise, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
-/** Adds an exercise to the open workout detail page, with optional targets. */
-async function addExercise(
-  page: import('@playwright/test').Page,
-  exercise: string,
-  targets?: { sets?: string; reps?: string; weight?: string },
-) {
-  await selectOption(page.getByLabel('Exercise'), exercise);
-  if (targets?.sets) await page.getByLabel('Sets').fill(targets.sets);
-  if (targets?.reps) await page.getByLabel('Reps').fill(targets.reps);
-  if (targets?.weight) await page.getByLabel(/^Weight \(/).fill(targets.weight);
-  await page.getByRole('button', { name: 'Add exercise' }).click();
+/** Adds an exercise to the open workout builder by clicking it in the palette. */
+async function addExercise(page: Page, exercise: string): Promise<void> {
+  await page.getByRole('button', { name: exercise, exact: true }).click();
   await expect(orderedRows(page).filter({ hasText: exercise })).toBeVisible();
+}
+
+/** Opens a canvas row's "Edit target" disclosure and saves the given fields. */
+async function setTarget(
+  page: Page,
+  exercise: string,
+  targets: { sets?: string; reps?: string; weight?: string; minutes?: string; speed?: string; resistance?: string },
+): Promise<void> {
+  const row = orderedRows(page).filter({ hasText: exercise });
+  await row.getByText('Edit target').click();
+  if (targets.sets) await row.getByLabel('Sets').fill(targets.sets);
+  if (targets.reps) await row.getByLabel('Reps').fill(targets.reps);
+  if (targets.weight) await row.getByLabel(/^Weight \(/).fill(targets.weight);
+  if (targets.minutes) await row.getByLabel('Minutes').fill(targets.minutes);
+  if (targets.speed) await row.getByLabel(/^Speed \(/).fill(targets.speed);
+  if (targets.resistance) await row.getByLabel('Resistance').fill(targets.resistance);
+  await row.getByRole('button', { name: 'Save target' }).click();
 }
 
 test('creates a workout and lands on its detail page', async ({ page, athlete }) => {
@@ -38,10 +49,13 @@ test('adds an exercise with targets, which show as a summary', async ({ page, at
 
   await createExercise(page, { name: exercise, muscleGroup: 'chest' });
   await createWorkout(page, workout);
-  await addExercise(page, exercise, { sets: '3', reps: '10', weight: '135' });
+  await addExercise(page, exercise);
+  await setTarget(page, exercise, { sets: '3', reps: '10', weight: '135' });
 
   const row = orderedRows(page).filter({ hasText: exercise });
-  await expect(row).toContainText('3 x 10, 135 lb');
+  await expect(row).toContainText('3 sets');
+  await expect(row).toContainText('10 reps');
+  await expect(row).toContainText('135 lb');
 
   await page.goto('/workouts');
   await expect(page.getByRole('listitem').filter({ hasText: workout })).toContainText('1 exercise');
@@ -52,6 +66,7 @@ test('renames a workout', async ({ page, athlete }) => {
   const renamed = uniqueName('Lower Body');
   await createWorkout(page, name);
 
+  await page.getByRole('button', { name: 'Rename' }).click();
   await page.getByLabel('Name').fill(renamed);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
@@ -80,7 +95,8 @@ test('reorders exercises and closes the gap when one is removed', async ({ page,
   // The first row's "move up" is disabled - position 0 has nowhere to go.
   await expect(page.getByRole('button', { name: `Move ${second} up` })).toBeDisabled();
 
-  await submitForm(page.getByRole('button', { name: `Remove ${second} from this workout` }));
+  await page.getByRole('button', { name: `Actions for ${second}` }).click();
+  await page.getByRole('menuitem', { name: 'Remove' }).click();
   await expect(orderedRows(page).filter({ hasText: second })).toHaveCount(0);
   await expect(rows.nth(0)).toContainText(first);
 });
@@ -101,9 +117,12 @@ test('offers cardio targets instead of sets and reps', async ({ page, athlete })
 
   await createExercise(page, { name: exercise, type: 'Cardio' });
   await createWorkout(page, workout);
-  await selectOption(page.getByLabel('Exercise'), exercise);
+  await addExercise(page, exercise);
 
-  await expect(page.getByLabel('Minutes')).toBeVisible();
-  await expect(page.getByLabel('Sets')).toHaveCount(0);
-  await expect(page.getByLabel('Reps')).toHaveCount(0);
+  const row = orderedRows(page).filter({ hasText: exercise });
+  await row.getByText('Edit target').click();
+
+  await expect(row.getByLabel('Minutes')).toBeVisible();
+  await expect(row.getByLabel('Sets')).toHaveCount(0);
+  await expect(row.getByLabel('Reps')).toHaveCount(0);
 });

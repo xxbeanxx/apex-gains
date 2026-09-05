@@ -58,4 +58,9 @@ export class AthletePreferences {
   weightValue(weight: Weight): number {
     return weight.as(this.weightUnit);
   }
+
+  /** The bare number for an editable field, without the unit suffix. */
+  speedValue(speed: Speed): number {
+    return speed.as(this.distanceUnit);
+  }
 }

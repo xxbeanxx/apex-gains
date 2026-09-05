@@ -112,7 +112,17 @@ describe('detail', () => {
         exerciseName: 'Bench Press',
         exerciseType: 'strength',
         targetSummary: '3 x 10',
-        target: { sets: 3, reps: 10, weight: null, duration: null, speed: null, resistance: null },
+        target: {
+          sets: 3,
+          reps: 10,
+          weight: null,
+          weightValue: null,
+          duration: null,
+          durationMinutesValue: null,
+          speed: null,
+          speedValue: null,
+          resistance: null,
+        },
       },
     ]);
   });

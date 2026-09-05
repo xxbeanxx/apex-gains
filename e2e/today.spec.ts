@@ -1,6 +1,15 @@
 import type { Page } from '@playwright/test';
 
-import { addEquipment, createExercise, createPlan, createWorkout, linkEquipment, selectOption, submitForm } from './helpers';
+import {
+  addEquipment,
+  createExercise,
+  createPlan,
+  createWorkout,
+  linkEquipment,
+  orderedRows,
+  selectOption,
+  submitForm,
+} from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 /** Logged sets render as an `ol`; the two week rails above them are `ul`s. */
@@ -12,11 +21,16 @@ function loggedSets(page: Page) {
 async function activePlanWith(page: Page, exercise: string, targets?: { sets?: string; reps?: string }) {
   const workout = uniqueName('Day');
   await createWorkout(page, workout);
-  await selectOption(page.getByLabel('Exercise'), exercise);
-  if (targets?.sets) await page.getByLabel('Sets').fill(targets.sets);
-  if (targets?.reps) await page.getByLabel('Reps').fill(targets.reps);
-  await page.getByRole('button', { name: 'Add exercise' }).click();
-  await expect(page.locator('ol > li').filter({ hasText: exercise })).toBeVisible();
+  await page.getByRole('button', { name: exercise, exact: true }).click();
+  const row = orderedRows(page).filter({ hasText: exercise });
+  await expect(row).toBeVisible();
+
+  if (targets?.sets || targets?.reps) {
+    await row.getByText('Edit target').click();
+    if (targets.sets) await row.getByLabel('Sets').fill(targets.sets);
+    if (targets.reps) await row.getByLabel('Reps').fill(targets.reps);
+    await row.getByRole('button', { name: 'Save target' }).click();
+  }
 
   await createPlan(page, uniqueName('Plan'));
   await selectOption(page.getByLabel('Day type'), workout);

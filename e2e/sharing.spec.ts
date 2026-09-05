@@ -16,12 +16,15 @@ async function shareAPlan(page: Page, names: { exercise: string; workout: string
   await createExercise(page, { name: names.exercise, muscleGroup: 'chest' });
 
   await createWorkout(page, names.workout);
-  await selectOption(page.getByLabel('Exercise'), names.exercise);
-  await page.getByLabel('Sets').fill('3');
-  await page.getByLabel('Reps').fill('10');
-  await page.getByLabel(/^Weight \(/).fill('135');
-  await page.getByRole('button', { name: 'Add exercise' }).click();
-  await expect(orderedRows(page).filter({ hasText: names.exercise })).toBeVisible();
+  await page.getByRole('button', { name: names.exercise, exact: true }).click();
+  const row = orderedRows(page).filter({ hasText: names.exercise });
+  await expect(row).toBeVisible();
+  await row.getByText('Edit target').click();
+  await row.getByLabel('Sets').fill('3');
+  await row.getByLabel('Reps').fill('10');
+  await row.getByLabel(/^Weight \(/).fill('135');
+  await row.getByRole('button', { name: 'Save target' }).click();
+  await expect(row).toContainText('135 lb');
 
   await createPlan(page, names.plan);
   await selectOption(page.getByLabel('Day type'), names.workout);
@@ -101,7 +104,10 @@ test('another athlete imports the plan, its workouts and its exercises', async (
   await page.goto('/workouts');
   await page.getByRole('link', { name: names.workout }).click();
   await waitForHydration(page);
-  await expect(orderedRows(page).filter({ hasText: names.exercise })).toContainText('3 x 10, 135 lb');
+  const importedRow = orderedRows(page).filter({ hasText: names.exercise });
+  await expect(importedRow).toContainText('3 sets');
+  await expect(importedRow).toContainText('10 reps');
+  await expect(importedRow).toContainText('135 lb');
 
   // ...and so did the exercise it needs.
   await page.goto('/exercises');

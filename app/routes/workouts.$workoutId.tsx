@@ -1,29 +1,38 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, PlusIcon, RotateCcwIcon, Trash2Icon, XIcon } from 'lucide-react';
-import { useState } from 'react';
-import { data, redirect, useFetcher } from 'react-router';
+import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, EllipsisIcon, ListPlusIcon, PlusIcon, XIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
+import { BuilderCanvas } from '~/components/builder/builder-canvas';
+import { BuilderLayout } from '~/components/builder/builder-layout';
+import { BuilderOutline, BuilderOutlineItem } from '~/components/builder/builder-outline';
+import { BuilderPalette, BuilderPaletteSearch } from '~/components/builder/builder-palette';
+import { BuilderRow } from '~/components/builder/builder-row';
+import { RenameDisclosure } from '~/components/builder/rename-disclosure';
+import { TargetFields } from '~/components/builder/target-fields';
+import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
 import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
-import { Page, PageHeader, Section } from '~/components/layout/page';
-import { Badge } from '~/components/ui/badge';
+import { Page, PageHeader } from '~/components/layout/page';
+import { TargetChips } from '~/components/target-chips';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
+import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
-import { speedUnitLabel } from '~/domain/values/units';
+import type { CardioFields } from '~/domain/equipment/cardio-fields';
+import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
 import { requestLogger } from '~/lib/logger.server';
-import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
 import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
+import type { WorkoutExerciseView } from '~/services/workout-service.server';
 
 import { exerciseLibraryServiceContext, workoutServiceContext } from '~/lib/nest-bridge.server';
 
@@ -65,7 +74,21 @@ class AddExerciseDto {
   @Expose()
   @IsUUID()
   readonly exerciseId!: string;
+}
 
+class WorkoutExerciseIdDto {
+  @Expose()
+  @IsUUID()
+  readonly workoutExerciseId!: string;
+}
+
+class MoveExerciseDto extends WorkoutExerciseIdDto {
+  @Expose()
+  @IsIn(['up', 'down'])
+  readonly direction!: 'up' | 'down';
+}
+
+class UpdateTargetDto extends WorkoutExerciseIdDto {
   @Expose()
   @Transform(toOptionalNumber())
   @IsOptional()
@@ -109,18 +132,6 @@ class AddExerciseDto {
   readonly targetResistance?: number;
 }
 
-class WorkoutExerciseIdDto {
-  @Expose()
-  @IsUUID()
-  readonly workoutExerciseId!: string;
-}
-
-class MoveExerciseDto extends WorkoutExerciseIdDto {
-  @Expose()
-  @IsIn(['up', 'down'])
-  readonly direction!: 'up' | 'down';
-}
-
 // Annotated so `notFound()`'s `never` narrows at the call site: TypeScript
 // only applies that to a dotted name whose type is declared, not inferred.
 const page: ForkableDetail = forkableDetail({
@@ -137,6 +148,7 @@ const intents = {
   addExercise: intent('addExercise', AddExerciseDto, { invalidMessage: 'Invalid exercise' }),
   removeExercise: intent('removeExercise', WorkoutExerciseIdDto),
   move: intent('move', MoveExerciseDto),
+  updateTarget: intent('updateTarget', UpdateTargetDto, { invalidMessage: 'Invalid target' }),
 };
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -155,16 +167,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
     handled(intents.rename, async ({ name }) => settle(await workoutService.rename(athlete, workoutId, name))),
 
-    handled(intents.addExercise, async (input) => {
-      // Targets are in the athlete's own units; the service converts them.
-      const outcome = await workoutService.addExercise(athlete, workoutId, input.exerciseId, {
-        sets: input.targetSets,
-        reps: input.targetReps,
-        weight: input.targetWeight,
-        durationMinutes: input.targetDurationMinutes,
-        speed: input.targetSpeed,
-        resistance: input.targetResistance,
-      });
+    handled(intents.addExercise, async ({ exerciseId }) => {
+      const outcome = await workoutService.addExercise(athlete, workoutId, exerciseId, {});
       if (!outcome.ok && outcome.error === 'exercise-not-found') {
         return intents.addExercise.reject('Exercise not found');
       }
@@ -177,98 +181,211 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     handled(intents.move, async ({ workoutExerciseId, direction }) =>
       settle(await workoutService.moveExercise(athlete, workoutId, workoutExerciseId, direction)),
     ),
+
+    handled(intents.updateTarget, async (input) =>
+      settle(
+        await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, {
+          sets: input.targetSets,
+          reps: input.targetReps,
+          weight: input.targetWeight,
+          durationMinutes: input.targetDurationMinutes,
+          speed: input.targetSpeed,
+          resistance: input.targetResistance,
+        }),
+      ),
+    ),
   ]);
 }
 
-function AddExerciseForm({
-  exerciseList,
-  weightUnit,
-  distanceUnit,
-}: {
-  exerciseList: ExerciseView[];
-  weightUnit: WeightUnit;
-  distanceUnit: DistanceUnit;
-}) {
-  const fetcher = useFetcher();
-  const [exerciseId, setExerciseId] = useState<string>('');
-  const selected = exerciseList.find((e) => e.id === exerciseId);
-  const { showSpeed, showResistance } = selected?.cardioFields ?? { showSpeed: true, showResistance: true };
+function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; index: number; count: number }) {
+  return (
+    <>
+      <form method="post">
+        <input {...intents.move.field} />
+        <input type="hidden" name="workoutExerciseId" value={entry.id} />
+        <input type="hidden" name="direction" value="up" />
+        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
+          <ArrowUpIcon aria-hidden="true" />
+          <span className="sr-only">Move {entry.exerciseName} up</span>
+        </Button>
+      </form>
+      <form method="post">
+        <input {...intents.move.field} />
+        <input type="hidden" name="workoutExerciseId" value={entry.id} />
+        <input type="hidden" name="direction" value="down" />
+        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === count - 1}>
+          <ArrowDownIcon aria-hidden="true" />
+          <span className="sr-only">Move {entry.exerciseName} down</span>
+        </Button>
+      </form>
+    </>
+  );
+}
 
-  const pending = fetcher.state !== 'idle';
-  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : undefined;
+/** The `⋯` menu's one action: removing the entry. A plain navigation submit, same request cycle a literal form's own submit would make. */
+function RowMenu({ entry }: { entry: WorkoutExerciseView }) {
+  const submit = useSubmit();
 
   return (
-    <fetcher.Form method="post" className="flex flex-col gap-4">
-      <input {...intents.addExercise.field} />
-      <Field label="Exercise">
-        {({ id }) => (
-          <Select name="exerciseId" value={exerciseId} onValueChange={setExerciseId}>
-            <SelectTrigger id={id} className="w-full">
-              <SelectValue placeholder="Choose an exercise" />
-            </SelectTrigger>
-            <SelectContent>
-              {exerciseList.map((exercise) => (
-                <SelectItem key={exercise.id} value={exercise.id}>
-                  {exercise.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </Field>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${entry.exerciseName}`}>
+          <EllipsisIcon aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={() => submit({ intent: intents.removeExercise.name, workoutExerciseId: entry.id }, { method: 'post' })}
+        >
+          <XIcon aria-hidden="true" />
+          Remove
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
-      {selected?.exerciseType === 'strength' ? (
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Sets">
-            <Input name="targetSets" type="number" min={1} inputMode="numeric" placeholder="sets" />
-          </Field>
-          <Field label="Reps">
-            <Input name="targetReps" type="number" min={1} inputMode="numeric" placeholder="reps" />
-          </Field>
-          <Field label={`Weight (${weightUnit})`}>
-            <Input name="targetWeight" type="number" min={0} step="0.5" inputMode="decimal" placeholder={weightUnit} />
-          </Field>
-        </div>
-      ) : null}
-
-      {selected?.exerciseType === 'cardio' ? (
-        <div className={cn('grid gap-3', showSpeed && showResistance ? 'grid-cols-3' : 'grid-cols-2')}>
-          <Field label="Minutes">
-            <Input name="targetDurationMinutes" type="number" min={1} inputMode="numeric" placeholder="min" />
-          </Field>
-          {showSpeed ? (
-            <Field label={`Speed (${speedUnitLabel(distanceUnit)})`}>
-              <Input
-                name="targetSpeed"
-                type="number"
-                min={0}
-                step="0.1"
-                inputMode="decimal"
-                placeholder={speedUnitLabel(distanceUnit)}
-              />
-            </Field>
-          ) : null}
-          {showResistance ? (
-            <Field label="Resistance">
-              <Input name="targetResistance" type="number" min={1} inputMode="numeric" placeholder="level" />
-            </Field>
-          ) : null}
-        </div>
-      ) : null}
-
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
-
-      <SubmitButton
-        pending={pending}
-        pendingLabel="Adding exercise"
-        disabled={!exerciseId}
-        variant="brand"
-        className="self-start"
+function EditTargetDetail({
+  entry,
+  exerciseType,
+  cardioFields,
+  weightUnit,
+  distanceUnit,
+  error,
+}: {
+  entry: WorkoutExerciseView;
+  exerciseType: ExerciseType;
+  cardioFields: CardioFields;
+  weightUnit: Route.ComponentProps['loaderData']['weightUnit'];
+  distanceUnit: Route.ComponentProps['loaderData']['distanceUnit'];
+  error?: string;
+}) {
+  return (
+    <details>
+      <summary
+        role="button"
+        className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
       >
-        {pending ? null : <PlusIcon aria-hidden="true" />}
-        Add exercise
-      </SubmitButton>
-    </fetcher.Form>
+        <ChevronRightIcon
+          className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
+          aria-hidden="true"
+        />
+        Edit target
+      </summary>
+      <form method="post" className="mt-3 flex flex-col gap-3">
+        <input {...intents.updateTarget.field} />
+        <input type="hidden" name="workoutExerciseId" value={entry.id} />
+        <TargetFields
+          exerciseType={exerciseType}
+          cardioFields={cardioFields}
+          weightUnit={weightUnit}
+          distanceUnit={distanceUnit}
+          defaultValues={{
+            sets: entry.target?.sets ?? null,
+            reps: entry.target?.reps ?? null,
+            weight: entry.target?.weightValue ?? null,
+            durationMinutes: entry.target?.durationMinutesValue ?? null,
+            speed: entry.target?.speedValue ?? null,
+            resistance: entry.target?.resistance ?? null,
+          }}
+        />
+        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+        <SubmitButton size="sm" match={intents.updateTarget.match} pendingLabel="Saving" className="self-start">
+          Save target
+        </SubmitButton>
+      </form>
+    </details>
+  );
+}
+
+function PaletteExerciseRow({ exercise, disabled }: { exercise: ExerciseView; disabled: boolean }) {
+  return (
+    <form method="post">
+      <input {...intents.addExercise.field} />
+      <input type="hidden" name="exerciseId" value={exercise.id} />
+      <button
+        type="submit"
+        disabled={disabled}
+        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-(--dur-fast) hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+      >
+        <span className="min-w-0 flex-1 truncate">{exercise.name}</span>
+        <PlusIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
+    </form>
+  );
+}
+
+function ExercisePalette({
+  exerciseList,
+  usedExerciseIds,
+}: {
+  exerciseList: ExerciseView[];
+  usedExerciseIds: ReadonlySet<string>;
+}) {
+  const [query, setQuery] = useState('');
+  const [types, setTypes] = useState<Set<string>>(new Set());
+  const [equipmentIds, setEquipmentIds] = useState<Set<string>>(new Set());
+
+  const needle = query.trim().toLowerCase();
+  const visible = useMemo(
+    () =>
+      exerciseList.filter((exercise) => {
+        if (types.size > 0 && !types.has(exercise.exerciseType)) return false;
+        if (equipmentIds.size > 0 && !exercise.equipment.some((item) => equipmentIds.has(item.id))) return false;
+        if (needle === '') return true;
+        return exercise.name.toLowerCase().includes(needle);
+      }),
+    [exerciseList, types, equipmentIds, needle],
+  );
+
+  const typeOptions: FacetOption[] = EXERCISE_TYPES.map((value) => ({
+    value,
+    label: value === 'strength' ? 'Strength' : 'Cardio',
+    count: exerciseList.filter((e) => e.exerciseType === value).length,
+  }));
+
+  const equipmentById = new Map<string, { name: string; count: number }>();
+  for (const exercise of exerciseList) {
+    for (const item of exercise.equipment) {
+      const current = equipmentById.get(item.id);
+      equipmentById.set(item.id, { name: item.name, count: (current?.count ?? 0) + 1 });
+    }
+  }
+  const equipmentOptions: FacetOption[] = [...equipmentById.entries()].map(([value, { name, count }]) => ({
+    value,
+    label: name,
+    count,
+  }));
+
+  return (
+    <BuilderPalette
+      items={visible}
+      getKey={(exercise) => exercise.id}
+      emptyLabel="No exercises match"
+      filters={
+        <div className="flex flex-col gap-2">
+          <BuilderPaletteSearch value={query} onChange={setQuery} placeholder="Search exercises…" />
+          <div className="flex flex-wrap gap-1.5">
+            <FacetFilter label="Type" options={typeOptions} selected={types} onChange={setTypes} />
+            {equipmentOptions.length > 0 ? (
+              <FacetFilter label="Equipment" options={equipmentOptions} selected={equipmentIds} onChange={setEquipmentIds} />
+            ) : null}
+          </div>
+        </div>
+      }
+      renderItem={(exercise) => <PaletteExerciseRow exercise={exercise} disabled={usedExerciseIds.has(exercise.id)} />}
+      newAction={
+        <NewExerciseDialog
+          trigger={
+            <Button variant="outline" size="sm" className="w-full">
+              <PlusIcon aria-hidden="true" />
+              New exercise
+            </Button>
+          }
+        />
+      }
+    />
   );
 }
 
@@ -277,135 +394,123 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
 
   const exerciseCount = workout.exercises.length;
   const { isSample, isCustomized } = workout;
+  const usedExerciseIds = new Set(workout.exercises.map((entry) => entry.exerciseId));
+  const exerciseById = new Map(exerciseList.map((exercise) => [exercise.id, exercise]));
+  const defaultCardioFields: CardioFields = { showSpeed: true, showResistance: true };
 
   const renameError = intents.rename.errorIn(actionData);
+  const updateTargetError = intents.updateTarget.errorIn(actionData);
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+
+  const palette = <ExercisePalette exerciseList={exerciseList} usedExerciseIds={usedExerciseIds} />;
 
   return (
-    <Page width="narrow">
+    <Page width="full">
       <PageHeader
         title={workout.name}
         badge={<OwnershipBadge isSample={isSample} isCustomized={isCustomized} />}
         description={`${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'} in this workout.`}
         actions={
-          <RevertOrDeleteForm
-            noun="workout"
-            isSample={isSample}
-            isCustomized={isCustomized}
-            revert={intents.revert}
-            remove={intents.delete}
-            actionData={actionData}
-          />
+          <div className="flex items-center gap-1.5">
+            <RenameDisclosure>
+              <form method="post">
+                <input {...intents.rename.field} />
+                <Field
+                  label="Name"
+                  error={renameError}
+                  action={
+                    <SubmitButton size="sm" match={intents.rename.match} pendingLabel="Saving">
+                      Save
+                    </SubmitButton>
+                  }
+                >
+                  <Input name="name" defaultValue={workout.name} required />
+                </Field>
+              </form>
+            </RenameDisclosure>
+            <RevertOrDeleteForm
+              noun="workout"
+              isSample={isSample}
+              isCustomized={isCustomized}
+              revert={intents.revert}
+              remove={intents.delete}
+              actionData={actionData}
+            />
+          </div>
         }
       />
 
       {isCustomized ? (
-        <p className="mt-(--section-gap) text-sm text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
           This is your customized copy of a sample workout. The original sample is unaffected.
         </p>
       ) : null}
 
-      <Card className="mt-(--section-gap) max-w-md">
-        <CardHeader>
-          <CardTitle>Rename</CardTitle>
-          {isSample ? (
-            <p className="text-sm text-muted-foreground">Renaming a sample workout creates your own customized copy.</p>
-          ) : null}
-        </CardHeader>
-        <CardContent>
-          <form method="post">
-            <input {...intents.rename.field} />
-            <Field
-              label="Name"
-              error={renameError}
-              action={
-                <SubmitButton match={intents.rename.match} pendingLabel="Saving">
-                  Save
-                </SubmitButton>
-              }
-            >
-              <Input name="name" defaultValue={workout.name} required />
-            </Field>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mt-(--section-gap)">
+        <Dialog open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="mb-4 w-full md:hidden">
+              <PlusIcon aria-hidden="true" />
+              Add exercise
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="p-0 sm:max-w-sm">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>Add an exercise</DialogTitle>
+            </DialogHeader>
+            <div className="p-4">{palette}</div>
+          </DialogContent>
+        </Dialog>
 
-      <Section
-        title="Exercises"
-        description="Targets pre-fill the logging form on the Today page; every field stays editable per set."
-      >
-        {exerciseCount === 0 ? (
-          <EmptyState
-            icon={ListPlusIcon}
-            title="No exercises yet"
-            description="Add the first movement using the form below."
-            compact
-          />
-        ) : (
-          <ol className="grid gap-3 lg:grid-cols-2">
-            {workout.exercises.map((te, index) => (
-              <li
-                key={te.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm shadow-black/[0.03] transition-colors duration-(--dur) hover:border-ring/30 dark:shadow-black/20"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground tabular-nums"
-                  >
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{te.exerciseName}</p>
-                    <p className="truncate text-sm text-muted-foreground tabular-nums">{te.targetSummary ?? 'No target set'}</p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                  <form method="post">
-                    <input {...intents.move.field} />
-                    <input type="hidden" name="workoutExerciseId" value={te.id} />
-                    <input type="hidden" name="direction" value="up" />
-                    <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
-                      <ArrowUpIcon aria-hidden="true" />
-                      <span className="sr-only">Move {te.exerciseName} up</span>
-                    </Button>
-                  </form>
-                  <form method="post">
-                    <input {...intents.move.field} />
-                    <input type="hidden" name="workoutExerciseId" value={te.id} />
-                    <input type="hidden" name="direction" value="down" />
-                    <Button type="submit" variant="ghost" size="icon-sm" disabled={index === exerciseCount - 1}>
-                      <ArrowDownIcon aria-hidden="true" />
-                      <span className="sr-only">Move {te.exerciseName} down</span>
-                    </Button>
-                  </form>
-                  <form method="post">
-                    <input {...intents.removeExercise.field} />
-                    <input type="hidden" name="workoutExerciseId" value={te.id} />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <XIcon aria-hidden="true" />
-                      <span className="sr-only">Remove {te.exerciseName} from this workout</span>
-                    </Button>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-
-        <Card className="max-w-xl">
-          <CardHeader>
-            <CardTitle>Add an exercise</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AddExerciseForm exerciseList={exerciseList} weightUnit={weightUnit} distanceUnit={distanceUnit} />
-          </CardContent>
-        </Card>
-      </Section>
+        <BuilderLayout
+          palette={palette}
+          outline={
+            exerciseCount > 0 ? (
+              <BuilderOutline>
+                {workout.exercises.map((entry, index) => (
+                  <BuilderOutlineItem key={entry.id} position={index + 1} label={entry.exerciseName} />
+                ))}
+              </BuilderOutline>
+            ) : null
+          }
+          canvas={
+            exerciseCount === 0 ? (
+              <EmptyState
+                icon={ListPlusIcon}
+                title="No exercises yet"
+                description="Add the first movement from the palette."
+                compact
+              />
+            ) : (
+              <BuilderCanvas>
+                {workout.exercises.map((entry, index) => {
+                  const exercise = exerciseById.get(entry.exerciseId);
+                  return (
+                    <BuilderRow
+                      key={entry.id}
+                      position={index + 1}
+                      title={entry.exerciseName}
+                      chips={<TargetChips target={entry.target} />}
+                      controls={<MoveButtons entry={entry} index={index} count={exerciseCount} />}
+                      menu={<RowMenu entry={entry} />}
+                      detail={
+                        <EditTargetDetail
+                          entry={entry}
+                          exerciseType={entry.exerciseType}
+                          cardioFields={exercise?.cardioFields ?? defaultCardioFields}
+                          weightUnit={weightUnit}
+                          distanceUnit={distanceUnit}
+                          error={updateTargetError}
+                        />
+                      }
+                    />
+                  );
+                })}
+              </BuilderCanvas>
+            )
+          }
+        />
+      </div>
     </Page>
   );
 }
