@@ -8,6 +8,24 @@ import { LibraryVisibility } from '~/domain/shared/ownership';
 import type { DeleteExerciseOutcome, ExercisesRepository } from '../exercises-repository.server';
 import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
 
+/** Postgres' SQLSTATE for `foreign_key_violation`. */
+const FOREIGN_KEY_VIOLATION = '23503';
+
+/**
+ * Drizzle wraps a driver failure in a `DrizzleQueryError` carrying the query
+ * text, so postgres-js's `code` is on the `cause`, not on what was thrown.
+ * The chain is walked rather than unwrapped once, since nothing guarantees
+ * how deep the wrapping goes.
+ */
+function isForeignKeyViolation(error: unknown): boolean {
+  for (let current = error; current instanceof Error || (typeof current === 'object' && current !== null);) {
+    if ('code' in current && current.code === FOREIGN_KEY_VIOLATION) return true;
+    if (!('cause' in current) || current.cause === current) return false;
+    current = current.cause;
+  }
+  return false;
+}
+
 /** The columns `shared/visibility.ts` reads to build this table's clauses. */
 const visibility = {
   table: exercises,
@@ -136,8 +154,13 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
     try {
       await dbScope.delete(exercises).where(eq(exercises.id, exerciseId));
       return 'deleted';
-    } catch {
-      return 'in-use';
+    } catch (error) {
+      // Only a foreign-key violation means "a template or a logged set still
+      // points at this". Anything else - a dropped connection, a deadlock -
+      // is a failure, and reporting it as `in-use` would tell the athlete
+      // their exercise is referenced by something that does not exist.
+      if (isForeignKeyViolation(error)) return 'in-use';
+      throw error;
     }
   }
 }

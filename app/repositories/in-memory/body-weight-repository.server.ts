@@ -2,11 +2,12 @@ import { BodyWeightEntry, type BodyWeightEntrySnapshot } from '~/domain/bodyweig
 import type { DateOnly } from '~/domain/values/date-only';
 
 import type { BodyWeightRepository } from '../body-weight-repository.server';
+import type { AthleteOwned } from './references';
 
 // Dev-convenience adapter - see body-weight-repository.server.ts for when
 // it's selected, and athletes-repository.in-memory.server.ts for why it
 // stores snapshots rather than aggregates.
-export class InMemoryBodyWeightRepository implements BodyWeightRepository {
+export class InMemoryBodyWeightRepository implements BodyWeightRepository, AthleteOwned {
   private readonly byId = new Map<string, BodyWeightEntrySnapshot>();
 
   async findForDate(userId: string, date: DateOnly): Promise<BodyWeightEntry | null> {
@@ -29,5 +30,11 @@ export class InMemoryBodyWeightRepository implements BodyWeightRepository {
 
   async delete(entryId: string): Promise<void> {
     this.byId.delete(entryId);
+  }
+
+  removeAllFor(userId: string): void {
+    for (const [id, snapshot] of this.byId) {
+      if (snapshot.userId === userId) this.byId.delete(id);
+    }
   }
 }

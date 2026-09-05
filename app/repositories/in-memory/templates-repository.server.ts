@@ -2,6 +2,7 @@ import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 import { WorkoutTemplate, type TemplateSnapshot } from '~/domain/template/workout-template';
 
 import type { TemplateName, TemplatesRepository } from '../templates-repository.server';
+import type { AthleteOwned, ExerciseReferences } from './references';
 
 // Dev-convenience adapter - see templates-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
@@ -11,7 +12,7 @@ import type { TemplateName, TemplatesRepository } from '../templates-repository.
 // nothing here needs the position bookkeeping the Drizzle adapter does - the
 // ordering rules live on `WorkoutTemplate` and the positions arrive already
 // correct.
-export class InMemoryTemplatesRepository implements TemplatesRepository {
+export class InMemoryTemplatesRepository implements TemplatesRepository, ExerciseReferences, AthleteOwned {
   private readonly byId = new Map<string, TemplateSnapshot>();
 
   async listFor(userId: string, showSampleData: boolean): Promise<WorkoutTemplate[]> {
@@ -45,5 +46,15 @@ export class InMemoryTemplatesRepository implements TemplatesRepository {
 
   async delete(templateId: string): Promise<void> {
     this.byId.delete(templateId);
+  }
+
+  referencesExercise(exerciseId: string): boolean {
+    return [...this.byId.values()].some((snapshot) => snapshot.exercises.some((entry) => entry.exerciseId === exerciseId));
+  }
+
+  removeAllFor(userId: string): void {
+    for (const [id, snapshot] of this.byId) {
+      if (snapshot.userId === userId) this.byId.delete(id);
+    }
   }
 }

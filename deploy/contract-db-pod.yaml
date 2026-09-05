@@ -1,0 +1,27 @@
+# Throwaway Postgres for the repository contract tests. Separate from
+# postgres-pod.yaml on purpose: `contract/drizzle.test.ts` truncates every
+# table between tests, so it must never be pointed at a database holding
+# anything. Different port and volume-less, so it cannot be confused with the
+# local dev database.
+#
+#   podman play kube deploy/contract-db-pod.yaml
+#   TEST_DATABASE_URL=postgres://apex:apex@localhost:55432/apex_contract npm run test:contract
+#   podman play kube --down deploy/contract-db-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: apex-gains-contract-db
+spec:
+  containers:
+    - name: postgres
+      image: docker.io/library/postgres:16-alpine
+      env:
+        - name: POSTGRES_USER
+          value: apex
+        - name: POSTGRES_PASSWORD
+          value: apex
+        - name: POSTGRES_DB
+          value: apex_contract
+      ports:
+        - containerPort: 5432
+          hostPort: 55432

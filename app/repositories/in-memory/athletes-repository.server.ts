@@ -1,6 +1,7 @@
 import { Athlete, type AthleteSnapshot } from '~/domain/athlete/athlete';
 
 import type { AthletesRepository } from '../athletes-repository.server';
+import type { AthleteOwned } from './references';
 
 /**
  * Dev-convenience adapter for running the app without a database configured
@@ -14,6 +15,16 @@ import type { AthletesRepository } from '../athletes-repository.server';
  */
 export class InMemoryAthletesRepository implements AthletesRepository {
   private readonly byId = new Map<string, AthleteSnapshot>();
+  private readonly owned: AthleteOwned[] = [];
+
+  /**
+   * Names the stores whose rows hang off `users` with `on delete cascade`.
+   * Without them `remove` would leave an account's training behind - see
+   * `./references.ts`.
+   */
+  ownedBy(...stores: AthleteOwned[]): void {
+    this.owned.push(...stores);
+  }
 
   async findById(id: string): Promise<Athlete | null> {
     const snapshot = this.byId.get(id);
@@ -37,15 +48,10 @@ export class InMemoryAthletesRepository implements AthletesRepository {
     this.byId.set(snapshot.id, snapshot);
   }
 
-  /**
-   * Drops the athlete only. Postgres cascades a deletion through every table
-   * that references `users`, but each port here owns a separate store with
-   * no foreign keys between them, so what the other adapters still hold is
-   * simply unreachable: every query they answer is scoped by `userId`, and
-   * no later athlete is minted with an id that has already been used.
-   */
+  /** Drops the athlete, then everything the registered stores hold for them. */
   async remove(athlete: Athlete): Promise<void> {
     this.byId.delete(athlete.id);
+    for (const store of this.owned) store.removeAllFor(athlete.id);
   }
 
   private findBy(predicate: (snapshot: AthleteSnapshot) => boolean): Athlete | null {

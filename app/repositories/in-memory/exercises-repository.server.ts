@@ -2,12 +2,23 @@ import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 
 import type { DeleteExerciseOutcome, ExercisesRepository } from '../exercises-repository.server';
+import type { AthleteOwned, ExerciseReferences } from './references';
 
 // Dev-convenience adapter - see exercises-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
 // snapshots rather than aggregates.
-export class InMemoryExercisesRepository implements ExercisesRepository {
+export class InMemoryExercisesRepository implements ExercisesRepository, AthleteOwned {
   private readonly byId = new Map<string, ExerciseSnapshot>();
+  private readonly references: ExerciseReferences[] = [];
+
+  /**
+   * Names the stores whose rows carry an `on delete restrict` FK to an
+   * exercise. Without them `delete` would report success where Postgres
+   * refuses - see `./references.ts`.
+   */
+  referencedBy(...stores: ExerciseReferences[]): void {
+    this.references.push(...stores);
+  }
 
   async listFor(userId: string, showSampleData: boolean): Promise<Exercise[]> {
     const visible = LibraryVisibility.for(userId, showSampleData).selectFrom([...this.byId.values()]);
@@ -54,8 +65,17 @@ export class InMemoryExercisesRepository implements ExercisesRepository {
    * `on delete restrict` constraints.
    */
   async delete(exerciseId: string): Promise<DeleteExerciseOutcome> {
+    if (this.references.some((store) => store.referencesExercise(exerciseId))) {
+      return 'in-use';
+    }
     this.byId.delete(exerciseId);
     return 'deleted';
+  }
+
+  removeAllFor(userId: string): void {
+    for (const [id, snapshot] of this.byId) {
+      if (snapshot.userId === userId) this.byId.delete(id);
+    }
   }
 
   private findBy(predicate: (snapshot: ExerciseSnapshot) => boolean): Exercise | null {

@@ -74,6 +74,7 @@ App is at `http://localhost:3000/`.
 | `npm run start`             | Serve a production build via `build/server/main.js`                     |
 | `npm run test:watch`        | Run Vitest in watch mode                                                |
 | `npm run test`              | Run the Vitest unit test suite once                                     |
+| `npm run test:contract`     | Run the repository contract suite (both adapter families)               |
 | `npm run test:e2e`          | Run the Playwright end-to-end suite (Chromium)                          |
 | `npm run test:e2e:ui`       | Run the Playwright suite in its interactive UI mode                     |
 | `npm run typecheck`         | Generate route types and run `tsc`                                      |
@@ -121,6 +122,41 @@ An `/admin` link appears in the nav on the next request. From there
 you can grant access to anyone else, revoke it, or delete an account
 outright - on any account but your own, which is what stops the
 instance from ending up with no administrator at all.
+
+## Repository contract tests
+
+`app/repositories/contract/` states what every repository port promises,
+once, and runs it against both adapter families. Ports are interfaces, so
+the compiler only checks an adapter's _shape_; whether the in-memory store
+and Postgres answer the same question the same way is nothing the type
+system can hold them to. That matters here more than usual, because every
+service test suite is built on the in-memory adapters - without a contract
+they are simultaneously the code under test and the oracle it is tested
+against.
+
+`contract/in-memory.test.ts` runs in the ordinary `npm run test`.
+`contract/drizzle.test.ts` runs the same suite against a real Postgres, and
+is skipped when `TEST_DATABASE_URL` is unset, so the default test run stays
+offline. To run it:
+
+```bash
+podman play kube deploy/contract-db-pod.yaml
+TEST_DATABASE_URL=postgres://apex:apex@localhost:55432/apex_contract npm run test:contract
+podman play kube --down deploy/contract-db-pod.yaml
+```
+
+**That database is truncated between every test.** Point `TEST_DATABASE_URL`
+at a throwaway and never at `DATABASE_URL`; the pod above is deliberately on
+its own port with no volume so the two can't be confused. The suite applies
+`drizzle/` migrations itself before it starts.
+
+What only the Postgres run can catch: `on delete restrict` (deleting an
+exercise a template still points at), `on delete cascade` (closing an
+account), the per-statement `(parentId, position)` uniqueness that
+`shared/write-positions.ts` exists to work around, and the
+`onConflictDoNothing` resolution behind opening a day twice. The in-memory
+adapters imitate the first two by being told which stores reference them -
+see `repositories/in-memory/references.ts`.
 
 ## End-to-end tests
 

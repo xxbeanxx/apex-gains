@@ -2,6 +2,7 @@ import { Routine, type RoutineSnapshot } from '~/domain/routine/routine';
 import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 
 import type { RoutinesRepository } from '../routines-repository.server';
+import type { AthleteOwned } from './references';
 
 // Dev-convenience adapter - see routines-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores
@@ -10,7 +11,7 @@ import type { RoutinesRepository } from '../routines-repository.server';
 // It needs no handle on the templates repository: a `Routine` holds its
 // slots' template *ids*, and resolving those to templates is a read model
 // the service assembles, not something a routine carries.
-export class InMemoryRoutinesRepository implements RoutinesRepository {
+export class InMemoryRoutinesRepository implements RoutinesRepository, AthleteOwned {
   private readonly byId = new Map<string, RoutineSnapshot>();
 
   async listFor(userId: string, showSampleData: boolean): Promise<Routine[]> {
@@ -44,5 +45,11 @@ export class InMemoryRoutinesRepository implements RoutinesRepository {
 
   async delete(routineId: string): Promise<void> {
     this.byId.delete(routineId);
+  }
+
+  removeAllFor(userId: string): void {
+    for (const [id, snapshot] of this.byId) {
+      if (snapshot.userId === userId) this.byId.delete(id);
+    }
   }
 }

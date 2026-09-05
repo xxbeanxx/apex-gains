@@ -16,6 +16,7 @@
     "preview": "npm run build && cross-env NODE_ENV=production node --env-file-if-exists=./.env ./build/server/main.js",
     "start": "cross-env NODE_ENV=production node --env-file-if-exists=./.env ./build/server/main.js",
     "test": "vitest run",
+    "test:contract": "vitest run app/repositories/contract",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:watch": "vitest",

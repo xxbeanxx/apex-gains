@@ -47,7 +47,18 @@ neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
 repository adapters rather than mocking a database - by constructing the
 service class directly (`new RoutineService(...)`), not through Nest's
-DI container, which tests never boot. `vitest.setup.ts` imports
+DI container, which tests never boot. `app/repositories/contract/` is the exception to that
+last point: it states each port's promises once and runs them against
+_both_ adapter families - the in-memory one inside `npm run test`, and
+Drizzle against a throwaway Postgres named by `TEST_DATABASE_URL`
+(`npm run test:contract`, skipped without it). It exists because every
+service suite is built on the in-memory adapters, which would otherwise
+be both the code under test and its own oracle; the behaviour only
+Postgres can show - `on delete restrict`/`cascade`, per-statement unique
+constraints, `onConflictDoNothing` - is imitated in-memory by naming the
+referencing stores to each adapter (`repositories/in-memory/references.ts`),
+wired in `server/repositories/repositories.module.ts`. See README.md
+"Repository contract tests". `vitest.setup.ts` imports
 `reflect-metadata` before anything else, since every service and
 repository provider carries Nest decorators (`@Injectable()`/`@Inject()`)
 that call into it at class-definition time - see Server runtime, below.
