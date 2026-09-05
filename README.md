@@ -59,26 +59,26 @@ App is at `http://localhost:3000/`.
 
 ## Scripts
 
-| Script                      | Purpose                                                                 |
-| --------------------------- | ----------------------------------------------------------------------- |
-| `npm run build`             | Production build (application, then server runtime)                     |
-| `npm run build:app`         | Build the React Router app into `build/`                                |
-| `npm run build:server`      | Bundle the Nest server runtime into `build/server/main.js`              |
-| `npm run db:generate`       | Generate a Drizzle migration from `app/db/schema.ts`                    |
-| `npm run db:migrate`        | Apply pending migrations                                                |
-| `npm run db:seed`           | Seed/refresh the exercise library                                       |
-| `npm run db:studio`         | Open Drizzle Studio against the local database                          |
-| `npm run dev`               | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
-| `npm run format:check`      | Check code formatting with Prettier                                     |
-| `npm run format:write`      | Format the repository with Prettier                                     |
-| `npm run preview`           | Build, then serve it - what the e2e suite runs against                  |
-| `npm run start`             | Serve a production build via `build/server/main.js`                     |
-| `npm run test:watch`        | Run Vitest in watch mode                                                |
-| `npm run test`              | Run the Vitest unit test suite once                                     |
-| `npm run test:contract`     | Run the repository contract suite (both adapter families)               |
-| `npm run test:e2e`          | Run the Playwright end-to-end suite (Chromium)                          |
-| `npm run test:e2e:ui`       | Run the Playwright suite in its interactive UI mode                     |
-| `npm run typecheck`         | Generate route types and run `tsc`                                      |
+| Script                  | Purpose                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `npm run build`         | Production build (application, then server runtime)                     |
+| `npm run build:app`     | Build the React Router app into `build/`                                |
+| `npm run build:server`  | Bundle the Nest server runtime into `build/server/main.js`              |
+| `npm run db:generate`   | Generate a Drizzle migration from `app/db/schema.ts`                    |
+| `npm run db:migrate`    | Apply pending migrations                                                |
+| `npm run db:seed`       | Seed/refresh the exercise library                                       |
+| `npm run db:studio`     | Open Drizzle Studio against the local database                          |
+| `npm run dev`           | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
+| `npm run format:check`  | Check code formatting with Prettier                                     |
+| `npm run format:write`  | Format the repository with Prettier                                     |
+| `npm run preview`       | Build, then serve it - what the e2e suite runs against                  |
+| `npm run start`         | Serve a production build via `build/server/main.js`                     |
+| `npm run test:watch`    | Run Vitest in watch mode                                                |
+| `npm run test`          | Run the Vitest unit test suite once                                     |
+| `npm run test:contract` | Run the repository contract suite (both adapter families)               |
+| `npm run test:e2e`      | Run the Playwright end-to-end suite (Chromium)                          |
+| `npm run test:e2e:ui`   | Run the Playwright suite in its interactive UI mode                     |
+| `npm run typecheck`     | Generate route types and run `tsc`                                      |
 
 ## Environment variables
 
