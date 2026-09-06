@@ -1,3 +1,4 @@
+import { AdminAction, type AdminActionKind } from '~/domain/admin/admin-action';
 import { Athlete } from '~/domain/athlete/athlete';
 import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
 import { Equipment } from '~/domain/equipment/equipment';
@@ -11,6 +12,7 @@ import { Workout, type WorkoutSnapshot } from '~/domain/workout/workout';
 import { DateOnly } from '~/domain/values/date-only';
 import { Weight } from '~/domain/values/weight';
 
+import type { AdminActionsRepository } from '../admin-actions-repository.server';
 import type { AthletesRepository } from '../athletes-repository.server';
 import type { BodyWeightRepository } from '../body-weight-repository.server';
 import type { EquipmentRepository } from '../equipment-repository.server';
@@ -26,6 +28,7 @@ import type { SessionsRepository } from '../sessions-repository.server';
  * is what lets the same suite run against both families.
  */
 export type RepositorySet = {
+  adminActions: AdminActionsRepository;
   athletes: AthletesRepository;
   bodyWeight: BodyWeightRepository;
   equipment: EquipmentRepository;
@@ -171,6 +174,29 @@ export function weighIn(id: string, date: string, pounds: number, userId: string
 
 export function equipmentItem(id: string, name: string, userId: string | null = ids.athlete): Equipment {
   return Equipment.fromSnapshot({ id, userId, name, cardioKind: null, createdAt: NOW });
+}
+
+export function adminAction(
+  overrides: Partial<{
+    id: string;
+    actorId: string | null;
+    actorEmail: string;
+    targetId: string | null;
+    targetEmail: string;
+    action: AdminActionKind;
+    createdAt: Date;
+  }> = {},
+): AdminAction {
+  return AdminAction.fromSnapshot({
+    id: ids.own,
+    actorId: ids.athlete,
+    actorEmail: `${ids.athlete}@example.com`,
+    targetId: ids.otherAthlete,
+    targetEmail: `${ids.otherAthlete}@example.com`,
+    action: 'grant-admin',
+    createdAt: NOW,
+    ...overrides,
+  });
 }
 
 /** Seeds the athletes every other contract's foreign keys depend on. */

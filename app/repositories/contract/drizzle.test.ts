@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe } from 'vitest';
 
 import { configureDatabase, db } from '~/db/index.server';
 
+import { DrizzleAdminActionsRepository } from '../drizzle/admin-actions-repository.server';
 import { DrizzleAthletesRepository } from '../drizzle/athletes-repository.server';
 import { DrizzleBodyWeightRepository } from '../drizzle/body-weight-repository.server';
 import { DrizzleEquipmentRepository } from '../drizzle/equipment-repository.server';
@@ -32,6 +33,7 @@ const url = process.env.TEST_DATABASE_URL;
 
 /** Every table, children first, so a truncate needs no cascade reasoning. */
 const TABLES = [
+  'admin_actions',
   'session_sets',
   'sessions',
   'plan_slots',
@@ -47,6 +49,7 @@ const TABLES = [
 
 function build(): RepositorySet {
   return {
+    adminActions: new DrizzleAdminActionsRepository(),
     athletes: new DrizzleAthletesRepository(),
     bodyWeight: new DrizzleBodyWeightRepository(),
     equipment: new DrizzleEquipmentRepository(),

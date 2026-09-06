@@ -1,7 +1,7 @@
 import { Athlete, type AthleteSnapshot } from '~/domain/athlete/athlete';
 
 import type { AthletesRepository } from '../athletes-repository.server';
-import type { AthleteOwned } from './references';
+import type { AthleteOwned, AthleteReferenced } from './references';
 
 /**
  * Dev-convenience adapter for running the app without a database configured
@@ -16,6 +16,7 @@ import type { AthleteOwned } from './references';
 export class InMemoryAthletesRepository implements AthletesRepository {
   private readonly byId = new Map<string, AthleteSnapshot>();
   private readonly owned: AthleteOwned[] = [];
+  private readonly referenced: AthleteReferenced[] = [];
 
   /**
    * Names the stores whose rows hang off `users` with `on delete cascade`.
@@ -24,6 +25,16 @@ export class InMemoryAthletesRepository implements AthletesRepository {
    */
   ownedBy(...stores: AthleteOwned[]): void {
     this.owned.push(...stores);
+  }
+
+  /**
+   * Names the stores whose rows reference `users` with `on delete set
+   * null` - the admin audit trail is the one so far. Without this, `remove`
+   * would leave those rows pointing at an id that no longer resolves,
+   * instead of nulling the reference the way Postgres does.
+   */
+  referencedBy(...stores: AthleteReferenced[]): void {
+    this.referenced.push(...stores);
   }
 
   async findById(id: string): Promise<Athlete | null> {
@@ -48,10 +59,11 @@ export class InMemoryAthletesRepository implements AthletesRepository {
     this.byId.set(snapshot.id, snapshot);
   }
 
-  /** Drops the athlete, then everything the registered stores hold for them. */
+  /** Drops the athlete, everything the registered stores hold for them, and nulls out anything that only references them. */
   async remove(athlete: Athlete): Promise<void> {
     this.byId.delete(athlete.id);
     for (const store of this.owned) store.removeAllFor(athlete.id);
+    for (const store of this.referenced) store.clearAthlete(athlete.id);
   }
 
   private findBy(predicate: (snapshot: AthleteSnapshot) => boolean): Athlete | null {

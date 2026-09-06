@@ -10,21 +10,26 @@
  * the same copies the routes themselves use. `server/main.ts` - a separate
  * bundle in production, and plain `tsx` in dev - only supplies the values.
  */
+
 import { createRequestHandler } from '@react-router/express';
 import * as serverBuild from 'virtual:react-router/server-build';
 
 import { nestLoadContext, type NestSingletons } from '~/lib/nest-bridge.server';
 
-/** Where the client build - hashed assets, plus anything from `public/` - was written. */
+/**
+ * Where the client build - hashed assets, plus anything from `public/` - was written.
+ */
 export const assetsBuildDirectory = serverBuild.assetsBuildDirectory;
 
-/** URL prefix the client build is served under. */
+/**
+ * URL prefix the client build is served under.
+ */
 export const publicPath = serverBuild.publicPath;
 
 export function createHandler(singletons: NestSingletons, mode: 'development' | 'production') {
   return createRequestHandler({
     build: serverBuild,
-    mode,
+    mode: mode,
     getLoadContext: () => nestLoadContext(singletons),
   });
 }

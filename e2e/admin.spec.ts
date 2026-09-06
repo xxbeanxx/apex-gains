@@ -56,7 +56,7 @@ test('an administrator cannot change their own access', async ({ page, administr
 
 test('granting and revoking another athlete’s admin access', async ({ page }) => {
   const subject = await newAthlete(page);
-  await signInAsFreshAdministrator(page);
+  const admin = await signInAsFreshAdministrator(page);
 
   await page.goto('/admin/users');
   await page.getByLabel('Search').fill(subject.email);
@@ -74,9 +74,18 @@ test('granting and revoking another athlete’s admin access', async ({ page }) 
   await submitForm(granted.getByRole('button', { name: /Revoke/ }));
   await expect(page.getByText(`Revoked admin access from ${subject.name}.`)).toBeVisible();
 
-  // The administrator who made both changes still holds their own access.
+  // The administrator who made both changes still holds their own access,
+  // and the dashboard's audit trail carries both actions, newest first.
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Admin', level: 1 })).toBeVisible();
+  // Scoped to the "Recent actions" section, not just any list item on the
+  // page - the newest/busiest account shortlists are `<li>`s too, and the
+  // subject's own email appears in those as well.
+  const recentActions = page.locator('section', { has: page.getByRole('heading', { name: 'Recent actions' }) });
+  const rows = recentActions.getByRole('listitem').filter({ hasText: subject.email });
+  await expect(rows.filter({ hasText: 'revoked admin access from' })).toBeVisible();
+  await expect(rows.filter({ hasText: 'granted admin access to' })).toBeVisible();
+  await expect(rows.first()).toContainText(admin.email);
 });
 
 test('an account detail page shows what the athlete has logged', async ({ page }) => {
@@ -110,6 +119,13 @@ test('deleting an account requires its email and removes it from the list', asyn
   await page.getByLabel('Search').fill(subject.email);
   await submitForm(page.getByRole('button', { name: 'Search' }));
   await expect(page.getByText('No matching accounts')).toBeVisible();
+
+  // The audit trail survives the account it names.
+  await page.goto('/admin');
+  const recentActions = page.locator('section', { has: page.getByRole('heading', { name: 'Recent actions' }) });
+  await expect(
+    recentActions.getByRole('listitem').filter({ hasText: 'deleted the account' }).filter({ hasText: subject.email }),
+  ).toBeVisible();
 });
 
 /** Signs in as a brand new administrator, whatever the page was signed in as before. */

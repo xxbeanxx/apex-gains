@@ -23,3 +23,9 @@ export interface AthleteOwned {
   /** Drops everything this store holds for the athlete. */
   removeAllFor(userId: string): void;
 }
+
+/** Implemented by a store whose rows reference `users` with `on delete set null`. */
+export interface AthleteReferenced {
+  /** Nulls out this store's references to the athlete; the rows themselves stay. */
+  clearAthlete(userId: string): void;
+}

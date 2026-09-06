@@ -7,6 +7,7 @@
  * the composition root's job and happens in exactly one place:
  * `server/repositories/repositories.module.ts`.
  */
+export const ADMIN_ACTIONS_REPOSITORY = Symbol('ADMIN_ACTIONS_REPOSITORY');
 export const ATHLETES_REPOSITORY = Symbol('ATHLETES_REPOSITORY');
 export const BODY_WEIGHT_REPOSITORY = Symbol('BODY_WEIGHT_REPOSITORY');
 export const EQUIPMENT_REPOSITORY = Symbol('EQUIPMENT_REPOSITORY');

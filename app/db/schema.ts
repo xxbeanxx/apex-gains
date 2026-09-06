@@ -220,6 +220,24 @@ export const sessionSets = pgTable('session_sets', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Append-only: an administrator granting or revoking access, or deleting an
+ * account. `actorId`/`targetId` are `on delete set null`, never cascade -
+ * deleting an account must not erase the record of who deleted it, or of
+ * having been deleted. The matching `*Email` columns are denormalised
+ * alongside each id for exactly that reason: the row they name can later be
+ * gone, and the log still has to say who it was.
+ */
+export const adminActions = pgTable('admin_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  actorEmail: text('actor_email').notNull(),
+  targetId: uuid('target_id').references(() => users.id, { onDelete: 'set null' }),
+  targetEmail: text('target_email').notNull(),
+  action: text('action').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   workouts: many(workouts),
   plans: many(plans),
@@ -357,3 +375,4 @@ export type PlanSlot = typeof planSlots.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionSet = typeof sessionSets.$inferSelect;
 export type BodyWeightLog = typeof bodyWeightLogs.$inferSelect;
+export type AdminAction = typeof adminActions.$inferSelect;

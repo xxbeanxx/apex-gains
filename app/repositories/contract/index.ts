@@ -1,3 +1,4 @@
+import { describeAdminActionsContract } from './admin-actions.contract';
 import { describeExercisesContract } from './exercises.contract';
 import { describeForkableLibraryContract } from './forkable-library.contract';
 import type { ContractSubject } from './harness';
@@ -27,6 +28,7 @@ import { describeSessionsContract } from './sessions.contract';
  * "Repository contract tests".
  */
 export function describeRepositoryContract(subject: ContractSubject): void {
+  describeAdminActionsContract(subject);
   describeAthletesContract(subject);
   describeForkableLibraryContract(subject);
   describeExercisesContract(subject);

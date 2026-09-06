@@ -75,3 +75,20 @@ export function formatRelativeDate(dateStr: string, today: string): string {
   if (dateStr === shift(1)) return 'Tomorrow';
   return formatFullDate(dateStr);
 }
+
+/**
+ * "Sep 3, 2026, 2:32 PM" - a moment, not a calendar day, so this takes a
+ * full ISO timestamp rather than the `YYYY-MM-DD` the functions above do,
+ * and does not discard the time of day the way `toLocalDate` deliberately
+ * does. For the admin audit trail, where *when* an action happened is the
+ * point.
+ */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}

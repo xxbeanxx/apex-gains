@@ -2,6 +2,7 @@ import { Module, type Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
 import { configureDatabase } from '~/db/index.server';
+import { DrizzleAdminActionsRepository } from '~/repositories/drizzle/admin-actions-repository.server';
 import { DrizzleAthletesRepository } from '~/repositories/drizzle/athletes-repository.server';
 import { DrizzleBodyWeightRepository } from '~/repositories/drizzle/body-weight-repository.server';
 import { DrizzleEquipmentRepository } from '~/repositories/drizzle/equipment-repository.server';
@@ -10,6 +11,7 @@ import { DrizzlePlansRepository } from '~/repositories/drizzle/plans-repository.
 import { DrizzleWorkoutsRepository } from '~/repositories/drizzle/workouts-repository.server';
 import { DrizzleUnitOfWork } from '~/repositories/drizzle/unit-of-work.server';
 import { DrizzleSessionsRepository } from '~/repositories/drizzle/sessions-repository.server';
+import { InMemoryAdminActionsRepository } from '~/repositories/in-memory/admin-actions-repository.server';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
@@ -19,6 +21,7 @@ import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-re
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
 import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 import {
+  ADMIN_ACTIONS_REPOSITORY,
   ATHLETES_REPOSITORY,
   BODY_WEIGHT_REPOSITORY,
   EQUIPMENT_REPOSITORY,
@@ -72,11 +75,22 @@ function buildInMemory() {
   const plans = new InMemoryPlansRepository();
   const sessions = new InMemorySessionsRepository();
   const bodyWeight = new InMemoryBodyWeightRepository();
+  const adminActions = new InMemoryAdminActionsRepository();
 
   exercises.referencedBy(workouts, sessions);
   athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight);
+  athletes.referencedBy(adminActions);
 
-  return { athletes, exercises, workouts, plans, sessions, bodyWeight, equipment: new InMemoryEquipmentRepository() };
+  return {
+    athletes,
+    exercises,
+    workouts,
+    plans,
+    sessions,
+    bodyWeight,
+    adminActions,
+    equipment: new InMemoryEquipmentRepository(),
+  };
 }
 
 let inMemoryFamily: ReturnType<typeof buildInMemory> | undefined;
@@ -88,6 +102,9 @@ function inMemory(): ReturnType<typeof buildInMemory> {
 }
 
 const providers: Provider[] = [
+  repositoryProvider(ADMIN_ACTIONS_REPOSITORY, (dbConfig) =>
+    dbConfig.databaseUrl ? new DrizzleAdminActionsRepository() : inMemory().adminActions,
+  ),
   repositoryProvider(ATHLETES_REPOSITORY, (dbConfig) =>
     dbConfig.databaseUrl ? new DrizzleAthletesRepository() : inMemory().athletes,
   ),

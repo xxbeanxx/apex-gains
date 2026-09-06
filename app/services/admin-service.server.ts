@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { AdminAction, type AdminActionKind } from '~/domain/admin/admin-action';
 import { changeAdminAccess, removeAccount, type AdminRefusal } from '~/domain/athlete/administration';
 import type { Athlete } from '~/domain/athlete/athlete';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import type { AdminActionsRepository } from '~/repositories/admin-actions-repository.server';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
-import { ATHLETES_REPOSITORY, SESSIONS_REPOSITORY } from '~/repositories/tokens';
+import { ADMIN_ACTIONS_REPOSITORY, ATHLETES_REPOSITORY, SESSIONS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
 import type { TrainingTotals, SessionsRepository } from '~/repositories/sessions-repository.server';
+import type { UnitOfWork } from '~/repositories/unit-of-work.server';
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
@@ -34,6 +37,21 @@ export type AdminAccountDetailView = AdminAccountView & {
   showSampleData: boolean;
 };
 
+/**
+ * One entry in the audit trail, as the dashboard shows it. `actorId`/
+ * `targetId` are absent on purpose - a null one means the account is gone,
+ * and the dashboard has nowhere to link a gone account to anyway, so the
+ * denormalised email is all a row needs.
+ */
+export type AdminActionView = {
+  id: string;
+  action: AdminActionKind;
+  actorEmail: string;
+  targetEmail: string;
+  /** ISO timestamp - a moment, not a calendar day, so it stays a full timestamp rather than the `YYYY-MM-DD` other views use. */
+  createdAt: string;
+};
+
 export type InstanceOverview = {
   totalAccounts: number;
   administrators: number;
@@ -45,6 +63,8 @@ export type InstanceOverview = {
   recentWindowDays: number;
   newestAccounts: AdminAccountView[];
   busiestAccounts: AdminAccountView[];
+  /** Newest first. Reads are not logged - only this list's own existence is a read, and it records nothing. */
+  recentActions: AdminActionView[];
 };
 
 export type AdminMutation = Result<{ name: string }, 'not-found' | AdminRefusal>;
@@ -70,12 +90,17 @@ export class AdminService {
   constructor(
     @Inject(ATHLETES_REPOSITORY) private readonly athletes: AthletesRepository,
     @Inject(SESSIONS_REPOSITORY) private readonly sessions: SessionsRepository,
+    @Inject(ADMIN_ACTIONS_REPOSITORY) private readonly adminActions: AdminActionsRepository,
+    @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {}
 
-  /** Instance-wide numbers, plus the two shortlists the dashboard leads with. */
+  /** Instance-wide numbers, plus the shortlists the dashboard leads with. */
   async overview(actor: Athlete): Promise<InstanceOverview> {
-    const accounts = await this.accounts(actor);
+    const [accounts, recentActions] = await Promise.all([
+      this.accounts(actor),
+      this.adminActions.listRecent(DASHBOARD_LIST_SIZE),
+    ]);
     const since = DateOnly.today(this.deps.clock.now()).minusDays(RECENT_WINDOW_DAYS).value;
 
     return {
@@ -91,6 +116,13 @@ export class AdminService {
         .sort((a, b) => b.setCount - a.setCount)
         .filter((account) => account.setCount > 0)
         .slice(0, DASHBOARD_LIST_SIZE),
+      recentActions: recentActions.map((action) => ({
+        id: action.id,
+        action: action.action,
+        actorEmail: action.actorEmail,
+        targetEmail: action.targetEmail,
+        createdAt: action.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -120,8 +152,11 @@ export class AdminService {
     const outcome = changeAdminAccess(actor, target, isAdmin, this.deps.clock.now());
     if (!outcome.ok) return outcome;
 
-    await this.athletes.save(target);
-    return ok({ name: target.name });
+    return this.unitOfWork.run(async () => {
+      await this.athletes.save(target);
+      await this.record(isAdmin ? 'grant-admin' : 'revoke-admin', actor, target);
+      return ok({ name: target.name });
+    });
   }
 
   async removeAccount(actor: Athlete, userId: string): Promise<AdminMutation> {
@@ -131,8 +166,23 @@ export class AdminService {
     const outcome = removeAccount(actor, target);
     if (!outcome.ok) return outcome;
 
-    await this.athletes.remove(target);
-    return ok({ name: target.name });
+    return this.unitOfWork.run(async () => {
+      // Recorded before the delete, not after: the FK is `on delete set
+      // null`, so writing the entry first and then removing the row still
+      // leaves a complete audit trail once the transaction commits, and
+      // "wrote the record but the delete then failed" cannot happen inside
+      // the same transaction either way.
+      await this.record('remove-account', actor, target);
+      await this.athletes.remove(target);
+      return ok({ name: target.name });
+    });
+  }
+
+  /** Both mutations write their entry inside the same transaction as the change - a failed mutation leaves no entry, a successful one always has one. */
+  private async record(action: AdminAction['action'], actor: Athlete, target: Athlete): Promise<void> {
+    await this.adminActions.record(
+      AdminAction.record(action, { id: actor.id, email: actor.email }, { id: target.id, email: target.email }, this.deps),
+    );
   }
 }
 

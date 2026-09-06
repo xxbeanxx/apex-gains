@@ -1,4 +1,4 @@
-import { UsersIcon } from 'lucide-react';
+import { ScrollTextIcon, UsersIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
@@ -8,11 +8,19 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import { formatCount, formatFullDate } from '~/lib/format';
+import type { AdminActionKind } from '~/domain/admin/admin-action';
+import { formatCount, formatDateTime, formatFullDate } from '~/lib/format';
 import { adminServiceContext } from '~/lib/nest-bridge.server';
-import type { AdminAccountView } from '~/services/admin-service.server';
+import type { AdminAccountView, AdminActionView } from '~/services/admin-service.server';
 
 import type { Route } from './+types/admin';
+
+/** "granted admin access to", not just the raw `AdminActionKind` a route never shows verbatim. */
+const ACTION_VERBS: Record<AdminActionKind, string> = {
+  'grant-admin': 'granted admin access to',
+  'revoke-admin': 'revoked admin access from',
+  'remove-account': 'deleted the account',
+};
 
 export function meta() {
   return [{ title: 'Admin - Apex Gains' }];
@@ -31,6 +39,23 @@ function AccountRow({ account, measure }: { account: AdminAccountView; measure: 
     <li className="relative flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors duration-(--dur) hover:border-ring/30">
       <AccountIdentity account={account} stretched />
       <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{measure}</span>
+    </li>
+  );
+}
+
+/**
+ * One audit trail row. Plain email text rather than `AccountIdentity`: an
+ * actor or target can be gone by the time this renders, and this is exactly
+ * the row that has to keep reading sensibly when that happens.
+ */
+function ActionRow({ action }: { action: AdminActionView }) {
+  return (
+    <li className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <span className="text-sm">
+        <span className="font-medium">{action.actorEmail}</span> {ACTION_VERBS[action.action]}{' '}
+        <span className="font-medium">{action.targetEmail}</span>
+      </span>
+      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{formatDateTime(action.createdAt)}</span>
     </li>
   );
 }
@@ -109,6 +134,22 @@ export default function AdminDashboard({ loaderData }: Route.ComponentProps) {
           )}
         </Section>
       </div>
+
+      <Section
+        title="Recent actions"
+        description="Granting or revoking admin access, and deleting an account - the audit trail for what an administrator can do to another. Reading an account is not logged."
+        className="mt-(--section-gap)"
+      >
+        {overview.recentActions.length === 0 ? (
+          <EmptyState icon={ScrollTextIcon} title="Nothing recorded yet" compact />
+        ) : (
+          <ul className="grid gap-3">
+            {overview.recentActions.map((action) => (
+              <ActionRow key={action.id} action={action} />
+            ))}
+          </ul>
+        )}
+      </Section>
 
       <Card className="mt-(--section-gap)">
         <CardHeader>

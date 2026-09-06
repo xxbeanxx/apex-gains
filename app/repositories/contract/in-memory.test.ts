@@ -1,5 +1,6 @@
 import { describe } from 'vitest';
 
+import { InMemoryAdminActionsRepository } from '../in-memory/admin-actions-repository.server';
 import { InMemoryAthletesRepository } from '../in-memory/athletes-repository.server';
 import { InMemoryBodyWeightRepository } from '../in-memory/body-weight-repository.server';
 import { InMemoryEquipmentRepository } from '../in-memory/equipment-repository.server';
@@ -25,6 +26,7 @@ function build(): RepositorySet {
   const sessions = new InMemorySessionsRepository();
   const bodyWeight = new InMemoryBodyWeightRepository();
   const plans = new InMemoryPlansRepository();
+  const adminActions = new InMemoryAdminActionsRepository();
 
   // Postgres refuses to delete an exercise a workout or a logged set still
   // points at (`on delete restrict`). Nothing enforces that here unless the
@@ -32,8 +34,11 @@ function build(): RepositorySet {
   exercises.referencedBy(workouts, sessions);
   // `athletes.remove` stands in for `on delete cascade`.
   athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight);
+  // ...and for `on delete set null`.
+  athletes.referencedBy(adminActions);
 
   return {
+    adminActions,
     athletes,
     bodyWeight,
     equipment: new InMemoryEquipmentRepository(),

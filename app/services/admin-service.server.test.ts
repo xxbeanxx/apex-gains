@@ -6,8 +6,10 @@ import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
 import { DateOnly } from '~/domain/values/date-only';
+import { InMemoryAdminActionsRepository } from '~/repositories/in-memory/admin-actions-repository.server';
 import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
 import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
+import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
 
 import { AdminService } from './admin-service.server';
 
@@ -17,6 +19,7 @@ const deps = { ids: sequentialIds('gen'), clock: fixedClock(NOW), secrets: seque
 
 let athletes: InMemoryAthletesRepository;
 let sessions: InMemorySessionsRepository;
+let adminActions: InMemoryAdminActionsRepository;
 let service: AdminService;
 
 /** Registers an athlete, back-dating the account so ordering is assertable. */
@@ -44,7 +47,9 @@ async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestD
 beforeEach(() => {
   athletes = new InMemoryAthletesRepository();
   sessions = new InMemorySessionsRepository();
-  service = new AdminService(athletes, sessions, deps);
+  adminActions = new InMemoryAdminActionsRepository();
+  athletes.referencedBy(adminActions);
+  service = new AdminService(athletes, sessions, adminActions, new InMemoryUnitOfWork(), deps);
 });
 
 describe('accounts', () => {
@@ -163,6 +168,18 @@ describe('overview', () => {
     // Only athletes who have logged something appear, hardest-working first.
     expect(overview.busiestAccounts.map((account) => account.name)).toEqual(['Busy', 'Newest']);
   });
+
+  it('leads with the most recent admin actions', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const other = await register('Other');
+    await service.changeAdminAccess(admin, other.id, true);
+
+    const overview = await service.overview(admin);
+
+    expect(overview.recentActions).toEqual([
+      expect.objectContaining({ action: 'grant-admin', actorEmail: admin.email, targetEmail: other.email }),
+    ]);
+  });
 });
 
 describe('account', () => {
@@ -216,6 +233,40 @@ describe('changeAdminAccess', () => {
 
     await expect(service.changeAdminAccess(admin, 'nobody', true)).resolves.toEqual({ ok: false, error: 'not-found' });
   });
+
+  it('records a grant in the audit trail', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const other = await register('Other');
+
+    await service.changeAdminAccess(admin, other.id, true);
+
+    const [entry] = await adminActions.listRecent(10);
+    expect(entry).toMatchObject({
+      action: 'grant-admin',
+      actorId: admin.id,
+      actorEmail: admin.email,
+      targetId: other.id,
+      targetEmail: other.email,
+    });
+  });
+
+  it('records a revoke, distinctly from a grant', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const other = await register('Other', { isAdmin: true });
+
+    await service.changeAdminAccess(admin, other.id, false);
+
+    const [entry] = await adminActions.listRecent(10);
+    expect(entry?.action).toBe('revoke-admin');
+  });
+
+  it('records nothing when the mutation is refused', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+
+    await service.changeAdminAccess(admin, admin.id, false);
+
+    expect(await adminActions.listRecent(10)).toEqual([]);
+  });
 });
 
 describe('removeAccount', () => {
@@ -242,5 +293,23 @@ describe('removeAccount', () => {
     const admin = await register('Admin', { isAdmin: true });
 
     await expect(service.removeAccount(admin, 'nobody')).resolves.toEqual({ ok: false, error: 'not-found' });
+  });
+
+  it('records the deletion, surviving the deleted account it names', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const other = await register('Other');
+
+    await service.removeAccount(admin, other.id);
+
+    const [entry] = await adminActions.listRecent(10);
+    expect(entry).toMatchObject({ action: 'remove-account', actorId: admin.id, targetId: null, targetEmail: other.email });
+  });
+
+  it('records nothing when the mutation is refused', async () => {
+    const admin = await register('Admin', { isAdmin: true });
+
+    await service.removeAccount(admin, admin.id);
+
+    expect(await adminActions.listRecent(10)).toEqual([]);
   });
 });
