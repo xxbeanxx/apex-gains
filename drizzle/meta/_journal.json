@@ -78,6 +78,13 @@
       "when": 1788658645568,
       "tag": "0010_curvy_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788691455300,
+      "tag": "0011_early_the_hood",
+      "breakpoints": true
     }
   ]
 }
