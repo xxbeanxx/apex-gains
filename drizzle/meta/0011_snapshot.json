@@ -47,12 +47,8 @@
           "name": "body_weight_logs_user_id_users_id_fk",
           "tableFrom": "body_weight_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -62,10 +58,7 @@
         "body_weight_logs_user_date_unique": {
           "name": "body_weight_logs_user_date_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "date"
-          ]
+          "columns": ["user_id", "date"]
         }
       },
       "policies": {},
@@ -116,12 +109,8 @@
           "name": "equipment_user_id_users_id_fk",
           "tableFrom": "equipment",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -131,9 +120,7 @@
         "equipment_name_unique": {
           "name": "equipment_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -163,12 +150,8 @@
           "name": "exercise_equipment_exercise_id_exercises_id_fk",
           "tableFrom": "exercise_equipment",
           "tableTo": "exercises",
-          "columnsFrom": [
-            "exercise_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exercise_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -176,12 +159,8 @@
           "name": "exercise_equipment_equipment_id_equipment_id_fk",
           "tableFrom": "exercise_equipment",
           "tableTo": "equipment",
-          "columnsFrom": [
-            "equipment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["equipment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -189,10 +168,7 @@
       "compositePrimaryKeys": {
         "exercise_equipment_exercise_id_equipment_id_pk": {
           "name": "exercise_equipment_exercise_id_equipment_id_pk",
-          "columns": [
-            "exercise_id",
-            "equipment_id"
-          ]
+          "columns": ["exercise_id", "equipment_id"]
         }
       },
       "uniqueConstraints": {},
@@ -279,12 +255,8 @@
           "name": "exercises_user_id_users_id_fk",
           "tableFrom": "exercises",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -292,12 +264,8 @@
           "name": "exercises_forked_from_id_exercises_id_fk",
           "tableFrom": "exercises",
           "tableTo": "exercises",
-          "columnsFrom": [
-            "forked_from_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["forked_from_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -307,10 +275,7 @@
         "exercises_user_name_unique": {
           "name": "exercises_user_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "name"
-          ]
+          "columns": ["user_id", "name"]
         }
       },
       "policies": {},
@@ -353,12 +318,8 @@
           "name": "plan_slots_plan_id_plans_id_fk",
           "tableFrom": "plan_slots",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -366,12 +327,8 @@
           "name": "plan_slots_workout_id_workouts_id_fk",
           "tableFrom": "plan_slots",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "workout_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workout_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -381,10 +338,7 @@
         "plan_slots_plan_position_unique": {
           "name": "plan_slots_plan_position_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "plan_id",
-            "position"
-          ]
+          "columns": ["plan_id", "position"]
         }
       },
       "policies": {},
@@ -493,12 +447,8 @@
           "name": "plans_user_id_users_id_fk",
           "tableFrom": "plans",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -506,12 +456,8 @@
           "name": "plans_forked_from_id_plans_id_fk",
           "tableFrom": "plans",
           "tableTo": "plans",
-          "columnsFrom": [
-            "forked_from_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["forked_from_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -521,9 +467,7 @@
         "plans_share_token_unique": {
           "name": "plans_share_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "share_token"
-          ]
+          "columns": ["share_token"]
         }
       },
       "policies": {},
@@ -615,12 +559,8 @@
           "name": "session_sets_session_id_sessions_id_fk",
           "tableFrom": "session_sets",
           "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -628,12 +568,8 @@
           "name": "session_sets_exercise_id_exercises_id_fk",
           "tableFrom": "session_sets",
           "tableTo": "exercises",
-          "columnsFrom": [
-            "exercise_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exercise_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -707,12 +643,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -720,12 +652,8 @@
           "name": "sessions_plan_id_plans_id_fk",
           "tableFrom": "sessions",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -733,12 +661,8 @@
           "name": "sessions_workout_id_workouts_id_fk",
           "tableFrom": "sessions",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "workout_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workout_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -748,10 +672,7 @@
         "sessions_user_date_unique": {
           "name": "sessions_user_date_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "date"
-          ]
+          "columns": ["user_id", "date"]
         }
       },
       "policies": {},
@@ -858,16 +779,12 @@
         "users_google_sub_unique": {
           "name": "users_google_sub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "google_sub"
-          ]
+          "columns": ["google_sub"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -952,12 +869,8 @@
           "name": "workout_exercises_workout_id_workouts_id_fk",
           "tableFrom": "workout_exercises",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "workout_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workout_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -965,12 +878,8 @@
           "name": "workout_exercises_exercise_id_exercises_id_fk",
           "tableFrom": "workout_exercises",
           "tableTo": "exercises",
-          "columnsFrom": [
-            "exercise_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exercise_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -980,10 +889,7 @@
         "workout_exercises_workout_position_unique": {
           "name": "workout_exercises_workout_position_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workout_id",
-            "position"
-          ]
+          "columns": ["workout_id", "position"]
         }
       },
       "policies": {},
@@ -1057,12 +963,8 @@
           "name": "workouts_user_id_users_id_fk",
           "tableFrom": "workouts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1070,12 +972,8 @@
           "name": "workouts_forked_from_id_workouts_id_fk",
           "tableFrom": "workouts",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "forked_from_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["forked_from_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1091,34 +989,22 @@
     "public.cardio_kind": {
       "name": "cardio_kind",
       "schema": "public",
-      "values": [
-        "speed",
-        "resistance"
-      ]
+      "values": ["speed", "resistance"]
     },
     "public.distance_unit": {
       "name": "distance_unit",
       "schema": "public",
-      "values": [
-        "km",
-        "mi"
-      ]
+      "values": ["km", "mi"]
     },
     "public.exercise_type": {
       "name": "exercise_type",
       "schema": "public",
-      "values": [
-        "strength",
-        "cardio"
-      ]
+      "values": ["strength", "cardio"]
     },
     "public.weight_unit": {
       "name": "weight_unit",
       "schema": "public",
-      "values": [
-        "lb",
-        "kg"
-      ]
+      "values": ["lb", "kg"]
     }
   },
   "schemas": {},
