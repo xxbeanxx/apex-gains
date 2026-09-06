@@ -1,11 +1,10 @@
 import { and, desc, eq } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { bodyWeightLogs, type BodyWeightLog } from '~infrastructure/persistence/drizzle/schema';
+import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import { BodyWeightEntry } from '~domain/body/body-weight-entry';
 import type { DateOnly } from '~domain/values/date-only';
-
-import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type BodyWeightLog, bodyWeightLogs } from '~infrastructure/persistence/drizzle/schema';
 
 function toEntry(row: BodyWeightLog): BodyWeightEntry {
   return BodyWeightEntry.fromSnapshot({

@@ -1,13 +1,15 @@
+import { useMemo, useState } from 'react';
+
+import { data } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { DumbbellIcon, PlusIcon, SearchIcon, Settings2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { data } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { EquipmentDialog } from '~/components/exercises/equipment-dialog';
 import { ExerciseCard } from '~/components/exercises/exercise-card';
-import { sourceOf, type ExerciseSource, SOURCE_LABEL } from '~/components/exercises/exercise-source';
+import { type ExerciseSource, SOURCE_LABEL, sourceOf } from '~/components/exercises/exercise-source';
 import { ExerciseTableRow } from '~/components/exercises/exercise-table-row';
 import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -16,14 +18,13 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
-import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
-import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';
-import type { ExerciseView } from '~application/use-cases/exercise-library-service';
-
 import { exerciseLibraryServiceContext } from '~/router/load-context';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
+import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import type { Route } from './+types/exercises';
 

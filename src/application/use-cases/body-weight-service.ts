@@ -1,12 +1,11 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import { BodyWeightEntry } from '~domain/body/body-weight-entry';
-import { ok, type Result } from '~domain/shared/result';
-import type { DateOnly } from '~domain/values/date-only';
-import { Weight } from '~domain/values/weight';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import type { Athlete } from '~domain/athlete/athlete';
+import { BodyWeightEntry } from '~domain/body/body-weight-entry';
+import { type Result, ok } from '~domain/shared/result';
+import type { DateOnly } from '~domain/values/date-only';
+import { Weight } from '~domain/values/weight';
 
 /**
  * Recording body weight. Reading it back is `ProgressService`, which shapes

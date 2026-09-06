@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SetTarget } from '~domain/workout/set-target';
 
-import { deps, equipmentItem, exercise, ids, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
+import { type ContractSubject, type RepositorySet, deps, equipmentItem, exercise, ids, seedAthletes, workout } from './harness';
 
 export function describeExercisesContract(subject: ContractSubject): void {
   describe('ExercisesRepository', () => {

@@ -1,6 +1,8 @@
-import { EllipsisIcon, HistoryIcon, PencilIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
+
 import { useFetcher } from 'react-router';
+
+import { EllipsisIcon, HistoryIcon, PencilIcon, RotateCcwIcon } from 'lucide-react';
 
 import { ExerciseEditorDialog } from '~/components/exercises/exercise-editor-dialog';
 import { ExerciseHistoryDialog } from '~/components/exercises/exercise-history-dialog';
@@ -8,9 +10,8 @@ import { Button } from '~/components/ui/button';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
-
 import { intents } from '~/routes/exercises';
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 /** The `⋯` menu every exercise row (table or card) ends in: edit, recent history, and reverting a customized copy. */
 function ExerciseRowMenu({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {

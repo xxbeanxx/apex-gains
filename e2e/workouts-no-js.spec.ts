@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-import { createExercise, createWorkout } from './helpers';
 import { newAthlete, uniqueName } from './fixtures';
+import { createExercise, createWorkout } from './helpers';
 
 /**
  * The workout builder's palette add and edit-target `<details>` disclosure

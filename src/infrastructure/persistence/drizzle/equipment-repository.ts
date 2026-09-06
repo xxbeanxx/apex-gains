@@ -1,10 +1,10 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { equipment, type Equipment as EquipmentRow } from '~infrastructure/persistence/drizzle/schema';
-import { Equipment } from '~domain/equipment/equipment';
-
 import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
+import { Equipment } from '~domain/equipment/equipment';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type Equipment as EquipmentRow, equipment } from '~infrastructure/persistence/drizzle/schema';
+
 import { ownOrSampleWhere } from './shared/visibility';
 
 /**

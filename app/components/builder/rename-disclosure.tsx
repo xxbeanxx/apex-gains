@@ -1,8 +1,10 @@
-import { PencilIcon } from 'lucide-react';
 import * as React from 'react';
+import { type ReactNode, useRef } from 'react';
 
-import { buttonVariants } from '~/components/ui/button';
+import { PencilIcon } from 'lucide-react';
+
 import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
+import { buttonVariants } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
 
 /**
@@ -12,8 +14,8 @@ import { cn } from '~/lib/utils';
  * submits, since the native element otherwise stays open across the
  * client-side transition that follows.
  */
-function RenameDisclosure({ label = 'Rename', children }: { label?: string; children: React.ReactNode }) {
-  const detailsRef = React.useRef<HTMLDetailsElement>(null);
+function RenameDisclosure({ label = 'Rename', children }: { label?: string; children: ReactNode }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   useCloseOnSubmit(() => {
     if (detailsRef.current) detailsRef.current.open = false;
   });

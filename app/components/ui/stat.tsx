@@ -1,3 +1,4 @@
+import type { ComponentProps, ReactNode } from 'react';
 import * as React from 'react';
 
 import { cn } from '~/lib/utils';
@@ -17,10 +18,10 @@ function Stat({
   hint,
   className,
   ...props
-}: Omit<React.ComponentProps<'div'>, 'children'> & {
-  label: React.ReactNode;
-  value: React.ReactNode;
-  hint?: React.ReactNode;
+}: Omit<ComponentProps<'div'>, 'children'> & {
+  label: ReactNode;
+  value: ReactNode;
+  hint?: ReactNode;
 }) {
   return (
     <div

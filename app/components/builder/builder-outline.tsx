@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type * as React from 'react';
 
 import { cn } from '~/lib/utils';
@@ -10,7 +11,7 @@ import { cn } from '~/lib/utils';
  * the canvas's own rows, and this pane renders alongside the canvas at the
  * same viewport widths, so a literal `<ol>` here would double every match.
  */
-function BuilderOutline({ children }: { children: React.ReactNode }) {
+function BuilderOutline({ children }: { children: ReactNode }) {
   return (
     <div
       role="list"
@@ -32,8 +33,8 @@ function BuilderOutlineItem({
   active,
 }: {
   position: number;
-  label: React.ReactNode;
-  sublabel?: React.ReactNode;
+  label: ReactNode;
+  sublabel?: ReactNode;
   active?: boolean;
 }) {
   return (

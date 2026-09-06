@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Plan } from '~domain/plan/plan';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
-import { sequentialSecrets } from '~domain/shared/secrets';
 import { err, ok } from '~domain/shared/result';
+import { sequentialSecrets } from '~domain/shared/secrets';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 

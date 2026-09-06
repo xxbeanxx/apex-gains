@@ -3,7 +3,6 @@ import { redirect } from 'react-router';
 import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
 import { requestLogger } from '~/lib/logger';
-
 import { athleteServiceContext, sessionStorageContext, testLoginConfigContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.test-login';

@@ -1,13 +1,13 @@
 import { RouterContextProvider } from 'react-router';
+
 import { describe, expect, it, vi } from 'vitest';
 
-import type { Athlete } from '~domain/athlete/athlete';
-import type { AthleteService } from '~application/use-cases/athlete-service';
-import { mock } from '../../test/mock';
-
-import type { AppSessionStorage } from '~server/auth/session-storage.provider';
 import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
+import type { AthleteService } from '~application/use-cases/athlete-service';
+import type { Athlete } from '~domain/athlete/athlete';
+import type { AppSessionStorage } from '~server/auth/session-storage.provider';
 
+import { mock } from '../../test/mock';
 import { loadUserMiddleware } from './current-user';
 import { userContext } from './user-context';
 

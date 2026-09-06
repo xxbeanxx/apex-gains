@@ -1,3 +1,4 @@
+import type { ComponentProps, ReactNode } from 'react';
 import * as React from 'react';
 
 import { cn } from '~/lib/utils';
@@ -19,7 +20,7 @@ const widths: Record<Width, string> = {
   prose: 'max-w-2xl',
 };
 
-function Page({ className, width = 'default', ...props }: React.ComponentProps<'main'> & { width?: Width }) {
+function Page({ className, width = 'default', ...props }: ComponentProps<'main'> & { width?: Width }) {
   return (
     <main
       id="main"
@@ -46,11 +47,11 @@ function PageHeader({
   badge,
   className,
   ...props
-}: Omit<React.ComponentProps<'header'>, 'title'> & {
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  actions?: React.ReactNode;
-  badge?: React.ReactNode;
+}: Omit<ComponentProps<'header'>, 'title'> & {
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  badge?: ReactNode;
 }) {
   return (
     <header className={cn('flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between', className)} {...props}>
@@ -75,10 +76,10 @@ function Section({
   className,
   children,
   ...props
-}: Omit<React.ComponentProps<'section'>, 'title'> & {
-  title?: React.ReactNode;
-  description?: React.ReactNode;
-  actions?: React.ReactNode;
+}: Omit<ComponentProps<'section'>, 'title'> & {
+  title?: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
   headingLevel?: 'h2' | 'h3';
 }) {
   const Heading = headingLevel;

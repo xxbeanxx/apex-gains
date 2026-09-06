@@ -10,8 +10,8 @@ import {
   describeUnitOfWorkContract,
 } from './misc.contract';
 import { describePlansContract } from './plans.contract';
-import { describeWorkoutsContract } from './workouts.contract';
 import { describeSessionsContract } from './sessions.contract';
+import { describeWorkoutsContract } from './workouts.contract';
 
 /**
  * What every repository adapter has to do, stated once.

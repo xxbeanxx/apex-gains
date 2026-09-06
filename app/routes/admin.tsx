@@ -1,5 +1,8 @@
-import { ScrollTextIcon, UsersIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+
 import { Link } from 'react-router';
+
+import { ScrollTextIcon, UsersIcon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
 import { AccountIdentity } from '~/components/admin/account-identity';
@@ -8,10 +11,10 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import type { AdminActionKind } from '~domain/admin/admin-action';
-import { formatCount, formatDateTime, formatFullDate } from '~shared/format';
 import { adminServiceContext } from '~/router/load-context';
 import type { AdminAccountView, AdminActionView } from '~application/use-cases/admin-service';
+import type { AdminActionKind } from '~domain/admin/admin-action';
+import { formatCount, formatDateTime, formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/admin';
 
@@ -34,7 +37,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 
 /** A shortlist row: who, and the one number the list is sorted by. */
-function AccountRow({ account, measure }: { account: AdminAccountView; measure: React.ReactNode }) {
+function AccountRow({ account, measure }: { account: AdminAccountView; measure: ReactNode }) {
   return (
     <li className="relative flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors duration-(--dur) hover:border-ring/30">
       <AccountIdentity account={account} stretched />

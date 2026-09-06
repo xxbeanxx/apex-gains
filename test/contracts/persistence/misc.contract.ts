@@ -4,10 +4,12 @@ import { Athlete } from '~domain/athlete/athlete';
 import { Duration } from '~domain/values/duration';
 
 import {
-  athlete,
+  type ContractSubject,
   DateOnly,
   NOW,
+  type RepositorySet,
   Weight,
+  athlete,
   deps,
   equipmentItem,
   exercise,
@@ -16,8 +18,6 @@ import {
   seedAthletes,
   session,
   weighIn,
-  type ContractSubject,
-  type RepositorySet,
 } from './harness';
 
 const day = (value: string) => DateOnly.parse(value);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { deps, ids, NOW, plan, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
+import { type ContractSubject, NOW, type RepositorySet, deps, ids, plan, seedAthletes, workout } from './harness';
 
 export function describePlansContract(subject: ContractSubject): void {
   describe('PlansRepository', () => {

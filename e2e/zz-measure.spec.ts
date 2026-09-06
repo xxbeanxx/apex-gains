@@ -1,5 +1,5 @@
-import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 
 // Chrome DevTools' responsive mode, with no device preset picked, is desktop
 // emulation at a phone size: a mouse pointer and a real scrollbar. That is a

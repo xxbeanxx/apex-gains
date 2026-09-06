@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { validateSync, ValidationError } from 'class-validator';
+import { ValidationError, validateSync } from 'class-validator';
 
 type Constructor<T> = new () => T;
 

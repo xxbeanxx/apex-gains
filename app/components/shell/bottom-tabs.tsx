@@ -1,5 +1,8 @@
-import { LogOutIcon, MoreHorizontalIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+
 import { NavLink, useSubmit } from 'react-router';
+
+import { LogOutIcon, MoreHorizontalIcon } from 'lucide-react';
 
 import { Avatar } from '~/components/ui/avatar';
 import {
@@ -14,7 +17,7 @@ import { cn } from '~/lib/utils';
 
 import type { NavItem, NavUser } from './nav-items';
 
-function TabCell({ children, isActive, label }: { children: React.ReactNode; isActive: boolean; label: string }) {
+function TabCell({ children, isActive, label }: { children: ReactNode; isActive: boolean; label: string }) {
   return (
     <span
       aria-hidden={!isActive}

@@ -1,21 +1,29 @@
+import { useId } from 'react';
+
+import { Form, data, redirect } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsPositive, IsString } from 'class-validator';
 import { CheckCircle2Icon, DownloadIcon, Trash2Icon } from 'lucide-react';
-import { useId } from 'react';
-import { data, Form, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
-import { TabShell, type TabSection } from '~/components/layout/tab-shell';
+import { type TabSection, TabShell } from '~/components/layout/tab-shell';
+import { TimezonePicker } from '~/components/settings/timezone-picker';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
-import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { TimezonePicker } from '~/components/settings/timezone-picker';
+import { SubmitButton } from '~/components/ui/submit-button';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
+import { requestLogger } from '~/lib/logger';
+import { toOptionalNumber } from '~/lib/validate-form';
+import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
+import { TIMEZONES } from '~domain/values/timezone';
 import {
   DISTANCE_UNITS,
   type DistanceUnit,
@@ -24,13 +32,6 @@ import {
   WEIGHT_UNITS,
   type WeightUnit,
 } from '~domain/values/units';
-import { TIMEZONES } from '~domain/values/timezone';
-import { requestLogger } from '~/lib/logger';
-import { intent } from '~/lib/intent';
-import { dispatch, handled } from '~/lib/intent.server';
-import { toOptionalNumber } from '~/lib/validate-form';
-
-import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
 
 import type { Route } from './+types/settings';
 

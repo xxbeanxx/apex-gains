@@ -1,16 +1,15 @@
+import type { DomainDeps } from '~application/ports/domain-deps';
+import type { PlansRepository } from '~application/ports/persistence/plans-repository';
+import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import { nextCopyName } from '~application/shared/duplicate-name';
+import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
 import type { Athlete } from '~domain/athlete/athlete';
 import { activatePlan } from '~domain/plan/activation';
 import { Plan } from '~domain/plan/plan';
 import type { MoveDirection } from '~domain/shared/ordered';
-import { err, ok, type Result } from '~domain/shared/result';
+import { type Result, err, ok } from '~domain/shared/result';
 import { DateOnly } from '~domain/values/date-only';
-import type { PlansRepository } from '~application/ports/persistence/plans-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
-import { nextCopyName } from '~application/shared/duplicate-name';
-import { ForkableLibrary, type ForkMutation } from '~application/shared/fork';
 
 export type PlanSummary = {
   id: string;

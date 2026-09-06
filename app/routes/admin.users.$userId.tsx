@@ -1,11 +1,12 @@
+import { Form, Link, data, redirect } from 'react-router';
+
 import { Expose } from 'class-transformer';
 import { IsIn, IsString } from 'class-validator';
 import { ArrowLeftIcon, ShieldCheckIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
-import { Form, Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
-import { TabShell, type TabSection } from '~/components/layout/tab-shell';
+import { type TabSection, TabShell } from '~/components/layout/tab-shell';
 import { Avatar } from '~/components/ui/avatar';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -14,12 +15,11 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Stat } from '~/components/ui/stat';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { formatCount, formatFullDate } from '~shared/format';
-import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
-
+import { requestLogger } from '~/lib/logger';
 import { adminServiceContext } from '~/router/load-context';
+import { formatCount, formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/admin.users.$userId';
 

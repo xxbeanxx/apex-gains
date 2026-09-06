@@ -2,20 +2,19 @@ import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { afterAll, beforeAll, describe } from 'vitest';
 
-import { configureDatabase, db } from '~infrastructure/persistence/drizzle/index';
-
 import { DrizzleAdminActionsRepository } from '~infrastructure/persistence/drizzle/admin-actions-repository';
 import { DrizzleAthletesRepository } from '~infrastructure/persistence/drizzle/athletes-repository';
 import { DrizzleBodyMeasurementsRepository } from '~infrastructure/persistence/drizzle/body-measurements-repository';
 import { DrizzleBodyWeightRepository } from '~infrastructure/persistence/drizzle/body-weight-repository';
 import { DrizzleEquipmentRepository } from '~infrastructure/persistence/drizzle/equipment-repository';
 import { DrizzleExercisesRepository } from '~infrastructure/persistence/drizzle/exercises-repository';
+import { configureDatabase, db } from '~infrastructure/persistence/drizzle/index';
 import { DrizzlePlansRepository } from '~infrastructure/persistence/drizzle/plans-repository';
-import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
-import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
 import { DrizzleSessionsRepository } from '~infrastructure/persistence/drizzle/sessions-repository';
+import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
+import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
 
-import { describeRepositoryContract, type RepositorySet } from './index';
+import { type RepositorySet, describeRepositoryContract } from './index';
 
 /**
  * The Drizzle family answering the same contract as the in-memory one.

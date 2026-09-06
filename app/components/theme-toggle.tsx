@@ -1,5 +1,7 @@
-import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+
+import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import {
@@ -50,9 +52,9 @@ function ThemeToggle() {
   // Starts null so the first client render matches the server's (no checkmark
   // rendered yet). The visible icon is driven by CSS, not by this state, so
   // the trigger is correct from the very first paint.
-  const [theme, setTheme] = React.useState<Theme | null>(null);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     const resolved = stored && isTheme(stored) ? stored : 'system';
     setTheme(resolved);
@@ -65,7 +67,7 @@ function ThemeToggle() {
   }, []);
 
   // Follow the OS while the preference is "system".
-  React.useEffect(() => {
+  useEffect(() => {
     if (theme !== 'system') return;
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => applyTheme('system');

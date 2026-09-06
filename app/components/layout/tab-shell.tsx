@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import type * as React from 'react';
+
 import { Link } from 'react-router';
 
 import { cn } from '~/lib/utils';
@@ -6,7 +8,7 @@ import { cn } from '~/lib/utils';
 export type TabSection = {
   id: string;
   label: string;
-  content: React.ReactNode;
+  content: ReactNode;
 };
 
 /**

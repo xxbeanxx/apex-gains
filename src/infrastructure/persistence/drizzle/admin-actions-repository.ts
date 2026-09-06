@@ -1,10 +1,9 @@
 import { desc } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { adminActions, type AdminAction as AdminActionRow } from '~infrastructure/persistence/drizzle/schema';
-import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
-
 import type { AdminActionsRepository } from '~application/ports/persistence/admin-actions-repository';
+import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type AdminAction as AdminActionRow, adminActions } from '~infrastructure/persistence/drizzle/schema';
 
 function toAdminAction(row: AdminActionRow): AdminAction {
   return AdminAction.fromSnapshot({

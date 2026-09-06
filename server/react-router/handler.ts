@@ -10,11 +10,10 @@
  * the same copies the routes themselves use. `server/main.ts` - a separate
  * bundle in production, and plain `tsx` in dev - only supplies the values.
  */
-
 import { createRequestHandler } from '@react-router/express';
 import * as serverBuild from 'virtual:react-router/server-build';
 
-import { nestLoadContext, type NestSingletons } from '~/router/load-context';
+import { type NestSingletons, nestLoadContext } from '~/router/load-context';
 
 /**
  * Where the client build - hashed assets, plus anything from `public/` - was written.

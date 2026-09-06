@@ -1,7 +1,7 @@
+import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import { BodyMeasurement, type BodyMeasurementMetric, type BodyMeasurementSnapshot } from '~domain/body/body-measurement';
 import type { DateOnly } from '~domain/values/date-only';
 
-import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { AthleteOwned } from './references';
 
 // Dev-convenience adapter - see body-measurements-repository.server.ts for

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
-import { formatFullDate } from '~shared/format';
 import { cn } from '~/lib/utils';
 import type { HeatmapDayView } from '~application/use-cases/progress-view';
+import { formatFullDate } from '~shared/format';
 
 const CELL = 12;
 const GAP = 3;
@@ -145,7 +145,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
  * The Recharts charts get this from `ChartTooltipContent`; the calendar is
  * hand-drawn, so it carries its own in the same clothes.
  */
-function HeatmapTooltip({ x, y, visible, children }: { x: number; y: number; visible: boolean; children: React.ReactNode }) {
+function HeatmapTooltip({ x, y, visible, children }: { x: number; y: number; visible: boolean; children: ReactNode }) {
   return (
     <div
       role="status"

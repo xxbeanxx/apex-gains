@@ -1,8 +1,8 @@
-import { and, eq, isNotNull, isNull, notInArray, or, type SQL } from 'drizzle-orm';
+import { type SQL, and, eq, isNotNull, isNull, notInArray, or } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 
-import { db } from '~infrastructure/persistence/drizzle/index';
 import type { LibraryVisibility } from '~domain/shared/ownership';
+import { db } from '~infrastructure/persistence/drizzle/index';
 
 /**
  * The columns a visibility clause reads, named rather than inferred from the

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { useFetcher } from 'react-router';
+
+import { PlusIcon } from 'lucide-react';
 
 import { ExerciseDetailsFields } from '~/components/exercises/exercise-details-fields';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { PlusIcon } from 'lucide-react';
-
 import { intents } from '~/routes/exercises';
 
 function NewExerciseForm({ onCreated }: { onCreated: () => void }) {

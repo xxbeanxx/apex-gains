@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 
-import { Badge } from '~/components/ui/badge';
 import { Avatar } from '~/components/ui/avatar';
+import { Badge } from '~/components/ui/badge';
 
 type Account = {
   id: string;

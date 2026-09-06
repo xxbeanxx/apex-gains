@@ -1,5 +1,7 @@
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import * as React from 'react';
+
+import type { LucideIcon } from 'lucide-react';
 
 import { cn } from '~/lib/utils';
 
@@ -16,9 +18,9 @@ function EmptyState({
   compact = false,
 }: {
   icon?: LucideIcon;
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  action?: React.ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
   className?: string;
   compact?: boolean;
 }) {

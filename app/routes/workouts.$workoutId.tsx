@@ -1,3 +1,7 @@
+import { useMemo, useRef, useState } from 'react';
+
+import { Form, redirect, useSubmit } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import {
@@ -11,8 +15,6 @@ import {
   TrendingUpIcon,
   XIcon,
 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
-import { Form, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderCanvas } from '~/components/builder/builder-canvas';
@@ -31,21 +33,20 @@ import { Button } from '~/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
-import { Field } from '~/components/ui/field';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
+import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { CardioFields } from '~domain/equipment/cardio-fields';
-import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
-import { requestLogger } from '~/lib/logger';
+import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
 import { intent } from '~/lib/intent';
-import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail';
 import { dispatch, handled } from '~/lib/intent.server';
+import { requestLogger } from '~/lib/logger';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
+import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
-
-import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import type { Route } from './+types/workouts.$workoutId';
 

@@ -14,10 +14,20 @@
 export const DEFAULT_REDIRECT = '/today';
 
 export function safeRedirect(redirectTo: string | null | undefined, fallback: string = DEFAULT_REDIRECT): string {
-  if (!redirectTo || !redirectTo.startsWith('/')) return fallback;
-  if (redirectTo.startsWith('//')) return fallback;
+  if (!redirectTo || !redirectTo.startsWith('/')) {
+    return fallback;
+  }
+
+  if (redirectTo.startsWith('//')) {
+    return fallback;
+  }
+
   // A backslash is normalized to a forward slash by some browsers, so `/\host`
   // is another way of writing `//host`.
-  if (redirectTo.startsWith('/\\')) return fallback;
+
+  if (redirectTo.startsWith('/\\')) {
+    return fallback;
+  }
+
   return redirectTo;
 }

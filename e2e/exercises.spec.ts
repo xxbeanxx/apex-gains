@@ -1,5 +1,5 @@
-import { addEquipment, closeDialog, createExercise, openEquipmentDialog, openExercise, selectOption } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { addEquipment, closeDialog, createExercise, openEquipmentDialog, openExercise, selectOption } from './helpers';
 
 test.describe('exercise library', () => {
   test('starts empty and offers the first exercise', async ({ page, athlete }) => {

@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
+
 import { BottomTabs } from '~/components/shell/bottom-tabs';
-import { navItemsFor, type NavUser } from '~/components/shell/nav-items';
+import { type NavUser, navItemsFor } from '~/components/shell/nav-items';
 import { Sidebar } from '~/components/shell/sidebar';
 import { TopBar } from '~/components/shell/top-bar';
 
@@ -8,7 +10,7 @@ import { TopBar } from '~/components/shell/top-bar';
  * bar on mobile, and a sticky top bar in between. Anonymous visitors get
  * the top bar alone - `home.tsx`'s own marketing layout is everything else.
  */
-function AppShell({ user, buildInfo, children }: { user: NavUser | null; buildInfo: string; children: React.ReactNode }) {
+function AppShell({ user, buildInfo, children }: { user: NavUser | null; buildInfo: string; children: ReactNode }) {
   const items = user ? navItemsFor(user) : [];
 
   return (

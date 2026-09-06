@@ -1,6 +1,6 @@
+import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { Exercise } from '~domain/exercise/exercise';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
-import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 
 /**
  * What an exercise id resolves to, for the read models that only need to

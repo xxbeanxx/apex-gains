@@ -1,15 +1,15 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import { cardioFieldsFor, type CardioFields } from '~domain/equipment/cardio-fields';
-import type { ExerciseType } from '~domain/exercise/exercise-type';
-import type { SessionPlan } from '~domain/session/session';
-import { DateOnly } from '~domain/values/date-only';
 import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { ExerciseDirectory } from '~application/shared/exercise-directory';
-import { toTargetView, type TargetView } from '~application/shared/target-view';
+import { type TargetView, toTargetView } from '~application/shared/target-view';
+import type { Athlete } from '~domain/athlete/athlete';
+import { type CardioFields, cardioFieldsFor } from '~domain/equipment/cardio-fields';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import type { SessionPlan } from '~domain/session/session';
+import { DateOnly } from '~domain/values/date-only';
 
 export type PlanItem = {
   exerciseId: string;

@@ -5,7 +5,7 @@ import type { Clock } from '~domain/shared/clock';
 import { Rpe } from '~domain/values/rpe';
 import { Weight } from '~domain/values/weight';
 
-import { DateOnly, deps, exercise, ids, NOW, seedAthletes, session, type ContractSubject, type RepositorySet } from './harness';
+import { type ContractSubject, DateOnly, NOW, type RepositorySet, deps, exercise, ids, seedAthletes, session } from './harness';
 
 const day = (value: string) => DateOnly.parse(value);
 

@@ -1,12 +1,13 @@
+import { Form, useFetcher } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, RulerIcon, ScaleIcon, XIcon } from 'lucide-react';
-import { Form, useFetcher } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
 import { Page, PageHeader, Section } from '~/components/layout/page';
-import { TabShell, type TabSection } from '~/components/layout/tab-shell';
+import { type TabSection, TabShell } from '~/components/layout/tab-shell';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
@@ -14,14 +15,13 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
-import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
-import { DateOnly } from '~domain/values/date-only';
-import { formatFullDate } from '~shared/format';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toNumber } from '~/lib/validate-form';
-
 import { bodyMeasurementsServiceContext, bodyWeightServiceContext, progressServiceContext } from '~/router/load-context';
+import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/body';
 

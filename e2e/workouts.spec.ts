@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
-import { createExercise, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { createExercise, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
 
 /** Adds an exercise to the open workout builder by clicking it in the palette. */
 async function addExercise(page: Page, exercise: string): Promise<void> {

@@ -1,5 +1,5 @@
-import { plainToInstance, type TransformFnParams } from 'class-transformer';
-import { validateSync, ValidationError } from 'class-validator';
+import { type TransformFnParams, plainToInstance } from 'class-transformer';
+import { ValidationError, validateSync } from 'class-validator';
 
 /**
  * Coerces an incoming environment variable string to a boolean.

@@ -1,22 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 import { Exercise } from '~domain/exercise/exercise';
 import { Plan } from '~domain/plan/plan';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
+import { DateOnly } from '~domain/values/date-only';
 import { SetTarget } from '~domain/workout/set-target';
 import { Workout } from '~domain/workout/workout';
-import { DateOnly } from '~domain/values/date-only';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
+import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
-import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { SessionService } from './session-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');

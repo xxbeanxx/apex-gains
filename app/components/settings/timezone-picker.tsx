@@ -1,5 +1,7 @@
-import { CheckIcon, ClockIcon, MapPinIcon } from 'lucide-react';
 import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { CheckIcon, ClockIcon, MapPinIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '~/components/ui/command';
@@ -64,12 +66,12 @@ function TimezonePicker({
   defaultValue: string;
   describedBy?: string;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState(defaultValue);
-  const [now, setNow] = React.useState(() => new Date());
-  const groups = React.useMemo(() => groupByRegion(zones), [zones]);
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(defaultValue);
+  const [now, setNow] = useState(() => new Date());
+  const groups = useMemo(() => groupByRegion(zones), [zones]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     const timer = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(timer);

@@ -1,8 +1,9 @@
-import { MoonIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { formatFullDate, formatMonthDay } from '~shared/format';
+import { MoonIcon } from 'lucide-react';
+
 import type { TimelineDay } from '~application/use-cases/progress-service';
+import { formatFullDate, formatMonthDay } from '~shared/format';
 
 /**
  * One dense row for a logged day - date, workout name, set count, tonnage -

@@ -1,4 +1,4 @@
-import { intent, type Intent } from './intent.js';
+import { type Intent, intent } from './intent.js';
 import { validateForm } from './validate-form.server.js';
 
 /**

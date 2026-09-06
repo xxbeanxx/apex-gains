@@ -1,6 +1,6 @@
+import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 
-import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import type { AthleteOwned, AthleteReferenced } from './references';
 
 /**

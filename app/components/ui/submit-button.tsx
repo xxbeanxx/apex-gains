@@ -1,11 +1,14 @@
-import { Loader2Icon } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import * as React from 'react';
+
 import { useNavigation } from 'react-router';
+
+import { Loader2Icon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
 
-type SubmitButtonProps = React.ComponentProps<typeof Button> & {
+type SubmitButtonProps = ComponentProps<typeof Button> & {
   /**
    * Explicit pending flag. Use for `useFetcher` forms:
    * `pending={fetcher.state !== "idle"}`.

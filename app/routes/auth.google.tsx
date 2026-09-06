@@ -3,7 +3,6 @@ import { redirect } from 'react-router';
 import { serializeOidcState } from '~/auth/oidc-state';
 import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
-
 import { identityServiceContext, oidcStateCookieContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.google';

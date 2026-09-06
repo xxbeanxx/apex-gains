@@ -1,18 +1,18 @@
 import { and, asc, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import {
-  sessionSets,
-  sessions,
-  type SessionSet as SessionSetRow,
-  type Session as SessionRow,
-} from '~infrastructure/persistence/drizzle/schema';
+import type { SessionsRepository, TrainingTotals } from '~application/ports/persistence/sessions-repository';
 import { LoggedSet } from '~domain/session/logged-set';
 import { Session } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import {
+  type Session as SessionRow,
+  type SessionSet as SessionSetRow,
+  sessionSets,
+  sessions,
+} from '~infrastructure/persistence/drizzle/schema';
 
 import { diffChildren } from '../shared/diff-children';
-import type { TrainingTotals, SessionsRepository } from '~application/ports/persistence/sessions-repository';
 
 type RowWithSets = SessionRow & { sets: SessionSetRow[] };
 

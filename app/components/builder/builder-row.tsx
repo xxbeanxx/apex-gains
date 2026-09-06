@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type * as React from 'react';
 
 /**
@@ -21,13 +22,13 @@ function BuilderRow({
   detail,
 }: {
   position: number;
-  title: React.ReactNode;
-  chips?: React.ReactNode;
+  title: ReactNode;
+  chips?: ReactNode;
   /** A line under the chips - the workout builder's progression suggestion is the one caller. */
-  note?: React.ReactNode;
-  controls?: React.ReactNode;
-  menu?: React.ReactNode;
-  detail?: React.ReactNode;
+  note?: ReactNode;
+  controls?: ReactNode;
+  menu?: ReactNode;
+  detail?: ReactNode;
 }) {
   return (
     <li className="rounded-xl border border-border bg-card shadow-sm shadow-black/[0.03] dark:shadow-black/20">

@@ -1,12 +1,14 @@
+import type { ReactNode } from 'react';
+
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
+import { loadUserMiddleware } from '~/auth/current-user';
+import { userContext } from '~/auth/user-context';
 import { ErrorPage } from '~/components/error-page';
 import { NavProgress } from '~/components/nav-progress';
 import { AppShell } from '~/components/shell/app-shell';
 import { sidebarInitScript } from '~/components/shell/shell-init';
 import { themeInitScript } from '~/components/theme-toggle';
-import { loadUserMiddleware } from '~/auth/current-user';
-import { userContext } from '~/auth/user-context';
 import { getBuildInfo } from '~/lib/build-info';
 import { requestLoggingMiddleware } from '~/lib/logger';
 
@@ -33,7 +35,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   };
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   return (
     // suppressHydrationWarning: themeInitScript sets `class` and
     // `style.color-scheme` on <html> before React hydrates.

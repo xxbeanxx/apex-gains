@@ -1,4 +1,5 @@
-import * as React from 'react';
+import { useEffect, useRef } from 'react';
+
 import { useNavigation } from 'react-router';
 
 /**
@@ -10,11 +11,11 @@ import { useNavigation } from 'react-router';
  */
 export function useCloseOnSubmit(close: () => void): void {
   const navigation = useNavigation();
-  const closeRef = React.useRef(close);
+  const closeRef = useRef(close);
   closeRef.current = close;
-  const wasSubmitting = React.useRef(false);
+  const wasSubmitting = useRef(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const isSubmitting = navigation.state !== 'idle';
     if (wasSubmitting.current && !isSubmitting) closeRef.current();
     wasSubmitting.current = isSubmitting;

@@ -14,9 +14,6 @@
  * than `true`, which would trust `X-Forwarded-*` from any client directly -
  * letting a request forge its own origin/protocol/IP.
  */
-
-import 'reflect-metadata';
-
 import path from 'node:path';
 import url from 'node:url';
 
@@ -26,6 +23,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import compression from 'compression';
 import { static as serveStatic } from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
+import 'reflect-metadata';
 
 import type { NestSingletons } from '~/router/load-context';
 

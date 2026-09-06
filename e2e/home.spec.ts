@@ -1,5 +1,5 @@
-import { createExercise, createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { createExercise, createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 
 test('shows zeroed stats and no active plan for a fresh athlete', async ({ page, athlete }) => {
   await page.goto('/');

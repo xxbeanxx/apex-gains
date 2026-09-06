@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { exercise, ids, plan, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
+import { type ContractSubject, type RepositorySet, exercise, ids, plan, seedAthletes, workout } from './harness';
 
 /**
  * What `LibraryVisibility` promises, asked of a real adapter.

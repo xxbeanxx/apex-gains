@@ -1,7 +1,9 @@
 'use client';
 
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import * as React from 'react';
+import { useState } from 'react';
+
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
@@ -40,8 +42,8 @@ function Calendar({
   className?: string;
 }) {
   const selectedDate = parseDateString(selected);
-  const [viewYear, setViewYear] = React.useState(selectedDate.getFullYear());
-  const [viewMonth, setViewMonth] = React.useState(selectedDate.getMonth());
+  const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
 
   const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const firstOfMonth = new Date(viewYear, viewMonth, 1);

@@ -1,5 +1,4 @@
-import { err, ok, type Result } from '../shared/result';
-
+import { type Result, err, ok } from '../shared/result';
 import type { Athlete } from './athlete';
 
 /**

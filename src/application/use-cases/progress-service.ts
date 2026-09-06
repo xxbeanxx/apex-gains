@@ -1,25 +1,10 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import type { AthletePreferences } from '~domain/athlete/preferences';
-import type { BodyMeasurement, BodyMeasurementMetric } from '~domain/body/body-measurement';
-import type { BodyWeightEntry } from '~domain/body/body-weight-entry';
-import { muscleGroupBalance } from '~domain/progress/muscle-balance';
-import { personalRecords, progressSeries, type ProgressMetricKind } from '~domain/progress/personal-records';
-import { TrainingHistory } from '~domain/progress/training-history';
-import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~domain/progress/weekly-volume';
-import type { Session } from '~domain/session/session';
-import { DateOnly } from '~domain/values/date-only';
-import { Duration } from '~domain/values/duration';
-import { Weight } from '~domain/values/weight';
-import { formatMonthDay } from '~shared/format';
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-
 import { ExerciseDirectory } from '~application/shared/exercise-directory';
-
 import type {
   HeatmapDayView,
   MuscleBalanceView,
@@ -27,6 +12,19 @@ import type {
   ProgressSeriesView,
   WeeklyPointView,
 } from '~application/use-cases/progress-view';
+import type { Athlete } from '~domain/athlete/athlete';
+import type { AthletePreferences } from '~domain/athlete/preferences';
+import type { BodyMeasurement, BodyMeasurementMetric } from '~domain/body/body-measurement';
+import type { BodyWeightEntry } from '~domain/body/body-weight-entry';
+import { muscleGroupBalance } from '~domain/progress/muscle-balance';
+import { type ProgressMetricKind, personalRecords, progressSeries } from '~domain/progress/personal-records';
+import { TrainingHistory } from '~domain/progress/training-history';
+import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~domain/progress/weekly-volume';
+import type { Session } from '~domain/session/session';
+import { DateOnly } from '~domain/values/date-only';
+import { Duration } from '~domain/values/duration';
+import { Weight } from '~domain/values/weight';
+import { formatMonthDay } from '~shared/format';
 
 export type TimelineSet = {
   id: string;

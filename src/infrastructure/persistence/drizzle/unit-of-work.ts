@@ -1,7 +1,6 @@
+import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import { db } from '~infrastructure/persistence/drizzle/index';
 import { currentTransaction, runInTransaction } from '~infrastructure/persistence/drizzle/transaction';
-
-import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 
 export class DrizzleUnitOfWork implements UnitOfWork {
   /**

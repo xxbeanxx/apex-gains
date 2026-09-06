@@ -1,5 +1,7 @@
-import { SearchIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type * as React from 'react';
+
+import { SearchIcon } from 'lucide-react';
 
 import { Input } from '~/components/ui/input';
 
@@ -56,10 +58,10 @@ function BuilderPalette<T>({
 }: {
   items: readonly T[];
   getKey: (item: T) => string;
-  renderItem: (item: T) => React.ReactNode;
-  filters?: React.ReactNode;
+  renderItem: (item: T) => ReactNode;
+  filters?: ReactNode;
   emptyLabel?: string;
-  newAction?: React.ReactNode;
+  newAction?: ReactNode;
 }) {
   return (
     <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-sm shadow-black/[0.03] dark:shadow-black/20">

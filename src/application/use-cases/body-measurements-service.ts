@@ -1,12 +1,11 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
-import { ok, type Result } from '~domain/shared/result';
-import type { DateOnly } from '~domain/values/date-only';
-import { Length } from '~domain/values/length';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import type { Athlete } from '~domain/athlete/athlete';
+import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
+import { type Result, ok } from '~domain/shared/result';
+import type { DateOnly } from '~domain/values/date-only';
+import { Length } from '~domain/values/length';
 
 /**
  * Recording body measurements (waist, chest, ...). Reading them back is

@@ -7,11 +7,11 @@ import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-mem
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
+import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
-import { describeRepositoryContract, type RepositorySet } from './index';
+import { type RepositorySet, describeRepositoryContract } from './index';
 
 /**
  * The in-memory family answering the same contract as Postgres.

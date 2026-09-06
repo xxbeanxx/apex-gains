@@ -1,11 +1,13 @@
-import { CircleHelpIcon } from 'lucide-react';
 import { useState } from 'react';
+
 import { useFetcher } from 'react-router';
+
+import { CircleHelpIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { formatRelativeDate } from '~shared/format';
 import type { RecentSetView } from '~application/use-cases/session-service';
+import { formatRelativeDate } from '~shared/format';
 
 /** Groups a newest-first flat set list into one entry per day it was logged. */
 function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: string[] }[] {

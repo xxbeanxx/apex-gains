@@ -1,10 +1,9 @@
 import { asc, eq } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { users, type User } from '~infrastructure/persistence/drizzle/schema';
-import { Athlete } from '~domain/athlete/athlete';
-
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
+import { Athlete } from '~domain/athlete/athlete';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type User, users } from '~infrastructure/persistence/drizzle/schema';
 
 function toAthlete(row: User): Athlete {
   return Athlete.fromSnapshot({

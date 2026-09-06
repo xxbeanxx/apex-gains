@@ -1,20 +1,19 @@
+import type { DomainDeps } from '~application/ports/domain-deps';
+import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
+import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { ExerciseDirectory } from '~application/shared/exercise-directory';
+import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { AthletePreferences } from '~domain/athlete/preferences';
 import type { LoggedSet } from '~domain/session/logged-set';
 import { Session } from '~domain/session/session';
-import { err, ok, type Result } from '~domain/shared/result';
+import { type Result, err, ok } from '~domain/shared/result';
 import { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
 import { Rpe } from '~domain/values/rpe';
 import { Speed } from '~domain/values/speed';
 import { Weight } from '~domain/values/weight';
-import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
-import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
-import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 
 /** A set as the athlete entered it: their weight unit, their speed unit, minutes. */
 export type SetInput = {

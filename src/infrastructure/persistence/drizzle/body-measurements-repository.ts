@@ -1,11 +1,10 @@
 import { and, desc, eq } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { bodyMeasurements, type BodyMeasurement as BodyMeasurementRow } from '~infrastructure/persistence/drizzle/schema';
+import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
 import type { DateOnly } from '~domain/values/date-only';
-
-import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type BodyMeasurement as BodyMeasurementRow, bodyMeasurements } from '~infrastructure/persistence/drizzle/schema';
 
 function toEntry(row: BodyMeasurementRow): BodyMeasurement {
   return BodyMeasurement.fromSnapshot({

@@ -1,6 +1,6 @@
 import type { CardioFields } from '../equipment/cardio-fields';
 import type { Clock } from '../shared/clock';
-import { alreadyEditable, type EditableCopy, forkedFrom } from '../shared/forking';
+import { type EditableCopy, alreadyEditable, forkedFrom } from '../shared/forking';
 import type { IdGenerator } from '../shared/ids';
 import { type MoveDirection, OrderedChildren } from '../shared/ordered';
 import { Ownership } from '../shared/ownership';

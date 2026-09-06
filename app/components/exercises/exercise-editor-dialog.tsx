@@ -1,6 +1,8 @@
-import { RotateCcwIcon } from 'lucide-react';
 import { useId, useState } from 'react';
+
 import { useFetcher } from 'react-router';
+
+import { RotateCcwIcon } from 'lucide-react';
 
 import { ExerciseDetailsFields } from '~/components/exercises/exercise-details-fields';
 import { Button } from '~/components/ui/button';
@@ -8,9 +10,8 @@ import { Checkbox } from '~/components/ui/checkbox';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
-
 import { intents } from '~/routes/exercises';
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 function EquipmentCheckboxRow({
   exerciseId,

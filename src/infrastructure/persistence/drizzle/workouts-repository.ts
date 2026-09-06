@@ -1,19 +1,19 @@
-import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { type SQL, and, asc, desc, eq, inArray } from 'drizzle-orm';
 
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import {
-  workoutExercises,
-  workouts,
-  type Workout as WorkoutRow,
-  type WorkoutExercise as WorkoutExerciseRow,
-} from '~infrastructure/persistence/drizzle/schema';
+import type { WorkoutName, WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { LibraryVisibility } from '~domain/shared/ownership';
 import { Workout, type WorkoutExerciseSnapshot } from '~domain/workout/workout';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import {
+  type WorkoutExercise as WorkoutExerciseRow,
+  type Workout as WorkoutRow,
+  workoutExercises,
+  workouts,
+} from '~infrastructure/persistence/drizzle/schema';
 
 import { diffChildren } from '../shared/diff-children';
 import { writePositions } from '../shared/write-positions';
-import type { WorkoutName, WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
+import { visibleRowWhere, visibleRowsWhere } from './shared/visibility';
 
 /** The columns `shared/visibility.ts` reads to build this table's clauses. */
 const visibility = {

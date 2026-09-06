@@ -1,5 +1,6 @@
-import { XIcon } from 'lucide-react';
 import { useFetcher } from 'react-router';
+
+import { XIcon } from 'lucide-react';
 
 import type { Intent } from '~/lib/intent';
 import type { LoggedSetView } from '~application/use-cases/session-service';

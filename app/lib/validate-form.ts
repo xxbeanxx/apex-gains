@@ -1,9 +1,9 @@
 import type { TransformFnParams } from 'class-transformer';
 import {
-  registerDecorator,
   type ValidationOptions,
   ValidatorConstraint,
   type ValidatorConstraintInterface,
+  registerDecorator,
 } from 'class-validator';
 
 import { DateOnly } from '~domain/values/date-only';

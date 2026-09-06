@@ -1,7 +1,7 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-
 // Type-only: `verbatimModuleSyntax` keeps `import { type X }` as a runtime
 // import, which would make this and ./index a cycle.
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import type { Transaction } from './index';
 
 /**

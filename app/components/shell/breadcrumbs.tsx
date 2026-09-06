@@ -1,7 +1,8 @@
-import { ChevronRightIcon } from 'lucide-react';
 import { Link, useMatches } from 'react-router';
 
-import { isCrumbHandle, type Crumb } from '~/lib/breadcrumbs';
+import { ChevronRightIcon } from 'lucide-react';
+
+import { type Crumb, isCrumbHandle } from '~/lib/breadcrumbs';
 
 import { NAV_ITEMS } from './nav-items';
 

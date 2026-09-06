@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { Exercise, type ExerciseSnapshot } from '../exercise/exercise';
+import { Session } from '../session/session';
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
-import { Session } from '../session/session';
 import { DateOnly } from '../values/date-only';
 import { Duration } from '../values/duration';
 import { Weight } from '../values/weight';
-import { muscleGroupBalance, OTHER_MUSCLE_GROUP } from './muscle-balance';
+import { OTHER_MUSCLE_GROUP, muscleGroupBalance } from './muscle-balance';
 import { estimatedOneRepMax, personalRecords, progressSeries } from './personal-records';
 import { TrainingHistory } from './training-history';
 import { consistencyCalendar, weeklySetCount, weeklyTonnage } from './weekly-volume';

@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~domain/athlete/athlete';
+import { BodyMeasurement } from '~domain/body/body-measurement';
+import { BodyWeightEntry } from '~domain/body/body-weight-entry';
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
+import { Session } from '~domain/session/session';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
-import { BodyMeasurement } from '~domain/body/body-measurement';
-import { BodyWeightEntry } from '~domain/body/body-weight-entry';
-import { Session } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
 import { Length } from '~domain/values/length';

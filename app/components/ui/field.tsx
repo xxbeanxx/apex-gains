@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { type ReactElement, type ReactNode, cloneElement, useId } from 'react';
 
 import { Label } from '~/components/ui/label';
 import { cn } from '~/lib/utils';
@@ -12,22 +13,22 @@ type FieldRenderArgs = {
 };
 
 type FieldProps = {
-  label: React.ReactNode;
+  label: ReactNode;
   /** Helper text rendered under the label and linked via aria-describedby. */
-  description?: React.ReactNode;
+  description?: ReactNode;
   /** Error text. Presence marks the control aria-invalid. */
-  error?: React.ReactNode;
+  error?: ReactNode;
   /**
    * Control rendered inline beside the input - typically a submit button.
    * Living in the control row is what keeps it aligned with the input no
    * matter how tall the label and description above it turn out to be.
    */
-  action?: React.ReactNode;
+  action?: ReactNode;
   className?: string;
   labelClassName?: string;
   children:
-    | React.ReactElement<Partial<{ 'id': string; 'aria-describedby': string; 'aria-invalid': boolean }>>
-    | ((args: FieldRenderArgs) => React.ReactNode);
+    | ReactElement<Partial<{ 'id': string; 'aria-describedby': string; 'aria-invalid': boolean }>>
+    | ((args: FieldRenderArgs) => ReactNode);
 };
 
 /**
@@ -42,7 +43,7 @@ type FieldProps = {
  * (Radix `Select` puts it on `SelectTrigger`, not on `Select`).
  */
 function Field({ label, description, error, action, className, labelClassName, children }: FieldProps) {
-  const reactId = React.useId();
+  const reactId = useId();
   const id = `field-${reactId}`;
   const descriptionId = description ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -54,7 +55,7 @@ function Field({ label, description, error, action, className, labelClassName, c
   const control =
     typeof children === 'function'
       ? children(args)
-      : React.cloneElement(children, {
+      : cloneElement(children, {
           id,
           'aria-describedby': describedBy,
           'aria-invalid': invalid || undefined,

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
-import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
 
 /** Adds one day-slot to the open plan detail page by clicking it in the palette. */
 async function addDay(page: Page, dayType: string) {

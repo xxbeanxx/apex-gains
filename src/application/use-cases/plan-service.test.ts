@@ -7,8 +7,8 @@ import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 import { PlanService } from './plan-service';
 

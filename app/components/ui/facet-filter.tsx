@@ -1,5 +1,7 @@
-import { CirclePlusIcon } from 'lucide-react';
 import * as React from 'react';
+import { useState } from 'react';
+
+import { CirclePlusIcon } from 'lucide-react';
 
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -28,7 +30,7 @@ function FacetFilter({
   selected: ReadonlySet<string>;
   onChange: (next: Set<string>) => void;
 }) {
-  const [query, setQuery] = React.useState('');
+  const [query, setQuery] = useState('');
   const needle = query.trim().toLowerCase();
   const filtered = needle === '' ? options : options.filter((option) => option.label.toLowerCase().includes(needle));
   const chosen = options.filter((option) => selected.has(option.value));

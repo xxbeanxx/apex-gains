@@ -1,10 +1,9 @@
-import { alreadyEditable, type EditableCopy, forkedFrom } from '~domain/shared/forking';
+import type { DomainDeps } from '~application/ports/domain-deps';
+import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { type EditableCopy, alreadyEditable, forkedFrom } from '~domain/shared/forking';
 import type { Positioned } from '~domain/shared/ordered';
 import type { Ownership } from '~domain/shared/ownership';
-import { err, ok, type Result } from '~domain/shared/result';
-import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import { type Result, err, ok } from '~domain/shared/result';
 
 /**
  * What an aggregate must offer to take part in fork-on-write. Exercises,

@@ -8,12 +8,12 @@ import { BodyWeightService } from '~application/use-cases/body-weight-service';
 import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import { ExportService } from '~application/use-cases/export-service';
 import { IdentityService } from '~application/use-cases/identity-service';
-import { ProgressService } from '~application/use-cases/progress-service';
 import { PlanImportService } from '~application/use-cases/plan-import-service';
 import { PlanService } from '~application/use-cases/plan-service';
-import { WorkoutService } from '~application/use-cases/workout-service';
-import { TrainingPlanService } from '~application/use-cases/training-plan-service';
+import { ProgressService } from '~application/use-cases/progress-service';
 import { SessionService } from '~application/use-cases/session-service';
+import { TrainingPlanService } from '~application/use-cases/training-plan-service';
+import { WorkoutService } from '~application/use-cases/workout-service';
 
 import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
 import { testLoginConfig } from '../config/test-login.config';

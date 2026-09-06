@@ -1,5 +1,5 @@
 import type { Clock } from '../shared/clock';
-import { alreadyEditable, type EditableCopy, identityTranslation } from '../shared/forking';
+import { type EditableCopy, alreadyEditable, identityTranslation } from '../shared/forking';
 import type { IdGenerator } from '../shared/ids';
 import { Ownership } from '../shared/ownership';
 import type { ExerciseType } from './exercise-type';

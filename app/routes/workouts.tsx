@@ -1,7 +1,8 @@
+import { Form, Link, redirect, useSubmit } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { ClipboardListIcon, CopyIcon, EllipsisIcon, PlusIcon } from 'lucide-react';
-import { Form, Link, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { OwnershipBadge } from '~/components/forkable-header';
@@ -14,13 +15,12 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
+import { requestLogger } from '~/lib/logger';
 import { trim } from '~/lib/validate-form';
-import type { WorkoutSummary } from '~application/use-cases/workout-service';
-
 import { workoutServiceContext } from '~/router/load-context';
+import type { WorkoutSummary } from '~application/use-cases/workout-service';
 
 import type { Route } from './+types/workouts';
 

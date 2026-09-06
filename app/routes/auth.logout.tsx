@@ -3,7 +3,6 @@ import { redirect } from 'react-router';
 import { userContext } from '~/auth/user-context';
 import { ErrorPage } from '~/components/error-page';
 import { requestLogger } from '~/lib/logger';
-
 import { sessionStorageContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.logout';

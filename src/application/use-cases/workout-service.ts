@@ -1,28 +1,27 @@
+import type { DomainDeps } from '~application/ports/domain-deps';
+import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
+import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
+import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import { nextCopyName } from '~application/shared/duplicate-name';
+import { ExerciseDirectory } from '~application/shared/exercise-directory';
+import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
+import { type TargetView, toTargetView } from '~application/shared/target-view';
 import type { Athlete } from '~domain/athlete/athlete';
 import { cardioFieldsFor } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
-import { suggestNextTarget, type RecentSession, type SuggestionKind } from '~domain/progress/progression';
+import { type RecentSession, type SuggestionKind, suggestNextTarget } from '~domain/progress/progression';
 import type { LoggedSet } from '~domain/session/logged-set';
 import type { MoveDirection } from '~domain/shared/ordered';
-import { err, ok, type Result } from '~domain/shared/result';
-import { SetTarget } from '~domain/workout/set-target';
-import { Workout } from '~domain/workout/workout';
+import { type Result, err, ok } from '~domain/shared/result';
 import type { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
 import { Speed } from '~domain/values/speed';
 import type { WeightUnit } from '~domain/values/units';
 import { Weight } from '~domain/values/weight';
-import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
-import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
-import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
-import { nextCopyName } from '~application/shared/duplicate-name';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
-import { ForkableLibrary, type ForkMutation } from '~application/shared/fork';
-import { toTargetView, type TargetView } from '~application/shared/target-view';
+import { SetTarget } from '~domain/workout/set-target';
+import { Workout } from '~domain/workout/workout';
 
 export type WorkoutSummary = {
   id: string;

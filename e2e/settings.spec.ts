@@ -1,5 +1,5 @@
-import { chooseTimezone, createExercise, selectOption } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { chooseTimezone, createExercise, selectOption } from './helpers';
 
 test('defaults to pounds and kilometres', async ({ page, athlete }) => {
   await page.goto('/settings');

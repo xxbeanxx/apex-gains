@@ -1,8 +1,8 @@
+import type { SessionsRepository, TrainingTotals } from '~application/ports/persistence/sessions-repository';
 import { LoggedSet } from '~domain/session/logged-set';
 import { Session, type SessionSnapshot } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 
-import type { TrainingTotals, SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { AthleteOwned, ExerciseReferences } from './references';
 
 // Dev-convenience adapter - see sessions-repository.server.ts for

@@ -1,5 +1,6 @@
-import { AlertTriangleIcon, HomeIcon } from 'lucide-react';
 import { Link, isRouteErrorResponse } from 'react-router';
+
+import { AlertTriangleIcon, HomeIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 

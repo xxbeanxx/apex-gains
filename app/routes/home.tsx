@@ -1,5 +1,6 @@
-import { CalendarCheckIcon, CalendarPlusIcon, DumbbellIcon, LineChartIcon, MoonIcon, RepeatIcon } from 'lucide-react';
 import { Link } from 'react-router';
+
+import { CalendarCheckIcon, CalendarPlusIcon, DumbbellIcon, LineChartIcon, MoonIcon, RepeatIcon } from 'lucide-react';
 
 import { userContext } from '~/auth/user-context';
 import { SessionRow } from '~/components/history/session-row';
@@ -8,9 +9,8 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import { DateOnly } from '~domain/values/date-only';
-
 import { progressServiceContext, trainingPlanServiceContext } from '~/router/load-context';
+import { DateOnly } from '~domain/values/date-only';
 
 import type { Route } from './+types/home';
 

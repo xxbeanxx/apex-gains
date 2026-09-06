@@ -1,11 +1,11 @@
 import * as client from 'openid-client';
 
-import type { NewAthlete } from '~domain/athlete/athlete';
 import type {
   BeginGoogleLogin,
   CompleteGoogleLoginParams,
   GoogleIdentityProvider,
 } from '~application/ports/identity/google-identity-provider';
+import type { NewAthlete } from '~domain/athlete/athlete';
 
 /**
  * `server/main.ts` and every route each get their own bundled copy of

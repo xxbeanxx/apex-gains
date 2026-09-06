@@ -1,19 +1,19 @@
-import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
-
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import {
-  planSlots,
-  plans,
-  type Plan as PlanRow,
-  type PlanSlot as PlanSlotRow,
-} from '~infrastructure/persistence/drizzle/schema';
-import { Plan } from '~domain/plan/plan';
-import { LibraryVisibility } from '~domain/shared/ownership';
+import { type SQL, and, asc, desc, eq, inArray } from 'drizzle-orm';
 
 import type { PlanName, PlansRepository } from '~application/ports/persistence/plans-repository';
+import { Plan } from '~domain/plan/plan';
+import { LibraryVisibility } from '~domain/shared/ownership';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import {
+  type Plan as PlanRow,
+  type PlanSlot as PlanSlotRow,
+  planSlots,
+  plans,
+} from '~infrastructure/persistence/drizzle/schema';
+
 import { diffChildren } from '../shared/diff-children';
 import { writePositions } from '../shared/write-positions';
-import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
+import { visibleRowWhere, visibleRowsWhere } from './shared/visibility';
 
 /** The columns `shared/visibility.ts` reads to build this table's clauses. */
 const visibility = {

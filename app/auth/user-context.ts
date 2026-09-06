@@ -1,4 +1,4 @@
-import { createContext, type RouterContextProvider } from 'react-router';
+import { type RouterContextProvider, createContext } from 'react-router';
 
 import type { Athlete } from '~domain/athlete/athlete';
 
@@ -24,8 +24,10 @@ export const userContext = createContext<Athlete | null>(null);
  */
 export function requireAthlete(context: Readonly<RouterContextProvider>): Athlete {
   const athlete = context.get(userContext);
+
   if (!athlete) {
     throw new Error('requireAthlete outside the _protected layout - requireUserMiddleware has not run');
   }
+
   return athlete;
 }

@@ -1,16 +1,15 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import type { Exercise } from '~domain/exercise/exercise';
-import { Plan } from '~domain/plan/plan';
-import { err, ok, type Result } from '~domain/shared/result';
-import type { Workout } from '~domain/workout/workout';
-import type { DateOnly } from '~domain/values/date-only';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import type { Athlete } from '~domain/athlete/athlete';
+import type { Exercise } from '~domain/exercise/exercise';
+import { Plan } from '~domain/plan/plan';
+import { type Result, err, ok } from '~domain/shared/result';
+import type { DateOnly } from '~domain/values/date-only';
+import type { Workout } from '~domain/workout/workout';
 
 /** One day of the shared cycle, as the confirmation page lists it. */
 export type SharedSlotView = {

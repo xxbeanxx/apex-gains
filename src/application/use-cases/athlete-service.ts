@@ -1,12 +1,11 @@
-import { closeOwnAccount, type CloseAccountRefusal } from '~domain/athlete/administration';
-import { Athlete, type NewAthlete } from '~domain/athlete/athlete';
-import { ok, type Result } from '~domain/shared/result';
-import { Duration } from '~domain/values/duration';
-import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import { type CloseAccountRefusal, closeOwnAccount } from '~domain/athlete/administration';
+import { Athlete, type NewAthlete } from '~domain/athlete/athlete';
+import { type Result, ok } from '~domain/shared/result';
+import { Duration } from '~domain/values/duration';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
 
 /** Who signed in, and whether this was their first time. */
 export type SignIn = {

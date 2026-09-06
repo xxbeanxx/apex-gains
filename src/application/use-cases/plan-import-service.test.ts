@@ -6,15 +6,15 @@ import { Plan } from '~domain/plan/plan';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
-import { SetTarget } from '~domain/workout/set-target';
-import { Workout } from '~domain/workout/workout';
 import { DateOnly } from '~domain/values/date-only';
 import { Weight } from '~domain/values/weight';
+import { SetTarget } from '~domain/workout/set-target';
+import { Workout } from '~domain/workout/workout';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 import { PlanImportService } from './plan-import-service';
 

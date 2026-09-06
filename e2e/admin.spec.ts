@@ -16,6 +16,7 @@ test('an ordinary athlete has no admin area', async ({ page, athlete }) => {
   // ErrorBoundary in place of the whole app, so it has no header for
   // `page.goto`'s hydration wait to find. `page.request` carries this
   // context's session cookie, so it is the signed-in athlete asking.
+
   const response = await page.request.get('/admin');
   expect(response.status()).toBe(404);
 });
@@ -76,11 +77,14 @@ test('granting and revoking another athlete’s admin access', async ({ page }) 
 
   // The administrator who made both changes still holds their own access,
   // and the dashboard's audit trail carries both actions, newest first.
+
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Admin', level: 1 })).toBeVisible();
+
   // Scoped to the "Recent actions" section, not just any list item on the
   // page - the newest/busiest account shortlists are `<li>`s too, and the
   // subject's own email appears in those as well.
+
   const recentActions = page.locator('section', { has: page.getByRole('heading', { name: 'Recent actions' }) });
   const rows = recentActions.getByRole('listitem').filter({ hasText: subject.email });
   await expect(rows.filter({ hasText: 'revoked admin access from' })).toBeVisible();
@@ -121,14 +125,21 @@ test('deleting an account requires its email and removes it from the list', asyn
   await expect(page.getByText('No matching accounts')).toBeVisible();
 
   // The audit trail survives the account it names.
+
   await page.goto('/admin');
   const recentActions = page.locator('section', { has: page.getByRole('heading', { name: 'Recent actions' }) });
+
   await expect(
-    recentActions.getByRole('listitem').filter({ hasText: 'deleted the account' }).filter({ hasText: subject.email }),
+    recentActions
+      .getByRole('listitem') //
+      .filter({ hasText: 'deleted the account' })
+      .filter({ hasText: subject.email }),
   ).toBeVisible();
 });
 
-/** Signs in as a brand new administrator, whatever the page was signed in as before. */
+/**
+ * Signs in as a brand new administrator, whatever the page was signed in as before.
+ */
 async function signInAsFreshAdministrator(page: Page) {
   return signIn(page, {
     email: `${uniqueName('admin')}@example.test`,
@@ -137,7 +148,9 @@ async function signInAsFreshAdministrator(page: Page) {
   });
 }
 
-/** The id of the account with this email, read off its row's link in the user manager. */
+/**
+ * The id of the account with this email, read off its row's link in the user manager.
+ */
 async function accountIdFor(page: Page, email: string): Promise<string> {
   await page.goto('/admin/users');
   await page.getByLabel('Search').fill(email);

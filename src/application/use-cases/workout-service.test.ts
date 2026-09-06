@@ -7,16 +7,16 @@ import { Session } from '~domain/session/session';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
-import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
 import { Speed } from '~domain/values/speed';
 import { Weight } from '~domain/values/weight';
+import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 import { WorkoutService } from './workout-service';
 

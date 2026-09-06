@@ -1,10 +1,10 @@
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
+import { cn } from '~/lib/utils';
 import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
 import type { DistanceUnit, WeightUnit } from '~domain/values/units';
 import { speedUnitLabel } from '~domain/values/units';
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
-import { cn } from '~/lib/utils';
 
 export type TargetFieldsValues = {
   sets: number | null;

@@ -1,4 +1,4 @@
-import { formatNumber, type LengthUnit } from './units';
+import { type LengthUnit, formatNumber } from './units';
 
 const CM_PER_IN = 2.54;
 

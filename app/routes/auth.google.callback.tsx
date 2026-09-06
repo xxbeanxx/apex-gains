@@ -4,7 +4,6 @@ import { clearOidcState, parseOidcState } from '~/auth/oidc-state';
 import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
 import { requestLogger } from '~/lib/logger';
-
 import {
   athleteServiceContext,
   identityServiceContext,

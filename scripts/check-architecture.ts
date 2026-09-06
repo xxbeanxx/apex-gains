@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 const root: string = process.cwd();

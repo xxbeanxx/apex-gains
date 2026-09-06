@@ -1,17 +1,19 @@
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
-import { Expose, Transform } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
 import { useState } from 'react';
+
 import { Link, useNavigate } from 'react-router';
 
+import { Expose, Transform } from 'class-transformer';
+import { IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
+
 import { requireAthlete } from '~/auth/user-context';
+import { Page, PageHeader, Section } from '~/components/layout/page';
 import { ExerciseHistoryButton } from '~/components/session/exercise-history-button';
-import { LoggedSetsList } from '~/components/session/logged-sets-list';
 import { LogSetForm } from '~/components/session/log-set-form';
+import { LoggedSetsList } from '~/components/session/logged-sets-list';
 import { RestTimer } from '~/components/session/rest-timer';
 import { SetProgress } from '~/components/session/set-progress';
 import { PastWeekCard, UpcomingWeekCard } from '~/components/session/week-rail';
-import { Page, PageHeader, Section } from '~/components/layout/page';
 import { TargetChips } from '~/components/target-chips';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -19,15 +21,14 @@ import { Calendar } from '~/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { DateOnly } from '~domain/values/date-only';
-import { formatFullDate } from '~shared/format';
-import { requestLogger } from '~/lib/logger';
-import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
+import { requestLogger } from '~/lib/logger';
+import { cn } from '~/lib/utils';
 import { IsDateOnly, IsRpe, optionalTrim, toOptionalNumber } from '~/lib/validate-form';
-
-import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/router/load-context';
+import { exerciseLibraryServiceContext, sessionServiceContext, trainingPlanServiceContext } from '~/router/load-context';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/today';
 

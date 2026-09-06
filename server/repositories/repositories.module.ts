@@ -1,17 +1,17 @@
 import { Module, type Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
-import { configureDatabase } from '~infrastructure/persistence/drizzle/index';
 import { DrizzleAdminActionsRepository } from '~infrastructure/persistence/drizzle/admin-actions-repository';
 import { DrizzleAthletesRepository } from '~infrastructure/persistence/drizzle/athletes-repository';
 import { DrizzleBodyMeasurementsRepository } from '~infrastructure/persistence/drizzle/body-measurements-repository';
 import { DrizzleBodyWeightRepository } from '~infrastructure/persistence/drizzle/body-weight-repository';
 import { DrizzleEquipmentRepository } from '~infrastructure/persistence/drizzle/equipment-repository';
 import { DrizzleExercisesRepository } from '~infrastructure/persistence/drizzle/exercises-repository';
+import { configureDatabase } from '~infrastructure/persistence/drizzle/index';
 import { DrizzlePlansRepository } from '~infrastructure/persistence/drizzle/plans-repository';
-import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
-import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
 import { DrizzleSessionsRepository } from '~infrastructure/persistence/drizzle/sessions-repository';
+import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
+import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
 import { InMemoryAdminActionsRepository } from '~infrastructure/persistence/in-memory/admin-actions-repository';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
 import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
@@ -19,9 +19,9 @@ import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-mem
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
+import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 import {
   ADMIN_ACTIONS_REPOSITORY,
   ATHLETES_REPOSITORY,
@@ -30,9 +30,9 @@ import {
   EQUIPMENT_REPOSITORY,
   EXERCISES_REPOSITORY,
   PLANS_REPOSITORY,
-  WORKOUTS_REPOSITORY,
-  UNIT_OF_WORK,
   SESSIONS_REPOSITORY,
+  UNIT_OF_WORK,
+  WORKOUTS_REPOSITORY,
 } from '~server/providers/persistence.tokens';
 
 import { databaseConfig } from '../config/database.config';

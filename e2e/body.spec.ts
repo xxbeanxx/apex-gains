@@ -1,9 +1,8 @@
-import { submitForm } from './helpers';
 import { expect, test } from './fixtures';
+import { submitForm } from './helpers';
 
 test('starts with no weight entries', async ({ page, athlete }) => {
   await page.goto('/body');
-
   await expect(page.getByRole('heading', { name: 'Body', exact: true })).toBeVisible();
   await expect(page.getByText('No weight entries yet')).toBeVisible();
 });

@@ -1,10 +1,10 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import type { SetTarget } from '~domain/workout/set-target';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import type { Athlete } from '~domain/athlete/athlete';
+import type { SetTarget } from '~domain/workout/set-target';
 
 /**
  * Everything an athlete owns, in one snapshot - the complete JSON export.

@@ -1,15 +1,14 @@
-import type { Athlete } from '~domain/athlete/athlete';
-import { cardioFieldsFor, type CardioFields } from '~domain/equipment/cardio-fields';
-import { type CardioKind, Equipment } from '~domain/equipment/equipment';
-import { Exercise, type ExerciseDetails } from '~domain/exercise/exercise';
-import type { ExerciseType } from '~domain/exercise/exercise-type';
-import { err, ok, type Result } from '~domain/shared/result';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
-import { ForkableEditor, type ForkMutation } from '~application/shared/fork';
+import { type ForkMutation, ForkableEditor } from '~application/shared/fork';
+import type { Athlete } from '~domain/athlete/athlete';
+import { type CardioFields, cardioFieldsFor } from '~domain/equipment/cardio-fields';
+import { type CardioKind, Equipment } from '~domain/equipment/equipment';
+import { Exercise, type ExerciseDetails } from '~domain/exercise/exercise';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import { type Result, err, ok } from '~domain/shared/result';
 
 export type EquipmentView = {
   id: string;

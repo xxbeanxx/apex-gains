@@ -17,7 +17,6 @@
  * server-only import here fails the build with "Server-only module
  * referenced by client".
  */
-
 import { data } from 'react-router';
 
 /** A form DTO class, as `validateForm` takes it. */

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 
+import { expect, test, uniqueName } from './fixtures';
 import {
   addEquipment,
   createExercise,
@@ -10,7 +11,6 @@ import {
   selectOption,
   submitForm,
 } from './helpers';
-import { expect, test, uniqueName } from './fixtures';
 
 /** Logged sets render as an `ol`; the two week rails above them are `ul`s. */
 function loggedSets(page: Page) {

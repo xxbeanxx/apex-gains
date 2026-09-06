@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type * as React from 'react';
 
 /**
@@ -7,15 +8,7 @@ import type * as React from 'react';
  * `lg:`, where the canvas row's own up/down controls are already enough to
  * reorder.
  */
-function BuilderLayout({
-  palette,
-  canvas,
-  outline,
-}: {
-  palette: React.ReactNode;
-  canvas: React.ReactNode;
-  outline?: React.ReactNode;
-}) {
+function BuilderLayout({ palette, canvas, outline }: { palette: ReactNode; canvas: ReactNode; outline?: ReactNode }) {
   return (
     <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[16rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)_14rem]">
       <div className="hidden md:sticky md:top-(--header-h) md:block">{palette}</div>

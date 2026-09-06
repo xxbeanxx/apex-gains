@@ -1,7 +1,7 @@
+import type { WorkoutName, WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 
-import type { WorkoutName, WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import type { AthleteOwned, ExerciseReferences } from './references';
 
 // Dev-convenience adapter - see workouts-repository.server.ts for when it's

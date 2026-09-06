@@ -1,12 +1,12 @@
-import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
-
-import { dbScope } from '~infrastructure/persistence/drizzle/index';
-import { exerciseEquipment, exercises, type Exercise as ExerciseRow } from '~infrastructure/persistence/drizzle/schema';
-import { Exercise } from '~domain/exercise/exercise';
-import { LibraryVisibility } from '~domain/shared/ownership';
+import { type SQL, and, asc, eq, inArray } from 'drizzle-orm';
 
 import type { DeleteExerciseOutcome, ExercisesRepository } from '~application/ports/persistence/exercises-repository';
-import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
+import { Exercise } from '~domain/exercise/exercise';
+import { LibraryVisibility } from '~domain/shared/ownership';
+import { dbScope } from '~infrastructure/persistence/drizzle/index';
+import { type Exercise as ExerciseRow, exerciseEquipment, exercises } from '~infrastructure/persistence/drizzle/schema';
+
+import { visibleRowWhere, visibleRowsWhere } from './shared/visibility';
 
 /** Postgres' SQLSTATE for `foreign_key_violation`. */
 const FOREIGN_KEY_VIOLATION = '23503';

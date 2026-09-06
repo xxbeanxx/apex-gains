@@ -1,11 +1,14 @@
-import { CalendarCheckIcon, ClipboardListIcon, DumbbellIcon, MoonIcon, RepeatIcon, SearchIcon } from 'lucide-react';
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+
 import { useNavigate } from 'react-router';
+
+import { CalendarCheckIcon, ClipboardListIcon, DumbbellIcon, MoonIcon, RepeatIcon, SearchIcon } from 'lucide-react';
 
 import { toggleTheme } from '~/components/theme-toggle';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '~/components/ui/command';
 
-import { navItemsFor, type NavUser } from './nav-items';
+import { type NavUser, navItemsFor } from './nav-items';
 
 /**
  * ⌘K / Ctrl-K, navigation and a handful of actions, no server calls. A v2
@@ -14,10 +17,10 @@ import { navItemsFor, type NavUser } from './nav-items';
  * otherwise holds to - it just is not built yet.
  */
 function CommandPalette({ user }: { user: NavUser }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
       const target = event.target;

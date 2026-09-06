@@ -1,6 +1,9 @@
-import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+
 import { Link, NavLink } from 'react-router';
+
+import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
 
 import { setSidebarCollapsed } from '~/components/shell/shell-init';
 import { Button } from '~/components/ui/button';
@@ -70,9 +73,9 @@ function SidebarGroup({ label, items }: { label: string | null; items: NavItem[]
 }
 
 function CollapseToggle() {
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setCollapsed(document.documentElement.getAttribute('data-sidebar') === 'collapsed');
   }, []);
 

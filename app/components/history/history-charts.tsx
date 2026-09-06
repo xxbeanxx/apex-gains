@@ -1,14 +1,15 @@
-import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
 import { useState } from 'react';
+
+import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import type {
-  ProgressSeriesView,
   HeatmapDayView,
   MuscleBalanceView,
   PersonalRecordView,
+  ProgressSeriesView,
   WeeklyPointView,
 } from '~application/use-cases/progress-view';
 

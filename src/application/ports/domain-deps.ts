@@ -1,6 +1,6 @@
-import { systemClock, type Clock } from '~domain/shared/clock';
-import { randomIds, type IdGenerator } from '~domain/shared/ids';
-import { randomSecrets, type SecretGenerator } from '~domain/shared/secrets';
+import { type Clock, systemClock } from '~domain/shared/clock';
+import { type IdGenerator, randomIds } from '~domain/shared/ids';
+import { type SecretGenerator, randomSecrets } from '~domain/shared/secrets';
 
 /**
  * The capabilities aggregates need but must not reach for themselves: fresh

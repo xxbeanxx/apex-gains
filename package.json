@@ -62,6 +62,7 @@
     "@playwright/test": "^1.63.0",
     "@react-router/dev": "^8.3.1",
     "@tailwindcss/vite": "^4.3.3",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^24.1.0",
@@ -77,6 +78,26 @@
     "vitest": "^5.0.0"
   },
   "prettier": {
+    "importOrder": [
+      "<BUILTIN_MODULES>",
+      "^react$",
+      "^react-router(-dom)?",
+      "^react-(.*)$",
+      "<THIRD_PARTY_MODULES>",
+      "^[~]",
+      "^[./]"
+    ],
+    "importOrderParserPlugins": [
+      "typescript",
+      "jsx",
+      "decorators-legacy",
+      "classProperties"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true,
+    "plugins": [
+      "@trivago/prettier-plugin-sort-imports"
+    ],
     "printWidth": 128,
     "quoteProps": "consistent",
     "semi": true,

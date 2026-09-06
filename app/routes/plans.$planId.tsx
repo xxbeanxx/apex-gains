@@ -1,14 +1,18 @@
+import { useMemo, useState } from 'react';
+
+import { Form, Link, data, redirect, useSearchParams, useSubmit } from 'react-router';
+
 import { Expose, Transform } from 'class-transformer';
 import {
-  isUUID,
   IsIn,
   IsString,
   IsUUID,
   MaxLength,
   MinLength,
   Validate,
-  type ValidatorConstraintInterface,
   ValidatorConstraint,
+  type ValidatorConstraintInterface,
+  isUUID,
 } from 'class-validator';
 import {
   ArrowDownIcon,
@@ -22,8 +26,6 @@ import {
   Share2Icon,
   XIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Form, Link, data, redirect, useSearchParams, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderCanvas } from '~/components/builder/builder-canvas';
@@ -44,19 +46,18 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { DateOnly } from '~domain/values/date-only';
-import { formatRelativeDate } from '~shared/format';
-import { requestLogger } from '~/lib/logger';
+import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
 import { intent } from '~/lib/intent';
-import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail';
 import { dispatch, handled } from '~/lib/intent.server';
+import { requestLogger } from '~/lib/logger';
 import { encodeQr } from '~/lib/qr.server';
 import { shareUrlFor } from '~/lib/share-link';
 import { IsDateOnly, trim } from '~/lib/validate-form';
+import { planServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { PlanSlotView } from '~application/use-cases/plan-service';
 import type { WorkoutSummary } from '~application/use-cases/workout-service';
-
-import { planServiceContext, workoutServiceContext } from '~/router/load-context';
+import { DateOnly } from '~domain/values/date-only';
+import { formatRelativeDate } from '~shared/format';
 
 import type { Route } from './+types/plans.$planId';
 

@@ -1,5 +1,6 @@
-import type { LoggerService } from '@nestjs/common';
 import type { MiddlewareFunction, RouterContextProvider } from 'react-router';
+
+import type { LoggerService } from '@nestjs/common';
 
 import { userContext } from '~/auth/user-context';
 

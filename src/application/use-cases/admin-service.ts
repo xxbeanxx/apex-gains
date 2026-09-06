@@ -1,15 +1,14 @@
-import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
-import { changeAdminAccess, removeAccount, type AdminRefusal } from '~domain/athlete/administration';
-import type { Athlete } from '~domain/athlete/athlete';
-import { err, ok, type Result } from '~domain/shared/result';
-import { DateOnly } from '~domain/values/date-only';
-import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
+import type { DomainDeps } from '~application/ports/domain-deps';
 import type { AdminActionsRepository } from '~application/ports/persistence/admin-actions-repository';
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
-import type { TrainingTotals, SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { SessionsRepository, TrainingTotals } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-
-import type { DomainDeps } from '~application/ports/domain-deps';
+import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
+import { type AdminRefusal, changeAdminAccess, removeAccount } from '~domain/athlete/administration';
+import type { Athlete } from '~domain/athlete/athlete';
+import { type Result, err, ok } from '~domain/shared/result';
+import { DateOnly } from '~domain/values/date-only';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
 
 /** One row of the user manager. */
 export type AdminAccountView = {

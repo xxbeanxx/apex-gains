@@ -1,5 +1,5 @@
-import { createExercise, selectOption } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
+import { createExercise, selectOption } from './helpers';
 
 /**
  * The shell swaps its whole navigation surface by viewport rather than

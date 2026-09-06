@@ -1,5 +1,6 @@
-import { TimerIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+
+import { TimerIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { formatRemaining, remainingSeconds } from '~/lib/rest-timer';

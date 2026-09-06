@@ -1,7 +1,6 @@
+import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 import { Equipment, type EquipmentSnapshot } from '~domain/equipment/equipment';
 import { Ownership } from '~domain/shared/ownership';
-
-import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 
 // Dev-convenience adapter - see equipment-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

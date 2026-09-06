@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
-import { createExercise, createPlan, createWorkout, orderedRows, signOut, submitForm } from './helpers';
 import { expect, newAthlete, signIn, test, uniqueName, waitForHydration } from './fixtures';
+import { createExercise, createPlan, createWorkout, orderedRows, signOut, submitForm } from './helpers';
 
 /**
  * Sharing a plan, and taking one somebody shared.

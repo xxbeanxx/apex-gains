@@ -1,9 +1,9 @@
-import type { NewAthlete } from '~domain/athlete/athlete';
 import type {
   BeginGoogleLogin,
   CompleteGoogleLoginParams,
   GoogleIdentityProvider,
 } from '~application/ports/identity/google-identity-provider';
+import type { NewAthlete } from '~domain/athlete/athlete';
 
 /**
  * Google sign-in, kept separate from `AthleteService`: this is the identity

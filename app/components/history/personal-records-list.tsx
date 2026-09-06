@@ -1,7 +1,7 @@
 import { TrophyIcon } from 'lucide-react';
 
-import { formatMonthDay } from '~shared/format';
 import type { PersonalRecordView } from '~application/use-cases/progress-view';
+import { formatMonthDay } from '~shared/format';
 
 import { formatMetricValue } from './chart-utils';
 

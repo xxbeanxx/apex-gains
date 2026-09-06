@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { LibraryVisibility } from '~domain/shared/ownership';
 import { db } from '~infrastructure/persistence/drizzle/index';
 import { equipment, exercises, plans, workouts } from '~infrastructure/persistence/drizzle/schema';
-import { LibraryVisibility } from '~domain/shared/ownership';
 
-import { ownOrSampleWhere, visibleRowsWhere, visibleRowWhere } from './visibility';
+import { ownOrSampleWhere, visibleRowWhere, visibleRowsWhere } from './visibility';
 
 /**
  * These builders return raw `SQL` fragments, so they can't be inspected

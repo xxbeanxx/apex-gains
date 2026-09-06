@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
+
 import { useFetcher } from 'react-router';
+
 import { XIcon } from 'lucide-react';
 
 import { Badge } from '~/components/ui/badge';
@@ -11,9 +13,8 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
+import { NO_CARDIO_KIND, cardioKindLabels, intents } from '~/routes/exercises';
 import type { EquipmentView } from '~application/use-cases/exercise-library-service';
-
-import { cardioKindLabels, intents, NO_CARDIO_KIND } from '~/routes/exercises';
 
 function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
   const deleteFetcher = useFetcher();
