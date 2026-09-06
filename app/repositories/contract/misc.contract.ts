@@ -6,9 +6,13 @@ import {
   athlete,
   DateOnly,
   NOW,
+  Weight,
+  deps,
   equipmentItem,
+  exercise,
   ids,
   seedAthletes,
+  session,
   weighIn,
   type ContractSubject,
   type RepositorySet,
@@ -81,6 +85,24 @@ export function describeAthletesContract(subject: ContractSubject): void {
       expect(await repositories.bodyWeight.listRecent(ids.athlete, 10)).toEqual([]);
       // Only that account: the other athlete is untouched.
       expect(await repositories.athletes.findById(ids.otherAthlete)).not.toBeNull();
+    });
+
+    /**
+     * `session_sets.exercise_id` is `on delete restrict`, while `exercises`
+     * and `sessions` both cascade from `users`. Postgres does not order two
+     * independent cascade paths against each other, so an athlete who logged
+     * a set against an exercise they own must still be deletable.
+     */
+    it('removes an account that logged a set against its own exercise', async () => {
+      await seedAthletes(repositories);
+      await repositories.exercises.save(exercise({ id: ids.own, userId: ids.athlete }));
+      const opened = await repositories.sessions.add(session({ id: ids.own, userId: ids.athlete }));
+      opened.logSet(ids.own, { reps: 8, weight: Weight.in('lb', 135) }, deps);
+      await repositories.sessions.save(opened);
+
+      await repositories.athletes.remove(athlete(ids.athlete));
+
+      expect(await repositories.athletes.findById(ids.athlete)).toBeNull();
     });
   });
 }
