@@ -97,6 +97,7 @@ test.describe('equipment', () => {
     await openEquipmentDialog(page);
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('button', { name: `Remove ${equipment}` }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Remove', exact: true }).click();
 
     await expect(dialog.getByRole('listitem').filter({ hasText: equipment })).toHaveCount(0);
   });

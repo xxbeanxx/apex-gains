@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, ScaleIcon, XIcon } from 'lucide-react';
-import { data } from 'react-router';
+import { data, useFetcher } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
@@ -91,6 +91,37 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
+/** Its own fetcher, so removing one weigh-in hides only that row while its delete is in flight. */
+function WeightHistoryRow({
+  log,
+  weightUnit,
+}: {
+  log: Route.ComponentProps['loaderData']['logs'][number];
+  weightUnit: string;
+}) {
+  const fetcher = useFetcher();
+
+  return (
+    <TableRow hidden={fetcher.state !== 'idle'}>
+      <TableCell>{formatFullDate(log.date)}</TableCell>
+      <TableCell className="tabular-nums">
+        {log.weight} {weightUnit}
+      </TableCell>
+      <TableCell>
+        <fetcher.Form method="post">
+          <input {...intents.remove.field} />
+          <input type="hidden" name="date" value={log.date} />
+          <input type="hidden" name="logId" value={log.id} />
+          <Button type="submit" variant="ghost" size="icon-sm" className="hover:bg-destructive/10 hover:text-destructive">
+            <XIcon aria-hidden="true" />
+            <span className="sr-only">Remove weigh-in for {formatFullDate(log.date)}</span>
+          </Button>
+        </fetcher.Form>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function Weight({ loaderData, actionData }: Route.ComponentProps) {
   const { weightUnit, todayStr, logs, series } = loaderData;
   const error = intents.log.errorIn(actionData) ?? intents.remove.errorIn(actionData);
@@ -166,28 +197,7 @@ export default function Weight({ loaderData, actionData }: Route.ComponentProps)
                 </TableHeader>
                 <TableBody>
                   {logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{formatFullDate(log.date)}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {log.weight} {weightUnit}
-                      </TableCell>
-                      <TableCell>
-                        <form method="post">
-                          <input {...intents.remove.field} />
-                          <input type="hidden" name="date" value={log.date} />
-                          <input type="hidden" name="logId" value={log.id} />
-                          <Button
-                            type="submit"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <XIcon aria-hidden="true" />
-                            <span className="sr-only">Remove weigh-in for {formatFullDate(log.date)}</span>
-                          </Button>
-                        </form>
-                      </TableCell>
-                    </TableRow>
+                    <WeightHistoryRow key={log.id} log={log} weightUnit={weightUnit} />
                   ))}
                 </TableBody>
               </Table>

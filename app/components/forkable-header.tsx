@@ -1,6 +1,9 @@
 import { RotateCcwIcon, Trash2Icon } from 'lucide-react';
+import { useId } from 'react';
 
 import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { SubmitButton } from '~/components/ui/submit-button';
 import type { Intent } from '~/lib/intent';
 
@@ -45,26 +48,54 @@ export function RevertOrDeleteForm({
   remove: Intent<void>;
   actionData: unknown;
 }) {
+  const formId = useId();
+
   if (isSample) return null;
 
   const intent = isCustomized ? revert : remove;
   const error = intent.errorIn(actionData);
 
   return (
-    <form method="post" className="flex flex-col items-end gap-1.5">
-      <input {...intent.field} />
+    <div className="flex flex-col items-end gap-1.5">
+      <form method="post" id={formId} className="contents">
+        <input {...intent.field} />
+      </form>
       {isCustomized ? (
-        <SubmitButton variant="outline" size="sm" match={intent.match} pendingLabel="Reverting">
-          <RotateCcwIcon aria-hidden="true" />
-          Revert to sample
-        </SubmitButton>
+        <ConfirmDialog
+          trigger={
+            <Button variant="outline" size="sm">
+              <RotateCcwIcon aria-hidden="true" />
+              Revert to sample
+            </Button>
+          }
+          title={`Revert to sample ${noun}?`}
+          description={`Your changes to this ${noun} will be discarded and it will go back to matching the shared sample. This can't be undone.`}
+          confirmButton={
+            <SubmitButton form={formId} variant="outline" size="sm" match={intent.match} pendingLabel="Reverting">
+              <RotateCcwIcon aria-hidden="true" />
+              Revert to sample
+            </SubmitButton>
+          }
+        />
       ) : (
-        <SubmitButton variant="destructive" size="sm" match={intent.match} pendingLabel={`Deleting ${noun}`}>
-          <Trash2Icon aria-hidden="true" />
-          Delete {noun}
-        </SubmitButton>
+        <ConfirmDialog
+          trigger={
+            <Button variant="destructive" size="sm">
+              <Trash2Icon aria-hidden="true" />
+              Delete {noun}
+            </Button>
+          }
+          title={`Delete this ${noun}?`}
+          description={`This permanently deletes this ${noun}. This can't be undone.`}
+          confirmButton={
+            <SubmitButton form={formId} variant="destructive" size="sm" match={intent.match} pendingLabel={`Deleting ${noun}`}>
+              <Trash2Icon aria-hidden="true" />
+              Delete {noun}
+            </SubmitButton>
+          }
+        />
       )}
       {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
-    </form>
+    </div>
   );
 }

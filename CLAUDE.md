@@ -518,7 +518,47 @@ plain `<form method="post">` (no client-side fetchers for these), and
 `~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
 pending state from `useNavigation()` matched against a `match` prop —
 pass `intent.match` whenever a page has more than one form, or every
-submit button on the page will spin together.
+submit button on the page will spin together. The one exception is a
+quick-action row inside an already-loaded list — removing a logged set
+or a body-weight entry, say — where a plain form's full-document
+navigation would reset scroll position for no reason: that row owns its
+own `useFetcher()` and renders `<fetcher.Form>`, with the row itself
+`hidden` while `fetcher.state !== 'idle'` so it disappears the instant
+its own delete is submitted rather than waiting on the round trip
+(`app/components/session/logged-sets-list.tsx`,
+`app/routes/weight.tsx`'s `WeightHistoryRow`). `SubmitButton` takes an
+explicit `pending` prop for exactly this case. It does not extend to the
+plan/workout builders (`app/routes/plans.$planId.tsx`,
+`workouts.$workoutId.tsx`), which hold to a no-fetcher rule of their own
+for reordering and adding/removing days or exercises — a full
+revalidation keeps their derived state (positions, cycle math) from
+drifting out of sync with an optimistic guess.
+
+A destructive action that deletes or discards a whole item — deleting a
+plan/workout/equipment row, or reverting a customized plan, workout, or
+exercise back to its sample and losing the edits — is gated behind
+`~/components/ui/confirm-dialog.tsx` (`ConfirmDialog`, over the
+`app/components/ui/alert-dialog.tsx` Radix primitives): a trigger button
+opens it, and the real submit button only renders inside the dialog.
+Quick, frequent row removals (a logged set, a weigh-in, a day off a plan,
+an exercise off a workout) stay unconfirmed on purpose — those are
+one-click by design and trivially redone. Because the dialog's content
+portals to `document.body`, its confirm button usually can't sit inside
+the form it submits; it targets the form by HTML's `form="<id>"`
+attribute instead; `RevertOrDeleteForm` (`app/components/forkable-header.tsx`)
+and `EquipmentRow` (`app/components/exercises/equipment-dialog.tsx`) both
+give the target form an id via `useId()` for this. That is also why
+`SubmitButton` fixes `type="submit"` as the _last_ prop rather than the
+first: `ConfirmDialog` wraps its confirm button in Radix's
+`AlertDialogAction`, which is `DialogClose` underneath and forces
+`type="button"` onto whatever it wraps via `asChild` — asserting
+`"submit"` after the spread keeps that from winning and silently turning
+the button into one that closes the dialog without submitting anything.
+A menu item inside a `DropdownMenu` can't use the trigger prop directly
+(selecting it would close the menu before the dialog opens), so it
+instead calls `event.preventDefault()` in `onSelect` and opens
+`ConfirmDialog` in its controlled form (`open`/`onOpenChange`, no
+`trigger`) — see `ExerciseRowMenu`'s revert action.
 
 Loaders and actions under the `_protected` layout read the athlete with
 `requireAthlete(context)` (`app/auth/user-context.ts`) rather than

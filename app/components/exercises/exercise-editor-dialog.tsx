@@ -1,9 +1,11 @@
 import { RotateCcwIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useFetcher } from 'react-router';
 
 import { ExerciseDetailsFields } from '~/components/exercises/exercise-details-fields';
+import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
+import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { SubmitButton } from '~/components/ui/submit-button';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
@@ -61,6 +63,7 @@ function ExerciseEditorDialog({
 }) {
   const fetcher = useFetcher();
   const revertFetcher = useFetcher();
+  const revertFormId = useId();
   const linkedIds = new Set(exercise.equipment.map((item) => item.id));
   const isCustomized = exercise.canRevert;
 
@@ -78,21 +81,33 @@ function ExerciseEditorDialog({
             <p className="text-muted-foreground">
               This is your customized copy of a sample exercise. The original sample is unaffected.
             </p>
-            <revertFetcher.Form method="post" className="flex flex-col gap-2">
+            <revertFetcher.Form method="post" id={revertFormId} className="contents">
               <input {...intents.revertExercise.field} />
               <input type="hidden" name="exerciseId" value={exercise.id} />
-              {revertError ? <p className="text-destructive">{revertError}</p> : null}
-              <SubmitButton
-                variant="outline"
-                size="sm"
-                pending={revertFetcher.state !== 'idle'}
-                pendingLabel="Reverting"
-                className="self-start"
-              >
-                <RotateCcwIcon aria-hidden="true" />
-                Revert to sample
-              </SubmitButton>
             </revertFetcher.Form>
+            {revertError ? <p className="text-destructive">{revertError}</p> : null}
+            <ConfirmDialog
+              trigger={
+                <Button type="button" variant="outline" size="sm" className="self-start">
+                  <RotateCcwIcon aria-hidden="true" />
+                  Revert to sample
+                </Button>
+              }
+              title="Revert to sample exercise?"
+              description="Your changes to this exercise will be discarded and it will go back to matching the shared sample. This can't be undone."
+              confirmButton={
+                <SubmitButton
+                  form={revertFormId}
+                  variant="outline"
+                  size="sm"
+                  pending={revertFetcher.state !== 'idle'}
+                  pendingLabel="Reverting"
+                >
+                  <RotateCcwIcon aria-hidden="true" />
+                  Revert to sample
+                </SubmitButton>
+              }
+            />
           </div>
         ) : null}
         <fetcher.Form method="post" className="flex flex-col gap-4">

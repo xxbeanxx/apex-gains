@@ -110,7 +110,8 @@ test('deletes a plan', async ({ page, athlete }) => {
   const name = uniqueName('Doomed');
   await createPlan(page, name);
 
-  await submitForm(page.getByRole('button', { name: 'Delete plan' }));
+  await page.getByRole('button', { name: 'Delete plan' }).click();
+  await submitForm(page.getByRole('alertdialog').getByRole('button', { name: 'Delete plan' }));
 
   await page.waitForURL('/plans');
   await expect(page.getByRole('link', { name })).toHaveCount(0);

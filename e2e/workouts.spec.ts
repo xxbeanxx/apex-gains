@@ -106,6 +106,7 @@ test('deletes a workout', async ({ page, athlete }) => {
   await createWorkout(page, name);
 
   await page.getByRole('button', { name: 'Delete workout' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete workout' }).click();
 
   await page.waitForURL('/workouts');
   await expect(page.getByRole('link', { name })).toHaveCount(0);

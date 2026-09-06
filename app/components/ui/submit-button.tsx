@@ -45,11 +45,17 @@ function SubmitButton({
 
   return (
     <Button
-      type="submit"
       aria-busy={pending || undefined}
       disabled={disabled || pending}
       className={cn('relative', className)}
       {...props}
+      // Last, so it can't be clobbered by a merged-in `type` - notably
+      // Radix's `AlertDialogAction`/`DialogClose`, which forces `type:
+      // "button"` onto whatever it wraps via `asChild` so it never
+      // double-submits as a plain dialog button; wrapping a `SubmitButton`
+      // in one to gate a real submission behind a confirm step depends on
+      // this staying "submit" regardless.
+      type="submit"
     >
       {pending ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : null}
       {children}

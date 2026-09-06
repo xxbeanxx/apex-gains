@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { XIcon } from 'lucide-react';
 
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
+import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
@@ -18,6 +19,7 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
   const deleteFetcher = useFetcher();
   const cardioKindFetcher = useFetcher();
   const [cardioKind, setCardioKind] = useState(equipment.cardioKind ?? NO_CARDIO_KIND);
+  const deleteFormId = useId();
 
   return (
     // Hidden while its own delete is in flight so the row goes away on click
@@ -50,14 +52,25 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
               <SelectItem value="resistance">Resistance only</SelectItem>
             </SelectContent>
           </Select>
-          <deleteFetcher.Form method="post" className="flex">
+          <deleteFetcher.Form method="post" id={deleteFormId} className="contents">
             <input {...intents.deleteEquipment.field} />
             <input type="hidden" name="equipmentId" value={equipment.id} />
-            <Button type="submit" variant="ghost" size="icon-sm">
-              <XIcon aria-hidden="true" />
-              <span className="sr-only">Remove {equipment.name}</span>
-            </Button>
           </deleteFetcher.Form>
+          <ConfirmDialog
+            trigger={
+              <Button type="button" variant="ghost" size="icon-sm">
+                <XIcon aria-hidden="true" />
+                <span className="sr-only">Remove {equipment.name}</span>
+              </Button>
+            }
+            title={`Remove ${equipment.name}?`}
+            description="This removes it from every exercise that links to it. This can't be undone."
+            confirmButton={
+              <SubmitButton form={deleteFormId} variant="destructive" pendingLabel={`Removing ${equipment.name}`}>
+                Remove
+              </SubmitButton>
+            }
+          />
         </>
       )}
     </li>

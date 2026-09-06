@@ -5,7 +5,9 @@ import { useFetcher } from 'react-router';
 import { ExerciseEditorDialog } from '~/components/exercises/exercise-editor-dialog';
 import { ExerciseHistoryDialog } from '~/components/exercises/exercise-history-dialog';
 import { Button } from '~/components/ui/button';
+import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
+import { SubmitButton } from '~/components/ui/submit-button';
 import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
 
 import { intents } from '~/routes/exercises';
@@ -14,6 +16,7 @@ import { intents } from '~/routes/exercises';
 function ExerciseRowMenu({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
   const [editOpen, setEditOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
   const revertFetcher = useFetcher();
 
   return (
@@ -35,8 +38,9 @@ function ExerciseRowMenu({ exercise, allEquipment }: { exercise: ExerciseView; a
           </DropdownMenuItem>
           {exercise.canRevert ? (
             <DropdownMenuItem
-              onSelect={() => {
-                revertFetcher.submit({ intent: intents.revertExercise.name, exerciseId: exercise.id }, { method: 'post' });
+              onSelect={(event) => {
+                event.preventDefault();
+                setRevertConfirmOpen(true);
               }}
             >
               <RotateCcwIcon aria-hidden="true" />
@@ -53,6 +57,27 @@ function ExerciseRowMenu({ exercise, allEquipment }: { exercise: ExerciseView; a
         open={historyOpen}
         onOpenChange={setHistoryOpen}
       />
+      {exercise.canRevert ? (
+        <ConfirmDialog
+          open={revertConfirmOpen}
+          onOpenChange={setRevertConfirmOpen}
+          title="Revert to sample exercise?"
+          description="Your changes to this exercise will be discarded and it will go back to matching the shared sample. This can't be undone."
+          confirmButton={
+            <SubmitButton
+              variant="outline"
+              pending={revertFetcher.state !== 'idle'}
+              pendingLabel="Reverting"
+              onClick={() =>
+                revertFetcher.submit({ intent: intents.revertExercise.name, exerciseId: exercise.id }, { method: 'post' })
+              }
+            >
+              <RotateCcwIcon aria-hidden="true" />
+              Revert to sample
+            </SubmitButton>
+          }
+        />
+      ) : null}
     </>
   );
 }
