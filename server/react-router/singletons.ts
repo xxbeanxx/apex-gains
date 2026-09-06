@@ -24,21 +24,24 @@ import { LOGGER } from '../logging/tokens';
  */
 export function collectNestSingletons(app: INestApplication): NestSingletons {
   return {
+    logger: app.get(LOGGER),
+    //
     adminService: app.get(AdminService),
     athleteService: app.get(AthleteService),
     bodyWeightService: app.get(BodyWeightService),
     exerciseLibraryService: app.get(ExerciseLibraryService),
     exportService: app.get(ExportService),
-    progressService: app.get(ProgressService),
     planImportService: app.get(PlanImportService),
     planService: app.get(PlanService),
-    workoutService: app.get(WorkoutService),
-    trainingPlanService: app.get(TrainingPlanService),
+    progressService: app.get(ProgressService),
     sessionService: app.get(SessionService),
-    sessionStorage: app.get(SESSION_STORAGE),
+    trainingPlanService: app.get(TrainingPlanService),
+    workoutService: app.get(WorkoutService),
+    //
     oidcConfig: app.get(OIDC_CLIENT_CONFIG),
     oidcStateCookie: app.get(OIDC_STATE_COOKIE),
+    sessionStorage: app.get(SESSION_STORAGE),
+    //
     testLoginConfig: app.get(testLoginConfig.KEY),
-    logger: app.get(LOGGER),
   };
 }

@@ -52,7 +52,10 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
       // Hands the validated URL to `~/db/index.server` so nothing below has
       // to read `process.env` for itself. Connecting is still lazy; this only
       // decides what the connection will be made with.
-      if (dbConfig.databaseUrl) configureDatabase(dbConfig.databaseUrl);
+      if (dbConfig.databaseUrl) {
+        configureDatabase(dbConfig.databaseUrl);
+      }
+
       return create(dbConfig);
     },
   };
@@ -69,66 +72,73 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
  * one go rather than one per provider.
  */
 function buildInMemory() {
+  const adminActions = new InMemoryAdminActionsRepository();
   const athletes = new InMemoryAthletesRepository();
+  const bodyWeight = new InMemoryBodyWeightRepository();
+  const equipment = new InMemoryEquipmentRepository();
   const exercises = new InMemoryExercisesRepository();
-  const workouts = new InMemoryWorkoutsRepository();
   const plans = new InMemoryPlansRepository();
   const sessions = new InMemorySessionsRepository();
-  const bodyWeight = new InMemoryBodyWeightRepository();
-  const adminActions = new InMemoryAdminActionsRepository();
+  const workouts = new InMemoryWorkoutsRepository();
 
   exercises.referencedBy(workouts, sessions);
   athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight);
   athletes.referencedBy(adminActions);
 
   return {
-    athletes,
-    exercises,
-    workouts,
-    plans,
-    sessions,
-    bodyWeight,
-    adminActions,
-    equipment: new InMemoryEquipmentRepository(),
+    adminActions: adminActions,
+    athletes: athletes,
+    bodyWeight: bodyWeight,
+    equipment: equipment,
+    exercises: exercises,
+    plans: plans,
+    sessions: sessions,
+    workouts: workouts,
   };
 }
 
 let inMemoryFamily: ReturnType<typeof buildInMemory> | undefined;
 
-/** Built on first use, so a configured database constructs no stores at all. */
+/**
+ * Built on first use, so a configured database constructs no stores at all.
+ */
 function inMemory(): ReturnType<typeof buildInMemory> {
   inMemoryFamily ??= buildInMemory();
   return inMemoryFamily;
 }
 
 const providers: Provider[] = [
-  repositoryProvider(ADMIN_ACTIONS_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleAdminActionsRepository() : inMemory().adminActions,
-  ),
-  repositoryProvider(ATHLETES_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleAthletesRepository() : inMemory().athletes,
-  ),
-  repositoryProvider(BODY_WEIGHT_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleBodyWeightRepository() : inMemory().bodyWeight,
-  ),
-  repositoryProvider(EQUIPMENT_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleEquipmentRepository() : inMemory().equipment,
-  ),
-  repositoryProvider(EXERCISES_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleExercisesRepository() : inMemory().exercises,
-  ),
-  repositoryProvider(PLANS_REPOSITORY, (dbConfig) => (dbConfig.databaseUrl ? new DrizzlePlansRepository() : inMemory().plans)),
-  repositoryProvider(WORKOUTS_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleWorkoutsRepository() : inMemory().workouts,
-  ),
-  repositoryProvider(SESSIONS_REPOSITORY, (dbConfig) =>
-    dbConfig.databaseUrl ? new DrizzleSessionsRepository() : inMemory().sessions,
-  ),
-  repositoryProvider(UNIT_OF_WORK, (dbConfig) => (dbConfig.databaseUrl ? new DrizzleUnitOfWork() : new InMemoryUnitOfWork())),
+  repositoryProvider(ADMIN_ACTIONS_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleAdminActionsRepository() : inMemory().adminActions;
+  }),
+  repositoryProvider(ATHLETES_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleAthletesRepository() : inMemory().athletes;
+  }),
+  repositoryProvider(BODY_WEIGHT_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleBodyWeightRepository() : inMemory().bodyWeight;
+  }),
+  repositoryProvider(EQUIPMENT_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleEquipmentRepository() : inMemory().equipment;
+  }),
+  repositoryProvider(EXERCISES_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleExercisesRepository() : inMemory().exercises;
+  }),
+  repositoryProvider(PLANS_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzlePlansRepository() : inMemory().plans;
+  }),
+  repositoryProvider(WORKOUTS_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleWorkoutsRepository() : inMemory().workouts;
+  }),
+  repositoryProvider(SESSIONS_REPOSITORY, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleSessionsRepository() : inMemory().sessions;
+  }),
+  repositoryProvider(UNIT_OF_WORK, (dbConfig) => {
+    return dbConfig.databaseUrl ? new DrizzleUnitOfWork() : new InMemoryUnitOfWork();
+  }),
 ];
 
 @Module({
-  providers,
+  providers: providers,
   exports: providers,
 })
 export class RepositoriesModule {}

@@ -22,12 +22,12 @@ const services = [
   BodyWeightService,
   ExerciseLibraryService,
   ExportService,
-  ProgressService,
   PlanImportService,
   PlanService,
-  WorkoutService,
-  TrainingPlanService,
+  ProgressService,
   SessionService,
+  TrainingPlanService,
+  WorkoutService,
 ];
 
 @Module({
