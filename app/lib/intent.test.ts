@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer';
 import { IsString } from 'class-validator';
 import { describe, expect, it } from 'vitest';
 
-import { intent } from './intent';
+import { intent } from '~/lib/intent';
 
 class RenameDto {
   @Expose()

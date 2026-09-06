@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { Exercise, type ExerciseSnapshot } from '../exercise/exercise';
-import { Session } from '../session/session';
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { DateOnly } from '../values/date-only';
-import { Duration } from '../values/duration';
-import { Weight } from '../values/weight';
-import { OTHER_MUSCLE_GROUP, muscleGroupBalance } from './muscle-balance';
-import { estimatedOneRepMax, personalRecords, progressSeries } from './personal-records';
-import { TrainingHistory } from './training-history';
-import { consistencyCalendar, weeklySetCount, weeklyTonnage } from './weekly-volume';
+import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
+import { OTHER_MUSCLE_GROUP, muscleGroupBalance } from '~domain/progress/muscle-balance';
+import { estimatedOneRepMax, personalRecords, progressSeries } from '~domain/progress/personal-records';
+import { TrainingHistory } from '~domain/progress/training-history';
+import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~domain/progress/weekly-volume';
+import { Session } from '~domain/session/session';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { DateOnly } from '~domain/values/date-only';
+import { Duration } from '~domain/values/duration';
+import { Weight } from '~domain/values/weight';
 
 // 2026-09-03 is a Thursday; its week starts Monday 2026-08-31.
 const TODAY = DateOnly.parse('2026-09-03');

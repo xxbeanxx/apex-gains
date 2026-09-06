@@ -1,4 +1,4 @@
-import type { Plan } from './plan';
+import type { Plan } from '~domain/plan/plan';
 
 /**
  * "Only one plan per user may be active" is an invariant across a set of

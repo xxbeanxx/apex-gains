@@ -1,7 +1,7 @@
 import qrcode from 'qrcode-generator';
 import { describe, expect, it } from 'vitest';
 
-import { encodeQr } from './qr.server';
+import { encodeQr } from '~/lib/qr.server';
 
 const QUIET_ZONE = 4;
 

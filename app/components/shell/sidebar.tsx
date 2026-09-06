@@ -5,12 +5,11 @@ import { Link, NavLink } from 'react-router';
 
 import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
 
+import type { NavItem } from '~/components/shell/nav-items';
 import { setSidebarCollapsed } from '~/components/shell/shell-init';
 import { Button } from '~/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
-
-import type { NavItem } from './nav-items';
 
 const GROUP_LABEL: Record<NavItem['group'], string | null> = {
   primary: null,

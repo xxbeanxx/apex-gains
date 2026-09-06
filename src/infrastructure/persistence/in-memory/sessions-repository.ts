@@ -2,8 +2,7 @@ import type { SessionsRepository, TrainingTotals } from '~application/ports/pers
 import { LoggedSet } from '~domain/session/logged-set';
 import { Session, type SessionSnapshot } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
-
-import type { AthleteOwned, ExerciseReferences } from './references';
+import type { AthleteOwned, ExerciseReferences } from '~infrastructure/persistence/in-memory/references';
 
 // Dev-convenience adapter - see sessions-repository.server.ts for
 // when it's selected, and athletes-repository.in-memory.server.ts for why it

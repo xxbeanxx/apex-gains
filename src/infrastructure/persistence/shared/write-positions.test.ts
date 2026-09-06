@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { writePositions } from './write-positions';
+import { writePositions } from '~infrastructure/persistence/shared/write-positions';
 
 /**
  * Replays the writes against a stand-in for the `(parentId, position)`

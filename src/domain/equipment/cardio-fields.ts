@@ -1,4 +1,4 @@
-import type { CardioKind } from './equipment';
+import type { CardioKind } from '~domain/equipment/equipment';
 
 /**
  * Which of the two cardio measurements a form should offer.

@@ -1,7 +1,7 @@
 import { data, redirect } from 'react-router';
 
-import type { Intent } from './intent.js';
-import type { IntentResponse } from './intent.server';
+import type { Intent } from '~/lib/intent';
+import type { IntentResponse } from '~/lib/intent.server';
 
 /**
  * What a fork-on-write detail page - a plan's, a workout's - answers

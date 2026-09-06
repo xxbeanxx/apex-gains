@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatMetricValue, paddedAxis } from './chart-utils';
+import { formatMetricValue, paddedAxis } from '~/components/history/chart-utils';
 
 describe('formatMetricValue', () => {
   it('rounds pounds to whole numbers, since half a pound is noise', () => {

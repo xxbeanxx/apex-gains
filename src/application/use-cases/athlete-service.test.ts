@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { AthleteService } from '~application/use-cases/athlete-service';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
-
-import { AthleteService } from './athlete-service';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 

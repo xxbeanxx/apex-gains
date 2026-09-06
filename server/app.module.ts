@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
-import { AuthModule } from './auth/auth.module';
-import { coreConfig } from './config/core.config';
-import { databaseConfig } from './config/database.config';
-import { googleOAuthConfig } from './config/google-oauth.config';
-import { sessionConfig } from './config/session.config';
-import { testLoginConfig } from './config/test-login.config';
-import { LoggingModule } from './logging/logging.module';
-import { ServicesModule } from './services/services.module';
+import { AuthModule } from '~server/auth/auth.module';
+import { coreConfig } from '~server/config/core.config';
+import { databaseConfig } from '~server/config/database.config';
+import { googleOAuthConfig } from '~server/config/google-oauth.config';
+import { sessionConfig } from '~server/config/session.config';
+import { testLoginConfig } from '~server/config/test-login.config';
+import { LoggingModule } from '~server/logging/logging.module';
+import { ServicesModule } from '~server/services/services.module';
 
 @Module({
   imports: [

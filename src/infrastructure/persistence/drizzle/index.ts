@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-import * as schema from './schema';
-import { currentTransaction } from './transaction';
+import * as schema from '~infrastructure/persistence/drizzle/schema';
+import { currentTransaction } from '~infrastructure/persistence/drizzle/transaction';
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { SessionService } from '~application/use-cases/session-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 import { Exercise } from '~domain/exercise/exercise';
@@ -16,8 +17,6 @@ import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/p
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-
-import { SessionService } from './session-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-03');

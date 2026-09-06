@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { AthletePreferences } from '../athlete/preferences';
-import { Duration } from '../values/duration';
-import { Rpe } from '../values/rpe';
-import { Speed } from '../values/speed';
-import { Weight } from '../values/weight';
-import { LoggedSet, type LoggedSetOptions } from './logged-set';
+import { AthletePreferences } from '~domain/athlete/preferences';
+import { LoggedSet, type LoggedSetOptions } from '~domain/session/logged-set';
+import { Duration } from '~domain/values/duration';
+import { Rpe } from '~domain/values/rpe';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const preferences = new AthletePreferences('lb', 'km', 'in', true, 'UTC');

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { sequentialSecrets } from '../shared/secrets';
-import { DateOnly } from '../values/date-only';
-import { Plan, type PlanSnapshot } from './plan';
+import { Plan, type PlanSnapshot } from '~domain/plan/plan';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { sequentialSecrets } from '~domain/shared/secrets';
+import { DateOnly } from '~domain/values/date-only';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = () => ({ ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('tok') });

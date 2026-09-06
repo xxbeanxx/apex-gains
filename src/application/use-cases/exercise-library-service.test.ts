@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Equipment, type EquipmentSnapshot } from '~domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
@@ -9,8 +10,6 @@ import { sequentialSecrets } from '~domain/shared/secrets';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
-
-import { ExerciseLibraryService } from './exercise-library-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 

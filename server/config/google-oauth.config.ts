@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 import { Expose } from 'class-transformer';
 import { IsString, MinLength } from 'class-validator';
 
-import { validateConfigSlice } from './validate';
+import { validateConfigSlice } from '~server/config/validate';
 
 /**
  * Google OIDC client credentials, used to build/validate the OIDC flow.

@@ -3,9 +3,8 @@ import type { ConfigType } from '@nestjs/config';
 
 import type { GoogleIdentityProvider } from '~application/ports/identity/google-identity-provider';
 import { GoogleIdentityAdapter } from '~infrastructure/identity/google/google-identity-adapter';
-
-import { googleOAuthConfig } from '../config/google-oauth.config';
-import { GOOGLE_IDENTITY_PROVIDER } from '../providers/identity.token';
+import { googleOAuthConfig } from '~server/config/google-oauth.config';
+import { GOOGLE_IDENTITY_PROVIDER } from '~server/providers/identity.token';
 
 /** Binds the `GoogleIdentityProvider` port to the Google/`openid-client` adapter. */
 export const googleIdentityProvider: Provider = {

@@ -1,7 +1,7 @@
-import type { Clock } from '../shared/clock';
-import type { IdGenerator } from '../shared/ids';
-import { DateOnly } from '../values/date-only';
-import { Weight } from '../values/weight';
+import type { Clock } from '~domain/shared/clock';
+import type { IdGenerator } from '~domain/shared/ids';
+import { DateOnly } from '~domain/values/date-only';
+import { Weight } from '~domain/values/weight';
 
 export type BodyWeightEntrySnapshot = {
   readonly id: string;

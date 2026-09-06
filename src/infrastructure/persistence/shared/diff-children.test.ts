@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { diffChildren } from './diff-children';
+import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
 
 describe('diffChildren', () => {
   it('reports a child that is new', () => {

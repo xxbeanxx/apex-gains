@@ -1,8 +1,7 @@
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import { BodyWeightEntry, type BodyWeightEntrySnapshot } from '~domain/body/body-weight-entry';
 import type { DateOnly } from '~domain/values/date-only';
-
-import type { AthleteOwned } from './references';
+import type { AthleteOwned } from '~infrastructure/persistence/in-memory/references';
 
 // Dev-convenience adapter - see body-weight-repository.server.ts for when
 // it's selected, and athletes-repository.in-memory.server.ts for why it

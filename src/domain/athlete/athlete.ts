@@ -1,8 +1,8 @@
-import type { Clock } from '../shared/clock';
-import type { IdGenerator } from '../shared/ids';
-import { Duration } from '../values/duration';
-import type { DistanceUnit, LengthUnit, WeightUnit } from '../values/units';
-import { AthletePreferences } from './preferences';
+import { AthletePreferences } from '~domain/athlete/preferences';
+import type { Clock } from '~domain/shared/clock';
+import type { IdGenerator } from '~domain/shared/ids';
+import { Duration } from '~domain/values/duration';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
 
 export type AthleteSnapshot = {
   readonly id: string;

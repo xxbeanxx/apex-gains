@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { Equipment } from './equipment';
+import { Equipment } from '~domain/equipment/equipment';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = { ids: sequentialIds('equipment'), clock: fixedClock(NOW) };

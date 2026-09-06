@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 import { Expose } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 
-import { validateConfigSlice } from './validate';
+import { validateConfigSlice } from '~server/config/validate';
 
 /**
  * `DATABASE_URL` is the one env var that's optional by design: unset, the

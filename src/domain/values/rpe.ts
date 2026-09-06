@@ -1,4 +1,4 @@
-import { formatNumber } from './units';
+import { formatNumber } from '~domain/values/units';
 
 /**
  * Rate of perceived exertion, on the Borg CR10 scale athletes actually use in

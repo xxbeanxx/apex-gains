@@ -1,6 +1,6 @@
-import type { Clock } from '../shared/clock';
-import type { IdGenerator } from '../shared/ids';
-import { Ownership } from '../shared/ownership';
+import type { Clock } from '~domain/shared/clock';
+import type { IdGenerator } from '~domain/shared/ids';
+import { Ownership } from '~domain/shared/ownership';
 
 /**
  * Which cardio measurement a piece of equipment reports. `null` means no

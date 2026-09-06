@@ -1,7 +1,7 @@
-import type { Clock } from '../shared/clock';
-import type { IdGenerator } from '../shared/ids';
-import { DateOnly } from '../values/date-only';
-import { Length } from '../values/length';
+import type { Clock } from '~domain/shared/clock';
+import type { IdGenerator } from '~domain/shared/ids';
+import { DateOnly } from '~domain/values/date-only';
+import { Length } from '~domain/values/length';
 
 /**
  * Which part of the body a measurement is of. A Postgres enum, not free

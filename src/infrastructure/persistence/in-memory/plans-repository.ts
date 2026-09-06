@@ -1,8 +1,7 @@
 import type { PlanName, PlansRepository } from '~application/ports/persistence/plans-repository';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
-
-import type { AthleteOwned } from './references';
+import type { AthleteOwned } from '~infrastructure/persistence/in-memory/references';
 
 // Dev-convenience adapter - see plans-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

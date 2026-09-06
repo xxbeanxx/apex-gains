@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PlanImportService } from '~application/use-cases/plan-import-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 import { Exercise } from '~domain/exercise/exercise';
 import { Plan } from '~domain/plan/plan';
@@ -15,8 +16,6 @@ import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memo
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-
-import { PlanImportService } from './plan-import-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const IMPORT_DATE = DateOnly.parse('2026-10-01');

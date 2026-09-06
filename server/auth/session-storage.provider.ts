@@ -3,9 +3,9 @@ import { type SessionStorage, createCookieSessionStorage } from 'react-router';
 import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
-import { coreConfig } from '../config/core.config';
-import { sessionConfig } from '../config/session.config';
-import { SESSION_STORAGE } from './tokens';
+import { SESSION_STORAGE } from '~server/auth/tokens';
+import { coreConfig } from '~server/config/core.config';
+import { sessionConfig } from '~server/config/session.config';
 
 export type SessionData = {
   userId: string;

@@ -2,9 +2,8 @@ import { Link, useMatches } from 'react-router';
 
 import { ChevronRightIcon } from 'lucide-react';
 
+import { NAV_ITEMS } from '~/components/shell/nav-items';
 import { type Crumb, isCrumbHandle } from '~/lib/breadcrumbs';
-
-import { NAV_ITEMS } from './nav-items';
 
 /**
  * Flattens every matched route's `crumb`, in match order (root to leaf).

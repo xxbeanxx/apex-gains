@@ -1,7 +1,7 @@
 import type { MiddlewareFunction } from 'react-router';
 import { data } from 'react-router';
 
-import { userContext } from './user-context';
+import { userContext } from '~/auth/user-context';
 
 /**
  * Gate for the /admin area. Runs under the `_protected` layout, so an

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { DateOnly } from '../values/date-only';
-import { Length } from '../values/length';
-import { BodyMeasurement } from './body-measurement';
+import { BodyMeasurement } from '~domain/body/body-measurement';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { DateOnly } from '~domain/values/date-only';
+import { Length } from '~domain/values/length';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = { ids: sequentialIds('entry'), clock: fixedClock(NOW) };

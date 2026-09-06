@@ -1,6 +1,6 @@
 import qrcode from 'qrcode-generator';
 
-import type { QrCode } from './qr';
+import type { QrCode } from '~/lib/qr';
 
 /**
  * Four modules of clear space on every side. The spec requires it, and a

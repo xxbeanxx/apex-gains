@@ -4,6 +4,7 @@ import { NavLink, useSubmit } from 'react-router';
 
 import { LogOutIcon, MoreHorizontalIcon } from 'lucide-react';
 
+import type { NavItem, NavUser } from '~/components/shell/nav-items';
 import { Avatar } from '~/components/ui/avatar';
 import {
   DropdownMenu,
@@ -14,8 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { cn } from '~/lib/utils';
-
-import type { NavItem, NavUser } from './nav-items';
 
 function TabCell({ children, isActive, label }: { children: ReactNode; isActive: boolean; label: string }) {
   return (

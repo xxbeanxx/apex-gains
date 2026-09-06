@@ -1,7 +1,6 @@
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
-
-import type { AthleteOwned, AthleteReferenced } from './references';
+import type { AthleteOwned, AthleteReferenced } from '~infrastructure/persistence/in-memory/references';
 
 /**
  * Dev-convenience adapter for running the app without a database configured

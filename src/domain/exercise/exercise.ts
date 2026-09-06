@@ -1,8 +1,8 @@
-import type { Clock } from '../shared/clock';
-import { type EditableCopy, alreadyEditable, identityTranslation } from '../shared/forking';
-import type { IdGenerator } from '../shared/ids';
-import { Ownership } from '../shared/ownership';
-import type { ExerciseType } from './exercise-type';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import type { Clock } from '~domain/shared/clock';
+import { type EditableCopy, alreadyEditable, identityTranslation } from '~domain/shared/forking';
+import type { IdGenerator } from '~domain/shared/ids';
+import { Ownership } from '~domain/shared/ownership';
 
 export type ExerciseDetails = {
   readonly name: string;

@@ -1,8 +1,7 @@
 import type { MiddlewareFunction } from 'react-router';
 
+import { userContext } from '~/auth/user-context';
 import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
-
-import { userContext } from './user-context';
 
 export const loadUserMiddleware: MiddlewareFunction<void | Response> = async ({ request, context }) => {
   const sessionStorage = context.get(sessionStorageContext);

@@ -5,8 +5,7 @@ import { Exercise } from '~domain/exercise/exercise';
 import { LibraryVisibility } from '~domain/shared/ownership';
 import { dbScope } from '~infrastructure/persistence/drizzle/index';
 import { type Exercise as ExerciseRow, exerciseEquipment, exercises } from '~infrastructure/persistence/drizzle/schema';
-
-import { visibleRowWhere, visibleRowsWhere } from './shared/visibility';
+import { visibleRowWhere, visibleRowsWhere } from '~infrastructure/persistence/drizzle/shared/visibility';
 
 /** Postgres' SQLSTATE for `foreign_key_violation`. */
 const FOREIGN_KEY_VIOLATION = '23503';

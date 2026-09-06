@@ -14,6 +14,7 @@ import { ProgressService } from '~application/use-cases/progress-service';
 import { SessionService } from '~application/use-cases/session-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { WorkoutService } from '~application/use-cases/workout-service';
+import { AuthModule } from '~server/auth/auth.module';
 import { DOMAIN_DEPS } from '~server/providers/domain-deps.token';
 import { GOOGLE_IDENTITY_PROVIDER } from '~server/providers/identity.token';
 import {
@@ -28,9 +29,7 @@ import {
   UNIT_OF_WORK,
   WORKOUTS_REPOSITORY,
 } from '~server/providers/persistence.tokens';
-
-import { AuthModule } from '../auth/auth.module';
-import { RepositoriesModule } from '../repositories/repositories.module';
+import { RepositoriesModule } from '~server/repositories/repositories.module';
 
 const services: Provider[] = [
   {

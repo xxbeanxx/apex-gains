@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ExportService } from '~application/use-cases/export-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { BodyWeightEntry } from '~domain/body/body-weight-entry';
 import { Exercise } from '~domain/exercise/exercise';
@@ -19,8 +20,6 @@ import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memo
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-
-import { ExportService } from './export-service';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };

@@ -2,6 +2,11 @@ import { useState } from 'react';
 
 import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
 
+import { ConsistencyHeatmap } from '~/components/history/consistency-heatmap';
+import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
+import { MuscleBalanceChart } from '~/components/history/muscle-balance-chart';
+import { PersonalRecordsList } from '~/components/history/personal-records-list';
+import { WeeklyBarChart } from '~/components/history/weekly-bar-chart';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
@@ -12,12 +17,6 @@ import type {
   ProgressSeriesView,
   WeeklyPointView,
 } from '~application/use-cases/progress-view';
-
-import { ConsistencyHeatmap } from './consistency-heatmap';
-import { ExerciseProgressChart } from './exercise-progress-chart';
-import { MuscleBalanceChart } from './muscle-balance-chart';
-import { PersonalRecordsList } from './personal-records-list';
-import { WeeklyBarChart } from './weekly-bar-chart';
 
 export function HistoryCharts({
   heatmap,

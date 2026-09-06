@@ -1,5 +1,5 @@
-import type { DateOnly } from '../values/date-only';
-import type { TrainingHistory } from './training-history';
+import type { TrainingHistory } from '~domain/progress/training-history';
+import type { DateOnly } from '~domain/values/date-only';
 
 export type MuscleGroupVolume = {
   readonly muscleGroup: string;

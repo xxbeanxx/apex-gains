@@ -26,11 +26,10 @@ import type { Express, NextFunction, Request, Response } from 'express';
 import 'reflect-metadata';
 
 import type { NestSingletons } from '~/router/load-context';
-
-import { AppModule } from './app.module';
-import { coreConfig } from './config/core.config';
-import { LOGGER } from './logging/tokens';
-import { collectNestSingletons } from './react-router/singletons';
+import { AppModule } from '~server/app.module';
+import { coreConfig } from '~server/config/core.config';
+import { LOGGER } from '~server/logging/tokens';
+import { collectNestSingletons } from '~server/react-router/singletons';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,7 +57,7 @@ async function registerDevRoutes(server: Express, singletons: NestSingletons): P
     try {
       const { createHandler } = (await vite.ssrLoadModule(
         '/server/react-router/handler.ts',
-      )) as typeof import('./react-router/handler');
+      )) as typeof import('~server/react-router/handler');
 
       const requestHandler = createHandler(singletons, 'development');
 
@@ -86,7 +85,7 @@ async function registerProductionRoutes(server: Express, singletons: NestSinglet
 
   const { assetsBuildDirectory, publicPath, createHandler } = (await import(
     url.pathToFileURL(handlerPath).href
-  )) as typeof import('./react-router/handler');
+  )) as typeof import('~server/react-router/handler');
 
   const assetsDirectory = path.resolve(assetsBuildDirectory);
 

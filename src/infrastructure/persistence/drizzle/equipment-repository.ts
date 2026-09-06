@@ -4,8 +4,7 @@ import type { EquipmentRepository } from '~application/ports/persistence/equipme
 import { Equipment } from '~domain/equipment/equipment';
 import { dbScope } from '~infrastructure/persistence/drizzle/index';
 import { type Equipment as EquipmentRow, equipment } from '~infrastructure/persistence/drizzle/schema';
-
-import { ownOrSampleWhere } from './shared/visibility';
+import { ownOrSampleWhere } from '~infrastructure/persistence/drizzle/shared/visibility';
 
 /**
  * Equipment has no fork-on-write rule - names are globally unique, so there

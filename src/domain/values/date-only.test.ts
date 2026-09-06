@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DateOnly } from './date-only';
+import { DateOnly } from '~domain/values/date-only';
 
 describe('DateOnly.tryParse', () => {
   it('accepts a well-formed calendar day', () => {

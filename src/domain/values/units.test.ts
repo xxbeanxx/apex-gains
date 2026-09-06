@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatNumber, speedUnitLabel } from './units';
+import { formatNumber, speedUnitLabel } from '~domain/values/units';
 
 describe('speedUnitLabel', () => {
   it('labels km as km/h', () => {

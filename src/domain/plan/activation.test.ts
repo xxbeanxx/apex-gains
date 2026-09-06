@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { activatePlan } from './activation';
-import { Plan, type PlanSnapshot } from './plan';
+import { activatePlan } from '~domain/plan/activation';
+import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 

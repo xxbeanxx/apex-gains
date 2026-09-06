@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { enabledLogLevels } from './logger.provider';
+import { enabledLogLevels } from '~server/logging/logger.provider';
 
 describe('enabledLogLevels', () => {
   it('enables the configured level and everything more severe', () => {

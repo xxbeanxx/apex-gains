@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 import { Expose, Transform } from 'class-transformer';
 import { IsBoolean } from 'class-validator';
 
-import { toBoolean, validateConfigSlice } from './validate';
+import { toBoolean, validateConfigSlice } from '~server/config/validate';
 
 /**
  * Off by default - only e2e/CI environments should ever set this. Unlike

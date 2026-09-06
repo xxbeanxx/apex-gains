@@ -1,5 +1,5 @@
-import type { Clock } from '../shared/clock';
-import type { IdGenerator } from '../shared/ids';
+import type { Clock } from '~domain/shared/clock';
+import type { IdGenerator } from '~domain/shared/ids';
 
 /**
  * What an administrator did, on the only two things `/admin` lets one do to

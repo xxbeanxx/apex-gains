@@ -3,8 +3,7 @@ import type { MiddlewareFunction, RouterContextProvider } from 'react-router';
 import type { LoggerService } from '@nestjs/common';
 
 import { userContext } from '~/auth/user-context';
-
-import { nestLoggerContext } from '../router/load-context';
+import { nestLoggerContext } from '~/router/load-context';
 
 /** The Nest logger context label every request-lifecycle line is filed under. */
 const REQUEST = 'Request';

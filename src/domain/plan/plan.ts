@@ -1,10 +1,10 @@
-import type { Clock } from '../shared/clock';
-import { type EditableCopy, alreadyEditable, forkedFrom } from '../shared/forking';
-import type { IdGenerator } from '../shared/ids';
-import { type MoveDirection, OrderedChildren } from '../shared/ordered';
-import { Ownership } from '../shared/ownership';
-import type { SecretGenerator } from '../shared/secrets';
-import { DateOnly } from '../values/date-only';
+import type { Clock } from '~domain/shared/clock';
+import { type EditableCopy, alreadyEditable, forkedFrom } from '~domain/shared/forking';
+import type { IdGenerator } from '~domain/shared/ids';
+import { type MoveDirection, OrderedChildren } from '~domain/shared/ordered';
+import { Ownership } from '~domain/shared/ownership';
+import type { SecretGenerator } from '~domain/shared/secrets';
+import { DateOnly } from '~domain/values/date-only';
 
 export type PlanSlotSnapshot = {
   readonly id: string;

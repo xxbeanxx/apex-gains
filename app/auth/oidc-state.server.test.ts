@@ -2,7 +2,7 @@ import { createCookie } from 'react-router';
 
 import { describe, expect, it } from 'vitest';
 
-import { clearOidcState, parseOidcState, serializeOidcState } from './oidc-state';
+import { clearOidcState, parseOidcState, serializeOidcState } from '~/auth/oidc-state';
 
 const cookie = createCookie('__oidc_state', {
   path: '/',

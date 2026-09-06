@@ -2,11 +2,10 @@ import { useId } from 'react';
 
 import { Area, AreaChart, CartesianGrid, ReferenceDot, XAxis, YAxis } from 'recharts';
 
+import { formatMetricValue, paddedAxis } from '~/components/history/chart-utils';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '~/components/ui/chart';
 import type { ProgressSeriesView } from '~application/use-cases/progress-view';
 import { formatMonthDay } from '~shared/format';
-
-import { formatMetricValue, paddedAxis } from './chart-utils';
 
 /**
  * `YYYY-MM-DD` as a UTC timestamp, so the x axis is a real time scale:

@@ -2,9 +2,9 @@ import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsString, MinLength } from 'class-validator';
 import { describe, expect, it, vi } from 'vitest';
 
-import { intent } from './intent.js';
-import { dispatch, handled } from './intent.server';
-import { toNumber, trim } from './validate-form.js';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
+import { toNumber, trim } from '~/lib/validate-form';
 
 class RenameDto {
   @Expose()

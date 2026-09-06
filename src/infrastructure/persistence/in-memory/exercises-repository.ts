@@ -1,8 +1,7 @@
 import type { DeleteExerciseOutcome, ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
-
-import type { AthleteOwned, ExerciseReferences } from './references';
+import type { AthleteOwned, ExerciseReferences } from '~infrastructure/persistence/in-memory/references';
 
 // Dev-convenience adapter - see exercises-repository.server.ts for when it's
 // selected, and athletes-repository.in-memory.server.ts for why it stores

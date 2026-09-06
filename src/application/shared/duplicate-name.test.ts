@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextCopyName } from './duplicate-name';
+import { nextCopyName } from '~application/shared/duplicate-name';
 
 describe('nextCopyName', () => {
   it('appends "(copy)" when nothing collides', () => {

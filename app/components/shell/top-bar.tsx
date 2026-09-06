@@ -4,6 +4,7 @@ import { DumbbellIcon, LogOutIcon } from 'lucide-react';
 
 import { Breadcrumbs } from '~/components/shell/breadcrumbs';
 import { CommandPalette } from '~/components/shell/command-palette';
+import type { NavUser } from '~/components/shell/nav-items';
 import { ThemeToggle } from '~/components/theme-toggle';
 import { Avatar } from '~/components/ui/avatar';
 import {
@@ -14,8 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
-
-import type { NavUser } from './nav-items';
 
 function AccountMenu({ user }: { user: NavUser }) {
   const submit = useSubmit();

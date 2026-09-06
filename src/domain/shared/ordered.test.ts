@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { OrderedChildren } from './ordered';
+import { OrderedChildren } from '~domain/shared/ordered';
 
 type Child = { id: string; position: number };
 

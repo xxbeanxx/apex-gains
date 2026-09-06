@@ -1,7 +1,6 @@
 import type { AdminActionsRepository } from '~application/ports/persistence/admin-actions-repository';
 import { AdminAction, type AdminActionSnapshot } from '~domain/admin/admin-action';
-
-import type { AthleteReferenced } from './references';
+import type { AthleteReferenced } from '~infrastructure/persistence/in-memory/references';
 
 // Dev-convenience adapter - see admin-actions-repository.server.ts for when
 // it's selected, and athletes-repository.in-memory.server.ts for why it

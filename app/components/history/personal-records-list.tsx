@@ -1,9 +1,8 @@
 import { TrophyIcon } from 'lucide-react';
 
+import { formatMetricValue } from '~/components/history/chart-utils';
 import type { PersonalRecordView } from '~application/use-cases/progress-view';
 import { formatMonthDay } from '~shared/format';
-
-import { formatMetricValue } from './chart-utils';
 
 export function PersonalRecordsList({ records }: { records: PersonalRecordView[] }) {
   return (

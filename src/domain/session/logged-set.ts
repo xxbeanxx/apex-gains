@@ -1,8 +1,8 @@
-import type { AthletePreferences } from '../athlete/preferences';
-import { Duration } from '../values/duration';
-import { Rpe } from '../values/rpe';
-import { Speed } from '../values/speed';
-import { Weight } from '../values/weight';
+import type { AthletePreferences } from '~domain/athlete/preferences';
+import { Duration } from '~domain/values/duration';
+import { Rpe } from '~domain/values/rpe';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
 
 export type LoggedSetSnapshot = {
   readonly id: string;

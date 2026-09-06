@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { Duration } from './duration';
-import { Length } from './length';
-import { Rpe } from './rpe';
-import { Speed } from './speed';
-import { Weight } from './weight';
+import { Duration } from '~domain/values/duration';
+import { Length } from '~domain/values/length';
+import { Rpe } from '~domain/values/rpe';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
 
 describe('Weight', () => {
   it("round-trips a value through the athlete's unit", () => {

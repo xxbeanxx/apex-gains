@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatRemaining, remainingSeconds } from './rest-timer';
+import { formatRemaining, remainingSeconds } from '~/lib/rest-timer';
 
 describe('remainingSeconds', () => {
   it('rounds up to the next whole second', () => {

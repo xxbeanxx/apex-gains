@@ -1,7 +1,7 @@
-import type { Exercise } from '../exercise/exercise';
-import type { LoggedSet } from '../session/logged-set';
-import type { Session } from '../session/session';
-import type { DateOnly } from '../values/date-only';
+import type { Exercise } from '~domain/exercise/exercise';
+import type { LoggedSet } from '~domain/session/logged-set';
+import type { Session } from '~domain/session/session';
+import type { DateOnly } from '~domain/values/date-only';
 
 /**
  * A span of logged sessions together with the exercises they refer to - what

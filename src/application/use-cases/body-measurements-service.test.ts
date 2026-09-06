@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
@@ -7,8 +8,6 @@ import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
 import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
-
-import { BodyMeasurementsService } from './body-measurements-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 

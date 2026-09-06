@@ -22,6 +22,7 @@ import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/p
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
+import { databaseConfig } from '~server/config/database.config';
 import {
   ADMIN_ACTIONS_REPOSITORY,
   ATHLETES_REPOSITORY,
@@ -34,8 +35,6 @@ import {
   UNIT_OF_WORK,
   WORKOUTS_REPOSITORY,
 } from '~server/providers/persistence.tokens';
-
-import { databaseConfig } from '../config/database.config';
 
 type DatabaseConfig = ConfigType<typeof databaseConfig>;
 

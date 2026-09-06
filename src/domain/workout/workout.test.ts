@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { AthletePreferences } from '../athlete/preferences';
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { Duration } from '../values/duration';
-import { Speed } from '../values/speed';
-import { Weight } from '../values/weight';
-import { SetTarget } from './set-target';
-import { Workout, type WorkoutSnapshot } from './workout';
+import { AthletePreferences } from '~domain/athlete/preferences';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { Duration } from '~domain/values/duration';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
+import { SetTarget } from '~domain/workout/set-target';
+import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = () => ({ ids: sequentialIds('entry'), clock: fixedClock(NOW) });

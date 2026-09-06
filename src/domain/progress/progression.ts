@@ -1,11 +1,11 @@
-import type { CardioFields } from '../equipment/cardio-fields';
-import type { ExerciseType } from '../exercise/exercise-type';
-import type { LoggedSet } from '../session/logged-set';
-import type { DateOnly } from '../values/date-only';
-import { Duration } from '../values/duration';
-import { Speed } from '../values/speed';
-import type { Weight } from '../values/weight';
-import { SetTarget } from '../workout/set-target';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import type { LoggedSet } from '~domain/session/logged-set';
+import type { DateOnly } from '~domain/values/date-only';
+import { Duration } from '~domain/values/duration';
+import { Speed } from '~domain/values/speed';
+import type { Weight } from '~domain/values/weight';
+import { SetTarget } from '~domain/workout/set-target';
 
 const SPEED_INCREMENT = Speed.kmh(0.5);
 const DURATION_INCREMENT = Duration.seconds(60);

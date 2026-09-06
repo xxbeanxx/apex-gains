@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { NAV_ITEMS } from './nav-items';
+import { NAV_ITEMS } from '~/components/shell/nav-items';
 
 describe('NAV_ITEMS', () => {
   it('assigns each bottom-tab slot exactly once', () => {

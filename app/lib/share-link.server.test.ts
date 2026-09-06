@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { sharePathFor, shareUrlFor } from './share-link';
+import { sharePathFor, shareUrlFor } from '~/lib/share-link';
 
 describe('share links', () => {
   it('puts the token on the import route', () => {

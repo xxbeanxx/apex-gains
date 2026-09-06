@@ -1,7 +1,7 @@
-import type { Session } from '../session/session';
-import { DateOnly } from '../values/date-only';
-import { Weight } from '../values/weight';
-import type { TrainingHistory } from './training-history';
+import type { TrainingHistory } from '~domain/progress/training-history';
+import type { Session } from '~domain/session/session';
+import { DateOnly } from '~domain/values/date-only';
+import { Weight } from '~domain/values/weight';
 
 export type WeeklyPoint<T> = {
   readonly weekStart: DateOnly;

@@ -14,10 +14,9 @@ import { ProgressService } from '~application/use-cases/progress-service';
 import { SessionService } from '~application/use-cases/session-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { WorkoutService } from '~application/use-cases/workout-service';
-
-import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
-import { testLoginConfig } from '../config/test-login.config';
-import { LOGGER } from '../logging/tokens';
+import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '~server/auth/tokens';
+import { testLoginConfig } from '~server/config/test-login.config';
+import { LOGGER } from '~server/logging/tokens';
 
 /**
  * Pulls every singleton the React Router app reads through load context out

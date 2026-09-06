@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { AdminService } from '~application/use-cases/admin-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Session } from '~domain/session/session';
 import { fixedClock } from '~domain/shared/clock';
@@ -10,8 +11,6 @@ import { InMemoryAdminActionsRepository } from '~infrastructure/persistence/in-m
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
-
-import { AdminService } from './admin-service';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-04');

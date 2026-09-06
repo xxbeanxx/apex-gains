@@ -1,4 +1,4 @@
-import { type DistanceUnit, formatNumber, speedUnitLabel } from './units';
+import { type DistanceUnit, formatNumber, speedUnitLabel } from '~domain/values/units';
 
 const MI_PER_KM = 0.621371;
 

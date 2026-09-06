@@ -1,5 +1,5 @@
-import { type Result, err, ok } from '../shared/result';
-import type { Athlete } from './athlete';
+import type { Athlete } from '~domain/athlete/athlete';
+import { type Result, err, ok } from '~domain/shared/result';
 
 /**
  * The rules for one athlete acting on another through /admin.

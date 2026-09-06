@@ -2,7 +2,7 @@
 // import, which would make this and ./index a cycle.
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import type { Transaction } from './index';
+import type { Transaction } from '~infrastructure/persistence/drizzle/index';
 
 /**
  * Carries the open transaction for the current request.

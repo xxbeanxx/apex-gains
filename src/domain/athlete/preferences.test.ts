@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { Duration } from '../values/duration';
-import { Length } from '../values/length';
-import { Speed } from '../values/speed';
-import { Weight } from '../values/weight';
-import { AthletePreferences } from './preferences';
+import { AthletePreferences } from '~domain/athlete/preferences';
+import { Duration } from '~domain/values/duration';
+import { Length } from '~domain/values/length';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
 
 describe('defaults', () => {
   it('starts on pounds, kilometres, inches, sample data shown, and UTC', () => {

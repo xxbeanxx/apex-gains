@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { LoggedSet } from '../session/logged-set';
-import { DateOnly } from '../values/date-only';
-import { Duration } from '../values/duration';
-import { Speed } from '../values/speed';
-import { Weight } from '../values/weight';
-import { SetTarget } from '../workout/set-target';
-import { type RecentSession, suggestNextTarget } from './progression';
+import { type RecentSession, suggestNextTarget } from '~domain/progress/progression';
+import { LoggedSet } from '~domain/session/logged-set';
+import { DateOnly } from '~domain/values/date-only';
+import { Duration } from '~domain/values/duration';
+import { Speed } from '~domain/values/speed';
+import { Weight } from '~domain/values/weight';
+import { SetTarget } from '~domain/workout/set-target';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const FIVE_POUNDS = Weight.lb(5);

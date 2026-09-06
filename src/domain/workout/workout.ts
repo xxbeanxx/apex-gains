@@ -1,10 +1,10 @@
-import type { CardioFields } from '../equipment/cardio-fields';
-import type { Clock } from '../shared/clock';
-import { type EditableCopy, alreadyEditable, forkedFrom } from '../shared/forking';
-import type { IdGenerator } from '../shared/ids';
-import { type MoveDirection, OrderedChildren } from '../shared/ordered';
-import { Ownership } from '../shared/ownership';
-import { SetTarget, type SetTargetSnapshot } from './set-target';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import type { Clock } from '~domain/shared/clock';
+import { type EditableCopy, alreadyEditable, forkedFrom } from '~domain/shared/forking';
+import type { IdGenerator } from '~domain/shared/ids';
+import { type MoveDirection, OrderedChildren } from '~domain/shared/ordered';
+import { Ownership } from '~domain/shared/ownership';
+import { SetTarget, type SetTargetSnapshot } from '~domain/workout/set-target';
 
 export type WorkoutExerciseSnapshot = SetTargetSnapshot & {
   readonly id: string;

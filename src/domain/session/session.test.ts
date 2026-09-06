@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { DateOnly } from '../values/date-only';
-import { Duration } from '../values/duration';
-import { Weight } from '../values/weight';
-import { Session } from './session';
+import { Session } from '~domain/session/session';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { DateOnly } from '~domain/values/date-only';
+import { Duration } from '~domain/values/duration';
+import { Weight } from '~domain/values/weight';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const DATE = DateOnly.parse('2026-09-03');

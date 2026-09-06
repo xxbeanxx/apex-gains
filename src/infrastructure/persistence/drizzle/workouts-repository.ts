@@ -10,10 +10,9 @@ import {
   workoutExercises,
   workouts,
 } from '~infrastructure/persistence/drizzle/schema';
-
-import { diffChildren } from '../shared/diff-children';
-import { writePositions } from '../shared/write-positions';
-import { visibleRowWhere, visibleRowsWhere } from './shared/visibility';
+import { visibleRowWhere, visibleRowsWhere } from '~infrastructure/persistence/drizzle/shared/visibility';
+import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
+import { writePositions } from '~infrastructure/persistence/shared/write-positions';
 
 /** The columns `shared/visibility.ts` reads to build this table's clauses. */
 const visibility = {

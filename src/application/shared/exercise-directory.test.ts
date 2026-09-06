@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ExerciseDirectory } from '~application/shared/exercise-directory';
 import { Exercise } from '~domain/exercise/exercise';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
-
-import { ExerciseDirectory } from './exercise-directory';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 

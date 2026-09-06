@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { Duration } from '../values/duration';
-import { Athlete } from './athlete';
+import { Athlete } from '~domain/athlete/athlete';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
+import { Duration } from '~domain/values/duration';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 const deps = { ids: sequentialIds('athlete'), clock: fixedClock(NOW) };

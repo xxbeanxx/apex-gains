@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PlanService } from '~application/use-cases/plan-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 import { fixedClock } from '~domain/shared/clock';
@@ -9,8 +10,6 @@ import { DateOnly } from '~domain/values/date-only';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
-
-import { PlanService } from './plan-service';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 

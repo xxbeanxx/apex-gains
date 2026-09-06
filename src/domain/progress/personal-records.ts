@@ -1,5 +1,5 @@
-import { Weight } from '../values/weight';
-import type { TrainingHistory } from './training-history';
+import type { TrainingHistory } from '~domain/progress/training-history';
+import { Weight } from '~domain/values/weight';
 
 /**
  * Which single number stands for "getting better at this", per exercise.

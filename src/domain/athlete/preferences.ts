@@ -1,9 +1,9 @@
-import type { Duration } from '../values/duration';
-import type { Length } from '../values/length';
-import type { Speed } from '../values/speed';
-import { DEFAULT_TIMEZONE } from '../values/timezone';
-import type { DistanceUnit, LengthUnit, WeightUnit } from '../values/units';
-import type { Weight } from '../values/weight';
+import type { Duration } from '~domain/values/duration';
+import type { Length } from '~domain/values/length';
+import type { Speed } from '~domain/values/speed';
+import { DEFAULT_TIMEZONE } from '~domain/values/timezone';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
+import type { Weight } from '~domain/values/weight';
 
 /**
  * How an athlete wants their numbers shown, whether they want the shared

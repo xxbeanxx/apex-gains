@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
+import '~/app.css';
 import { loadUserMiddleware } from '~/auth/current-user';
 import { userContext } from '~/auth/user-context';
 import { ErrorPage } from '~/components/error-page';
@@ -13,7 +14,6 @@ import { getBuildInfo } from '~/lib/build-info';
 import { requestLoggingMiddleware } from '~/lib/logger';
 
 import type { Route } from './+types/root';
-import './app.css';
 
 export const links: Route.LinksFunction = () => [
   { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },

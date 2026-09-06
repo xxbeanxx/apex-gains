@@ -11,8 +11,7 @@ import {
   sessionSets,
   sessions,
 } from '~infrastructure/persistence/drizzle/schema';
-
-import { diffChildren } from '../shared/diff-children';
+import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
 
 type RowWithSets = SessionRow & { sets: SessionSetRow[] };
 

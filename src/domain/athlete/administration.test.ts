@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { fixedClock } from '../shared/clock';
-import { sequentialIds } from '../shared/ids';
-import { changeAdminAccess, closeOwnAccount, removeAccount } from './administration';
-import { Athlete } from './athlete';
+import { changeAdminAccess, closeOwnAccount, removeAccount } from '~domain/athlete/administration';
+import { Athlete } from '~domain/athlete/athlete';
+import { fixedClock } from '~domain/shared/clock';
+import { sequentialIds } from '~domain/shared/ids';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 

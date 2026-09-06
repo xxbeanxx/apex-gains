@@ -3,9 +3,9 @@ import { type Cookie, createCookie } from 'react-router';
 import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
-import { coreConfig } from '../config/core.config';
-import { sessionConfig } from '../config/session.config';
-import { OIDC_STATE_COOKIE } from './tokens';
+import { OIDC_STATE_COOKIE } from '~server/auth/tokens';
+import { coreConfig } from '~server/config/core.config';
+import { sessionConfig } from '~server/config/session.config';
 
 /**
  * The short-lived PKCE/state cookie, used only across the Google OIDC

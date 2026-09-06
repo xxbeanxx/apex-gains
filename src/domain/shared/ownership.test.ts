@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LibraryVisibility, Ownership } from './ownership';
+import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 
 describe('Ownership.sample', () => {
   it('has a null userId and is a sample', () => {
