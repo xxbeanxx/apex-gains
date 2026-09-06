@@ -143,3 +143,46 @@ describe('byId', () => {
     await expect(service.byId('nobody')).resolves.toBeNull();
   });
 });
+
+describe('closeOwnAccount', () => {
+  it('allows an ordinary athlete to close their own account', async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+
+    const outcome = await service.closeOwnAccount(athlete);
+
+    expect(outcome.ok).toBe(true);
+    await expect(athletes.findById(athlete.id)).resolves.toBeNull();
+  });
+
+  it('allows an administrator to close their own account when another administrator remains', async () => {
+    const { athlete: first } = await service.signInWithGoogle(googleIdentity);
+    first.changeAdminAccess(true, NOW);
+    await athletes.save(first);
+
+    const { athlete: second } = await service.signInWithGoogle({
+      ...googleIdentity,
+      googleSub: 'google-sub-2',
+      email: 'second@example.com',
+    });
+    second.changeAdminAccess(true, NOW);
+    await athletes.save(second);
+
+    const outcome = await service.closeOwnAccount(first);
+
+    expect(outcome.ok).toBe(true);
+    await expect(athletes.findById(first.id)).resolves.toBeNull();
+    // The other administrator is untouched.
+    await expect(athletes.findById(second.id)).resolves.not.toBeNull();
+  });
+
+  it('refuses when the athlete is the sole administrator', async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+    athlete.changeAdminAccess(true, NOW);
+    await athletes.save(athlete);
+
+    const outcome = await service.closeOwnAccount(athlete);
+
+    expect(outcome).toEqual({ ok: false, error: 'last-administrator' });
+    await expect(athletes.findById(athlete.id)).resolves.not.toBeNull();
+  });
+});

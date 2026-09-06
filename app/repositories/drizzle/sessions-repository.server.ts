@@ -101,6 +101,15 @@ export class DrizzleSessionsRepository implements SessionsRepository {
     return rows.map(toSession);
   }
 
+  async listAll(userId: string): Promise<Session[]> {
+    const rows = await dbScope.query.sessions.findMany({
+      where: eq(sessions.userId, userId),
+      orderBy: desc(sessions.date),
+      with: withSets,
+    });
+    return rows.map(toSession);
+  }
+
   async listForDateRange(userId: string, start: DateOnly, endExclusive: DateOnly): Promise<Session[]> {
     const rows = await dbScope.query.sessions.findMany({
       where: and(eq(sessions.userId, userId), gte(sessions.date, start.value), lt(sessions.date, endExclusive.value)),

@@ -1,13 +1,16 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsPositive } from 'class-validator';
-import { CheckCircle2Icon } from 'lucide-react';
-import { data } from 'react-router';
+import { IsIn, IsInt, IsOptional, IsPositive, IsString } from 'class-validator';
+import { CheckCircle2Icon, DownloadIcon, Trash2Icon } from 'lucide-react';
+import { useId } from 'react';
+import { data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
 import { SettingsShell, type SettingsSection } from '~/components/settings/settings-shell';
+import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
+import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
@@ -15,11 +18,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { TimezonePicker } from '~/components/settings/timezone-picker';
 import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from '~/domain/values/units';
 import { TIMEZONES } from '~/domain/values/timezone';
+import { requestLogger } from '~/lib/logger.server';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber } from '~/lib/validate-form';
 
-import { athleteServiceContext } from '~/lib/nest-bridge.server';
+import { athleteServiceContext, sessionStorageContext } from '~/lib/nest-bridge.server';
 
 import type { Route } from './+types/settings';
 
@@ -61,7 +65,13 @@ class UpdateRestDurationDto {
   readonly restSeconds?: number;
 }
 
-const SECTION_IDS = ['units', 'timezone', 'rest-timer', 'sample-data'] as const;
+class DeleteAccountDto {
+  @Expose()
+  @IsString()
+  readonly confirmEmail!: string;
+}
+
+const SECTION_IDS = ['units', 'timezone', 'rest-timer', 'sample-data', 'account'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 function sectionFrom(request: Request): SectionId {
@@ -70,9 +80,11 @@ function sectionFrom(request: Request): SectionId {
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const { preferences } = requireAthlete(context);
+  const athlete = requireAthlete(context);
+  const { preferences } = athlete;
   return {
     section: sectionFrom(request),
+    email: athlete.email,
     weightUnit: preferences.weightUnit,
     distanceUnit: preferences.distanceUnit,
     showSampleData: preferences.showSampleData,
@@ -91,6 +103,12 @@ const intents = {
   }),
   updateTimezone: intent('updateTimezone', UpdateTimezoneDto, { invalidMessage: 'Unknown timezone.' }),
   updateRestDuration: intent('updateRestDuration', UpdateRestDurationDto, { invalidMessage: 'Invalid rest duration.' }),
+  deleteAccount: intent('deleteAccount', DeleteAccountDto, {
+    // Same as admin.users.$userId.tsx: the message is the same whether the
+    // field was blank or simply wrong - the confirmation is about
+    // deliberateness, not about spelling.
+    invalidMessage: "That doesn't match your account's email address.",
+  }),
 };
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -117,11 +135,36 @@ export async function action({ request, context }: Route.ActionArgs) {
       await athleteService.changeRestDuration(athlete, restSeconds ?? null);
       return { ok: true, intent: intents.updateRestDuration.name } as const;
     }),
+
+    handled(intents.deleteAccount, async ({ confirmEmail }) => {
+      // The typed email is the confirmation step: this deletes the whole of
+      // an athlete's own training history along with the account, and there
+      // is no undo.
+      if (confirmEmail.trim().toLowerCase() !== athlete.email.toLowerCase()) {
+        return intents.deleteAccount.reject("That doesn't match your account's email address.");
+      }
+
+      const outcome = await athleteService.closeOwnAccount(athlete);
+      if (!outcome.ok) {
+        return intents.deleteAccount.reject(
+          "You're the only administrator, so you can't close this account. Grant admin access to someone else first.",
+        );
+      }
+
+      requestLogger(context).log(`closed own account for user ${athlete.id}`, 'Settings');
+
+      const sessionStorage = context.get(sessionStorageContext);
+      const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+      throw redirect('/', {
+        headers: { 'Set-Cookie': await sessionStorage.destroySession(session) },
+      });
+    }),
   ]);
 }
 
 export default function Settings({ loaderData, actionData }: Route.ComponentProps) {
   const error = intents.updateUnits.errorIn(actionData) ?? intents.updateSampleDataVisibility.errorIn(actionData);
+  const deleteAccountFormId = useId();
 
   // No `action` attribute on any of these forms: each submits to whatever
   // URL is current, `?section=...` included, so a save lands back on the
@@ -315,6 +358,84 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </form>
           </CardContent>
         </Card>
+      ),
+    },
+    {
+      id: 'account',
+      label: 'Account',
+      content: (
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Export your data</CardTitle>
+              <CardDescription>
+                Download every exercise, workout, plan, session and weigh-in you've logged. Measurements come out in canonical
+                units (pounds, km/h, seconds) rather than your display unit, so an export stays comparable even after you change
+                a setting.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href="/settings/export?format=json">
+                  <DownloadIcon aria-hidden="true" />
+                  Download JSON
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <a href="/settings/export?format=csv">
+                  <DownloadIcon aria-hidden="true" />
+                  Download CSV
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-destructive/30">
+            <CardHeader>
+              <CardTitle>Close your account</CardTitle>
+              <CardDescription>
+                Permanently removes your account along with every exercise, workout, plan, session and weigh-in you own. This
+                can't be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form method="post" id={deleteAccountFormId} className="flex flex-col gap-3">
+                <input {...intents.deleteAccount.field} />
+                <Field
+                  label="Type your email to confirm"
+                  description={loaderData.email}
+                  error={intents.deleteAccount.errorIn(actionData)}
+                  className="sm:max-w-sm"
+                >
+                  <Input name="confirmEmail" type="email" autoComplete="off" required />
+                </Field>
+              </form>
+
+              <ConfirmDialog
+                trigger={
+                  <Button variant="destructive" size="sm" className="mt-3">
+                    <Trash2Icon aria-hidden="true" />
+                    Close account
+                  </Button>
+                }
+                title="Close your account?"
+                description="This permanently deletes your account and everything in it. This can't be undone."
+                confirmButton={
+                  <SubmitButton
+                    form={deleteAccountFormId}
+                    variant="destructive"
+                    size="sm"
+                    match={intents.deleteAccount.match}
+                    pendingLabel="Closing account"
+                  >
+                    <Trash2Icon aria-hidden="true" />
+                    Close account
+                  </SubmitButton>
+                }
+              />
+            </CardContent>
+          </Card>
+        </div>
       ),
     },
   ];

@@ -6,6 +6,7 @@ import type { AdminService } from '~/services/admin-service.server';
 import type { AthleteService } from '~/services/athlete-service.server';
 import type { BodyWeightService } from '~/services/body-weight-service.server';
 import type { ExerciseLibraryService } from '~/services/exercise-library-service.server';
+import type { ExportService } from '~/services/export-service.server';
 import type { ProgressService } from '~/services/progress-service.server';
 import type { PlanImportService } from '~/services/plan-import-service.server';
 import type { PlanService } from '~/services/plan-service.server';
@@ -50,6 +51,7 @@ const contexts = {
   athleteService: createContext<AthleteService>(),
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
+  exportService: createContext<ExportService>(),
   progressService: createContext<ProgressService>(),
   planImportService: createContext<PlanImportService>(),
   planService: createContext<PlanService>(),
@@ -69,6 +71,7 @@ export const {
   athleteService: athleteServiceContext,
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,
+  exportService: exportServiceContext,
   progressService: progressServiceContext,
   planImportService: planImportServiceContext,
   planService: planServiceContext,

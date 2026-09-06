@@ -22,6 +22,7 @@ export default [
     route('history', 'routes/history.tsx'),
     route('weight', 'routes/weight.tsx'),
     route('settings', 'routes/settings.tsx'),
+    route('settings/export', 'routes/settings.export.tsx'),
     layout('routes/_admin.tsx', [
       route('admin', 'routes/admin.tsx'),
       route('admin/users', 'routes/admin.users.tsx'),

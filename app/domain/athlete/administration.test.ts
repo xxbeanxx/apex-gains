@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
-import { changeAdminAccess, removeAccount } from './administration';
+import { changeAdminAccess, closeOwnAccount, removeAccount } from './administration';
 import { Athlete } from './athlete';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
@@ -72,5 +72,19 @@ describe('removeAccount', () => {
     const actor = athlete(true);
 
     expect(removeAccount(actor, actor)).toEqual({ ok: false, error: 'self' });
+  });
+});
+
+describe('closeOwnAccount', () => {
+  it('allows an ordinary athlete to close their own account', () => {
+    expect(closeOwnAccount(athlete(), 1).ok).toBe(true);
+  });
+
+  it('allows an administrator to close their own account when another administrator remains', () => {
+    expect(closeOwnAccount(athlete(true), 2).ok).toBe(true);
+  });
+
+  it('refuses when the athlete is the sole administrator', () => {
+    expect(closeOwnAccount(athlete(true), 1)).toEqual({ ok: false, error: 'last-administrator' });
   });
 });

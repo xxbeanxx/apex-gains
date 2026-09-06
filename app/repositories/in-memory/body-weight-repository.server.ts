@@ -23,6 +23,13 @@ export class InMemoryBodyWeightRepository implements BodyWeightRepository, Athle
       .map(BodyWeightEntry.fromSnapshot);
   }
 
+  async listAll(userId: string): Promise<BodyWeightEntry[]> {
+    return [...this.byId.values()]
+      .filter((snapshot) => snapshot.userId === userId)
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+      .map(BodyWeightEntry.fromSnapshot);
+  }
+
   async save(entry: BodyWeightEntry): Promise<void> {
     const snapshot = entry.toSnapshot();
     this.byId.set(snapshot.id, snapshot);

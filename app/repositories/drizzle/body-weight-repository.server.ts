@@ -35,6 +35,15 @@ export class DrizzleBodyWeightRepository implements BodyWeightRepository {
     return rows.map(toEntry);
   }
 
+  async listAll(userId: string): Promise<BodyWeightEntry[]> {
+    const rows = await dbScope
+      .select()
+      .from(bodyWeightLogs)
+      .where(eq(bodyWeightLogs.userId, userId))
+      .orderBy(desc(bodyWeightLogs.date));
+    return rows.map(toEntry);
+  }
+
   /**
    * Upserts on `(userId, date)` rather than on the id: the service loads the
    * day's entry and corrects it, but two requests can still race to log the

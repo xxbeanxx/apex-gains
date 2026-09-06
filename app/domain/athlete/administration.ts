@@ -14,6 +14,9 @@ import type { Athlete } from './athlete';
 /** Why an administrator's action on an account was refused. */
 export type AdminRefusal = 'self';
 
+/** Why an athlete could not close their own account. */
+export type CloseAccountRefusal = 'last-administrator';
+
 /**
  * An administrator may act on any account but their own.
  *
@@ -42,5 +45,22 @@ export function changeAdminAccess(actor: Athlete, target: Athlete, isAdmin: bool
 export function removeAccount(actor: Athlete, target: Athlete): Result<void, AdminRefusal> {
   if (actingOnSelf(actor, target)) return err('self');
 
+  return ok();
+}
+
+/**
+ * Whether `athlete` may close their own account.
+ *
+ * `removeAccount` above gets its "an administrator survives" guarantee
+ * structurally, by restricting *whom* an administrator may act on - never
+ * themselves, so whoever acted is still one afterwards. Closing your own
+ * account is the opposite by definition, so the guarantee has to be checked
+ * directly here instead: refused only when `athlete` is an administrator and
+ * `administratorCount` - the size of that whole set, which only the caller
+ * can know - is down to them alone. Anyone else may always close their own
+ * account.
+ */
+export function closeOwnAccount(athlete: Athlete, administratorCount: number): Result<void, CloseAccountRefusal> {
+  if (athlete.isAdmin && administratorCount <= 1) return err('last-administrator');
   return ok();
 }

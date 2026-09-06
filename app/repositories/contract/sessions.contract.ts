@@ -175,6 +175,28 @@ export function describeSessionsContract(subject: ContractSubject): void {
       });
     });
 
+    describe('listAll', () => {
+      it('returns every session, newest first, uncapped', async () => {
+        for (const [id, date] of [
+          [ids.own, '2026-09-01'],
+          [ids.extra, '2026-09-03'],
+          [ids.child, '2026-09-02'],
+        ] as const) {
+          await repositories.sessions.add(session({ id, date }));
+        }
+
+        const dates = (await repositories.sessions.listAll(ids.athlete)).map((found) => found.date.value);
+
+        expect(dates).toEqual(['2026-09-03', '2026-09-02', '2026-09-01']);
+      });
+
+      it("never returns another athlete's days", async () => {
+        await repositories.sessions.add(session({ id: ids.theirs, userId: ids.otherAthlete, date: '2026-09-03' }));
+
+        expect(await repositories.sessions.listAll(ids.athlete)).toEqual([]);
+      });
+    });
+
     describe('listForDateRange', () => {
       it('includes the start and excludes the end', async () => {
         for (const [id, date] of [

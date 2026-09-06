@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { closeOwnAccount, type CloseAccountRefusal } from '~/domain/athlete/administration';
 import { Athlete, type NewAthlete } from '~/domain/athlete/athlete';
+import { ok, type Result } from '~/domain/shared/result';
 import { Duration } from '~/domain/values/duration';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
@@ -83,6 +85,22 @@ export class AthleteService {
   async changeRestDuration(athlete: Athlete, restSeconds: number | null): Promise<void> {
     athlete.changeRestDuration(restSeconds != null ? Duration.seconds(restSeconds) : null, this.deps.clock.now());
     await this.athletes.save(athlete);
+  }
+
+  /**
+   * Closes an athlete's own account for good - everything they own goes
+   * with it via `on delete cascade`. Not a call into `AdminService`:
+   * `closeOwnAccount` is a different rule from `removeAccount`, checked
+   * against the whole set of administrators rather than a pair of athletes.
+   */
+  async closeOwnAccount(athlete: Athlete): Promise<Result<void, CloseAccountRefusal>> {
+    const administratorCount = (await this.athletes.listAll()).filter((one) => one.isAdmin).length;
+
+    const outcome = closeOwnAccount(athlete, administratorCount);
+    if (!outcome.ok) return outcome;
+
+    await this.athletes.remove(athlete);
+    return ok();
   }
 
   private async register(

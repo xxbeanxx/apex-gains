@@ -94,3 +94,39 @@ test('toggles sample data visibility', async ({ page, athlete }) => {
   await page.reload();
   await expect(page.getByRole('checkbox', { name: 'Show sample data' })).not.toBeChecked();
 });
+
+test('downloads a JSON and a CSV export of the athlete’s own data', async ({ page, athlete }) => {
+  await page.goto('/settings?section=account');
+
+  const jsonResponse = await page.request.get('/settings/export?format=json');
+  expect(jsonResponse.status()).toBe(200);
+  expect(jsonResponse.headers()['content-type']).toContain('application/json');
+  expect(jsonResponse.headers()['content-disposition']).toContain('attachment');
+  const snapshot = await jsonResponse.json();
+  expect(snapshot.athlete.email).toBe(athlete.email);
+
+  const csvResponse = await page.request.get('/settings/export?format=csv');
+  expect(csvResponse.status()).toBe(200);
+  expect(csvResponse.headers()['content-type']).toContain('text/csv');
+  expect(csvResponse.headers()['content-disposition']).toContain('attachment');
+  expect((await csvResponse.text()).split('\n')[0]).toContain('exercise_name');
+});
+
+test('closes an athlete’s own account, ending the session', async ({ page, athlete }) => {
+  await page.goto('/settings?section=account');
+
+  await page.getByLabel('Type your email to confirm').fill('wrong@example.test');
+  await page.getByRole('button', { name: 'Close account' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Close account' }).click();
+  await expect(page.getByText("That doesn't match your account's email address.")).toBeVisible();
+
+  await page.getByLabel('Type your email to confirm').fill(athlete.email);
+  await page.getByRole('button', { name: 'Close account' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Close account' }).click();
+
+  await page.waitForURL('/');
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+
+  const response = await page.request.get('/today', { maxRedirects: 0 });
+  expect(response.status()).toBe(302);
+});

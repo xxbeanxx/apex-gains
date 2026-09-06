@@ -235,6 +235,16 @@ export function describeBodyWeightContract(subject: ContractSubject): void {
       expect(await repositories.bodyWeight.findForDate(ids.athlete, day('2026-09-03'))).toBeNull();
     });
 
+    it('listAll returns every entry, newest first, uncapped', async () => {
+      await repositories.bodyWeight.save(weighIn(ids.own, '2026-09-01', 181));
+      await repositories.bodyWeight.save(weighIn(ids.extra, '2026-09-03', 179));
+      await repositories.bodyWeight.save(weighIn(ids.child, '2026-09-02', 180));
+
+      const dates = (await repositories.bodyWeight.listAll(ids.athlete)).map((found) => found.date.value);
+
+      expect(dates).toEqual(['2026-09-03', '2026-09-02', '2026-09-01']);
+    });
+
     it('deletes an entry', async () => {
       await repositories.bodyWeight.save(weighIn(ids.own, '2026-09-03', 180));
 

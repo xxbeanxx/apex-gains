@@ -28,6 +28,12 @@ export interface SessionsRepository {
    */
   add(session: Session): Promise<Session>;
   listRecent(userId: string, limit: number): Promise<Session[]>;
+  /**
+   * Every session an athlete has ever opened, newest first, uncapped -
+   * `listRecent`'s limit exists for the charts, which only ever need a
+   * bounded recent window. An export needs the whole history instead.
+   */
+  listAll(userId: string): Promise<Session[]>;
   listForDateRange(userId: string, start: DateOnly, endExclusive: DateOnly): Promise<Session[]>;
   /**
    * The most recently logged sets for one exercise, newest first, across

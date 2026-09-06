@@ -37,6 +37,13 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
       .map(Session.fromSnapshot);
   }
 
+  async listAll(userId: string): Promise<Session[]> {
+    return [...this.byId.values()]
+      .filter((snapshot) => snapshot.userId === userId)
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+      .map(Session.fromSnapshot);
+  }
+
   async listForDateRange(userId: string, start: DateOnly, endExclusive: DateOnly): Promise<Session[]> {
     return [...this.byId.values()]
       .filter((snapshot) => snapshot.userId === userId && snapshot.date >= start.value && snapshot.date < endExclusive.value)
