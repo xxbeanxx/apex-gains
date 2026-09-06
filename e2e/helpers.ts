@@ -24,6 +24,22 @@ export async function selectOption(trigger: Locator, option: string): Promise<vo
   await expect(trigger).toContainText(option);
 }
 
+/**
+ * Picks a zone from the timezone command-dialog picker (`TimezonePicker`),
+ * which opens on the trigger button `getByLabel('Timezone')` resolves to.
+ *
+ * Searches for `zoneQuery` and clicks the row it narrows to. Matching is
+ * deliberately not `exact`: each row's accessible name also carries its live
+ * local time ("Toronto 2:32 PM GMT-5"), which changes every render, so an
+ * exact match on the zone name alone would be flaky.
+ */
+export async function chooseTimezone(trigger: Locator, zoneQuery: string): Promise<void> {
+  await waitForHydration(trigger.page());
+  await trigger.click();
+  await trigger.page().getByPlaceholder('Search timezones...').fill(zoneQuery);
+  await trigger.page().getByRole('option', { name: zoneQuery }).click();
+}
+
 export type ExerciseType = 'Strength' | 'Cardio';
 
 export async function createExercise(
