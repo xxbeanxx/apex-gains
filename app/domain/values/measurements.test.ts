@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Duration } from './duration';
+import { Rpe } from './rpe';
 import { Speed } from './speed';
 import { Weight } from './weight';
 
@@ -89,5 +90,36 @@ describe('Duration', () => {
 
   it('treats a stored zero as a real value, not as absent', () => {
     expect(Duration.fromStorage(0)?.inSeconds).toBe(0);
+  });
+});
+
+describe('Rpe', () => {
+  it('accepts whole and half-point ratings on the scale', () => {
+    expect(Rpe.of(8).value).toBe(8);
+    expect(Rpe.of(8.5).value).toBe(8.5);
+  });
+
+  it.each([
+    ['below the scale', 0.5],
+    ['above the scale', 10.5],
+    ['not a half step', 8.3],
+  ])('refuses a rating %s', (_label, value) => {
+    expect(() => Rpe.of(value)).toThrow('Invalid RPE');
+  });
+
+  it('formats without a trailing decimal on a whole number', () => {
+    expect(Rpe.of(8).format()).toBe('RPE 8');
+  });
+
+  it('formats a half-point rating', () => {
+    expect(Rpe.of(8.5).format()).toBe('RPE 8.5');
+  });
+
+  it('reads an absent rating from storage as absent', () => {
+    expect(Rpe.fromStorage(null)).toBeNull();
+  });
+
+  it("writes storage at the column's one decimal place", () => {
+    expect(Rpe.of(8).toStorage()).toBe('8.0');
   });
 });

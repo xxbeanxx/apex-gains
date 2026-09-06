@@ -1,5 +1,6 @@
 import type { AthletePreferences } from '../athlete/preferences';
 import { Duration } from '../values/duration';
+import { Rpe } from '../values/rpe';
 import { Speed } from '../values/speed';
 import { Weight } from '../values/weight';
 
@@ -12,6 +13,8 @@ export type LoggedSetSnapshot = {
   readonly durationSeconds: number | null;
   readonly speed: string | null;
   readonly resistanceLevel: number | null;
+  readonly notes: string | null;
+  readonly rpe: string | null;
   readonly createdAt: Date;
 };
 
@@ -21,6 +24,22 @@ export type SetMeasurements = {
   readonly duration?: Duration | null;
   readonly speed?: Speed | null;
   readonly resistance?: number | null;
+  readonly notes?: string | null;
+  readonly rpe?: Rpe | null;
+};
+
+export type LoggedSetOptions = {
+  readonly id: string;
+  readonly exerciseId: string;
+  readonly setNumber: number;
+  readonly reps: number | null;
+  readonly weight: Weight | null;
+  readonly duration: Duration | null;
+  readonly speed: Speed | null;
+  readonly resistanceLevel: number | null;
+  readonly notes: string | null;
+  readonly rpe: Rpe | null;
+  readonly createdAt: Date;
 };
 
 /**
@@ -32,30 +51,50 @@ export type SetMeasurements = {
  * was editable before it was submitted.
  */
 export class LoggedSet {
-  constructor(
-    readonly id: string,
-    readonly exerciseId: string,
-    readonly setNumber: number,
-    readonly reps: number | null,
-    readonly weight: Weight | null,
-    readonly duration: Duration | null,
-    readonly speed: Speed | null,
-    readonly resistanceLevel: number | null,
-    readonly createdAt: Date,
-  ) {}
+  readonly id: string;
+  readonly exerciseId: string;
+  readonly setNumber: number;
+  readonly reps: number | null;
+  readonly weight: Weight | null;
+  readonly duration: Duration | null;
+  readonly speed: Speed | null;
+  readonly resistanceLevel: number | null;
+  readonly notes: string | null;
+  readonly rpe: Rpe | null;
+  readonly createdAt: Date;
+
+  private constructor(options: LoggedSetOptions) {
+    this.id = options.id;
+    this.exerciseId = options.exerciseId;
+    this.setNumber = options.setNumber;
+    this.reps = options.reps;
+    this.weight = options.weight;
+    this.duration = options.duration;
+    this.speed = options.speed;
+    this.resistanceLevel = options.resistanceLevel;
+    this.notes = options.notes;
+    this.rpe = options.rpe;
+    this.createdAt = options.createdAt;
+  }
+
+  static of(options: LoggedSetOptions): LoggedSet {
+    return new LoggedSet(options);
+  }
 
   static fromSnapshot(snapshot: LoggedSetSnapshot): LoggedSet {
-    return new LoggedSet(
-      snapshot.id,
-      snapshot.exerciseId,
-      snapshot.setNumber,
-      snapshot.reps,
-      Weight.fromStorage(snapshot.weight),
-      Duration.fromStorage(snapshot.durationSeconds),
-      Speed.fromStorage(snapshot.speed),
-      snapshot.resistanceLevel,
-      snapshot.createdAt,
-    );
+    return LoggedSet.of({
+      id: snapshot.id,
+      exerciseId: snapshot.exerciseId,
+      setNumber: snapshot.setNumber,
+      reps: snapshot.reps,
+      weight: Weight.fromStorage(snapshot.weight),
+      duration: Duration.fromStorage(snapshot.durationSeconds),
+      speed: Speed.fromStorage(snapshot.speed),
+      resistanceLevel: snapshot.resistanceLevel,
+      notes: snapshot.notes,
+      rpe: Rpe.fromStorage(snapshot.rpe),
+      createdAt: snapshot.createdAt,
+    });
   }
 
   toSnapshot(): LoggedSetSnapshot {
@@ -68,6 +107,8 @@ export class LoggedSet {
       durationSeconds: this.duration?.toStorage() ?? null,
       speed: this.speed?.toStorage() ?? null,
       resistanceLevel: this.resistanceLevel,
+      notes: this.notes,
+      rpe: this.rpe?.toStorage() ?? null,
       createdAt: this.createdAt,
     };
   }
@@ -81,7 +122,7 @@ export class LoggedSet {
     return this.weight.times(this.reps);
   }
 
-  /** "135 lb x 8", "30 min, 8.5 km/h" - one set as a line of text. */
+  /** "135 lb x 8 @ RPE 8", "30 min, 8.5 km/h" - one set as a line of text. */
   format(preferences: AthletePreferences): string {
     const parts: string[] = [];
 
@@ -100,6 +141,8 @@ export class LoggedSet {
       parts.push(`resistance ${this.resistanceLevel}`);
     }
 
-    return parts.join(', ');
+    const summary = parts.join(', ');
+    if (!this.rpe) return summary;
+    return summary ? `${summary} @ ${this.rpe.format()}` : this.rpe.format();
   }
 }

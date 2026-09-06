@@ -5,6 +5,7 @@ import { Session } from '~/domain/session/session';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
+import { Rpe } from '~/domain/values/rpe';
 import { Speed } from '~/domain/values/speed';
 import { Weight } from '~/domain/values/weight';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
@@ -22,8 +23,9 @@ export type LoggedSetView = {
   exerciseId: string;
   exerciseName: string;
   setNumber: number;
-  /** Already formatted in the athlete's units. */
+  /** Already formatted in the athlete's units, RPE included. */
   summary: string;
+  notes: string | null;
 };
 
 export type RecentSetView = {
@@ -40,6 +42,9 @@ export type SetInput = {
   durationMinutes?: number | null;
   speed?: number | null;
   resistance?: number | null;
+  notes?: string | null;
+  /** 1 to 10, in half-point steps. */
+  rpe?: number | null;
 };
 
 @Injectable()
@@ -68,6 +73,7 @@ export class SessionService {
       exerciseName: directory.nameOf(set.exerciseId),
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
+      notes: set.notes,
     }));
   }
 
@@ -120,6 +126,8 @@ export class SessionService {
           duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
           speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
           resistance: input.resistance,
+          notes: input.notes,
+          rpe: input.rpe != null ? Rpe.of(input.rpe) : null,
         },
         this.deps,
       );

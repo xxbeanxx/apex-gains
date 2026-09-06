@@ -141,6 +141,24 @@ describe('logging a set', () => {
     expect(inLb[0].summary).toBe('220.5 lb x 5');
   });
 
+  it('records notes and an RPE, with the RPE folded into the summary', async () => {
+    const athlete = athleteWith();
+    await service.logSet(athlete, TODAY, await benchId(), {
+      reps: 8,
+      weight: 135,
+      notes: 'Rod 4 slipping',
+      rpe: 8.5,
+    });
+
+    const [logged] = await service.loggedSetsFor(athlete, TODAY);
+    expect(logged.notes).toBe('Rod 4 slipping');
+    expect(logged.summary).toBe('135 lb x 8 @ RPE 8.5');
+  });
+
+  it('refuses an RPE outside the 1-10 half-point scale', async () => {
+    await expect(service.logSet(athleteWith(), TODAY, await benchId(), { reps: 8, rpe: 11 })).rejects.toThrow('Invalid RPE');
+  });
+
   it('converts minutes to a stored duration', async () => {
     await service.logSet(athleteWith(), TODAY, await benchId(), {
       durationMinutes: 30,

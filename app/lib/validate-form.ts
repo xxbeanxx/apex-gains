@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 
 import { DateOnly } from '~/domain/values/date-only';
+import { Rpe } from '~/domain/values/rpe';
 
 /**
  * The decorator and transform helpers a form DTO is *declared* with, as
@@ -68,6 +69,29 @@ export function IsDateOnly(validationOptions?: ValidationOptions): PropertyDecor
       propertyName: propertyName as string,
       options: validationOptions,
       validator: IsDateOnlyConstraint,
+    });
+  };
+}
+
+@ValidatorConstraint({ name: 'isRpe' })
+class IsRpeConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    return typeof value === 'number' && Rpe.isValid(value);
+  }
+
+  defaultMessage(): string {
+    return 'must be between 1 and 10, in half-point steps';
+  }
+}
+
+/** Validates a rate-of-perceived-exertion rating via `Rpe.isValid`. */
+export function IsRpe(validationOptions?: ValidationOptions): PropertyDecorator {
+  return function (object: object, propertyName: string | symbol) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName: propertyName as string,
+      options: validationOptions,
+      validator: IsRpeConstraint,
     });
   };
 }
