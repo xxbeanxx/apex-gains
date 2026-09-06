@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
-import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import { ok, type Result } from '~/domain/shared/result';
 import type { DateOnly } from '~/domain/values/date-only';
 import { Weight } from '~/domain/values/weight';

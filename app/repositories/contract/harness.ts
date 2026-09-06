@@ -1,6 +1,7 @@
 import { AdminAction, type AdminActionKind } from '~/domain/admin/admin-action';
 import { Athlete } from '~/domain/athlete/athlete';
-import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { BodyMeasurement, type BodyMeasurementMetric } from '~/domain/body/body-measurement';
+import { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import { Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
 import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
@@ -14,6 +15,7 @@ import { Weight } from '~/domain/values/weight';
 
 import type { AdminActionsRepository } from '../admin-actions-repository.server';
 import type { AthletesRepository } from '../athletes-repository.server';
+import type { BodyMeasurementsRepository } from '../body-measurements-repository.server';
 import type { BodyWeightRepository } from '../body-weight-repository.server';
 import type { EquipmentRepository } from '../equipment-repository.server';
 import type { ExercisesRepository } from '../exercises-repository.server';
@@ -30,6 +32,7 @@ import type { SessionsRepository } from '../sessions-repository.server';
 export type RepositorySet = {
   adminActions: AdminActionsRepository;
   athletes: AthletesRepository;
+  bodyMeasurements: BodyMeasurementsRepository;
   bodyWeight: BodyWeightRepository;
   equipment: EquipmentRepository;
   exercises: ExercisesRepository;
@@ -92,6 +95,7 @@ export function athlete(id: string = ids.athlete, overrides: Partial<{ email: st
     avatarUrl: null,
     weightUnit: 'lb',
     distanceUnit: 'km',
+    lengthUnit: 'in',
     showSampleData: true,
     timezone: 'UTC',
     defaultRestSeconds: null,
@@ -168,6 +172,25 @@ export function weighIn(id: string, date: string, pounds: number, userId: string
     // The column is `numeric`, which postgres-js reads back as a string, so
     // a snapshot always carries the string form.
     weight: pounds.toFixed(2),
+    createdAt: NOW,
+  });
+}
+
+export function measurement(
+  id: string,
+  date: string,
+  metric: BodyMeasurementMetric,
+  centimetres: number,
+  userId: string = ids.athlete,
+): BodyMeasurement {
+  return BodyMeasurement.fromSnapshot({
+    id,
+    userId,
+    date,
+    metric,
+    // The column is `numeric`, which postgres-js reads back as a string, so
+    // a snapshot always carries the string form.
+    value: centimetres.toFixed(2),
     createdAt: NOW,
   });
 }

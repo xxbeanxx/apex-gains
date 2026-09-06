@@ -12,6 +12,7 @@ import {
   equipmentItem,
   exercise,
   ids,
+  measurement,
   seedAthletes,
   session,
   weighIn,
@@ -31,7 +32,7 @@ export function describeAthletesContract(subject: ContractSubject): void {
 
     it('round-trips an athlete and their preferences', async () => {
       const registered = athlete(ids.athlete, { email: 'a@example.com', googleSub: 'sub-1' });
-      registered.changeUnits('kg', 'mi', NOW);
+      registered.changeUnits('kg', 'mi', 'cm', NOW);
       registered.changeTimezone('America/Toronto', NOW);
       await repositories.athletes.save(registered);
 
@@ -72,7 +73,7 @@ export function describeAthletesContract(subject: ContractSubject): void {
     it('saves an existing athlete as an update, not a second row', async () => {
       const registered = athlete(ids.athlete);
       await repositories.athletes.save(registered);
-      registered.changeUnits('kg', 'mi', NOW);
+      registered.changeUnits('kg', 'mi', 'cm', NOW);
       await repositories.athletes.save(registered);
 
       expect(await repositories.athletes.listAll()).toHaveLength(1);
@@ -92,11 +93,13 @@ export function describeAthletesContract(subject: ContractSubject): void {
     it('removes an account and everything hanging off it', async () => {
       await seedAthletes(repositories);
       await repositories.bodyWeight.save(weighIn(ids.own, '2026-09-03', 180));
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-03', 'waist', 80));
 
       await repositories.athletes.remove(athlete(ids.athlete));
 
       expect(await repositories.athletes.findById(ids.athlete)).toBeNull();
       expect(await repositories.bodyWeight.listRecent(ids.athlete, 10)).toEqual([]);
+      expect(await repositories.bodyMeasurements.listAll(ids.athlete)).toEqual([]);
       // Only that account: the other athlete is untouched.
       expect(await repositories.athletes.findById(ids.otherAthlete)).not.toBeNull();
     });
@@ -251,6 +254,89 @@ export function describeBodyWeightContract(subject: ContractSubject): void {
       await repositories.bodyWeight.delete(ids.own);
 
       expect(await repositories.bodyWeight.findForDate(ids.athlete, day('2026-09-03'))).toBeNull();
+    });
+  });
+}
+
+export function describeBodyMeasurementsContract(subject: ContractSubject): void {
+  describe('BodyMeasurementsRepository', () => {
+    let repositories: RepositorySet;
+
+    beforeEach(async () => {
+      repositories = await subject.reset();
+      await seedAthletes(repositories);
+    });
+
+    it('round-trips a measurement as a calendar day and a canonical length', async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-03', 'waist', 86.36));
+
+      const found = await repositories.bodyMeasurements.findForDate(ids.athlete, day('2026-09-03'), 'waist');
+
+      expect(found?.date.value).toBe('2026-09-03');
+      expect(found?.metric).toBe('waist');
+      expect(found?.value.as('cm')).toBeCloseTo(86.36, 2);
+    });
+
+    /**
+     * At most one entry per athlete per day per metric - the `(userId, date,
+     * metric)` unique constraint is what makes re-logging a metric on a day a
+     * correction rather than a duplicate.
+     */
+    it('corrects a day rather than adding a second entry for it', async () => {
+      const entry = measurement(ids.own, '2026-09-03', 'waist', 86);
+      await repositories.bodyMeasurements.save(entry);
+      entry.correctTo(measurement(ids.own, '2026-09-03', 'waist', 85).value);
+      await repositories.bodyMeasurements.save(entry);
+
+      const listed = await repositories.bodyMeasurements.listRecent(ids.athlete, 'waist', 10);
+
+      expect(listed).toHaveLength(1);
+      expect(listed[0]!.value.as('cm')).toBeCloseTo(85, 2);
+    });
+
+    /** A different metric on the same day is a separate entry, not a collision. */
+    it('keeps different metrics on the same day as separate entries', async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-03', 'waist', 86));
+      await repositories.bodyMeasurements.save(measurement(ids.child, '2026-09-03', 'chest', 102));
+
+      expect(await repositories.bodyMeasurements.listRecent(ids.athlete, 'waist', 10)).toHaveLength(1);
+      expect(await repositories.bodyMeasurements.listRecent(ids.athlete, 'chest', 10)).toHaveLength(1);
+    });
+
+    it('lists newest day first, capped at the limit, scoped to the metric', async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-01', 'waist', 87));
+      await repositories.bodyMeasurements.save(measurement(ids.extra, '2026-09-03', 'waist', 85));
+      await repositories.bodyMeasurements.save(measurement(ids.child, '2026-09-02', 'waist', 86));
+      await repositories.bodyMeasurements.save(measurement(ids.fork, '2026-09-03', 'chest', 100));
+
+      const dates = (await repositories.bodyMeasurements.listRecent(ids.athlete, 'waist', 2)).map((found) => found.date.value);
+
+      expect(dates).toEqual(['2026-09-03', '2026-09-02']);
+    });
+
+    it("never returns another athlete's measurements", async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.theirs, '2026-09-03', 'waist', 90, ids.otherAthlete));
+
+      expect(await repositories.bodyMeasurements.listRecent(ids.athlete, 'waist', 10)).toEqual([]);
+      expect(await repositories.bodyMeasurements.findForDate(ids.athlete, day('2026-09-03'), 'waist')).toBeNull();
+    });
+
+    it('listAll returns every entry across every metric, newest first, uncapped', async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-01', 'waist', 87));
+      await repositories.bodyMeasurements.save(measurement(ids.extra, '2026-09-03', 'chest', 101));
+      await repositories.bodyMeasurements.save(measurement(ids.child, '2026-09-02', 'waist', 86));
+
+      const dates = (await repositories.bodyMeasurements.listAll(ids.athlete)).map((found) => found.date.value);
+
+      expect(dates).toEqual(['2026-09-03', '2026-09-02', '2026-09-01']);
+    });
+
+    it('deletes an entry', async () => {
+      await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-03', 'waist', 86));
+
+      await repositories.bodyMeasurements.delete(ids.own);
+
+      expect(await repositories.bodyMeasurements.findForDate(ids.athlete, day('2026-09-03'), 'waist')).toBeNull();
     });
   });
 }

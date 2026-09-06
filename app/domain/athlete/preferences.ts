@@ -1,7 +1,8 @@
 import type { Duration } from '../values/duration';
+import type { Length } from '../values/length';
 import type { Speed } from '../values/speed';
 import { DEFAULT_TIMEZONE } from '../values/timezone';
-import type { DistanceUnit, WeightUnit } from '../values/units';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '../values/units';
 import type { Weight } from '../values/weight';
 
 /**
@@ -21,30 +22,52 @@ export class AthletePreferences {
   constructor(
     readonly weightUnit: WeightUnit,
     readonly distanceUnit: DistanceUnit,
+    readonly lengthUnit: LengthUnit,
     readonly showSampleData: boolean,
     readonly timezone: string,
     readonly restDuration: Duration | null = null,
   ) {}
 
   static defaults(): AthletePreferences {
-    return new AthletePreferences('lb', 'km', true, DEFAULT_TIMEZONE, null);
+    return new AthletePreferences('lb', 'km', 'in', true, DEFAULT_TIMEZONE, null);
   }
 
-  withUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit): AthletePreferences {
-    return new AthletePreferences(weightUnit, distanceUnit, this.showSampleData, this.timezone, this.restDuration);
+  withUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit, lengthUnit: LengthUnit): AthletePreferences {
+    return new AthletePreferences(weightUnit, distanceUnit, lengthUnit, this.showSampleData, this.timezone, this.restDuration);
   }
 
   withSampleData(showSampleData: boolean): AthletePreferences {
-    return new AthletePreferences(this.weightUnit, this.distanceUnit, showSampleData, this.timezone, this.restDuration);
+    return new AthletePreferences(
+      this.weightUnit,
+      this.distanceUnit,
+      this.lengthUnit,
+      showSampleData,
+      this.timezone,
+      this.restDuration,
+    );
   }
 
   withTimezone(timezone: string): AthletePreferences {
-    return new AthletePreferences(this.weightUnit, this.distanceUnit, this.showSampleData, timezone, this.restDuration);
+    return new AthletePreferences(
+      this.weightUnit,
+      this.distanceUnit,
+      this.lengthUnit,
+      this.showSampleData,
+      timezone,
+      this.restDuration,
+    );
   }
 
   /** `null` turns the rest timer off. */
   withRestDuration(restDuration: Duration | null): AthletePreferences {
-    return new AthletePreferences(this.weightUnit, this.distanceUnit, this.showSampleData, this.timezone, restDuration);
+    return new AthletePreferences(
+      this.weightUnit,
+      this.distanceUnit,
+      this.lengthUnit,
+      this.showSampleData,
+      this.timezone,
+      restDuration,
+    );
   }
 
   formatWeight(weight: Weight | null): string | null {
@@ -53,6 +76,10 @@ export class AthletePreferences {
 
   formatSpeed(speed: Speed | null): string | null {
     return speed ? speed.format(this.distanceUnit) : null;
+  }
+
+  formatLength(length: Length | null): string | null {
+    return length ? length.format(this.lengthUnit) : null;
   }
 
   /** Duration carries no unit preference; here so every measurement formats one way. */
@@ -68,5 +95,10 @@ export class AthletePreferences {
   /** The bare number for an editable field, without the unit suffix. */
   speedValue(speed: Speed): number {
     return speed.as(this.distanceUnit);
+  }
+
+  /** The bare number for an editable field, without the unit suffix. */
+  lengthValue(length: Length): number {
+    return length.as(this.lengthUnit);
   }
 }

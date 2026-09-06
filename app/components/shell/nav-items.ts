@@ -26,7 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/plans', label: 'Plans', icon: RepeatIcon, group: 'training', tab: 2 },
   { to: '/workouts', label: 'Workouts', icon: ClipboardListIcon, group: 'training', tab: 3 },
   { to: '/exercises', label: 'Exercises', icon: DumbbellIcon, group: 'training' },
-  { to: '/weight', label: 'Weight', icon: ScaleIcon, group: 'training' },
+  { to: '/body', label: 'Body', icon: ScaleIcon, group: 'training' },
   { to: '/settings', label: 'Settings', icon: SettingsIcon, group: 'account' },
   { to: '/admin', label: 'Admin', icon: ShieldCheckIcon, group: 'account', adminOnly: true },
 ];

@@ -6,7 +6,7 @@ const PAGES = [
   { link: 'Workouts', url: '/workouts', heading: 'Workouts' },
   { link: 'Plans', url: '/plans', heading: 'Plans' },
   { link: 'History', url: '/history', heading: 'History' },
-  { link: 'Weight', url: '/weight', heading: 'Weight' },
+  { link: 'Body', url: '/body', heading: 'Body' },
   { link: 'Settings', url: '/settings', heading: 'Settings' },
 ] as const;
 

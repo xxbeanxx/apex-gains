@@ -15,6 +15,7 @@ function toAthlete(row: User): Athlete {
     avatarUrl: row.avatarUrl,
     weightUnit: row.weightUnit,
     distanceUnit: row.distanceUnit,
+    lengthUnit: row.lengthUnit,
     showSampleData: row.showSampleData,
     timezone: row.timezone,
     defaultRestSeconds: row.defaultRestSeconds,
@@ -65,6 +66,7 @@ export class DrizzleAthletesRepository implements AthletesRepository {
         avatarUrl: snapshot.avatarUrl,
         weightUnit: snapshot.weightUnit,
         distanceUnit: snapshot.distanceUnit,
+        lengthUnit: snapshot.lengthUnit,
         showSampleData: snapshot.showSampleData,
         timezone: snapshot.timezone,
         defaultRestSeconds: snapshot.defaultRestSeconds,
@@ -79,6 +81,7 @@ export class DrizzleAthletesRepository implements AthletesRepository {
         set: {
           weightUnit: snapshot.weightUnit,
           distanceUnit: snapshot.distanceUnit,
+          lengthUnit: snapshot.lengthUnit,
           showSampleData: snapshot.showSampleData,
           timezone: snapshot.timezone,
           defaultRestSeconds: snapshot.defaultRestSeconds,

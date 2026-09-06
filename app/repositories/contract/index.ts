@@ -4,6 +4,7 @@ import { describeForkableLibraryContract } from './forkable-library.contract';
 import type { ContractSubject } from './harness';
 import {
   describeAthletesContract,
+  describeBodyMeasurementsContract,
   describeBodyWeightContract,
   describeEquipmentContract,
   describeUnitOfWorkContract,
@@ -37,6 +38,7 @@ export function describeRepositoryContract(subject: ContractSubject): void {
   describeSessionsContract(subject);
   describeEquipmentContract(subject);
   describeBodyWeightContract(subject);
+  describeBodyMeasurementsContract(subject);
   describeUnitOfWorkContract(subject);
 }
 

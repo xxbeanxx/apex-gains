@@ -5,7 +5,7 @@ import { Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
-import { SettingsShell, type SettingsSection } from '~/components/settings/settings-shell';
+import { TabShell, type TabSection } from '~/components/layout/tab-shell';
 import { Avatar } from '~/components/ui/avatar';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -117,7 +117,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 export default function AdminUserDetail({ loaderData, actionData }: Route.ComponentProps) {
   const { account } = loaderData;
 
-  const preferences: SettingsSection = {
+  const preferences: TabSection = {
     id: 'preferences',
     label: 'Preferences',
     content: (
@@ -127,7 +127,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
           <CardDescription>What this athlete chose on their own settings page. Only they can change it.</CardDescription>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-3 text-sm sm:grid-cols-3">
+          <dl className="grid gap-3 text-sm sm:grid-cols-4">
             <div className="flex flex-col gap-0.5">
               <dt className="text-muted-foreground">Weight</dt>
               <dd className="font-medium">{account.weightUnit === 'lb' ? 'Pounds (lb)' : 'Kilograms (kg)'}</dd>
@@ -135,6 +135,10 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
             <div className="flex flex-col gap-0.5">
               <dt className="text-muted-foreground">Distance & speed</dt>
               <dd className="font-medium">{account.distanceUnit === 'km' ? 'Kilometers (km/h)' : 'Miles (mph)'}</dd>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-muted-foreground">Body measurements</dt>
+              <dd className="font-medium">{account.lengthUnit === 'cm' ? 'Centimeters (cm)' : 'Inches (in)'}</dd>
             </div>
             <div className="flex flex-col gap-0.5">
               <dt className="text-muted-foreground">Sample data</dt>
@@ -146,7 +150,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
     ),
   };
 
-  const sections: SettingsSection[] = account.isSelf
+  const sections: TabSection[] = account.isSelf
     ? [
         preferences,
         {
@@ -289,10 +293,11 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
       </div>
 
       <div className="mt-(--section-gap)">
-        <SettingsShell
+        <TabShell
           sections={sections}
           activeId={loaderData.section}
           hrefFor={(id) => `/admin/users/${account.id}?section=${id}`}
+          ariaLabel="Account sections"
         />
       </div>
     </Page>

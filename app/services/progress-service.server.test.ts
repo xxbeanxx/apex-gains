@@ -6,12 +6,15 @@ import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
-import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { BodyMeasurement } from '~/domain/body/body-measurement';
+import { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import { Session } from '~/domain/session/session';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
+import { Length } from '~/domain/values/length';
 import { Weight } from '~/domain/values/weight';
 import { Workout } from '~/domain/workout/workout';
+import { InMemoryBodyMeasurementsRepository } from '~/repositories/in-memory/body-measurements-repository.server';
 import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
 import { InMemoryPlansRepository } from '~/repositories/in-memory/plans-repository.server';
@@ -24,7 +27,7 @@ const NOW = new Date('2026-09-03T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-03');
 const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
-function athlete(overrides: { weightUnit?: 'lb' | 'kg' } = {}): Athlete {
+function athlete(overrides: { weightUnit?: 'lb' | 'kg'; lengthUnit?: 'cm' | 'in' } = {}): Athlete {
   return Athlete.fromSnapshot({
     id: 'user-1',
     googleSub: 'google-1',
@@ -33,6 +36,7 @@ function athlete(overrides: { weightUnit?: 'lb' | 'kg' } = {}): Athlete {
     avatarUrl: null,
     weightUnit: overrides.weightUnit ?? 'lb',
     distanceUnit: 'km',
+    lengthUnit: overrides.lengthUnit ?? 'in',
     showSampleData: true,
     defaultRestSeconds: null,
     timezone: 'UTC',
@@ -62,6 +66,7 @@ let exercises: InMemoryExercisesRepository;
 let workouts: InMemoryWorkoutsRepository;
 let plans: InMemoryPlansRepository;
 let bodyWeight: InMemoryBodyWeightRepository;
+let bodyMeasurements: InMemoryBodyMeasurementsRepository;
 let service: ProgressService;
 
 beforeEach(() => {
@@ -70,7 +75,8 @@ beforeEach(() => {
   workouts = new InMemoryWorkoutsRepository();
   plans = new InMemoryPlansRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
-  service = new ProgressService(sessions, exercises, workouts, plans, bodyWeight);
+  bodyMeasurements = new InMemoryBodyMeasurementsRepository();
+  service = new ProgressService(sessions, exercises, workouts, plans, bodyWeight, bodyMeasurements);
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
@@ -339,5 +345,37 @@ describe('bodyWeightLog', () => {
     const view = await service.bodyWeightLog(athlete());
 
     expect(view.series).toBeNull();
+  });
+});
+
+describe('bodyMeasurementLog', () => {
+  it('lists entries newest first, converted to the athlete unit, labelled by metric', async () => {
+    await bodyMeasurements.save(BodyMeasurement.record('user-1', DateOnly.parse('2026-08-01'), 'waist', Length.cm(90), deps));
+    await bodyMeasurements.save(BodyMeasurement.record('user-1', DateOnly.parse('2026-08-15'), 'waist', Length.cm(88), deps));
+
+    const view = await service.bodyMeasurementLog(athlete({ lengthUnit: 'in' }), 'waist');
+
+    expect(view.unit).toBe('in');
+    expect(view.entries.map((e) => e.date)).toEqual(['2026-08-15', '2026-08-01']);
+    expect(view.entries[0].value).toBeCloseTo(34.65, 2);
+    expect(view.series?.exerciseName).toBe('Waist');
+  });
+
+  it('needs at least two entries to produce a trend series', async () => {
+    await bodyMeasurements.save(BodyMeasurement.record('user-1', DateOnly.parse('2026-08-01'), 'waist', Length.cm(90), deps));
+
+    const view = await service.bodyMeasurementLog(athlete(), 'waist');
+
+    expect(view.series).toBeNull();
+  });
+
+  it('scopes entries to the requested metric', async () => {
+    await bodyMeasurements.save(BodyMeasurement.record('user-1', DateOnly.parse('2026-08-01'), 'waist', Length.cm(90), deps));
+    await bodyMeasurements.save(BodyMeasurement.record('user-1', DateOnly.parse('2026-08-01'), 'chest', Length.cm(102), deps));
+
+    const view = await service.bodyMeasurementLog(athlete(), 'chest');
+
+    expect(view.entries).toHaveLength(1);
+    expect(view.entries[0].value).toBeCloseTo(102 / 2.54, 2);
   });
 });

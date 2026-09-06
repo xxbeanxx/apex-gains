@@ -6,7 +6,7 @@ import { data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
-import { SettingsShell, type SettingsSection } from '~/components/settings/settings-shell';
+import { TabShell, type TabSection } from '~/components/layout/tab-shell';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
@@ -16,7 +16,14 @@ import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { TimezonePicker } from '~/components/settings/timezone-picker';
-import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from '~/domain/values/units';
+import {
+  DISTANCE_UNITS,
+  type DistanceUnit,
+  LENGTH_UNITS,
+  type LengthUnit,
+  WEIGHT_UNITS,
+  type WeightUnit,
+} from '~/domain/values/units';
 import { TIMEZONES } from '~/domain/values/timezone';
 import { requestLogger } from '~/lib/logger.server';
 import { intent } from '~/lib/intent';
@@ -41,6 +48,10 @@ class UpdateUnitsDto {
   @Expose()
   @IsIn(DISTANCE_UNITS)
   readonly distanceUnit!: DistanceUnit;
+
+  @Expose()
+  @IsIn(LENGTH_UNITS)
+  readonly lengthUnit!: LengthUnit;
 }
 
 class UpdateSampleDataVisibilityDto {
@@ -87,6 +98,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     email: athlete.email,
     weightUnit: preferences.weightUnit,
     distanceUnit: preferences.distanceUnit,
+    lengthUnit: preferences.lengthUnit,
     showSampleData: preferences.showSampleData,
     timezone: preferences.timezone,
     restSeconds: preferences.restDuration?.inSeconds ?? null,
@@ -116,8 +128,8 @@ export async function action({ request, context }: Route.ActionArgs) {
   const athleteService = context.get(athleteServiceContext);
 
   return dispatch(request, [
-    handled(intents.updateUnits, async ({ weightUnit, distanceUnit }) => {
-      await athleteService.changeUnits(athlete, weightUnit, distanceUnit);
+    handled(intents.updateUnits, async ({ weightUnit, distanceUnit, lengthUnit }) => {
+      await athleteService.changeUnits(athlete, weightUnit, distanceUnit, lengthUnit);
       return { ok: true, intent: intents.updateUnits.name } as const;
     }),
 
@@ -169,7 +181,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
   // No `action` attribute on any of these forms: each submits to whatever
   // URL is current, `?section=...` included, so a save lands back on the
   // section that made it rather than resetting to the first one.
-  const sections: SettingsSection[] = [
+  const sections: TabSection[] = [
     {
       id: 'units',
       label: 'Units',
@@ -178,7 +190,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           <CardHeader>
             <CardTitle>Units</CardTitle>
             <CardDescription>
-              Choose the unit for each measurement type. Weight and distance/speed can be set independently.
+              Choose the unit for each measurement type. Weight, distance/speed, and body measurements can be set independently.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -207,6 +219,20 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
                     <SelectContent>
                       <SelectItem value="km">Kilometers (km, km/h)</SelectItem>
                       <SelectItem value="mi">Miles (mi, mph)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </Field>
+
+              <Field label="Body measurements">
+                {({ id }) => (
+                  <Select name="lengthUnit" defaultValue={loaderData.lengthUnit}>
+                    <SelectTrigger id={id} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cm">Centimeters (cm)</SelectItem>
+                      <SelectItem value="in">Inches (in)</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -445,7 +471,12 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
       <PageHeader title="Settings" description="Preferences that apply across every workout you log." />
 
       <div className="mt-(--section-gap)">
-        <SettingsShell sections={sections} activeId={loaderData.section} hrefFor={(id) => `/settings?section=${id}`} />
+        <TabShell
+          sections={sections}
+          activeId={loaderData.section}
+          hrefFor={(id) => `/settings?section=${id}`}
+          ariaLabel="Settings sections"
+        />
       </div>
     </Page>
   );

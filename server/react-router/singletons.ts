@@ -3,6 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { NestSingletons } from '~/lib/nest-bridge.server';
 import { AdminService } from '~/services/admin-service.server';
 import { AthleteService } from '~/services/athlete-service.server';
+import { BodyMeasurementsService } from '~/services/body-measurements-service.server';
 import { BodyWeightService } from '~/services/body-weight-service.server';
 import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import { ExportService } from '~/services/export-service.server';
@@ -28,6 +29,7 @@ export function collectNestSingletons(app: INestApplication): NestSingletons {
     //
     adminService: app.get(AdminService),
     athleteService: app.get(AthleteService),
+    bodyMeasurementsService: app.get(BodyMeasurementsService),
     bodyWeightService: app.get(BodyWeightService),
     exerciseLibraryService: app.get(ExerciseLibraryService),
     exportService: app.get(ExportService),

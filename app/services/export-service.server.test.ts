@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~/domain/athlete/athlete';
-import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import { Exercise } from '~/domain/exercise/exercise';
 import { Plan } from '~/domain/plan/plan';
 import { fixedClock } from '~/domain/shared/clock';
@@ -33,6 +33,7 @@ const athlete = Athlete.fromSnapshot({
   avatarUrl: null,
   weightUnit: 'kg',
   distanceUnit: 'mi',
+  lengthUnit: 'in',
   showSampleData: true,
   timezone: 'UTC',
   defaultRestSeconds: null,

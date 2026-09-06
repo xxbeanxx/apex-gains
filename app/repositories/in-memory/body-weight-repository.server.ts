@@ -1,4 +1,4 @@
-import { BodyWeightEntry, type BodyWeightEntrySnapshot } from '~/domain/bodyweight/body-weight-entry';
+import { BodyWeightEntry, type BodyWeightEntrySnapshot } from '~/domain/body/body-weight-entry';
 import type { DateOnly } from '~/domain/values/date-only';
 
 import type { BodyWeightRepository } from '../body-weight-repository.server';

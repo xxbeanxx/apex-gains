@@ -30,6 +30,7 @@ function athlete(overrides: Partial<AthleteSnapshot> = {}): Athlete {
     avatarUrl: null,
     weightUnit: 'lb',
     distanceUnit: 'km',
+    lengthUnit: 'in',
     showSampleData: true,
     defaultRestSeconds: null,
     timezone: 'UTC',

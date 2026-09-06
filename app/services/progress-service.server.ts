@@ -2,7 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
 import type { AthletePreferences } from '~/domain/athlete/preferences';
-import type { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import type { BodyMeasurement, BodyMeasurementMetric } from '~/domain/body/body-measurement';
+import type { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import { muscleGroupBalance } from '~/domain/progress/muscle-balance';
 import { personalRecords, progressSeries, type ProgressMetricKind } from '~/domain/progress/personal-records';
 import { TrainingHistory } from '~/domain/progress/training-history';
@@ -12,12 +13,14 @@ import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
 import { Weight } from '~/domain/values/weight';
 import { formatMonthDay } from '~/lib/format';
+import type { BodyMeasurementsRepository } from '~/repositories/body-measurements-repository.server';
 import type { BodyWeightRepository } from '~/repositories/body-weight-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
 import type { PlansRepository } from '~/repositories/plans-repository.server';
 import type { SessionsRepository } from '~/repositories/sessions-repository.server';
 import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
 import {
+  BODY_MEASUREMENTS_REPOSITORY,
   BODY_WEIGHT_REPOSITORY,
   EXERCISES_REPOSITORY,
   PLANS_REPOSITORY,
@@ -93,6 +96,18 @@ export type BodyWeightView = {
   series: ProgressSeriesView | null;
 };
 
+export type BodyMeasurementEntryView = {
+  id: string;
+  date: string;
+  value: number;
+};
+
+export type BodyMeasurementView = {
+  unit: string;
+  entries: BodyMeasurementEntryView[];
+  series: ProgressSeriesView | null;
+};
+
 const CHART_HISTORY_LIMIT = 250;
 const TIMELINE_LIMIT = 90;
 const DASHBOARD_RECENT_LIMIT = 5;
@@ -100,6 +115,18 @@ const VOLUME_WEEKS = 12;
 const HEATMAP_WEEKS = 16;
 const MUSCLE_BALANCE_DAYS = 28;
 const BODY_WEIGHT_HISTORY_LIMIT = 180;
+const BODY_MEASUREMENT_HISTORY_LIMIT = 180;
+
+/** Chart title and table label for a metric - the same on every athlete's page, unlike the unit. */
+const BODY_MEASUREMENT_LABELS: Record<BodyMeasurementMetric, string> = {
+  waist: 'Waist',
+  chest: 'Chest',
+  arm_left: 'Left arm',
+  arm_right: 'Right arm',
+  thigh: 'Thigh',
+  hips: 'Hips',
+  neck: 'Neck',
+};
 
 /**
  * How each exercise's progress metric is labelled and measured.
@@ -157,6 +184,8 @@ export class ProgressService {
     @Inject(PLANS_REPOSITORY) private readonly plans: PlansRepository,
     @Inject(BODY_WEIGHT_REPOSITORY)
     private readonly bodyWeight: BodyWeightRepository,
+    @Inject(BODY_MEASUREMENTS_REPOSITORY)
+    private readonly bodyMeasurements: BodyMeasurementsRepository,
   ) {}
 
   /**
@@ -297,6 +326,49 @@ export class ProgressService {
       points: [...entries].reverse().map((entry) => ({
         date: entry.date.value,
         value: round(entry.weight.as(unit)),
+      })),
+    };
+  }
+
+  async bodyMeasurementLog(athlete: Athlete, metric: BodyMeasurementMetric): Promise<BodyMeasurementView> {
+    const entries = await this.bodyMeasurements.listRecent(athlete.id, metric, BODY_MEASUREMENT_HISTORY_LIMIT);
+    const unit = athlete.preferences.lengthUnit;
+
+    return {
+      unit,
+      // Newest first for the table.
+      entries: entries.map((entry) => ({
+        id: entry.id,
+        date: entry.date.value,
+        value: round(entry.value.as(unit)),
+      })),
+      series: this.bodyMeasurementSeries(athlete, metric, entries),
+    };
+  }
+
+  /**
+   * A metric rendered as a progress series so it can reuse the exercise
+   * trend chart. Needs two points to be a trend, same rule as the exercise
+   * series.
+   */
+  private bodyMeasurementSeries(
+    athlete: Athlete,
+    metric: BodyMeasurementMetric,
+    entries: readonly BodyMeasurement[],
+  ): ProgressSeriesView | null {
+    if (entries.length < 2) return null;
+
+    const unit = athlete.preferences.lengthUnit;
+    const label = BODY_MEASUREMENT_LABELS[metric];
+    return {
+      exerciseId: `body-${metric}`,
+      exerciseName: label,
+      metricLabel: label,
+      unit,
+      // Oldest first for the trend line; the repository returns newest first.
+      points: [...entries].reverse().map((entry) => ({
+        date: entry.date.value,
+        value: round(entry.value.as(unit)),
       })),
     };
   }

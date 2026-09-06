@@ -6,6 +6,7 @@ import { configureDatabase, db } from '~/db/index.server';
 
 import { DrizzleAdminActionsRepository } from '../drizzle/admin-actions-repository.server';
 import { DrizzleAthletesRepository } from '../drizzle/athletes-repository.server';
+import { DrizzleBodyMeasurementsRepository } from '../drizzle/body-measurements-repository.server';
 import { DrizzleBodyWeightRepository } from '../drizzle/body-weight-repository.server';
 import { DrizzleEquipmentRepository } from '../drizzle/equipment-repository.server';
 import { DrizzleExercisesRepository } from '../drizzle/exercises-repository.server';
@@ -44,6 +45,7 @@ const TABLES = [
   'exercises',
   'equipment',
   'body_weight_logs',
+  'body_measurements',
   'users',
 ];
 
@@ -52,6 +54,7 @@ function build(): RepositorySet {
     adminActions: new DrizzleAdminActionsRepository(),
     athletes: new DrizzleAthletesRepository(),
     bodyWeight: new DrizzleBodyWeightRepository(),
+    bodyMeasurements: new DrizzleBodyMeasurementsRepository(),
     equipment: new DrizzleEquipmentRepository(),
     exercises: new DrizzleExercisesRepository(),
     plans: new DrizzlePlansRepository(),

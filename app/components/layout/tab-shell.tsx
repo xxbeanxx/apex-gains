@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { cn } from '~/lib/utils';
 
-export type SettingsSection = {
+export type TabSection = {
   id: string;
   label: string;
   content: React.ReactNode;
@@ -16,20 +16,22 @@ export type SettingsSection = {
  * survives a form submit's own page reload for free, and the whole switcher
  * still works with JavaScript disabled.
  */
-function SettingsShell({
+function TabShell({
   sections,
   activeId,
   hrefFor,
+  ariaLabel,
 }: {
-  sections: SettingsSection[];
+  sections: TabSection[];
   activeId: string;
   hrefFor: (id: string) => string;
+  ariaLabel: string;
 }) {
   const active = sections.find((section) => section.id === activeId) ?? sections[0];
 
   return (
     <div className="flex flex-col gap-(--section-gap) md:flex-row md:items-start">
-      <nav aria-label="Settings sections" className="scrollbar-none flex gap-1 overflow-x-auto md:w-44 md:shrink-0 md:flex-col">
+      <nav aria-label={ariaLabel} className="scrollbar-none flex gap-1 overflow-x-auto md:w-44 md:shrink-0 md:flex-col">
         {sections.map((section) => (
           <Link
             key={section.id}
@@ -51,4 +53,4 @@ function SettingsShell({
   );
 }
 
-export { SettingsShell };
+export { TabShell };

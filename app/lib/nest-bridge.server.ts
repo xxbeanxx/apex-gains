@@ -4,6 +4,7 @@ import { createContext, RouterContextProvider } from 'react-router';
 
 import type { AdminService } from '~/services/admin-service.server';
 import type { AthleteService } from '~/services/athlete-service.server';
+import type { BodyMeasurementsService } from '~/services/body-measurements-service.server';
 import type { BodyWeightService } from '~/services/body-weight-service.server';
 import type { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import type { ExportService } from '~/services/export-service.server';
@@ -51,6 +52,7 @@ const contexts = {
   // services
   adminService: createContext<AdminService>(),
   athleteService: createContext<AthleteService>(),
+  bodyMeasurementsService: createContext<BodyMeasurementsService>(),
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
   exportService: createContext<ExportService>(),
@@ -73,6 +75,7 @@ export const {
   //
   adminService: adminServiceContext,
   athleteService: athleteServiceContext,
+  bodyMeasurementsService: bodyMeasurementsServiceContext,
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,
   exportService: exportServiceContext,

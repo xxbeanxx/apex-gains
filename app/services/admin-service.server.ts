@@ -5,7 +5,7 @@ import { changeAdminAccess, removeAccount, type AdminRefusal } from '~/domain/at
 import type { Athlete } from '~/domain/athlete/athlete';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
-import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~/domain/values/units';
 import type { AdminActionsRepository } from '~/repositories/admin-actions-repository.server';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
 import { ADMIN_ACTIONS_REPOSITORY, ATHLETES_REPOSITORY, SESSIONS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
@@ -34,6 +34,7 @@ export type AdminAccountView = {
 export type AdminAccountDetailView = AdminAccountView & {
   weightUnit: WeightUnit;
   distanceUnit: DistanceUnit;
+  lengthUnit: LengthUnit;
   showSampleData: boolean;
 };
 
@@ -141,6 +142,7 @@ export class AdminService {
       ...toView(athlete, totals.get(athlete.id) ?? NO_TRAINING, actor),
       weightUnit: athlete.preferences.weightUnit,
       distanceUnit: athlete.preferences.distanceUnit,
+      lengthUnit: athlete.preferences.lengthUnit,
       showSampleData: athlete.preferences.showSampleData,
     };
   }

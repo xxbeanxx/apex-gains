@@ -17,8 +17,18 @@ import {
 
 export const weightUnitEnum = pgEnum('weight_unit', ['lb', 'kg']);
 export const distanceUnitEnum = pgEnum('distance_unit', ['km', 'mi']);
+export const lengthUnitEnum = pgEnum('length_unit', ['cm', 'in']);
 export const exerciseTypeEnum = pgEnum('exercise_type', ['strength', 'cardio']);
 export const cardioKindEnum = pgEnum('cardio_kind', ['speed', 'resistance']);
+export const bodyMeasurementMetricEnum = pgEnum('body_measurement_metric', [
+  'waist',
+  'chest',
+  'arm_left',
+  'arm_right',
+  'thigh',
+  'hips',
+  'neck',
+]);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -28,6 +38,7 @@ export const users = pgTable('users', {
   avatarUrl: text('avatar_url'),
   weightUnit: weightUnitEnum('weight_unit').notNull().default('lb'),
   distanceUnit: distanceUnitEnum('distance_unit').notNull().default('km'),
+  lengthUnit: lengthUnitEnum('length_unit').notNull().default('in'),
   showSampleData: boolean('show_sample_data').notNull().default(true),
   timezone: text('timezone').notNull().default('UTC'),
   defaultRestSeconds: integer('default_rest_seconds'),
@@ -201,6 +212,21 @@ export const bodyWeightLogs = pgTable(
   (table) => [unique('body_weight_logs_user_date_unique').on(table.userId, table.date)],
 );
 
+export const bodyMeasurements = pgTable(
+  'body_measurements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    metric: bodyMeasurementMetricEnum('metric').notNull(),
+    value: numeric('value', { precision: 6, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('body_measurements_user_date_metric_unique').on(table.userId, table.date, table.metric)],
+);
+
 export const sessionSets = pgTable('session_sets', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id')
@@ -243,6 +269,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   plans: many(plans),
   sessions: many(sessions),
   bodyWeightLogs: many(bodyWeightLogs),
+  bodyMeasurements: many(bodyMeasurements),
 }));
 
 export const exercisesRelations = relations(exercises, ({ one, many }) => ({
@@ -365,6 +392,13 @@ export const bodyWeightLogsRelations = relations(bodyWeightLogs, ({ one }) => ({
   }),
 }));
 
+export const bodyMeasurementsRelations = relations(bodyMeasurements, ({ one }) => ({
+  user: one(users, {
+    fields: [bodyMeasurements.userId],
+    references: [users.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
@@ -375,4 +409,5 @@ export type PlanSlot = typeof planSlots.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionSet = typeof sessionSets.$inferSelect;
 export type BodyWeightLog = typeof bodyWeightLogs.$inferSelect;
+export type BodyMeasurement = typeof bodyMeasurements.$inferSelect;
 export type AdminAction = typeof adminActions.$inferSelect;

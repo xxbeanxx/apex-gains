@@ -1,7 +1,7 @@
 import type { Clock } from '../shared/clock';
 import type { IdGenerator } from '../shared/ids';
 import { Duration } from '../values/duration';
-import type { DistanceUnit, WeightUnit } from '../values/units';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '../values/units';
 import { AthletePreferences } from './preferences';
 
 export type AthleteSnapshot = {
@@ -12,6 +12,7 @@ export type AthleteSnapshot = {
   readonly avatarUrl: string | null;
   readonly weightUnit: WeightUnit;
   readonly distanceUnit: DistanceUnit;
+  readonly lengthUnit: LengthUnit;
   readonly showSampleData: boolean;
   readonly timezone: string;
   readonly defaultRestSeconds: number | null;
@@ -86,6 +87,7 @@ export class Athlete {
       new AthletePreferences(
         snapshot.weightUnit,
         snapshot.distanceUnit,
+        snapshot.lengthUnit,
         snapshot.showSampleData,
         snapshot.timezone,
         Duration.fromStorage(snapshot.defaultRestSeconds),
@@ -105,6 +107,7 @@ export class Athlete {
       avatarUrl: this.avatarUrl,
       weightUnit: this.currentPreferences.weightUnit,
       distanceUnit: this.currentPreferences.distanceUnit,
+      lengthUnit: this.currentPreferences.lengthUnit,
       showSampleData: this.currentPreferences.showSampleData,
       timezone: this.currentPreferences.timezone,
       defaultRestSeconds: this.currentPreferences.restDuration?.toStorage() ?? null,
@@ -138,8 +141,8 @@ export class Athlete {
     this.lastUpdatedAt = now;
   }
 
-  changeUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit, now: Date): void {
-    this.currentPreferences = this.currentPreferences.withUnits(weightUnit, distanceUnit);
+  changeUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit, lengthUnit: LengthUnit, now: Date): void {
+    this.currentPreferences = this.currentPreferences.withUnits(weightUnit, distanceUnit, lengthUnit);
     this.lastUpdatedAt = now;
   }
 

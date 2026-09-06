@@ -12,15 +12,17 @@ export { ErrorPage as ErrorBoundary };
 const RENAMED_FIRST_SEGMENT: Record<string, string> = {
   routines: 'plans',
   templates: 'workouts',
+  weight: 'body',
 };
 
 /**
- * Permanent redirects for links minted under the pre-rename `/routines` and
- * `/templates` paths - a routine already shared by link or QR code has to
- * keep resolving. Deliberately outside `_protected`: a signed-out scanner
- * needs to land on the surviving path before `requireUserMiddleware` sends
- * them to Google, so the OIDC state cookie carries the destination that
- * still exists rather than the one that was renamed out from under it.
+ * Permanent redirects for links minted under the pre-rename `/routines`,
+ * `/templates` and `/weight` paths - a routine already shared by link or QR
+ * code has to keep resolving. Deliberately outside `_protected`: a
+ * signed-out scanner needs to land on the surviving path before
+ * `requireUserMiddleware` sends them to Google, so the OIDC state cookie
+ * carries the destination that still exists rather than the one that was
+ * renamed out from under it.
  */
 export function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AdminService } from '~/services/admin-service.server';
 import { AthleteService } from '~/services/athlete-service.server';
+import { BodyMeasurementsService } from '~/services/body-measurements-service.server';
 import { BodyWeightService } from '~/services/body-weight-service.server';
 import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
 import { ExportService } from '~/services/export-service.server';
@@ -19,6 +20,7 @@ import { RepositoriesModule } from '../repositories/repositories.module';
 const services = [
   AdminService,
   AthleteService,
+  BodyMeasurementsService,
   BodyWeightService,
   ExerciseLibraryService,
   ExportService,

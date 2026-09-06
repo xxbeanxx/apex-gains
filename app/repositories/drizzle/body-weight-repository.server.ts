@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 
 import { dbScope } from '~/db/index.server';
 import { bodyWeightLogs, type BodyWeightLog } from '~/db/schema';
-import { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import type { DateOnly } from '~/domain/values/date-only';
 
 import type { BodyWeightRepository } from '../body-weight-repository.server';

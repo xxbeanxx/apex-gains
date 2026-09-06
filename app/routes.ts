@@ -10,6 +10,7 @@ export default [
   route('routines/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-routine' }),
   route('templates', 'routes/legacy-redirect.tsx', { id: 'legacy-templates' }),
   route('templates/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-template' }),
+  route('weight', 'routes/legacy-redirect.tsx', { id: 'legacy-weight' }),
   layout('routes/_protected.tsx', [
     route('today', 'routes/today.tsx'),
     route('exercises', 'routes/exercises.tsx'),
@@ -20,7 +21,7 @@ export default [
     route('plans/import/:shareToken', 'routes/plans.import.$shareToken.tsx'),
     route('plans/:planId', 'routes/plans.$planId.tsx'),
     route('history', 'routes/history.tsx'),
-    route('weight', 'routes/weight.tsx'),
+    route('body', 'routes/body.tsx'),
     route('settings', 'routes/settings.tsx'),
     route('settings/export', 'routes/settings.export.tsx'),
     layout('routes/_admin.tsx', [

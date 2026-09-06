@@ -75,11 +75,12 @@ describe('signing in with Google', () => {
 
   it('keeps preferences an athlete has already changed', async () => {
     const { athlete } = await service.signInWithGoogle(googleIdentity);
-    await service.changeUnits(athlete, 'kg', 'mi');
+    await service.changeUnits(athlete, 'kg', 'mi', 'cm');
 
     const { athlete: returning } = await service.signInWithGoogle(googleIdentity);
     expect(returning.preferences.weightUnit).toBe('kg');
     expect(returning.preferences.distanceUnit).toBe('mi');
+    expect(returning.preferences.lengthUnit).toBe('cm');
   });
 });
 

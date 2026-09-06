@@ -4,7 +4,7 @@ import { closeOwnAccount, type CloseAccountRefusal } from '~/domain/athlete/admi
 import { Athlete, type NewAthlete } from '~/domain/athlete/athlete';
 import { ok, type Result } from '~/domain/shared/result';
 import { Duration } from '~/domain/values/duration';
-import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import type { DistanceUnit, LengthUnit, WeightUnit } from '~/domain/values/units';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
 import { ATHLETES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
 import type { UnitOfWork } from '~/repositories/unit-of-work.server';
@@ -66,8 +66,13 @@ export class AthleteService {
     return this.register(identity, () => this.athletes.findByEmail(identity.email), options.asAdministrator ?? false);
   }
 
-  async changeUnits(athlete: Athlete, weightUnit: WeightUnit, distanceUnit: DistanceUnit): Promise<void> {
-    athlete.changeUnits(weightUnit, distanceUnit, this.deps.clock.now());
+  async changeUnits(
+    athlete: Athlete,
+    weightUnit: WeightUnit,
+    distanceUnit: DistanceUnit,
+    lengthUnit: LengthUnit,
+  ): Promise<void> {
+    athlete.changeUnits(weightUnit, distanceUnit, lengthUnit, this.deps.clock.now());
     await this.athletes.save(athlete);
   }
 

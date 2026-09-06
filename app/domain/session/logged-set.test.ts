@@ -8,7 +8,7 @@ import { Weight } from '../values/weight';
 import { LoggedSet, type LoggedSetOptions } from './logged-set';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
-const preferences = new AthletePreferences('lb', 'km', true, 'UTC');
+const preferences = new AthletePreferences('lb', 'km', 'in', true, 'UTC');
 
 function setWith(overrides: Partial<LoggedSetOptions> = {}): LoggedSet {
   return LoggedSet.of({

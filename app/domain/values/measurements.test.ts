@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Duration } from './duration';
+import { Length } from './length';
 import { Rpe } from './rpe';
 import { Speed } from './speed';
 import { Weight } from './weight';
@@ -52,6 +53,43 @@ describe('Weight', () => {
 
   it('sums', () => {
     expect(Weight.lb(100).plus(Weight.lb(35)).inPounds).toBe(135);
+  });
+});
+
+describe('Length', () => {
+  it("round-trips a value through the athlete's unit", () => {
+    const entered = Length.of('in', 34);
+    expect(entered.as('in')).toBeCloseTo(34, 10);
+  });
+
+  it('converts between units', () => {
+    expect(Length.cm(86.36).as('in')).toBeCloseTo(34, 3);
+    expect(Length.in(34).as('cm')).toBeCloseTo(86.36, 2);
+  });
+
+  it('formats a whole number without a trailing decimal', () => {
+    expect(Length.cm(86).format('cm')).toBe('86 cm');
+  });
+
+  it('formats a converted value to one decimal place', () => {
+    expect(Length.in(34).format('cm')).toBe('86.4 cm');
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['an empty string', ''],
+    ['unparseable text', 'wide'],
+  ])('reads %s from storage as absent', (_label, stored) => {
+    expect(Length.fromStorage(stored)).toBeNull();
+  });
+
+  it('reads a stored numeric string', () => {
+    expect(Length.fromStorage('86.36')?.inCentimetres).toBe(86.36);
+  });
+
+  it("writes storage at the column's two decimal places", () => {
+    expect(Length.in(34).toStorage()).toBe('86.36');
   });
 });
 

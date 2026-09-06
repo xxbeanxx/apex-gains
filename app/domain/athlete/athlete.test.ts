@@ -52,10 +52,11 @@ describe('changeUnits', () => {
     const athlete = Athlete.register(identity, deps);
     const later = new Date('2026-09-04T00:00:00Z');
 
-    athlete.changeUnits('kg', 'mi', later);
+    athlete.changeUnits('kg', 'mi', 'cm', later);
 
     expect(athlete.preferences.weightUnit).toBe('kg');
     expect(athlete.preferences.distanceUnit).toBe('mi');
+    expect(athlete.preferences.lengthUnit).toBe('cm');
     expect(athlete.updatedAt).toEqual(later);
   });
 
@@ -63,7 +64,7 @@ describe('changeUnits', () => {
     const athlete = Athlete.register(identity, deps);
     athlete.changeSampleDataVisibility(false, NOW);
 
-    athlete.changeUnits('kg', 'mi', NOW);
+    athlete.changeUnits('kg', 'mi', 'cm', NOW);
 
     expect(athlete.preferences.showSampleData).toBe(false);
   });

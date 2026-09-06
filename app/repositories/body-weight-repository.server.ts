@@ -1,4 +1,4 @@
-import type { BodyWeightEntry } from '~/domain/bodyweight/body-weight-entry';
+import type { BodyWeightEntry } from '~/domain/body/body-weight-entry';
 import type { DateOnly } from '~/domain/values/date-only';
 
 // Port: consumers depend on this interface, not on Drizzle/Postgres
