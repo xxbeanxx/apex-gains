@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Apex Gains: a personal workout tracker (exercise library for a BowFlex
-PR1000, rowing machine, and treadmill; reusable workout templates;
-day-slot routines that cycle from an anchor date, shareable by link or
+PR1000, rowing machine, and treadmill; reusable workouts; day-slot
+plans that cycle from an anchor date, shareable by link or
 QR code; per-set logging; history). Auth is Google OIDC with open signup. Administrators get an
 `/admin` area on top: instance-wide stats and a user manager.
 
@@ -30,6 +30,7 @@ npm run format:write # format the repo with prettier
 npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
+npm run test:contract # repository contract tests (needs TEST_DATABASE_URL for the Drizzle pass)
 npm run test:e2e     # run the Playwright end-to-end suite (chromium only)
 npm run test:e2e:ui  # Playwright's interactive UI mode
 npm run test:watch   # vitest in watch mode
@@ -46,7 +47,7 @@ task - there is no lint tooling and no CI formatting check, so
 neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
 repository adapters rather than mocking a database - by constructing the
-service class directly (`new RoutineService(...)`), not through Nest's
+service class directly (`new PlanService(...)`), not through Nest's
 DI container, which tests never boot. `app/repositories/contract/` is the exception to that
 last point: it states each port's promises once and runs them against
 _both_ adapter families - the in-memory one inside `npm run test`, and
@@ -128,7 +129,7 @@ Never write:
   `requireEnv()` throws"
 - that something was moved, renamed or deleted: "construction moved
   here", "see `server.ts`, deleted", "no longer needs a handle on the
-  templates repository"
+  workouts repository"
 - how much a change consolidated: "six adapters each had their own
   check", "what used to be eight methods per adapter"
 - a justification aimed at a reviewer rather than a reader: why this
@@ -168,6 +169,16 @@ behaviour to hand — populated by `loadUserMiddleware` (see Auth, below)
 and read in loaders/actions with `context.get(userContext)`.
 Route modules import their generated types
 from `./+types/<route-file-name>`.
+
+A route names its place in the breadcrumb trail by exporting a `handle`
+with a `crumb(data)` function (`app/lib/breadcrumbs.ts`), which
+`app/components/shell/top-bar.tsx` reads off `useMatches()`. A route
+that is never itself the current page — a resource route fetched with
+`fetcher.load`, a loader-only redirect — simply exports none.
+`/routines` and `/templates` are the pre-rename paths and survive as
+301s through `routes/legacy-redirect.tsx`, deliberately outside
+`_protected` so a signed-out scanner following an old share link lands
+on the surviving path before being sent to Google.
 
 **Layers.** Four, strictly one-directional — `app/domain/` depends on
 nothing, and nothing above it may be skipped:
@@ -308,7 +319,7 @@ one such class, which is why `server/auth/oidc-client.provider.ts`
 performs every `openid-client` call (`discovery`, `buildAuthorizationUrl`,
 `authorizationCodeGrant`) itself and exposes only plain data (a `URL`,
 a claims object) through `OidcClientProvider`. Handing whole service
-instances across the same boundary (`AthleteService`, `RoutineService`,
+instances across the same boundary (`AthleteService`, `PlanService`,
 ...) is fine, because nothing on the route side checks their class
 identity - it only calls their methods. `e2e/auth.spec.ts`'s "really
 can build a Google authorization URL" test is the one spec that
@@ -317,8 +328,8 @@ through `ENABLE_TEST_LOGIN`, specifically to catch a regression here -
 typecheck and unit tests each run one layer in isolation and never load
 the two production bundles side by side.
 
-**Domain layer.** `app/domain/` holds the rules. Aggregates (`Routine`,
-`WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`, `Athlete`,
+**Domain layer.** `app/domain/` holds the rules. Aggregates (`Plan`,
+`Workout`, `Session`, `Exercise`, `Equipment`, `Athlete`,
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
 `Weight`, `Speed`, `Duration`, `SetTarget`, `Ownership`) stop raw
 strings and unitless numbers leaking upward. Aggregates never reach for
@@ -334,7 +345,7 @@ pieces carry most of the weight: `shared/ordered.ts` (`OrderedChildren`)
 is the single implementation of append / remove-and-close-the-gap /
 swap, and `shared/forking.ts` is the shape every `editableCopyFor`
 returns. Cross-aggregate rules that belong to no single root are domain
-services — see `domain/routine/activation.ts` and
+services — see `domain/plan/activation.ts` and
 `domain/athlete/administration.ts`.
 
 **Data layer.** `app/db/schema.ts` is the single Drizzle schema
@@ -354,17 +365,20 @@ Transactions are ambient: `UnitOfWork.run` publishes one via
 through `dbScope`, never `db`, so writes stay inside it.
 
 **Services.** `app/services/*.server.ts` are the use cases routes call
-— `RoutineService`, `TemplateService`, `WorkoutLogService`,
+— `PlanService`, `WorkoutService`, `SessionService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
 `AthleteService`, `BodyWeightService`, `AdminService`,
-`RoutineImportService`. They orchestrate
+`PlanImportService`. They orchestrate
 (load → hand off to the aggregate → save) and own no rules themselves.
 `shared/exercise-directory.server.ts` is the read-side counterpart to
-`shared/fork.server.ts`: a logged set, a template entry and a routine
+`shared/fork.server.ts`: a logged set, a workout entry and a plan
 slot all hold an exercise _id_ rather than an exercise, so every read
 model that renders one joins the name back in through
 `ExerciseDirectory` — which is also where the missing-exercise fallback
 (`'Unknown'`, because history outlives the library) is stated.
+`shared/target-view.server.ts` does the same job for a `SetTarget`:
+`toTargetView` formats one into the athlete's units once, so no read
+model re-derives "3 x 10, 135 lb" or the discrete chips beside it.
 `AthleteService` also covers sign-in: `signInWithGoogle` /
 `signInWithEmail` find an athlete by identity or `Athlete.register`
 one on first login, so no route touches `AthletesRepository` directly
@@ -378,12 +392,12 @@ cannot cross that boundary. Chart view types live in
 `app/services/progress-view.ts` (no `.server` suffix) precisely so client
 components can import them.
 
-**Sample data and fork-on-write.** `exercises`, `templates`, and
-`routines` rows with a null `userId` are seeded sample/system data
+**Sample data and fork-on-write.** `exercises`, `workouts`, and
+`plans` rows with a null `userId` are seeded sample/system data
 shared read-only by every account — `Ownership` in
 `domain/shared/ownership.ts` is where that null is interpreted, once.
 Editing a sample copies it (with its children — equipment links,
-template exercises, routine slots) into a per-user row with
+workout exercises, plan slots) into a per-user row with
 `forkedFromId` pointing back at the sample; the original is then
 excluded from that user's view so the same logical item doesn't show
 twice. The copy is `aggregate.editableCopyFor(userId, deps)`; deciding
@@ -410,13 +424,13 @@ compiler. So "does this row's `userId` match the current user" isn't
 quite the whole authorization story — scoped loaders must also decide
 whether to include the null-`userId` sample rows.
 
-**Sharing a routine, and importing one.** `routines.share_token` is a
-nullable, unique, revocable bearer token minted by `Routine.share`
+**Sharing a plan, and importing one.** `plans.share_token` is a
+nullable, unique, revocable bearer token minted by `Plan.share`
 (idempotent, so re-sharing never invalidates a link already sent) and
 dropped by `unshare`. It is looked up by
-`RoutinesRepository.findByShareToken`, which is deliberately unscoped by
+`PlansRepository.findByShareToken`, which is deliberately unscoped by
 `userId` — the token _is_ the authorization, and the importer is by
-definition not the owner. `RoutineService.share` goes through the same
+definition not the owner. `PlanService.share` goes through the same
 `ForkableLibrary` as every other mutation, so sharing a sample forks it
 first and the token lands on the fork; the caller has to follow
 `forkedId`. `app/lib/share-link.server.ts` states the link's shape once,
@@ -425,9 +439,9 @@ stays out of the client bundle — only a `QrCode` (`app/lib/qr.ts`, no
 `.server` suffix precisely so the component can import it) crosses to
 the browser.
 
-`RoutineImportService` is the other half. A routine is only slot
-positions and template ids, so an import is a deep copy — routine, then
-templates, then exercises — and the interesting part is how much to
+`PlanImportService` is the other half. A plan is only slot
+positions and workout ids, so an import is a deep copy — plan, then
+workouts, then exercises — and the interesting part is how much to
 _skip_: a sample, the importer's own fork of that sample, or an exercise
 of theirs under the same name all stand in for the shared row. That last
 one is not a nicety: `exercises_user_name_unique` means copying over a
@@ -437,10 +451,10 @@ name they already hold is a constraint violation. The copies come from
 another athlete's row would offer a revert that lands on a 404. Only
 _exercises_ carry `forkedFromId` through, because it can only ever name
 a sample and the unique name means there is never a second copy to make
-`findForkOf` ambiguous; a template or routine can be imported twice, so
-theirs is dropped. Templates are always copied rather than matched by
+`findForkOf` ambiguous; a workout or plan can be imported twice, so
+theirs is dropped. Workouts are always copied rather than matched by
 name (a familiar name can hold quite different exercises), which is why
-`/routines/import/:shareToken` confirms the counts before writing.
+`/plans/import/:shareToken` confirms the counts before writing.
 Equipment is never copied at all — `equipment.name` is globally unique,
 so a row is the same row for everyone and the ids carry over untouched.
 That route sits under `_protected` on purpose: `requireUserMiddleware`
@@ -450,13 +464,13 @@ that destination across the round-trip, so signing in — or signing up —
 lands them back on the right token.
 
 **Domain model shape**, roughly nested:
-`templates` (a named list of exercises with target sets/reps/weight or
-duration/speed/resistance, owned by a user) → `routines` (a named,
-ordered cycle of `routineSlots`, each slot either referencing a
-template or standing for a rest day) → `workoutSessions` (one row per
-user per calendar date, snapshotting which routine/template applied
+`workouts` (a named list of exercises with target sets/reps/weight or
+duration/speed/resistance, owned by a user) → `plans` (a named,
+ordered cycle of `planSlots`, each slot either referencing a
+workout or standing for a rest day) → `sessions` (one row per
+user per calendar date, snapshotting which plan/workout applied
 that day) → `sessionSets` (individual logged sets, one row per set —
-not per exercise — so pyramids/drop-sets are representable; template
+not per exercise — so pyramids/drop-sets are representable; a workout's
 "targets" just pre-fill the logging form, every field stays editable
 per set). `exercises` carry an `exerciseType` (`strength` | `cardio`)
 and link to `equipment` via `exerciseEquipment`; cardio fields differ
@@ -468,23 +482,24 @@ there: read models (`PlanItem`, `ExerciseView`) carry the resulting
 `cardioFields` rather than the raw list of `cardioKind`s, so no route
 re-derives it.
 
-**Routines are day-count cycles, not weekdays.** A routine's "today"
-slot is `(days since anchorDate) mod (slot count)` — `Routine.slotOn`
-in `app/domain/routine/routine.ts`. This is strict calendar-day math
+**Plans are day-count cycles, not weekdays.** A plan's "today"
+slot is `(days since anchorDate) mod (slot count)` — `Plan.slotOn`
+in `app/domain/plan/plan.ts`. This is strict calendar-day math
 done in UTC on `YYYY-MM-DD` strings (`DateOnly`): it does not pause for
-missed days, and a routine's `anchorDate` can be set independently of
-when it was activated or of what weekday it falls on. Only one routine
+missed days, and a plan's `anchorDate` can be set independently of
+when it was activated or of what weekday it falls on. Only one plan
 per user may have `isActive = true`; that is a rule about a _set_ of
-routines, so it lives in `domain/routine/activation.ts`
-(`activateRoutine`) rather than on the aggregate, with the schema's
-partial unique index as the backstop — the two routines it changes must
-be saved in one transaction. `TrainingPlanService.planFor` is the
-canonical read path from "active routine" to "today's exercises."
+plans, so it lives in `domain/plan/activation.ts`
+(`activatePlan`) rather than on the aggregate, with the schema's
+`plans_one_active_per_user` partial unique index as the backstop — the
+two plans it changes must be saved in one transaction.
+`TrainingPlanService.planFor` is the canonical read path from "active
+plan" to "today's exercises."
 
 **Route module action pattern.** Routes with multiple mutations
 declare their intents once with `intent()` (`app/lib/intent.ts`) and run
 them through `dispatch`/`handled` (`app/lib/intent.server.ts`) — see
-`app/routes/routines.$routineId.tsx` for the fullest example: rename,
+`app/routes/plans.$planId.tsx` for the fullest example: rename,
 reanchor, activate/deactivate, addSlot, removeSlot, move, delete. One
 declaration derives everything that used to be a hand-typed string in
 five places: `intent.field` is the hidden input, `intent.match` is what
@@ -494,7 +509,7 @@ back in the component. `dispatch` reads the submission once, validates
 the named intent's DTO, and hands the handler its data already parsed;
 a handler still answers a redirect or a 404 by throwing. An intent the
 page never declared is a 400, not a silent success. Single-form routes
-(`routines.tsx`, `templates.tsx`, `admin.users.tsx`) post no `intent`
+(`plans.tsx`, `workouts.tsx`, `admin.users.tsx`) post no `intent`
 at all and call `validateForm` directly — there is nothing to dispatch
 between. Each intent names a local
 `class-validator` DTO class, checked through `validateForm`
@@ -513,7 +528,7 @@ sample's), `deleted` and `reverted`. Their shared header chrome — the
 Sample/Customized badge and the revert-or-delete form that follows from
 it — is `app/components/forkable-header.tsx`. What is left in each route
 is what the two pages genuinely do differently: re-anchoring and
-activating a routine, adding a targeted exercise to a template. Every mutating form is a
+activating a plan, adding a targeted exercise to a workout. Every mutating form is a
 plain `<form method="post">` (no client-side fetchers for these), and
 `~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
 pending state from `useNavigation()` matched against a `match` prop —
@@ -590,13 +605,13 @@ signup) — a `users` row is created on first login.
 
 Authorization has two levels and no role table. For an athlete's own
 data it is "does this row's `userId` match the current user" (see
-`loadOwnedRoutine`-style loaders that scope every query by `userId`
+the `loadOwned*` loaders that scope every query by `userId`
 before returning 404), plus the sample-data fork rule above. Above
 that sits a single `users.is_admin` flag, read as `Athlete.isAdmin`:
 an administrator reaches `/admin` and, through it, every account.
 `requireAdminMiddleware` is the only gate — the two queries that
 deliberately ignore `userId` (`AthletesRepository.listAll` and
-`WorkoutSessionsRepository.trainingTotals`) are reachable from nowhere
+`SessionsRepository.trainingTotals`) are reachable from nowhere
 else, and a signed-in athlete without the flag gets a 404 like any
 other row that isn't theirs. Who may hold the flag is a rule about the
 whole set of athletes, so it lives in `domain/athlete/administration.ts`:
@@ -644,6 +659,18 @@ maps to `app/`, `~server/` to `server/` (see `tsconfig.json` and
 `app/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
+The chrome around every page is `app/components/shell/`: `app-shell.tsx`
+composes a `sidebar.tsx` (desktop), `bottom-tabs.tsx` (mobile),
+`top-bar.tsx` with `breadcrumbs.tsx`, and a `command-palette.tsx`, all
+navigating the one list in `nav-items.ts`. Both the sidebar's collapsed
+state and the theme are read from storage by a blocking inline script in
+`root.tsx`'s `<head>` (`shell-init.ts`, `theme-toggle.tsx`) before first
+paint, which is why `<html>` carries `suppressHydrationWarning` — the
+markup React hydrates has already been mutated on purpose.
+`app/components/builder/` holds the shared editor for the two ordered
+lists (a plan's slots, a workout's exercises): a palette to add from, an
+outline, and a canvas of rows.
+
 **Charts.** Recharts, through shadcn's `app/components/ui/chart.tsx`
 wrapper (`ChartContainer` + `ChartTooltipContent`) — a chart declares a
 `ChartConfig` and paints with the `var(--color-<key>)` variables
@@ -686,14 +713,15 @@ towards the duration it reports, logs one line per request - `GET
 anywhere under `app/` would hook them inside the vitest process too.
 
 Log lines are plain sentences with the values interpolated (`created
-routine <id> for user <id>`), and the second argument is Nest's
-context label - `Request`, `Auth`, `Routines`, `Templates`, `Today`,
-`Process` - which prints in brackets. There is no structured-field or
-correlation-id machinery: `logger.error` takes a stack string as its
-second argument, so an `Error` is passed as `err.stack`.
+plan <id> for user <id>`), and the second argument is Nest's
+context label - `Request`, `Auth`, `Plans`, `Workouts`, `Exercises`,
+`Today`, `Weight`, `Admin`, `Process` - which prints in brackets. There
+is no structured-field or correlation-id machinery: `logger.error` takes
+a stack string as its second argument, so an `Error` is passed as
+`err.stack`.
 
 **Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as
 `date-sha-buildnum` by `containerfile`/`build.yaml`) or, outside a
-container, the working tree's short git SHA. It's shown in the app
-footer (`root.tsx`) and included in every log line's `build` field.
+container, the working tree's short git SHA. It reaches the browser
+through `root.tsx`'s loader and is shown in the app shell's footer.
