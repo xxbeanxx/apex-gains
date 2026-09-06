@@ -6,8 +6,8 @@ import {
   type ValidatorConstraintInterface,
 } from 'class-validator';
 
-import { DateOnly } from '~/domain/values/date-only';
-import { Rpe } from '~/domain/values/rpe';
+import { DateOnly } from '~domain/values/date-only';
+import { Rpe } from '~domain/values/rpe';
 
 /**
  * The decorator and transform helpers a form DTO is *declared* with, as

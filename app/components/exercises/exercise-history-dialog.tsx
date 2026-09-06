@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { useFetcher } from 'react-router';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { formatFullDate } from '~/lib/format';
-import type { RecentSetView } from '~/services/session-service.server';
+import { formatFullDate } from '~shared/format';
+import type { RecentSetView } from '~application/use-cases/session-service';
 
 function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: string[] }[] {
   const groups: { date: string; summaries: string[] }[] = [];

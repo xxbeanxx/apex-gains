@@ -4,8 +4,8 @@ import { useFetcher } from 'react-router';
 
 import { Button } from '~/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { formatRelativeDate } from '~/lib/format';
-import type { RecentSetView } from '~/services/session-service.server';
+import { formatRelativeDate } from '~shared/format';
+import type { RecentSetView } from '~application/use-cases/session-service';
 
 /** Groups a newest-first flat set list into one entry per day it was logged. */
 function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: string[] }[] {

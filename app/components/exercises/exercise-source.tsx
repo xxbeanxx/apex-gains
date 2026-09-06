@@ -1,5 +1,5 @@
 import { Badge } from '~/components/ui/badge';
-import type { ExerciseView } from '~/services/exercise-library-service.server';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 
 export type ExerciseSource = 'sample' | 'mine' | 'customized';
 

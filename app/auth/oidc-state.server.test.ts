@@ -1,7 +1,7 @@
 import { createCookie } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import { clearOidcState, parseOidcState, serializeOidcState } from './oidc-state.server';
+import { clearOidcState, parseOidcState, serializeOidcState } from './oidc-state';
 
 const cookie = createCookie('__oidc_state', {
   path: '/',
@@ -12,7 +12,7 @@ const cookie = createCookie('__oidc_state', {
   secrets: ['test-secret'],
 });
 
-describe('oidc-state.server', () => {
+describe('oidc-state', () => {
   it('round-trips serialized state through parse', async () => {
     const data = {
       codeVerifier: 'verifier-123',

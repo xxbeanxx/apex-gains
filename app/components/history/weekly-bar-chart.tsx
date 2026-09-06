@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts';
 
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '~/components/ui/chart';
-import type { WeeklyPointView } from '~/services/progress-view';
+import type { WeeklyPointView } from '~application/use-cases/progress-view';
 
 export function WeeklyBarChart({
   points,

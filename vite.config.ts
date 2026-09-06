@@ -72,5 +72,7 @@ export default defineConfig(({ command }) => ({
       GOOGLE_CLIENT_ID: 'test-google-client-id',
       GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     },
+    fsModuleCache: true,
+    isolate: false,
   },
 }));

@@ -35,17 +35,17 @@ import { Field } from '~/components/ui/field';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { CardioFields } from '~/domain/equipment/cardio-fields';
-import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
-import { requestLogger } from '~/lib/logger.server';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
-import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
+import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail';
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
-import type { ExerciseView } from '~/services/exercise-library-service.server';
-import type { SuggestionView, WorkoutExerciseView } from '~/services/workout-service.server';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
+import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
 
-import { exerciseLibraryServiceContext, workoutServiceContext } from '~/lib/nest-bridge.server';
+import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/workouts.$workoutId';
 

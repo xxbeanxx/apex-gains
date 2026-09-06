@@ -8,9 +8,9 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import { DateOnly } from '~/domain/values/date-only';
+import { DateOnly } from '~domain/values/date-only';
 
-import { progressServiceContext, trainingPlanServiceContext } from '~/lib/nest-bridge.server';
+import { progressServiceContext, trainingPlanServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/home';
 

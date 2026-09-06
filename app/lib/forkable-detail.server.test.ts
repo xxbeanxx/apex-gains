@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { forkableDetail, type ForkableDetail } from './forkable-detail.server';
-import { intent } from './intent';
+import { forkableDetail, type ForkableDetail } from './forkable-detail';
+import { intent } from './intent.js';
 
 const page: ForkableDetail = forkableDetail({
   noun: 'Plan',

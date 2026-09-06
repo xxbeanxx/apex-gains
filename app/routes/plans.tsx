@@ -15,15 +15,15 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { DateOnly } from '~/domain/values/date-only';
-import { formatMonthDay, formatWeekday } from '~/lib/format';
-import { requestLogger } from '~/lib/logger.server';
+import { DateOnly } from '~domain/values/date-only';
+import { formatMonthDay, formatWeekday } from '~shared/format';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { trim } from '~/lib/validate-form';
-import type { PlanSummary } from '~/services/plan-service.server';
+import type { PlanSummary } from '~application/use-cases/plan-service';
 
-import { planServiceContext } from '~/lib/nest-bridge.server';
+import { planServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/plans';
 

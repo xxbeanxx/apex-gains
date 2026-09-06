@@ -1,5 +1,5 @@
 import { Badge } from '~/components/ui/badge';
-import type { WorkoutExerciseView } from '~/services/workout-service.server';
+import type { WorkoutExerciseView } from '~application/use-cases/workout-service';
 
 /**
  * A structured target rendered as discrete chips ("3 sets", "8 reps",

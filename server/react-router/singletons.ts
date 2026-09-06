@@ -1,18 +1,18 @@
 import type { INestApplication } from '@nestjs/common';
 
-import type { NestSingletons } from '~/lib/nest-bridge.server';
-import { AdminService } from '~/services/admin-service.server';
-import { AthleteService } from '~/services/athlete-service.server';
-import { BodyMeasurementsService } from '~/services/body-measurements-service.server';
-import { BodyWeightService } from '~/services/body-weight-service.server';
-import { ExerciseLibraryService } from '~/services/exercise-library-service.server';
-import { ExportService } from '~/services/export-service.server';
-import { ProgressService } from '~/services/progress-service.server';
-import { PlanImportService } from '~/services/plan-import-service.server';
-import { PlanService } from '~/services/plan-service.server';
-import { WorkoutService } from '~/services/workout-service.server';
-import { TrainingPlanService } from '~/services/training-plan-service.server';
-import { SessionService } from '~/services/session-service.server';
+import type { NestSingletons } from '~/router/load-context';
+import { AdminService } from '~application/use-cases/admin-service';
+import { AthleteService } from '~application/use-cases/athlete-service';
+import { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
+import { BodyWeightService } from '~application/use-cases/body-weight-service';
+import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
+import { ExportService } from '~application/use-cases/export-service';
+import { ProgressService } from '~application/use-cases/progress-service';
+import { PlanImportService } from '~application/use-cases/plan-import-service';
+import { PlanService } from '~application/use-cases/plan-service';
+import { WorkoutService } from '~application/use-cases/workout-service';
+import { TrainingPlanService } from '~application/use-cases/training-plan-service';
+import { SessionService } from '~application/use-cases/session-service';
 
 import { OIDC_CLIENT_CONFIG, OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
 import { testLoginConfig } from '../config/test-login.config';

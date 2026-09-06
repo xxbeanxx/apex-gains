@@ -8,14 +8,14 @@ import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Textarea } from '~/components/ui/textarea';
-import type { CardioFields } from '~/domain/equipment/cardio-fields';
-import type { ExerciseType } from '~/domain/exercise/exercise-type';
-import { formatNumber, speedUnitLabel } from '~/domain/values/units';
-import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import { formatNumber, speedUnitLabel } from '~domain/values/units';
+import type { DistanceUnit, WeightUnit } from '~domain/values/units';
 import type { Intent } from '~/lib/intent';
-import { formatMonthDay } from '~/lib/format';
+import { formatMonthDay } from '~shared/format';
 import { cn } from '~/lib/utils';
-import type { LastSetView, LoggedSetView } from '~/services/session-service.server';
+import type { LastSetView, LoggedSetView } from '~application/use-cases/session-service';
 
 /** 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side. */
 const RPE_OPTIONS = Array.from({ length: 19 }, (_, i) => 1 + i * 0.5);

@@ -1,6 +1,6 @@
 import { requireAthlete } from '~/auth/user-context';
 
-import { sessionServiceContext } from '~/lib/nest-bridge.server';
+import { sessionServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/exercises.$exerciseId.history';
 

@@ -14,13 +14,13 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { requestLogger } from '~/lib/logger.server';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { trim } from '~/lib/validate-form';
-import type { WorkoutSummary } from '~/services/workout-service.server';
+import type { WorkoutSummary } from '~application/use-cases/workout-service';
 
-import { workoutServiceContext } from '~/lib/nest-bridge.server';
+import { workoutServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/workouts';
 

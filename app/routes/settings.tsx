@@ -23,14 +23,14 @@ import {
   type LengthUnit,
   WEIGHT_UNITS,
   type WeightUnit,
-} from '~/domain/values/units';
-import { TIMEZONES } from '~/domain/values/timezone';
-import { requestLogger } from '~/lib/logger.server';
+} from '~domain/values/units';
+import { TIMEZONES } from '~domain/values/timezone';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber } from '~/lib/validate-form';
 
-import { athleteServiceContext, sessionStorageContext } from '~/lib/nest-bridge.server';
+import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
 
 import type { Route } from './+types/settings';
 

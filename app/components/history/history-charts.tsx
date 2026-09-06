@@ -10,7 +10,7 @@ import type {
   MuscleBalanceView,
   PersonalRecordView,
   WeeklyPointView,
-} from '~/services/progress-view';
+} from '~application/use-cases/progress-view';
 
 import { ConsistencyHeatmap } from './consistency-heatmap';
 import { ExerciseProgressChart } from './exercise-progress-chart';

@@ -1,7 +1,7 @@
 import { Bar, BarChart, LabelList, XAxis, YAxis } from 'recharts';
 
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '~/components/ui/chart';
-import type { MuscleBalanceView } from '~/services/progress-view';
+import type { MuscleBalanceView } from '~application/use-cases/progress-view';
 
 const ROW_HEIGHT = 30;
 

@@ -44,19 +44,19 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { DateOnly } from '~/domain/values/date-only';
-import { formatRelativeDate } from '~/lib/format';
-import { requestLogger } from '~/lib/logger.server';
+import { DateOnly } from '~domain/values/date-only';
+import { formatRelativeDate } from '~shared/format';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
-import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.server';
+import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail';
 import { dispatch, handled } from '~/lib/intent.server';
 import { encodeQr } from '~/lib/qr.server';
-import { shareUrlFor } from '~/lib/share-link.server';
+import { shareUrlFor } from '~/lib/share-link';
 import { IsDateOnly, trim } from '~/lib/validate-form';
-import type { PlanSlotView } from '~/services/plan-service.server';
-import type { WorkoutSummary } from '~/services/workout-service.server';
+import type { PlanSlotView } from '~application/use-cases/plan-service';
+import type { WorkoutSummary } from '~application/use-cases/workout-service';
 
-import { planServiceContext, workoutServiceContext } from '~/lib/nest-bridge.server';
+import { planServiceContext, workoutServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/plans.$planId';
 

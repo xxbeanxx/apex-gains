@@ -5,10 +5,10 @@ import { NavProgress } from '~/components/nav-progress';
 import { AppShell } from '~/components/shell/app-shell';
 import { sidebarInitScript } from '~/components/shell/shell-init';
 import { themeInitScript } from '~/components/theme-toggle';
-import { loadUserMiddleware } from '~/auth/current-user.server';
+import { loadUserMiddleware } from '~/auth/current-user';
 import { userContext } from '~/auth/user-context';
-import { getBuildInfo } from '~/lib/build-info.server';
-import { requestLoggingMiddleware } from '~/lib/logger.server';
+import { getBuildInfo } from '~/lib/build-info';
+import { requestLoggingMiddleware } from '~/lib/logger';
 
 import type { Route } from './+types/root';
 import './app.css';

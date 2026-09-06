@@ -37,6 +37,9 @@ jobs:
       - name: Run type check
         run: npm run typecheck
 
+      - name: Check architecture boundaries
+        run: npm run check:architecture
+
       - name: Run tests
         run: npm run test
 

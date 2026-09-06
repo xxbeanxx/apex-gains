@@ -16,14 +16,14 @@ import { EmptyState } from '~/components/ui/empty-state';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
-import { CARDIO_KINDS, type CardioKind } from '~/domain/equipment/equipment';
-import { EXERCISE_TYPES, type ExerciseType } from '~/domain/exercise/exercise-type';
+import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';
-import type { ExerciseView } from '~/services/exercise-library-service.server';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 
-import { exerciseLibraryServiceContext } from '~/lib/nest-bridge.server';
+import { exerciseLibraryServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/exercises';
 

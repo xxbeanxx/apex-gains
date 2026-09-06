@@ -27,7 +27,7 @@ import compression from 'compression';
 import { static as serveStatic } from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
 
-import type { NestSingletons } from '~/lib/nest-bridge.server';
+import type { NestSingletons } from '~/router/load-context';
 
 import { AppModule } from './app.module';
 import { coreConfig } from './config/core.config';

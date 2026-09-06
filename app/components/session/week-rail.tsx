@@ -4,9 +4,9 @@ import { Link } from 'react-router';
 
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-import { formatFullDate, formatMonthDay, formatWeekday } from '~/lib/format';
+import { formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
 import { cn } from '~/lib/utils';
-import type { WeekHistoryDay, WeekPlanDay } from '~/services/training-plan-service.server';
+import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';
 
 /** One day in a week rail. Shared by the upcoming plan and the past summary. */
 function DayCell({

@@ -8,7 +8,7 @@ import { Button } from '~/components/ui/button';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 import { intents } from '~/routes/exercises';
 

@@ -1,16 +1,11 @@
 import { redirect } from 'react-router';
 
-import { clearOidcState, parseOidcState } from '~/auth/oidc-state.server';
-import { safeRedirect } from '~/auth/safe-redirect.server';
+import { clearOidcState, parseOidcState } from '~/auth/oidc-state';
+import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
-import { requestLogger } from '~/lib/logger.server';
+import { requestLogger } from '~/lib/logger';
 
-import {
-  athleteServiceContext,
-  oidcConfigContext,
-  oidcStateCookieContext,
-  sessionStorageContext,
-} from '~/lib/nest-bridge.server';
+import { athleteServiceContext, oidcConfigContext, oidcStateCookieContext, sessionStorageContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.google.callback';
 

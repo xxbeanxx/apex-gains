@@ -11,7 +11,7 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { EquipmentView } from '~/services/exercise-library-service.server';
+import type { EquipmentView } from '~application/use-cases/exercise-library-service';
 
 import { cardioKindLabels, intents, NO_CARDIO_KIND } from '~/routes/exercises';
 

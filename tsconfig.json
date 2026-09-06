@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
@@ -10,7 +11,12 @@
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
       "~/*": ["./app/*"],
-      "~server/*": ["./server/*"]
+      "~app/*": ["./app/*"],
+      "~application/*": ["./src/application/*"],
+      "~domain/*": ["./src/domain/*"],
+      "~infrastructure/*": ["./src/infrastructure/*"],
+      "~server/*": ["./server/*"],
+      "~shared/*": ["./src/shared/*"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

@@ -8,7 +8,7 @@ import { Checkbox } from '~/components/ui/checkbox';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { SubmitButton } from '~/components/ui/submit-button';
-import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 import { intents } from '~/routes/exercises';
 

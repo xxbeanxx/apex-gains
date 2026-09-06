@@ -14,14 +14,14 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
-import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~/domain/body/body-measurement';
-import { DateOnly } from '~/domain/values/date-only';
-import { formatFullDate } from '~/lib/format';
+import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toNumber } from '~/lib/validate-form';
 
-import { bodyMeasurementsServiceContext, bodyWeightServiceContext, progressServiceContext } from '~/lib/nest-bridge.server';
+import { bodyMeasurementsServiceContext, bodyWeightServiceContext, progressServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/body';
 

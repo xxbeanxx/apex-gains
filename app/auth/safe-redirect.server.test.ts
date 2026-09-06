@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { safeRedirect } from './safe-redirect.server';
+import { safeRedirect } from './safe-redirect';
 
 describe('safeRedirect', () => {
   it('keeps an in-app absolute path', () => {

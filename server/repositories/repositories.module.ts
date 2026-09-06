@@ -1,27 +1,27 @@
 import { Module, type Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
-import { configureDatabase } from '~/db/index.server';
-import { DrizzleAdminActionsRepository } from '~/repositories/drizzle/admin-actions-repository.server';
-import { DrizzleAthletesRepository } from '~/repositories/drizzle/athletes-repository.server';
-import { DrizzleBodyMeasurementsRepository } from '~/repositories/drizzle/body-measurements-repository.server';
-import { DrizzleBodyWeightRepository } from '~/repositories/drizzle/body-weight-repository.server';
-import { DrizzleEquipmentRepository } from '~/repositories/drizzle/equipment-repository.server';
-import { DrizzleExercisesRepository } from '~/repositories/drizzle/exercises-repository.server';
-import { DrizzlePlansRepository } from '~/repositories/drizzle/plans-repository.server';
-import { DrizzleWorkoutsRepository } from '~/repositories/drizzle/workouts-repository.server';
-import { DrizzleUnitOfWork } from '~/repositories/drizzle/unit-of-work.server';
-import { DrizzleSessionsRepository } from '~/repositories/drizzle/sessions-repository.server';
-import { InMemoryAdminActionsRepository } from '~/repositories/in-memory/admin-actions-repository.server';
-import { InMemoryAthletesRepository } from '~/repositories/in-memory/athletes-repository.server';
-import { InMemoryBodyMeasurementsRepository } from '~/repositories/in-memory/body-measurements-repository.server';
-import { InMemoryBodyWeightRepository } from '~/repositories/in-memory/body-weight-repository.server';
-import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
-import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
-import { InMemoryPlansRepository } from '~/repositories/in-memory/plans-repository.server';
-import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
-import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
-import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
+import { configureDatabase } from '~infrastructure/persistence/drizzle/index';
+import { DrizzleAdminActionsRepository } from '~infrastructure/persistence/drizzle/admin-actions-repository';
+import { DrizzleAthletesRepository } from '~infrastructure/persistence/drizzle/athletes-repository';
+import { DrizzleBodyMeasurementsRepository } from '~infrastructure/persistence/drizzle/body-measurements-repository';
+import { DrizzleBodyWeightRepository } from '~infrastructure/persistence/drizzle/body-weight-repository';
+import { DrizzleEquipmentRepository } from '~infrastructure/persistence/drizzle/equipment-repository';
+import { DrizzleExercisesRepository } from '~infrastructure/persistence/drizzle/exercises-repository';
+import { DrizzlePlansRepository } from '~infrastructure/persistence/drizzle/plans-repository';
+import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
+import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
+import { DrizzleSessionsRepository } from '~infrastructure/persistence/drizzle/sessions-repository';
+import { InMemoryAdminActionsRepository } from '~infrastructure/persistence/in-memory/admin-actions-repository';
+import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
+import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
+import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
+import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
+import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
+import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
+import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import {
   ADMIN_ACTIONS_REPOSITORY,
   ATHLETES_REPOSITORY,
@@ -33,7 +33,7 @@ import {
   WORKOUTS_REPOSITORY,
   UNIT_OF_WORK,
   SESSIONS_REPOSITORY,
-} from '~/repositories/tokens';
+} from '~server/providers/persistence.tokens';
 
 import { databaseConfig } from '../config/database.config';
 
@@ -44,7 +44,7 @@ type DatabaseConfig = ConfigType<typeof databaseConfig>;
  * `databaseConfig.databaseUrl`. This is the only place that choice is made.
  *
  * The Drizzle adapter classes are safe to import statically even when
- * running in-memory: they only touch `~/db/index.server`'s lazy
+ * running in-memory: they only touch `~infrastructure/persistence/drizzle/index.server`'s lazy
  * `db`/`dbScope` proxies when a query actually runs, never at import time.
  */
 function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig) => T): Provider {
@@ -52,7 +52,7 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
     provide: token,
     inject: [databaseConfig.KEY],
     useFactory: (dbConfig: DatabaseConfig) => {
-      // Hands the validated URL to `~/db/index.server` so nothing below has
+      // Hands the validated URL to `~infrastructure/persistence/drizzle/index.server` so nothing below has
       // to read `process.env` for itself. Connecting is still lazy; this only
       // decides what the connection will be made with.
       if (dbConfig.databaseUrl) {

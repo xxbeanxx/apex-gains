@@ -5,9 +5,9 @@ import { HistoryCharts } from '~/components/history/history-charts';
 import { SessionRow } from '~/components/history/session-row';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { EmptyState } from '~/components/ui/empty-state';
-import { formatMonthYear } from '~/lib/format';
+import { formatMonthYear } from '~shared/format';
 
-import { progressServiceContext } from '~/lib/nest-bridge.server';
+import { progressServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/history';
 

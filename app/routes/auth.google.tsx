@@ -1,11 +1,11 @@
 import * as client from 'openid-client';
 import { redirect } from 'react-router';
 
-import { serializeOidcState } from '~/auth/oidc-state.server';
-import { safeRedirect } from '~/auth/safe-redirect.server';
+import { serializeOidcState } from '~/auth/oidc-state';
+import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
 
-import { oidcConfigContext, oidcStateCookieContext } from '~/lib/nest-bridge.server';
+import { oidcConfigContext, oidcStateCookieContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.google';
 

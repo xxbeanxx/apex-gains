@@ -27,8 +27,9 @@
 
 # Include the app source, server runtime, and static assets
 !app/
-!server/
 !public/
+!server/
+!src/
 
 # Exclude node_modules everywhere (installed inside container)
 **/node_modules/

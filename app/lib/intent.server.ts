@@ -1,5 +1,5 @@
-import { intent, type Intent } from './intent';
-import { validateForm } from './validate-form.server';
+import { intent, type Intent } from './intent.js';
+import { validateForm } from './validate-form.server.js';
 
 /**
  * Running the intents a page declares - the server half of `./intent.ts`.

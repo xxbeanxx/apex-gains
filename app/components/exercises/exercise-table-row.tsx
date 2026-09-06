@@ -1,6 +1,6 @@
 import { Badge } from '~/components/ui/badge';
 import { TableCell, TableRow } from '~/components/ui/table';
-import type { EquipmentView, ExerciseView } from '~/services/exercise-library-service.server';
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 import { ExerciseRowMenu } from './exercise-row-menu';
 import { SourceBadge, sourceOf } from './exercise-source';

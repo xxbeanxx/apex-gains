@@ -1,7 +1,7 @@
 import { GaugeIcon, UsersIcon } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 
-import { requireAdminMiddleware } from '~/auth/require-admin.server';
+import { requireAdminMiddleware } from '~/auth/require-admin';
 import { cn } from '~/lib/utils';
 
 import type { Route } from './+types/_admin';

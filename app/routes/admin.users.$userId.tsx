@@ -14,12 +14,12 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Stat } from '~/components/ui/stat';
 import { SubmitButton } from '~/components/ui/submit-button';
-import { formatCount, formatFullDate } from '~/lib/format';
-import { requestLogger } from '~/lib/logger.server';
+import { formatCount, formatFullDate } from '~shared/format';
+import { requestLogger } from '~/lib/logger';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 
-import { adminServiceContext } from '~/lib/nest-bridge.server';
+import { adminServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/admin.users.$userId';
 

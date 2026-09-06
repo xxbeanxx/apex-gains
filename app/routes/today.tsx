@@ -19,15 +19,15 @@ import { Calendar } from '~/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { DateOnly } from '~/domain/values/date-only';
-import { formatFullDate } from '~/lib/format';
-import { requestLogger } from '~/lib/logger.server';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
+import { requestLogger } from '~/lib/logger';
 import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, IsRpe, optionalTrim, toOptionalNumber } from '~/lib/validate-form';
 
-import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/lib/nest-bridge.server';
+import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/today';
 

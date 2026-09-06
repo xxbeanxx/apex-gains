@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getBuildInfo } from './build-info.server';
+import { getBuildInfo } from './build-info';
 
 describe('getBuildInfo', () => {
   const originalVersionTag = process.env.VERSION_TAG;

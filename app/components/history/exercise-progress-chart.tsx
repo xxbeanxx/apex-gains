@@ -2,8 +2,8 @@ import { useId } from 'react';
 import { Area, AreaChart, CartesianGrid, ReferenceDot, XAxis, YAxis } from 'recharts';
 
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '~/components/ui/chart';
-import { formatMonthDay } from '~/lib/format';
-import type { ProgressSeriesView } from '~/services/progress-view';
+import { formatMonthDay } from '~shared/format';
+import type { ProgressSeriesView } from '~application/use-cases/progress-view';
 
 import { formatMetricValue, paddedAxis } from './chart-utils';
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-import { formatFullDate } from '~/lib/format';
+import { formatFullDate } from '~shared/format';
 import { cn } from '~/lib/utils';
-import type { HeatmapDayView } from '~/services/progress-view';
+import type { HeatmapDayView } from '~application/use-cases/progress-view';
 
 const CELL = 12;
 const GAP = 3;

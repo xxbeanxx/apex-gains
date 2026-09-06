@@ -8,10 +8,10 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import type { AdminActionKind } from '~/domain/admin/admin-action';
-import { formatCount, formatDateTime, formatFullDate } from '~/lib/format';
-import { adminServiceContext } from '~/lib/nest-bridge.server';
-import type { AdminAccountView, AdminActionView } from '~/services/admin-service.server';
+import type { AdminActionKind } from '~domain/admin/admin-action';
+import { formatCount, formatDateTime, formatFullDate } from '~shared/format';
+import { adminServiceContext } from '~/router/load-context';
+import type { AdminAccountView, AdminActionView } from '~application/use-cases/admin-service';
 
 import type { Route } from './+types/admin';
 
