@@ -13,6 +13,7 @@ export type TargetFieldsValues = {
   durationMinutes: number | null;
   speed: number | null;
   resistance: number | null;
+  restSeconds: number | null;
 };
 
 /**
@@ -113,6 +114,21 @@ function TargetFields({
           ) : null}
         </div>
       ) : null}
+
+      {
+        // Not filtered by cardioFields - how long to rest applies to
+        // strength and cardio alike.
+      }
+      <Field label="Rest (seconds)">
+        <Input
+          name="targetRestSeconds"
+          type="number"
+          min={1}
+          inputMode="numeric"
+          placeholder="off"
+          defaultValue={defaultValues?.restSeconds ?? undefined}
+        />
+      </Field>
     </>
   );
 }

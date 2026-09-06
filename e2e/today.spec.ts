@@ -175,6 +175,59 @@ test("surfaces the active plan's workout and tracks set progress", async ({ page
   await expect(card.getByText('4 of 3 sets')).toBeVisible();
 });
 
+test('starts a rest timer after logging a set and counts down to nothing', async ({ page, athlete }) => {
+  await page.goto('/settings?section=rest-timer');
+  await page.getByLabel('Seconds').fill('5');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+
+  const exercise = uniqueName('Row');
+  await createExercise(page, { name: exercise });
+  await activePlanWith(page, exercise);
+
+  // Installed only now, after the setup above ran in real time - the clock
+  // is what makes "5 seconds pass" assertable without a real wait.
+  await page.clock.install();
+  await page.goto('/today');
+
+  const card = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.locator('[data-slot="card-title"]', { hasText: exercise }) });
+
+  await card.getByLabel('Reps').fill('10');
+  await card.getByLabel(/^Weight \(/).fill('50');
+  await card.getByRole('button', { name: 'Log set' }).click();
+
+  await expect(card.getByRole('timer')).toHaveText('0:05');
+
+  await page.clock.runFor('00:05');
+  await expect(card.getByRole('timer')).toHaveCount(0);
+});
+
+test('skips the rest timer', async ({ page, athlete }) => {
+  await page.goto('/settings?section=rest-timer');
+  await page.getByLabel('Seconds').fill('90');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+
+  const exercise = uniqueName('Row');
+  await createExercise(page, { name: exercise });
+  await activePlanWith(page, exercise);
+
+  await page.goto('/today');
+  const card = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.locator('[data-slot="card-title"]', { hasText: exercise }) });
+
+  await card.getByLabel('Reps').fill('10');
+  await card.getByLabel(/^Weight \(/).fill('50');
+  await card.getByRole('button', { name: 'Log set' }).click();
+
+  await expect(card.getByRole('timer')).toBeVisible();
+  await card.getByRole('button', { name: 'Skip' }).click();
+  await expect(card.getByRole('timer')).toHaveCount(0);
+});
+
 test('marks a rest day but still allows logging', async ({ page, athlete }) => {
   await createPlan(page, uniqueName('Rest Cycle'));
   await page.getByRole('button', { name: 'Rest day', exact: true }).click();

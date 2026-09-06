@@ -30,6 +30,7 @@ export const users = pgTable('users', {
   distanceUnit: distanceUnitEnum('distance_unit').notNull().default('km'),
   showSampleData: boolean('show_sample_data').notNull().default(true),
   timezone: text('timezone').notNull().default('UTC'),
+  defaultRestSeconds: integer('default_rest_seconds'),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -114,6 +115,7 @@ export const workoutExercises = pgTable(
     targetDurationSeconds: integer('target_duration_seconds'),
     targetSpeed: numeric('target_speed', { precision: 5, scale: 2 }),
     targetResistance: integer('target_resistance'),
+    targetRestSeconds: integer('rest_seconds'),
   },
   (table) => [unique('workout_exercises_workout_position_unique').on(table.workoutId, table.position)],
 );

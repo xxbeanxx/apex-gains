@@ -130,6 +130,13 @@ class UpdateTargetDto extends WorkoutExerciseIdDto {
   @IsInt()
   @IsPositive()
   readonly targetResistance?: number;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly targetRestSeconds?: number;
 }
 
 // Annotated so `notFound()`'s `never` narrows at the call site: TypeScript
@@ -191,6 +198,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
           durationMinutes: input.targetDurationMinutes,
           speed: input.targetSpeed,
           resistance: input.targetResistance,
+          restSeconds: input.targetRestSeconds,
         }),
       ),
     ),
@@ -288,6 +296,7 @@ function EditTargetDetail({
             durationMinutes: entry.target?.durationMinutesValue ?? null,
             speed: entry.target?.speedValue ?? null,
             resistance: entry.target?.resistance ?? null,
+            restSeconds: entry.target?.restSeconds ?? null,
           }}
         />
         {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}

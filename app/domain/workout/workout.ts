@@ -150,7 +150,9 @@ export class Workout {
    * Replaces one entry's target. `cardioFields` is what the exercise's
    * equipment allows - a speed or resistance the caller submitted anyway is
    * dropped rather than stored, so a stale form can never leave a cardio
-   * exercise carrying a measurement it has no equipment to report.
+   * exercise carrying a measurement it has no equipment to report. Rest is
+   * not filtered by `cardioFields`: how long to rest after a set applies to
+   * strength and cardio alike.
    *
    * False when the entry isn't there - a stale form, not an error.
    */
@@ -166,6 +168,7 @@ export class Workout {
         duration: target.duration,
         speed: cardioFields.showSpeed ? target.speed : null,
         resistance: cardioFields.showResistance ? target.resistance : null,
+        rest: target.rest,
       }),
     );
     this.touch(now);

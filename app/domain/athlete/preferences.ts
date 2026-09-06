@@ -23,22 +23,28 @@ export class AthletePreferences {
     readonly distanceUnit: DistanceUnit,
     readonly showSampleData: boolean,
     readonly timezone: string,
+    readonly restDuration: Duration | null = null,
   ) {}
 
   static defaults(): AthletePreferences {
-    return new AthletePreferences('lb', 'km', true, DEFAULT_TIMEZONE);
+    return new AthletePreferences('lb', 'km', true, DEFAULT_TIMEZONE, null);
   }
 
   withUnits(weightUnit: WeightUnit, distanceUnit: DistanceUnit): AthletePreferences {
-    return new AthletePreferences(weightUnit, distanceUnit, this.showSampleData, this.timezone);
+    return new AthletePreferences(weightUnit, distanceUnit, this.showSampleData, this.timezone, this.restDuration);
   }
 
   withSampleData(showSampleData: boolean): AthletePreferences {
-    return new AthletePreferences(this.weightUnit, this.distanceUnit, showSampleData, this.timezone);
+    return new AthletePreferences(this.weightUnit, this.distanceUnit, showSampleData, this.timezone, this.restDuration);
   }
 
   withTimezone(timezone: string): AthletePreferences {
-    return new AthletePreferences(this.weightUnit, this.distanceUnit, this.showSampleData, timezone);
+    return new AthletePreferences(this.weightUnit, this.distanceUnit, this.showSampleData, timezone, this.restDuration);
+  }
+
+  /** `null` turns the rest timer off. */
+  withRestDuration(restDuration: Duration | null): AthletePreferences {
+    return new AthletePreferences(this.weightUnit, this.distanceUnit, this.showSampleData, this.timezone, restDuration);
   }
 
   formatWeight(weight: Weight | null): string | null {

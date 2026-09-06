@@ -13,7 +13,15 @@ async function addExercise(page: Page, exercise: string): Promise<void> {
 async function setTarget(
   page: Page,
   exercise: string,
-  targets: { sets?: string; reps?: string; weight?: string; minutes?: string; speed?: string; resistance?: string },
+  targets: {
+    sets?: string;
+    reps?: string;
+    weight?: string;
+    minutes?: string;
+    speed?: string;
+    resistance?: string;
+    restSeconds?: string;
+  },
 ): Promise<void> {
   const row = orderedRows(page).filter({ hasText: exercise });
   await row.getByText('Edit target').click();
@@ -23,6 +31,7 @@ async function setTarget(
   if (targets.minutes) await row.getByLabel('Minutes').fill(targets.minutes);
   if (targets.speed) await row.getByLabel(/^Speed \(/).fill(targets.speed);
   if (targets.resistance) await row.getByLabel('Resistance').fill(targets.resistance);
+  if (targets.restSeconds) await row.getByLabel('Rest (seconds)').fill(targets.restSeconds);
   await row.getByRole('button', { name: 'Save target' }).click();
 }
 
@@ -50,12 +59,13 @@ test('adds an exercise with targets, which show as a summary', async ({ page, at
   await createExercise(page, { name: exercise, muscleGroup: 'chest' });
   await createWorkout(page, workout);
   await addExercise(page, exercise);
-  await setTarget(page, exercise, { sets: '3', reps: '10', weight: '135' });
+  await setTarget(page, exercise, { sets: '3', reps: '10', weight: '135', restSeconds: '90' });
 
   const row = orderedRows(page).filter({ hasText: exercise });
   await expect(row).toContainText('3 sets');
   await expect(row).toContainText('10 reps');
   await expect(row).toContainText('135 lb');
+  await expect(row).toContainText('1.5 min rest');
 
   await page.goto('/workouts');
   await expect(page.getByRole('listitem').filter({ hasText: workout })).toContainText('1 exercise');

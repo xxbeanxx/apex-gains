@@ -1,5 +1,6 @@
 import type { Clock } from '../shared/clock';
 import type { IdGenerator } from '../shared/ids';
+import { Duration } from '../values/duration';
 import type { DistanceUnit, WeightUnit } from '../values/units';
 import { AthletePreferences } from './preferences';
 
@@ -13,6 +14,7 @@ export type AthleteSnapshot = {
   readonly distanceUnit: DistanceUnit;
   readonly showSampleData: boolean;
   readonly timezone: string;
+  readonly defaultRestSeconds: number | null;
   readonly isAdmin: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -81,7 +83,13 @@ export class Athlete {
       snapshot.email,
       snapshot.name,
       snapshot.avatarUrl,
-      new AthletePreferences(snapshot.weightUnit, snapshot.distanceUnit, snapshot.showSampleData, snapshot.timezone),
+      new AthletePreferences(
+        snapshot.weightUnit,
+        snapshot.distanceUnit,
+        snapshot.showSampleData,
+        snapshot.timezone,
+        Duration.fromStorage(snapshot.defaultRestSeconds),
+      ),
       snapshot.isAdmin,
       snapshot.createdAt,
       snapshot.updatedAt,
@@ -99,6 +107,7 @@ export class Athlete {
       distanceUnit: this.currentPreferences.distanceUnit,
       showSampleData: this.currentPreferences.showSampleData,
       timezone: this.currentPreferences.timezone,
+      defaultRestSeconds: this.currentPreferences.restDuration?.toStorage() ?? null,
       isAdmin: this.administrator,
       createdAt: this.createdAt,
       updatedAt: this.lastUpdatedAt,
@@ -141,6 +150,12 @@ export class Athlete {
 
   changeTimezone(timezone: string, now: Date): void {
     this.currentPreferences = this.currentPreferences.withTimezone(timezone);
+    this.lastUpdatedAt = now;
+  }
+
+  /** `null` turns the rest timer off. */
+  changeRestDuration(restDuration: Duration | null, now: Date): void {
+    this.currentPreferences = this.currentPreferences.withRestDuration(restDuration);
     this.lastUpdatedAt = now;
   }
 }

@@ -93,6 +93,25 @@ describe('changeTimezone', () => {
   });
 });
 
+describe('changeRestDuration', () => {
+  it('persists a new rest duration', async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+    await service.changeRestDuration(athlete, 90);
+
+    const found = await athletes.findById(athlete.id);
+    expect(found?.preferences.restDuration?.inSeconds).toBe(90);
+  });
+
+  it('turns the timer off with null', async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+    await service.changeRestDuration(athlete, 90);
+    await service.changeRestDuration(athlete, null);
+
+    const found = await athletes.findById(athlete.id);
+    expect(found?.preferences.restDuration).toBeNull();
+  });
+});
+
 describe('signing in by email (test login)', () => {
   it('registers on first use and matches by email afterwards', async () => {
     const identity = {

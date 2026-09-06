@@ -1,5 +1,5 @@
-import { Expose } from 'class-transformer';
-import { IsIn } from 'class-validator';
+import { Expose, Transform } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsPositive } from 'class-validator';
 import { CheckCircle2Icon } from 'lucide-react';
 import { data } from 'react-router';
 
@@ -9,6 +9,7 @@ import { SettingsShell, type SettingsSection } from '~/components/settings/setti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { TimezonePicker } from '~/components/settings/timezone-picker';
@@ -16,6 +17,7 @@ import { DISTANCE_UNITS, type DistanceUnit, WEIGHT_UNITS, type WeightUnit } from
 import { TIMEZONES } from '~/domain/values/timezone';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
+import { toOptionalNumber } from '~/lib/validate-form';
 
 import { athleteServiceContext } from '~/lib/nest-bridge.server';
 
@@ -49,7 +51,17 @@ class UpdateTimezoneDto {
   readonly timezone!: string;
 }
 
-const SECTION_IDS = ['units', 'timezone', 'sample-data'] as const;
+class UpdateRestDurationDto {
+  // A blank field turns the timer off - absent, not zero.
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  readonly restSeconds?: number;
+}
+
+const SECTION_IDS = ['units', 'timezone', 'rest-timer', 'sample-data'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 function sectionFrom(request: Request): SectionId {
@@ -65,6 +77,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     distanceUnit: preferences.distanceUnit,
     showSampleData: preferences.showSampleData,
     timezone: preferences.timezone,
+    restSeconds: preferences.restDuration?.inSeconds ?? null,
   };
 }
 
@@ -77,6 +90,7 @@ const intents = {
     fields: (formData) => ({ showSampleData: formData.get('showSampleData') ?? 'false' }),
   }),
   updateTimezone: intent('updateTimezone', UpdateTimezoneDto, { invalidMessage: 'Unknown timezone.' }),
+  updateRestDuration: intent('updateRestDuration', UpdateRestDurationDto, { invalidMessage: 'Invalid rest duration.' }),
 };
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -97,6 +111,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     handled(intents.updateTimezone, async ({ timezone }) => {
       await athleteService.changeTimezone(athlete, timezone);
       return { ok: true, intent: intents.updateTimezone.name } as const;
+    }),
+
+    handled(intents.updateRestDuration, async ({ restSeconds }) => {
+      await athleteService.changeRestDuration(athlete, restSeconds ?? null);
+      return { ok: true, intent: intents.updateRestDuration.name } as const;
     }),
   ]);
 }
@@ -207,6 +226,53 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               </div>
 
               <SubmitButton match={intents.updateTimezone.match} pendingLabel="Saving" className="self-start">
+                Save
+              </SubmitButton>
+            </form>
+          </CardContent>
+        </Card>
+      ),
+    },
+    {
+      id: 'rest-timer',
+      label: 'Rest timer',
+      content: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Rest timer</CardTitle>
+            <CardDescription>
+              How long to rest between sets by default, shown on the logging form after each one. A workout's own exercises can
+              override this. Leave it blank to turn the timer off.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form method="post" className="flex flex-col gap-6">
+              <input {...intents.updateRestDuration.field} />
+              <Field label="Seconds" error={intents.updateRestDuration.errorIn(actionData)} className="sm:max-w-40">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    name="restSeconds"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    placeholder="off"
+                    defaultValue={loaderData.restSeconds ?? undefined}
+                  />
+                )}
+              </Field>
+
+              <div aria-live="polite" className="empty:hidden">
+                {intents.updateRestDuration.succeededIn(actionData) ? (
+                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                    <CheckCircle2Icon className="size-4" aria-hidden="true" />
+                    Saved.
+                  </p>
+                ) : null}
+              </div>
+
+              <SubmitButton match={intents.updateRestDuration.match} pendingLabel="Saving" className="self-start">
                 Save
               </SubmitButton>
             </form>

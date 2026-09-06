@@ -47,6 +47,25 @@ describe('withTimezone', () => {
   });
 });
 
+describe('withRestDuration', () => {
+  it('starts with no rest duration, meaning the timer is off', () => {
+    expect(AthletePreferences.defaults().restDuration).toBeNull();
+  });
+
+  it('changes only the rest duration', () => {
+    const preferences = new AthletePreferences('lb', 'km', true, 'UTC').withRestDuration(Duration.seconds(90));
+
+    expect(preferences.restDuration?.inSeconds).toBe(90);
+    expect(preferences.weightUnit).toBe('lb');
+  });
+
+  it('turns the timer back off with null', () => {
+    const preferences = new AthletePreferences('lb', 'km', true, 'UTC', Duration.seconds(90)).withRestDuration(null);
+
+    expect(preferences.restDuration).toBeNull();
+  });
+});
+
 describe('formatting', () => {
   it('formats a weight in the preferred unit, and null as null', () => {
     const preferences = new AthletePreferences('kg', 'km', true, 'UTC');

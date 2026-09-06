@@ -8,6 +8,7 @@ import { requireAthlete } from '~/auth/user-context';
 import { ExerciseHistoryButton } from '~/components/session/exercise-history-button';
 import { LoggedSetsList } from '~/components/session/logged-sets-list';
 import { LogSetForm } from '~/components/session/log-set-form';
+import { RestTimer } from '~/components/session/rest-timer';
 import { SetProgress } from '~/components/session/set-progress';
 import { PastWeekCard, UpcomingWeekCard } from '~/components/session/week-rail';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -70,6 +71,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     lastSets,
     weightUnit: athlete.preferences.weightUnit,
     distanceUnit: athlete.preferences.distanceUnit,
+    defaultRestSeconds: athlete.preferences.restDuration?.inSeconds ?? null,
   };
 }
 
@@ -213,6 +215,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
     lastSets,
     weightUnit,
     distanceUnit,
+    defaultRestSeconds,
   } = loaderData;
   const prevDate = DateOnly.parse(date).minusDays(1).value;
   const nextDate = DateOnly.parse(date).plusDays(1).value;
@@ -348,6 +351,11 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                       sets={setsByExercise.get(item.exerciseId) ?? []}
                       date={date}
                       removeSet={intents.removeSet}
+                    />
+                    <RestTimer
+                      exerciseId={item.exerciseId}
+                      restSeconds={item.target?.restSeconds ?? defaultRestSeconds}
+                      signal={done}
                     />
                     {complete ? (
                       // The common case once a card is complete is *not*

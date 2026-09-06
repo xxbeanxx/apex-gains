@@ -39,6 +39,7 @@ function withExercises(exerciseIds: string[], rest: Partial<WorkoutSnapshot> = {
         targetDurationSeconds: null,
         targetSpeed: null,
         targetResistance: null,
+        targetRestSeconds: null,
       })),
     }),
   );
@@ -120,6 +121,17 @@ describe('updateTarget', () => {
     expect(workout.exercises[0].target.resistance).toBeNull();
   });
 
+  it('keeps rest through equipment that reports neither speed nor resistance, since it applies to strength and cardio alike', () => {
+    const workout = withExercises(['row']);
+    const target = SetTarget.of({ speed: Speed.kmh(8), resistance: 5, rest: Duration.seconds(90) });
+
+    workout.updateTarget('entry-0', target, { showSpeed: false, showResistance: false }, NOW);
+
+    expect(workout.exercises[0].target.speed).toBeNull();
+    expect(workout.exercises[0].target.resistance).toBeNull();
+    expect(workout.exercises[0].target.rest?.inSeconds).toBe(90);
+  });
+
   it('stamps the workout when a target changes', () => {
     const workout = withExercises(['bench']);
     const later = new Date('2026-09-04T09:00:00Z');
@@ -152,6 +164,7 @@ describe('fork on write', () => {
             targetDurationSeconds: null,
             targetSpeed: null,
             targetResistance: null,
+            targetRestSeconds: null,
           },
         ],
       }),
@@ -296,5 +309,19 @@ describe('SetTarget', () => {
     });
     const restored = SetTarget.fromSnapshot(original.toSnapshot());
     expect(restored.format(imperial)).toBe(original.format(imperial));
+  });
+
+  it('is not empty when only rest is set', () => {
+    expect(SetTarget.of({ rest: Duration.seconds(90) }).isEmpty).toBe(false);
+  });
+
+  it('appends rest to the summary', () => {
+    const target = SetTarget.of({ sets: 3, reps: 10, weight: Weight.lb(135), rest: Duration.seconds(90) });
+    expect(target.format(imperial)).toBe('3 x 10, 135 lb, 1.5 min rest');
+  });
+
+  it('rest round-trips through storage', () => {
+    const original = SetTarget.of({ rest: Duration.seconds(90) });
+    expect(SetTarget.fromSnapshot(original.toSnapshot()).rest?.inSeconds).toBe(90);
   });
 });
