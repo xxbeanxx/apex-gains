@@ -70,6 +70,17 @@ test('defaults to UTC and the timezone choice survives a reload', async ({ page,
   await expect(page.getByLabel('Timezone')).toHaveValue('America/Toronto');
 });
 
+test('sets a default rest duration and it survives a reload', async ({ page, athlete }) => {
+  await page.goto('/settings?section=rest-timer');
+
+  await page.getByLabel('Seconds').fill('90');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByLabel('Seconds')).toHaveValue('90');
+});
+
 test('toggles sample data visibility', async ({ page, athlete }) => {
   await page.goto('/settings?section=sample-data');
 

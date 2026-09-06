@@ -91,6 +91,7 @@ export function athlete(id: string = ids.athlete, overrides: Partial<{ email: st
     distanceUnit: 'km',
     showSampleData: true,
     timezone: 'UTC',
+    defaultRestSeconds: null,
     isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,

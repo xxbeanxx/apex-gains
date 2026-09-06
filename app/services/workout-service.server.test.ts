@@ -25,6 +25,7 @@ const athlete = Athlete.fromSnapshot({
   weightUnit: 'lb',
   distanceUnit: 'km',
   showSampleData: true,
+  defaultRestSeconds: null,
   timezone: 'UTC',
   isAdmin: false,
   createdAt: NOW,
@@ -50,6 +51,7 @@ function sampleWorkout(overrides: Partial<WorkoutSnapshot> = {}): Workout {
         targetDurationSeconds: null,
         targetSpeed: null,
         targetResistance: null,
+        targetRestSeconds: null,
       },
     ],
     ...overrides,
@@ -122,6 +124,8 @@ describe('detail', () => {
           speed: null,
           speedValue: null,
           resistance: null,
+          rest: null,
+          restSeconds: null,
         },
       },
     ]);
@@ -141,6 +145,7 @@ describe('detail', () => {
             targetDurationSeconds: null,
             targetSpeed: null,
             targetResistance: null,
+            targetRestSeconds: null,
           },
         ],
       }),
@@ -213,6 +218,7 @@ describe('updateExerciseTarget', () => {
             targetDurationSeconds: null,
             targetSpeed: null,
             targetResistance: null,
+            targetRestSeconds: null,
           },
         ],
       }),
@@ -254,6 +260,24 @@ describe('updateExerciseTarget', () => {
     expect(fork?.exercises[0].target.resistance).toBe(5);
   });
 
+  it('keeps a rest target even when a dropped cardio field would otherwise be filtered', async () => {
+    await exercises.save(exercise({ equipmentIds: ['rower'] }));
+    await equipment.save(
+      Equipment.fromSnapshot({ id: 'rower', userId: null, name: 'Rower', cardioKind: 'resistance', createdAt: NOW }),
+    );
+
+    const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'sample-entry-0', {
+      speed: 8,
+      restSeconds: 90,
+    });
+
+    expect(outcome.ok).toBe(true);
+    const forkedId = outcome.ok ? outcome.value.forkedId : null;
+    const fork = await workouts.findVisible(athlete.id, forkedId!);
+    expect(fork?.exercises[0].target.speed).toBeNull();
+    expect(fork?.exercises[0].target.rest?.inSeconds).toBe(90);
+  });
+
   it('is a no-op for a stale entry id', async () => {
     const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'nope', { sets: 4 });
     expect(outcome.ok).toBe(true);
@@ -280,6 +304,7 @@ describe('removeExercise and moveExercise translate the entry id onto the fork',
             targetDurationSeconds: null,
             targetSpeed: null,
             targetResistance: null,
+            targetRestSeconds: null,
           },
           {
             id: 'sample-entry-1',
@@ -291,6 +316,7 @@ describe('removeExercise and moveExercise translate the entry id onto the fork',
             targetDurationSeconds: null,
             targetSpeed: null,
             targetResistance: null,
+            targetRestSeconds: null,
           },
         ],
       }),

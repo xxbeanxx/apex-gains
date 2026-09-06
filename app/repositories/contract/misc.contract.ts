@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Athlete } from '~/domain/athlete/athlete';
+import { Duration } from '~/domain/values/duration';
 
 import {
   athlete,
@@ -40,6 +41,19 @@ export function describeAthletesContract(subject: ContractSubject): void {
         distanceUnit: 'mi',
         timezone: 'America/Toronto',
       });
+    });
+
+    it('round-trips a rest duration, and null once the timer is turned back off', async () => {
+      const registered = athlete(ids.athlete);
+      registered.changeRestDuration(Duration.seconds(90), NOW);
+      await repositories.athletes.save(registered);
+
+      expect((await repositories.athletes.findById(ids.athlete))?.preferences.restDuration?.inSeconds).toBe(90);
+
+      registered.changeRestDuration(null, NOW);
+      await repositories.athletes.save(registered);
+
+      expect((await repositories.athletes.findById(ids.athlete))?.preferences.restDuration).toBeNull();
     });
 
     it('finds an athlete by their Google subject and by email', async () => {

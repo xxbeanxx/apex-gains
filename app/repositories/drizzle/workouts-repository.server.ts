@@ -45,6 +45,7 @@ function toWorkout(row: RowWithExercises): Workout {
       targetDurationSeconds: entry.targetDurationSeconds,
       targetSpeed: entry.targetSpeed,
       targetResistance: entry.targetResistance,
+      targetRestSeconds: entry.targetRestSeconds,
     })),
   });
 }
@@ -61,6 +62,7 @@ function toRow(workoutId: string, entry: WorkoutExerciseSnapshot) {
     targetDurationSeconds: entry.targetDurationSeconds,
     targetSpeed: entry.targetSpeed,
     targetResistance: entry.targetResistance,
+    targetRestSeconds: entry.targetRestSeconds,
   };
 }
 
@@ -166,6 +168,7 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
           targetDurationSeconds: row.targetDurationSeconds,
           targetSpeed: row.targetSpeed,
           targetResistance: row.targetResistance,
+          targetRestSeconds: row.targetRestSeconds,
         })
         .where(eq(workoutExercises.id, row.id));
     }

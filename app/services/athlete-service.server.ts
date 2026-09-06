@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { Athlete, type NewAthlete } from '~/domain/athlete/athlete';
+import { Duration } from '~/domain/values/duration';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
 import type { AthletesRepository } from '~/repositories/athletes-repository.server';
 import { ATHLETES_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
@@ -75,6 +76,12 @@ export class AthleteService {
 
   async changeTimezone(athlete: Athlete, timezone: string): Promise<void> {
     athlete.changeTimezone(timezone, this.deps.clock.now());
+    await this.athletes.save(athlete);
+  }
+
+  /** `null` turns the rest timer off. */
+  async changeRestDuration(athlete: Athlete, restSeconds: number | null): Promise<void> {
+    athlete.changeRestDuration(restSeconds != null ? Duration.seconds(restSeconds) : null, this.deps.clock.now());
     await this.athletes.save(athlete);
   }
 

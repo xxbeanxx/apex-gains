@@ -10,6 +10,7 @@ export type SetTargetSnapshot = {
   readonly targetDurationSeconds: number | null;
   readonly targetSpeed: string | null;
   readonly targetResistance: number | null;
+  readonly targetRestSeconds: number | null;
 };
 
 export type SetTargetInput = {
@@ -19,6 +20,7 @@ export type SetTargetInput = {
   readonly duration?: Duration | null;
   readonly speed?: Speed | null;
   readonly resistance?: number | null;
+  readonly rest?: Duration | null;
 };
 
 /**
@@ -38,10 +40,11 @@ export class SetTarget {
     readonly duration: Duration | null,
     readonly speed: Speed | null,
     readonly resistance: number | null,
+    readonly rest: Duration | null,
   ) {}
 
   static none(): SetTarget {
-    return new SetTarget(null, null, null, null, null, null);
+    return new SetTarget(null, null, null, null, null, null, null);
   }
 
   static of(input: SetTargetInput): SetTarget {
@@ -52,6 +55,7 @@ export class SetTarget {
       input.duration ?? null,
       input.speed ?? null,
       input.resistance ?? null,
+      input.rest ?? null,
     );
   }
 
@@ -63,6 +67,7 @@ export class SetTarget {
       Duration.fromStorage(snapshot.targetDurationSeconds),
       Speed.fromStorage(snapshot.targetSpeed),
       snapshot.targetResistance,
+      Duration.fromStorage(snapshot.targetRestSeconds),
     );
   }
 
@@ -74,6 +79,7 @@ export class SetTarget {
       targetDurationSeconds: this.duration?.toStorage() ?? null,
       targetSpeed: this.speed?.toStorage() ?? null,
       targetResistance: this.resistance,
+      targetRestSeconds: this.rest?.toStorage() ?? null,
     };
   }
 
@@ -84,7 +90,8 @@ export class SetTarget {
       this.weight === null &&
       this.duration === null &&
       this.speed === null &&
-      this.resistance === null
+      this.resistance === null &&
+      this.rest === null
     );
   }
 
@@ -114,6 +121,9 @@ export class SetTarget {
     if (speed) parts.push(speed);
 
     if (this.resistance !== null) parts.push(`resistance ${this.resistance}`);
+
+    const rest = preferences.formatDuration(this.rest);
+    if (rest) parts.push(`${rest} rest`);
 
     return parts.length > 0 ? parts.join(', ') : null;
   }

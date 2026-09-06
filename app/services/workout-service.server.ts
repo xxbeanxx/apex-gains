@@ -67,6 +67,7 @@ export type TargetInput = {
   durationMinutes?: number | null;
   speed?: number | null;
   resistance?: number | null;
+  restSeconds?: number | null;
 };
 
 export type WorkoutMutation = ForkMutation;
@@ -218,6 +219,7 @@ export class WorkoutService {
       duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
       speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
       resistance: input.resistance,
+      rest: input.restSeconds != null ? Duration.seconds(input.restSeconds) : null,
     });
   }
 }

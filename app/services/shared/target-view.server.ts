@@ -16,6 +16,10 @@ export type TargetView = {
   speed: string | null;
   speedValue: number | null;
   resistance: number | null;
+  /** Formatted in minutes, same as `duration` - "1.5 min". */
+  rest: string | null;
+  /** Raw seconds - what the rest timer counts down from. */
+  restSeconds: number | null;
 };
 
 export function toTargetView(target: SetTarget, preferences: AthletePreferences): TargetView | null {
@@ -30,5 +34,7 @@ export function toTargetView(target: SetTarget, preferences: AthletePreferences)
     speed: preferences.formatSpeed(target.speed),
     speedValue: target.speed ? preferences.speedValue(target.speed) : null,
     resistance: target.resistance,
+    rest: preferences.formatDuration(target.rest),
+    restSeconds: target.rest?.inSeconds ?? null,
   };
 }

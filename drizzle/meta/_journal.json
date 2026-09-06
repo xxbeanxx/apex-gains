@@ -71,6 +71,13 @@
       "when": 1788624896079,
       "tag": "0009_rename_to_plan_workout_session",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788660227003,
+      "tag": "0010_tired_luckman",
+      "breakpoints": true
     }
   ]
 }

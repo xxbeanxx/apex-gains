@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SetTarget } from '~/domain/workout/set-target';
+import { Duration } from '~/domain/values/duration';
 
 import { deps, exercise, ids, NOW, seedAthletes, workout, type ContractSubject, type RepositorySet } from './harness';
 
@@ -98,6 +99,17 @@ export function describeWorkoutsContract(subject: ContractSubject): void {
           { exerciseId: second, position: 1 },
         ]);
         expect(found?.exercises[0]!.target.toSnapshot()).toMatchObject({ targetSets: 3, targetReps: 8 });
+      });
+
+      it('round-trips a rest target', async () => {
+        const [first] = await seedExercises(1);
+        const saved = workout({ id: ids.own });
+        saved.addExercise(first!, SetTarget.of({ rest: Duration.seconds(90) }), deps);
+        await repositories.workouts.save(saved);
+
+        const found = await repositories.workouts.findVisible(ids.athlete, ids.own);
+
+        expect(found?.exercises[0]!.target.rest?.inSeconds).toBe(90);
       });
 
       it('closes the gap after a removal, leaving positions contiguous', async () => {

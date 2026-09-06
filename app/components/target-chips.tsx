@@ -17,6 +17,7 @@ function TargetChips({ target }: { target: WorkoutExerciseView['target'] }) {
   if (target.duration) chips.push(target.duration);
   if (target.speed) chips.push(target.speed);
   if (target.resistance !== null) chips.push(`resistance ${target.resistance}`);
+  if (target.rest) chips.push(`${target.rest} rest`);
 
   if (chips.length === 0) return null;
 

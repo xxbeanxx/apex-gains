@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { fixedClock } from '../shared/clock';
 import { sequentialIds } from '../shared/ids';
+import { Duration } from '../values/duration';
 import { Athlete } from './athlete';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
@@ -128,5 +129,25 @@ describe('changeTimezone', () => {
     athlete.changeTimezone('America/Toronto', NOW);
 
     expect(Athlete.fromSnapshot(athlete.toSnapshot()).preferences.timezone).toBe('America/Toronto');
+  });
+});
+
+describe('changeRestDuration', () => {
+  it('updates the rest duration and bumps updatedAt', () => {
+    const athlete = Athlete.register(identity, deps);
+    const later = new Date('2026-09-04T00:00:00Z');
+
+    athlete.changeRestDuration(Duration.seconds(90), later);
+
+    expect(athlete.preferences.restDuration?.inSeconds).toBe(90);
+    expect(athlete.updatedAt).toEqual(later);
+  });
+
+  it('turns the timer off with null, and that carries through a snapshot round-trip', () => {
+    const athlete = Athlete.register(identity, deps);
+    athlete.changeRestDuration(Duration.seconds(90), NOW);
+    athlete.changeRestDuration(null, NOW);
+
+    expect(Athlete.fromSnapshot(athlete.toSnapshot()).preferences.restDuration).toBeNull();
   });
 });
