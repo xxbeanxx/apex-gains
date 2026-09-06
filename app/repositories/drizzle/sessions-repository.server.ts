@@ -30,6 +30,8 @@ function toSession(row: RowWithSets): Session {
       durationSeconds: set.durationSeconds,
       speed: set.speed,
       resistanceLevel: set.resistanceLevel,
+      notes: set.notes,
+      rpe: set.rpe,
       createdAt: set.createdAt,
     })),
   });
@@ -124,6 +126,8 @@ export class DrizzleSessionsRepository implements SessionsRepository {
         durationSeconds: sessionSets.durationSeconds,
         speed: sessionSets.speed,
         resistanceLevel: sessionSets.resistanceLevel,
+        notes: sessionSets.notes,
+        rpe: sessionSets.rpe,
         createdAt: sessionSets.createdAt,
       })
       .from(sessionSets)
@@ -156,6 +160,8 @@ export class DrizzleSessionsRepository implements SessionsRepository {
         durationSeconds: sessionSets.durationSeconds,
         speed: sessionSets.speed,
         resistanceLevel: sessionSets.resistanceLevel,
+        notes: sessionSets.notes,
+        rpe: sessionSets.rpe,
         createdAt: sessionSets.createdAt,
       })
       .from(sessionSets)
@@ -238,6 +244,8 @@ export class DrizzleSessionsRepository implements SessionsRepository {
           durationSeconds: set.durationSeconds,
           speed: set.speed,
           resistanceLevel: set.resistanceLevel,
+          notes: set.notes,
+          rpe: set.rpe,
           createdAt: set.createdAt,
         })),
       );

@@ -1,6 +1,6 @@
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
 import { Expose, Transform } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -24,7 +24,7 @@ import { requestLogger } from '~/lib/logger.server';
 import { cn } from '~/lib/utils';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
-import { IsDateOnly, toOptionalNumber } from '~/lib/validate-form';
+import { IsDateOnly, IsRpe, optionalTrim, toOptionalNumber } from '~/lib/validate-form';
 
 import { exerciseLibraryServiceContext, trainingPlanServiceContext, sessionServiceContext } from '~/lib/nest-bridge.server';
 
@@ -116,6 +116,19 @@ class LogSetDto {
   @IsInt()
   @IsPositive()
   readonly resistance?: number;
+
+  @Expose()
+  @Transform(optionalTrim())
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  readonly notes?: string;
+
+  @Expose()
+  @Transform(toOptionalNumber())
+  @IsOptional()
+  @IsRpe()
+  readonly rpe?: number;
 }
 
 class RemoveSetDto {
@@ -151,6 +164,8 @@ export async function action({ request, context }: Route.ActionArgs) {
         durationMinutes: input.durationMinutes,
         speed: input.speed,
         resistance: input.resistance,
+        notes: input.notes,
+        rpe: input.rpe,
       });
 
       if (!outcome.ok) {

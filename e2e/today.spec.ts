@@ -94,6 +94,23 @@ test('prefills the log form from the last time this exercise was logged', async 
   await expect(page.getByLabel(/^Weight \(/)).toHaveValue('225');
 });
 
+test('records an RPE and a note alongside a set', async ({ page, athlete }) => {
+  const exercise = uniqueName('Front Squat');
+  await createExercise(page, { name: exercise });
+
+  await page.goto('/today');
+  await selectOption(page.getByLabel('Exercise'), exercise);
+  await page.getByLabel('Reps').fill('5');
+  await page.getByLabel(/^Weight \(/).fill('185');
+  await selectOption(page.getByLabel('RPE'), '8.5');
+  await page.getByText('Add a note').click();
+  await page.getByLabel('Notes').fill('Rod 4 slipping');
+  await page.getByRole('button', { name: 'Log set' }).click();
+
+  await expect(loggedSets(page).filter({ hasText: '185 lb x 5 @ RPE 8.5' })).toBeVisible();
+  await expect(loggedSets(page).filter({ hasText: 'Rod 4 slipping' })).toBeVisible();
+});
+
 test('logs several sets so pyramids record as they were lifted', async ({ page, athlete }) => {
   const exercise = uniqueName('Squat');
   await createExercise(page, { name: exercise });

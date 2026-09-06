@@ -213,6 +213,8 @@ export const sessionSets = pgTable('session_sets', {
   durationSeconds: integer('duration_seconds'),
   speed: numeric('speed', { precision: 5, scale: 2 }),
   resistanceLevel: integer('resistance_level'),
+  notes: text('notes'),
+  rpe: numeric('rpe', { precision: 3, scale: 1 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

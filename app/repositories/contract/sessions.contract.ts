@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Session } from '~/domain/session/session';
 import type { Clock } from '~/domain/shared/clock';
+import { Rpe } from '~/domain/values/rpe';
 import { Weight } from '~/domain/values/weight';
 
 import { DateOnly, deps, exercise, ids, NOW, seedAthletes, session, type ContractSubject, type RepositorySet } from './harness';
@@ -94,6 +95,30 @@ export function describeSessionsContract(subject: ContractSubject): void {
         expect(found?.sets).toHaveLength(1);
         expect(found?.sets[0]!.toSnapshot()).toMatchObject({ exerciseId: benchPress, setNumber: 1, reps: 8 });
         expect(Number(found?.sets[0]!.toSnapshot().weight)).toBe(135);
+      });
+
+      it('round-trips notes and an RPE', async () => {
+        const [benchPress] = await seedExercises();
+        const opened = await repositories.sessions.add(session({ id: ids.own, date: '2026-09-03' }));
+        opened.logSet(benchPress, { reps: 8, notes: 'Rod 4 slipping', rpe: Rpe.of(8.5) }, deps);
+        await repositories.sessions.save(opened);
+
+        const found = await repositories.sessions.findForDate(ids.athlete, day('2026-09-03'));
+
+        expect(found?.sets[0]!.notes).toBe('Rod 4 slipping');
+        expect(found?.sets[0]!.rpe?.value).toBe(8.5);
+      });
+
+      it('leaves notes and RPE absent when neither was recorded', async () => {
+        const [benchPress] = await seedExercises();
+        const opened = await repositories.sessions.add(session({ id: ids.own, date: '2026-09-03' }));
+        opened.logSet(benchPress, { reps: 8 }, deps);
+        await repositories.sessions.save(opened);
+
+        const found = await repositories.sessions.findForDate(ids.athlete, day('2026-09-03'));
+
+        expect(found?.sets[0]!.notes).toBeNull();
+        expect(found?.sets[0]!.rpe).toBeNull();
       });
 
       it('numbers sets per exercise, in the order they were logged', async () => {

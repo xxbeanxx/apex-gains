@@ -7,6 +7,7 @@ import { Session } from '~/domain/session/session';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
+import { Rpe } from '~/domain/values/rpe';
 import { Speed } from '~/domain/values/speed';
 import { Weight } from '~/domain/values/weight';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
@@ -26,6 +27,9 @@ export type SetInput = {
   durationMinutes?: number | null;
   speed?: number | null;
   resistance?: number | null;
+  notes?: string | null;
+  /** 1 to 10, in half-point steps. */
+  rpe?: number | null;
 };
 
 export type LoggedSetView = SetInput & {
@@ -33,8 +37,9 @@ export type LoggedSetView = SetInput & {
   exerciseId: string;
   exerciseName: string;
   setNumber: number;
-  /** Already formatted in the athlete's units. */
+  /** Already formatted in the athlete's units, RPE included. */
   summary: string;
+  notes: string | null;
 };
 
 export type RecentSetView = {
@@ -46,7 +51,9 @@ export type RecentSetView = {
 
 /**
  * The prefill for a log form: the same shape it posts back, plus when it was
- * logged - "last time" is only worth showing alongside a date.
+ * logged - "last time" is only worth showing alongside a date. Notes and RPE
+ * are set-specific commentary, not something worth carrying over from a
+ * previous day, so they stay unset here even though `SetInput` allows them.
  */
 export type LastSetView = SetInput & {
   /** `YYYY-MM-DD` the set was logged on. */
@@ -92,6 +99,7 @@ export class SessionService {
       exerciseName: directory.nameOf(set.exerciseId),
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
+      notes: set.notes,
       ...toSetInput(set, athlete.preferences),
     }));
   }
@@ -163,6 +171,8 @@ export class SessionService {
           duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
           speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
           resistance: input.resistance,
+          notes: input.notes,
+          rpe: input.rpe != null ? Rpe.of(input.rpe) : null,
         },
         this.deps,
       );

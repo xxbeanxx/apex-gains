@@ -29,9 +29,12 @@ function LoggedSetRow({
       >
         {index + 1}
       </span>
-      <span className="min-w-0 flex-1 truncate tabular-nums">
-        <span className="sr-only">Set {index + 1}: </span>
-        {set.summary}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate tabular-nums">
+          <span className="sr-only">Set {index + 1}: </span>
+          {set.summary}
+        </span>
+        {set.notes ? <span className="block truncate text-xs text-muted-foreground">{set.notes}</span> : null}
       </span>
       <fetcher.Form method="post" className="contents">
         <input {...removeSet.field} />

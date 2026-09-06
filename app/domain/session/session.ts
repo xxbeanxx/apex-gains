@@ -125,17 +125,19 @@ export class Session {
 
   logSet(exerciseId: string, measurements: SetMeasurements, deps: { ids: IdGenerator; clock: Clock }): LoggedSet {
     const now = deps.clock.now();
-    const set = new LoggedSet(
-      deps.ids.next(),
+    const set = LoggedSet.of({
+      id: deps.ids.next(),
       exerciseId,
-      this.setsFor(exerciseId).length + 1,
-      measurements.reps ?? null,
-      measurements.weight ?? null,
-      measurements.duration ?? null,
-      measurements.speed ?? null,
-      measurements.resistance ?? null,
-      now,
-    );
+      setNumber: this.setsFor(exerciseId).length + 1,
+      reps: measurements.reps ?? null,
+      weight: measurements.weight ?? null,
+      duration: measurements.duration ?? null,
+      speed: measurements.speed ?? null,
+      resistanceLevel: measurements.resistance ?? null,
+      notes: measurements.notes ?? null,
+      rpe: measurements.rpe ?? null,
+      createdAt: now,
+    });
     this.loggedSets.push(set);
     this.lastUpdatedAt = now;
     return set;

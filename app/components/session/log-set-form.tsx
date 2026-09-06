@@ -1,4 +1,4 @@
-import { PlusIcon } from 'lucide-react';
+import { ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useFetcher } from 'react-router';
 
@@ -7,14 +7,18 @@ import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
+import { Textarea } from '~/components/ui/textarea';
 import type { CardioFields } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
+import { formatNumber, speedUnitLabel } from '~/domain/values/units';
 import type { DistanceUnit, WeightUnit } from '~/domain/values/units';
-import { speedUnitLabel } from '~/domain/values/units';
 import type { Intent } from '~/lib/intent';
 import { formatMonthDay } from '~/lib/format';
 import { cn } from '~/lib/utils';
 import type { LastSetView, LoggedSetView } from '~/services/session-service.server';
+
+/** 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side. */
+const RPE_OPTIONS = Array.from({ length: 19 }, (_, i) => 1 + i * 0.5);
 
 /**
  * The minimum an exercise has to offer for the log form to render the right
@@ -106,7 +110,7 @@ function LogSetForm({
       ) : null}
 
       {active?.exerciseType === 'strength' ? (
-        <div key={fieldsKey} className="grid grid-cols-2 gap-3 sm:max-w-xs">
+        <div key={fieldsKey} className="grid grid-cols-2 gap-3 sm:max-w-md sm:grid-cols-3">
           <Field label="Reps">
             <Input
               name="reps"
@@ -127,6 +131,22 @@ function LogSetForm({
               placeholder={weightUnit}
               defaultValue={prefill?.weight ?? undefined}
             />
+          </Field>
+          <Field label="RPE">
+            {({ id }) => (
+              <Select name="rpe">
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RPE_OPTIONS.map((rating) => (
+                    <SelectItem key={rating} value={String(rating)}>
+                      {formatNumber(rating)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </Field>
         </div>
       ) : null}
@@ -175,6 +195,26 @@ function LogSetForm({
             </Field>
           ) : null}
         </div>
+      ) : null}
+
+      {active ? (
+        <details className="sm:max-w-md">
+          <summary
+            role="button"
+            className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+          >
+            <ChevronRightIcon
+              className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
+              aria-hidden="true"
+            />
+            Add a note
+          </summary>
+          <div className="mt-3">
+            <Field label="Notes">
+              <Textarea name="notes" maxLength={500} placeholder="Rod 4 slipping" />
+            </Field>
+          </div>
+        </details>
       ) : null}
 
       {error ? (
