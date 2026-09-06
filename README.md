@@ -1,10 +1,10 @@
 # Apex Gains
 
 A personal workout tracker: an exercise library for a BowFlex PR1000,
-rowing machine, treadmill, and bodyweight exercises, reusable workout
-templates, day-slot routines that cycle from an anchor date, per-set
-logging, workout history and progress charts, body weight tracking,
-shareable routines (link or QR code), and custom equipment management.
+rowing machine, treadmill, and bodyweight exercises, reusable workouts,
+day-slot plans that cycle from an anchor date, per-set
+logging, session history and progress charts, body weight tracking,
+shareable plans (link or QR code), and custom equipment management.
 Auth is Google OIDC (open signup).
 
 Stack: React Router v8 (framework mode), NestJS (server runtime/DI),
@@ -59,26 +59,27 @@ App is at `http://localhost:3000/`.
 
 ## Scripts
 
-| Script                  | Purpose                                                                 |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `npm run build`         | Production build (application, then server runtime)                     |
-| `npm run build:app`     | Build the React Router app into `build/`                                |
-| `npm run build:server`  | Bundle the Nest server runtime into `build/server/main.js`              |
-| `npm run db:generate`   | Generate a Drizzle migration from `app/db/schema.ts`                    |
-| `npm run db:migrate`    | Apply pending migrations                                                |
-| `npm run db:seed`       | Seed/refresh the exercise library                                       |
-| `npm run db:studio`     | Open Drizzle Studio against the local database                          |
-| `npm run dev`           | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
-| `npm run format:check`  | Check code formatting with Prettier                                     |
-| `npm run format:write`  | Format the repository with Prettier                                     |
-| `npm run preview`       | Build, then serve it - what the e2e suite runs against                  |
-| `npm run start`         | Serve a production build via `build/server/main.js`                     |
-| `npm run test:watch`    | Run Vitest in watch mode                                                |
-| `npm run test`          | Run the Vitest unit test suite once                                     |
-| `npm run test:contract` | Run the repository contract suite (both adapter families)               |
-| `npm run test:e2e`      | Run the Playwright end-to-end suite (Chromium)                          |
-| `npm run test:e2e:ui`   | Run the Playwright suite in its interactive UI mode                     |
-| `npm run typecheck`     | Generate route types and run `tsc`                                      |
+| Script                       | Purpose                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `npm run build`              | Production build (application, then server runtime)                     |
+| `npm run build:app`          | Build the React Router app into `build/`                                |
+| `npm run build:server`       | Bundle the Nest server runtime into `build/server/main.js`              |
+| `npm run check:architecture` | Verify the `src/` layer boundaries hold                                 |
+| `npm run db:generate`        | Generate a Drizzle migration from the Drizzle schema                    |
+| `npm run db:migrate`         | Apply pending migrations                                                |
+| `npm run db:seed`            | Seed/refresh the exercise library                                       |
+| `npm run db:studio`          | Open Drizzle Studio against the local database                          |
+| `npm run dev`                | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
+| `npm run format:check`       | Check code formatting with Prettier                                     |
+| `npm run format:write`       | Format the repository with Prettier                                     |
+| `npm run preview`            | Build, then serve it - what the e2e suite runs against                  |
+| `npm run start`              | Serve a production build via `build/server/main.js`                     |
+| `npm run test:watch`         | Run Vitest in watch mode                                                |
+| `npm run test`               | Run the Vitest unit test suite once                                     |
+| `npm run test:contract`      | Run the persistence contract suite (both adapter families)              |
+| `npm run test:e2e`           | Run the Playwright end-to-end suite (Chromium)                          |
+| `npm run test:e2e:ui`        | Run the Playwright suite in its interactive UI mode                     |
+| `npm run typecheck`          | Generate route types and run `tsc`                                      |
 
 ## Environment variables
 
@@ -128,19 +129,20 @@ you can grant access to anyone else, revoke it, or delete an account
 outright - on any account but your own, which is what stops the
 instance from ending up with no administrator at all.
 
-## Repository contract tests
+## Persistence contract tests
 
-`app/repositories/contract/` states what every repository port promises,
-once, and runs it against both adapter families. Ports are interfaces, so
+`test/contracts/persistence/` states what every persistence port
+promises, once, and runs it against both adapter families. Ports are
+interfaces, so
 the compiler only checks an adapter's _shape_; whether the in-memory store
 and Postgres answer the same question the same way is nothing the type
 system can hold them to. That matters here more than usual, because every
-service test suite is built on the in-memory adapters - without a contract
+use-case test suite is built on the in-memory adapters - without a contract
 they are simultaneously the code under test and the oracle it is tested
 against.
 
-`contract/in-memory.test.ts` runs in the ordinary `npm run test`.
-`contract/drizzle.test.ts` runs the same suite against a real Postgres, and
+`in-memory.test.ts` runs in the ordinary `npm run test`.
+`drizzle.test.ts` runs the same suite against a real Postgres, and
 is skipped when `TEST_DATABASE_URL` is unset, so the default test run stays
 offline. To run it:
 
@@ -156,12 +158,12 @@ its own port with no volume so the two can't be confused. The suite applies
 `drizzle/` migrations itself before it starts.
 
 What only the Postgres run can catch: `on delete restrict` (deleting an
-exercise a template still points at), `on delete cascade` (closing an
+exercise a workout still points at), `on delete cascade` (closing an
 account), the per-statement `(parentId, position)` uniqueness that
-`shared/write-positions.ts` exists to work around, and the
+`persistence/shared/write-positions.ts` exists to work around, and the
 `onConflictDoNothing` resolution behind opening a day twice. The in-memory
 adapters imitate the first two by being told which stores reference them -
-see `repositories/in-memory/references.ts`.
+see `src/infrastructure/persistence/in-memory/references.ts`.
 
 ## End-to-end tests
 
@@ -315,68 +317,111 @@ There's no separate staging slot or manual promotion step.
 
 ## Architecture notes
 
-- **A domain model owns the rules.** `app/domain/` is pure TypeScript
-  with no database, no framework and no I/O: aggregates (`Routine`,
-  `WorkoutTemplate`, `WorkoutSession`, `Exercise`, `Equipment`,
-  `Athlete`, `BodyWeightEntry`) enforce their own invariants,
-  `app/services/` orchestrates them, and `app/repositories/` only maps
-  them to and from rows. Anything that can be decided without asking the
-  database is decided in `app/domain/`, which is why most of the test
-  suite runs without one.
+- **The business rules live outside the frameworks.** `src/` is
+  framework-neutral TypeScript: `src/domain/` is the model and its
+  rules, `src/application/` is the use cases plus the ports they need,
+  and `src/infrastructure/` holds the adapters behind those ports.
+  Nothing in `src/` imports Nest, React Router, Drizzle or Express
+  above the infrastructure layer, and nothing in it imports `app/` or
+  `server/` at all.
+
+  ```text
+  src/domain/         aggregates, value objects, domain services
+  src/application/    ports/, use-cases/, shared/
+  src/infrastructure/ persistence/drizzle/, persistence/in-memory/
+  src/shared/         framework-neutral utilities
+
+  app/                React Router: routes, components, auth middleware
+  server/             NestJS: DI, config, HTTP runtime
+  ```
+
+  `npm run check:architecture` enforces those directions and runs in CI
+  ahead of the tests, so the layering is a check rather than a
+  convention. Imports name the layer they cross into - `~domain/`,
+  `~application/`, `~infrastructure/`, `~shared/`, `~/` for `app/`, and
+  `~server/`.
+
+- **A domain model owns the rules.** Aggregates (`Plan`, `Workout`,
+  `Session`, `Exercise`, `Equipment`, `Athlete`, `BodyWeightEntry`)
+  enforce their own invariants, the use cases orchestrate them, and the
+  repository adapters only map them to and from rows. Anything that can
+  be decided without asking the database is decided in `src/domain/`,
+  which is why most of the test suite runs without one.
+
+- **Ports and adapters, chosen once.** Every repository is an interface
+  in `src/application/ports/persistence/` with two implementations - a
+  Drizzle one and an in-memory one. Which is used is decided at
+  startup, in one file, on whether `DATABASE_URL` is set; that is what
+  lets the whole app (and the e2e suite) run with no database at all.
+  See **Persistence contract tests** above for how the two are held to
+  the same promises.
+
 - **Server runtime and composition root.** `server/` is the NestJS
   composition root: it handles dependency injection for repositories,
-  services, auth providers, and logging; wraps Express; and bridges
+  use cases, auth providers, and logging; wraps Express; and bridges
   singletons into React Router via load context
-  (`app/lib/nest-bridge.server.ts`). In dev, it runs Vite in middleware
+  (`app/router/load-context.ts`). In dev, it runs Vite in middleware
   mode with HMR;
   in production, it serves static assets and dispatches SSR requests to
-  the request handler `build/server/index.js` exports.
-- **Sample data uses fork-on-write.** Exercises, templates, and
-  routines with a null `userId` are shared seed data available to every
+  the request handler `build/server/index.js` exports. Nest reaches
+  into `src/` and never the reverse: a use case is a plain class, and
+  the module files name each constructor argument in an explicit
+  factory rather than decorating the class.
+
+- **Sample data uses fork-on-write.** Exercises, workouts, and
+  plans with a null `userId` are shared seed data available to every
   account. Editing a sample creates a user-owned copy with
   `forkedFromId` pointing back at the original, hiding the sample so the
   same logical item does not appear twice.
-- **Routines are cycles, not weekdays.** A routine is an ordered list
-  of day-slots (each a template or an explicit rest day). "Today's
+
+- **Plans are cycles, not weekdays.** A plan is an ordered list
+  of day-slots (each a workout or an explicit rest day). "Today's
   slot" = `(days since anchor date) mod (slot count)` - see
-  `Routine.slotOn` in `app/domain/routine/routine.ts`. This is strict
+  `Plan.slotOn` in `src/domain/plan/plan.ts`. This is strict
   calendar-day math: it does not pause for missed days, and a
-  routine's anchor date can be set independently of when it was
+  plan's anchor date can be set independently of when it was
   activated.
-- **A routine can be shared by link or QR code.** Sharing mints a
-  revocable token on the routine (`routines.share_token`); the link it
-  makes, `/routines/import/<token>`, is rendered as both a URL and a
+
+- **A plan can be shared by link or QR code.** Sharing mints a
+  revocable token on the plan (`plans.share_token`); the link it
+  makes, `/plans/import/<token>`, is rendered as both a URL and a
   QR code so a training partner can scan it. Importing deep-copies the
-  routine, the templates its slots schedule, and the exercises those
+  plan, the workouts its slots schedule, and the exercises those
   name into the recipient's own account - skipping anything they can
   already use: a sample, their own fork of that sample, or an exercise
   of theirs under the same name (which the per-athlete unique name
-  makes mandatory rather than merely tidy). Templates are always
+  makes mandatory rather than merely tidy). Workouts are always
   copied, since a familiar name can hold quite different exercises, so
   the confirmation page says what the import will add before it writes
   anything. The import page sits behind the normal auth gate, so a
   recipient who is not signed in is sent to Google and returned to the
   link afterwards - the account can be brand new. See
-  `app/services/routine-import-service.server.ts`.
+  `src/application/use-cases/plan-import-service.ts`.
+
 - **Sets are logged individually**, not as one row per exercise, so
-  pyramids/drop-sets are representable. Template "targets" pre-fill
+  pyramids/drop-sets are representable. A workout's "targets" pre-fill
   the logging form but every field is editable per set.
+
 - **Measurements are stored canonically** (pounds for weight, km/h for
   speed, seconds for duration) and converted to user-selected units at
   the edges (`Weight.in`, `AthletePreferences.formatWeight`). An
   athlete's `weightUnit` and `distanceUnit` settings determine how
   measurements are rendered throughout the app.
+
 - **Cardio fields adapt to equipment.** Equipment carries an explicit
   `cardioKind` (`speed`, `resistance`, or unset). Cardio logging and
-  template-target forms adapt to show only the relevant fields (e.g.
+  workout-target forms adapt to show only the relevant fields (e.g.
   treadmill logs duration + speed; rowing machine logs duration +
   resistance). Unset or multi-purpose equipment shows both fields.
+
 - **Body weight tracking.** Daily body weight entries are tracked over
   time with trend visualization and history, stored canonically in
   pounds and displayed in the user's preferred unit.
+
 - **Auth is Google OIDC only** (`openid-client`), session via a signed
   httpOnly cookie. Any Google account can sign in (open signup); an
   athlete user row is created on first login.
+
 - **Administrators get an `/admin` area.** A single `users.is_admin`
   flag is the whole permission model: it unlocks a dashboard of
   instance-wide stats and a user manager (search every account, grant

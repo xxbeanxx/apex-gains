@@ -20,7 +20,8 @@ shadcn/ui, Podman.
 npm run build        # production build (application, then server runtime)
 npm run build:app  # react-router build -> build/client + build/server/index.js
 npm run build:server # bundle the Nest runtime -> build/server/main.js
-npm run db:generate  # generate a Drizzle migration from app/db/schema.ts
+npm run check:architecture # enforce the src/ layer boundaries
+npm run db:generate  # generate a Drizzle migration from the Drizzle schema
 npm run db:migrate   # apply pending migrations
 npm run db:seed      # seed/refresh the exercise library (idempotent)
 npm run db:studio    # open Drizzle Studio against the local database
@@ -30,7 +31,7 @@ npm run format:write # format the repo with prettier
 npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
-npm run test:contract # repository contract tests (needs TEST_DATABASE_URL for the Drizzle pass)
+npm run test:contract # persistence contract tests (needs TEST_DATABASE_URL for the Drizzle pass)
 npm run test:e2e     # run the Playwright end-to-end suite (chromium only)
 npm run test:e2e:ui  # Playwright's interactive UI mode
 npm run test:watch   # vitest in watch mode
@@ -40,7 +41,8 @@ npm run typecheck    # react-router typegen, then tsc
 Run `npm run format:write` on any file you edit before finishing a
 task - there is no lint tooling and no CI formatting check, so
 `format:write` is the only thing keeping the tree consistent.
-`typecheck`, `test` and `test:e2e` are the automated checks. Unit tests
+`typecheck`, `check:architecture`, `test` and `test:e2e` are the
+automated checks. Unit tests
 (vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
@@ -48,7 +50,9 @@ neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
 repository adapters rather than mocking a database - by constructing the
 service class directly (`new PlanService(...)`), not through Nest's
-DI container, which tests never boot. `app/repositories/contract/` is the exception to that
+DI container, which tests never boot - nothing under `src/` is
+Nest-aware, so there is no container to boot (see Server runtime,
+below). `test/contracts/persistence/` is the exception to that
 last point: it states each port's promises once and runs them against
 _both_ adapter families - the in-memory one inside `npm run test`, and
 Drizzle against a throwaway Postgres named by `TEST_DATABASE_URL`
@@ -57,16 +61,16 @@ service suite is built on the in-memory adapters, which would otherwise
 be both the code under test and its own oracle; the behaviour only
 Postgres can show - `on delete restrict`/`cascade`, per-statement unique
 constraints, `onConflictDoNothing` - is imitated in-memory by naming the
-referencing stores to each adapter (`repositories/in-memory/references.ts`),
+referencing stores to each adapter
+(`src/infrastructure/persistence/in-memory/references.ts`),
 wired in `server/repositories/repositories.module.ts`. See README.md
-"Repository contract tests". `vitest.setup.ts` imports
-`reflect-metadata` before anything else, since every service and
-repository provider carries Nest decorators (`@Injectable()`/`@Inject()`)
-that call into it at class-definition time - see Server runtime, below.
-Tests that touch `~/db/index.server` rely on `vite.config.ts`'s `test`
-block seeding a dummy `DATABASE_URL` - the postgres-js client is lazy,
-so nothing dials out. That same block excludes `e2e/**`, since
-Playwright specs are not vitest's to collect.
+"Persistence contract tests". Tests that touch
+`~infrastructure/persistence/drizzle/index` rely on `vite.config.ts`'s
+`test` block seeding a dummy `DATABASE_URL` - the postgres-js client is
+lazy, so nothing dials out. That same block excludes `e2e/**`, since
+Playwright specs are not vitest's to collect, and sets `isolate: false`,
+so test files in a worker share one module registry: a suite that
+mutates module-level state has to reset it itself.
 
 End-to-end tests (Playwright, chromium only) live in `e2e/` under
 `playwright.config.ts` - a separate file because Playwright's runner
@@ -158,10 +162,10 @@ been this way, because that is the only version anyone has to work with.
 **Routing.** `app/routes.ts` is the single route manifest (Framework
 Mode, not file-system routing). All authenticated pages are nested
 under the `routes/_protected.tsx` layout, which sets
-`requireUserMiddleware` (`app/auth/require-user.server.ts`) to redirect
+`requireUserMiddleware` (`app/auth/require-user.ts`) to redirect
 anonymous requests to `/auth/google`. Nested inside that,
 `routes/_admin.tsx` adds `requireAdminMiddleware`
-(`app/auth/require-admin.server.ts`) and holds the `/admin` pages.
+(`app/auth/require-admin.ts`) and holds the `/admin` pages.
 The current user is threaded through via React Router's context API:
 `app/auth/user-context.ts` defines `userContext` — which holds the
 `Athlete` aggregate, not the raw `users` row, so loaders have the athlete's unit preferences and
@@ -176,44 +180,95 @@ with a `crumb(data)` function (`app/lib/breadcrumbs.ts`), which
 that is never itself the current page — a resource route fetched with
 `fetcher.load`, a loader-only redirect — simply exports none.
 
-**Layers.** Four, strictly one-directional — `app/domain/` depends on
-nothing, and nothing above it may be skipped:
+**Layers.** Hexagonal, strictly one-directional — `src/domain/` depends
+on nothing, and nothing above it may be skipped:
 
 ```
-app/domain/       pure TS. No Drizzle, no react-router, no I/O, no env.
-app/repositories/ ports speak aggregates; adapters do mapping only.
-app/services/     application services (use cases) + read models.
-app/routes/       parse form -> call service -> map result to HTTP.
+src/domain/                    pure TS. No Drizzle, no react-router, no I/O, no env.
+src/application/ports/         what a use case needs from the outside world.
+src/application/use-cases/     application services + read models.
+src/application/shared/        helpers the use cases share.
+src/infrastructure/            concrete adapters behind the ports.
+src/shared/                    framework-neutral utilities.
+
+app/                           the React Router inbound adapter.
+app/routes/                    parse form -> call use case -> map result to HTTP.
+app/router/load-context.ts     how a use case reaches a route.
+
+server/                        the Nest composition root and HTTP runtime.
 ```
+
+`src/` is framework-neutral: nothing in it imports Nest, React Router,
+Drizzle, Express, `openid-client`, `vite`, or `node:*` above the
+infrastructure layer, and nothing in it imports `app/` or `server/` at
+all. `app/` and `server/` may both depend on `src/application` and
+`src/domain`; `server/` may also reach `src/infrastructure`, because
+choosing an adapter is its job.
+
+`scripts/check-architecture.ts` (`npm run check:architecture`, and a CI
+step ahead of the tests) is what holds that: it scans every import
+under `src/` against the rules above and exits non-zero on a violation.
+The layering is a check, not a convention — treat a new import that
+trips it as a design question, not a rule to widen.
+
+Path aliases name the layer an import crosses into, so a reader can see
+the direction at the import: `~domain/`, `~application/`,
+`~infrastructure/`, `~shared/` for `src/*`, `~/` for `app/`, and
+`~server/` for `server/`.
+
+The `.server` suffix marks exactly one thing: a module that has a
+client-importable sibling of the same name and must not be bundled with
+it (`app/lib/intent.ts` / `intent.server.ts`, `validate-form.ts` /
+`validate-form.server.ts`, `qr.ts` / `qr.server.ts`). A server-only
+module with no such sibling carries no suffix, and nothing under `src/`
+carries one at all. The trade-off: the suffix is a disambiguator, not a
+blanket guard, so importing `app/lib/logger.ts` from a component
+bundles it instead of failing the build. Keep server-only imports in
+`loader`, `action`, and `middleware` — the route module boundary is
+what actually keeps them out of the browser.
 
 **Server runtime.** `server/` is the NestJS composition root: it
 decides which adapter backs each port, wires everything together, and
 hosts the actual HTTP server; it holds no business logic of its own
-(that stays in `app/`, per the layers above). `server/main.ts`
+(that stays in `src/`, per the layers above). `server/main.ts`
 bootstraps Nest, then either mounts Vite in middleware mode (dev) or
 serves the built `build/client` output (prod) - both funnel non-static
 requests to a React Router `createRequestHandler`, one process either
 way. In dev `main.ts` builds that handler itself; in production it
 imports the ready-made one from `build/server/index.js` (see Build
-output, below). Repositories, `UnitOfWork`, and every `app/services/*.server.ts`
-class are Nest-managed `@Injectable()` providers;
-`server/repositories/repositories.module.ts` is the one place that
-picks Drizzle vs. in-memory per repository (on whether
+output, below). Nest reaches _into_ `src/`, never the other way
+round: a use case, a repository adapter and the `UnitOfWork` are all
+plain classes taking plain constructor arguments, carrying no
+`@Injectable()` and no `@Inject()`. `server/` supplies those arguments
+with an explicit `useFactory` provider naming each one in order -
+`server/services/services.module.ts` for the use cases,
+`server/repositories/repositories.module.ts` for the ports. The DI
+tokens live in `server/providers/` (`persistence.tokens.ts`,
+`domain-deps.token.ts`) for the same reason: only the composition root
+has any use for them.
+
+That is what lets the application layer compile, test and be reasoned
+about without Nest — `new PlanService(plans, workouts, unitOfWork,
+deps)` is the whole of its wiring — and it is what the architecture
+check enforces. The cost is that a factory is positional: adding a
+constructor parameter without adding it to the `inject` array is a
+type error at the factory, but reordering two arguments of the same
+type is not. Keep the `inject` array in the constructor's order.
+
+`server/repositories/repositories.module.ts` is also the one place
+that picks Drizzle vs. in-memory per repository (on whether
 `databaseConfig.databaseUrl` is set) and the one place that calls
-`configureDatabase()` with the validated connection string. The DI
-_tokens_, though, live with the ports they name
-(`app/repositories/tokens.ts`, `app/services/shared/tokens.ts`), not
-here - that is what keeps `app/services` free of any `~server/`
-import, so the application layer compiles and tests without its
-composition root. Every `@Injectable()` constructor parameter is
-`@Inject(TOKEN)`-tagged explicitly rather than relying on implicit
-type-based DI: neither `tsx` (dev) nor Rolldown (the production
-bundle) emits the `design:paramtypes` metadata Nest needs for that,
-which is why
-`tsconfig.json` deliberately does _not_ set `emitDecoratorMetadata`
-(it would only imply a guarantee nothing honours); a class missing an
-explicit token fails at DI-resolution time with a "Nest can't resolve
-dependencies" error, not a type error. Environment variables are
+`configureDatabase()` with the validated connection string.
+
+`@Module()` and the `class-validator` decorators on the config schemas
+are the only decorators left, and they need `experimentalDecorators`,
+which is why `server/main.ts` imports `reflect-metadata` first.
+`tsconfig.json`
+deliberately does _not_ set `emitDecoratorMetadata`: neither `tsx`
+(dev) nor Rolldown (the production bundle) emits the
+`design:paramtypes` metadata implicit type-based DI would need, so
+setting it would only imply a guarantee nothing honours. Environment
+variables are
 validated once at boot with `class-validator`/`class-transformer`
 (`server/config/`, one file per concern - core, database, Google
 OAuth, session, test-login - each holding its schema class and the
@@ -237,7 +292,7 @@ React Router's load context is the _only_ conduit from Nest to the app
   `userContext`. Repositories do not: nothing above the service layer
   holds a port.
 
-The whole bridge is three pieces. `app/lib/nest-bridge.server.ts`
+The whole bridge is three pieces. `app/router/load-context.ts`
 declares one `contexts` map, and derives from it the exported tokens,
 the `NestSingletons` type, and `nestLoadContext(singletons)`, which
 builds a populated `RouterContextProvider`; a value Nest forgets to
@@ -324,14 +379,14 @@ through `ENABLE_TEST_LOGIN`, specifically to catch a regression here -
 typecheck and unit tests each run one layer in isolation and never load
 the two production bundles side by side.
 
-**Domain layer.** `app/domain/` holds the rules. Aggregates (`Plan`,
+**Domain layer.** `src/domain/` holds the rules. Aggregates (`Plan`,
 `Workout`, `Session`, `Exercise`, `Equipment`, `Athlete`,
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
 `Weight`, `Speed`, `Duration`, `SetTarget`, `Ownership`) stop raw
 strings and unitless numbers leaking upward. Aggregates never reach for
 identity, time, or randomness — all three arrive as ports
 (`IdGenerator`, `Clock`, `SecretGenerator`, bundled as `DomainDeps` in
-`app/services/shared/deps.server.ts`), which is what lets every rule be
+`src/application/ports/domain-deps.ts`), which is what lets every rule be
 tested with no database and no mocks. `SecretGenerator`
 (`domain/shared/secrets.ts`) is deliberately not `IdGenerator`: a share
 token is bearer authorization, so it must never be confusable with a row
@@ -344,49 +399,55 @@ returns. Cross-aggregate rules that belong to no single root are domain
 services — see `domain/plan/activation.ts` and
 `domain/athlete/administration.ts`.
 
-**Data layer.** `app/db/schema.ts` is the single Drizzle schema
-(Postgres). Repositories in `app/repositories/` are ports over
-_aggregates_, not rows: `load` / `save` / `delete` plus real queries,
-with a Drizzle adapter and an in-memory one each, selected once at Nest
-bootstrap by `server/repositories/repositories.module.ts` (see Server
-runtime, above) rather than by the port file itself. Adapters map
+**Data layer.** The ports live with the use cases that need them
+(`src/application/ports/persistence/`) and the adapters that implement
+them live in `src/infrastructure/persistence/`, in a `drizzle/` and an
+`in-memory/` family. A port is over _aggregates_, not rows: `load` /
+`save` / `delete` plus real queries. Which family backs each port is
+decided once at Nest bootstrap by
+`server/repositories/repositories.module.ts` (see Server runtime,
+above), never by the port file itself.
+`src/infrastructure/persistence/drizzle/schema.ts` is the single
+Drizzle schema (Postgres), and `drizzle.config.ts` points `db:generate`
+at it. Adapters map
 snapshots to rows and hold no rules. `save` receives the whole aggregate
 rather than a change list, so it reconstructs the delta with
-`shared/diff-children.ts`, and writes reordered children through
-`shared/write-positions.ts` — a two-pass negative-scratch write, because
+`persistence/shared/diff-children.ts`, and writes reordered children through
+`persistence/shared/write-positions.ts` — a two-pass negative-scratch write, because
 Postgres checks the `(parentId, position)` unique constraint per
 statement and any permutation would otherwise collide mid-update.
 Transactions are ambient: `UnitOfWork.run` publishes one via
-`AsyncLocalStorage` (`app/db/transaction.server.ts`) and adapters query
+`AsyncLocalStorage` (`persistence/drizzle/transaction.ts`) and adapters query
 through `dbScope`, never `db`, so writes stay inside it.
 
-**Services.** `app/services/*.server.ts` are the use cases routes call
+**Use cases.** `src/application/use-cases/` holds what routes call
 — `PlanService`, `WorkoutService`, `SessionService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
-`AthleteService`, `BodyWeightService`, `AdminService`,
-`PlanImportService`. They orchestrate
+`AthleteService`, `BodyWeightService`, `BodyMeasurementsService`,
+`AdminService`, `ExportService`, `PlanImportService`. They orchestrate
 (load → hand off to the aggregate → save) and own no rules themselves.
-`shared/exercise-directory.server.ts` is the read-side counterpart to
-`shared/fork.server.ts`: a logged set, a workout entry and a plan
+`shared/exercise-directory.ts` is the read-side counterpart to
+`shared/fork.ts`: a logged set, a workout entry and a plan
 slot all hold an exercise _id_ rather than an exercise, so every read
 model that renders one joins the name back in through
 `ExerciseDirectory` — which is also where the missing-exercise fallback
 (`'Unknown'`, because history outlives the library) is stated.
-`shared/target-view.server.ts` does the same job for a `SetTarget`:
+`shared/target-view.ts` does the same job for a `SetTarget`:
 `toTargetView` formats one into the athlete's units once, so no read
 model re-derives "3 x 10, 135 lb" or the discrete chips beside it.
 `AthleteService` also covers sign-in: `signInWithGoogle` /
 `signInWithEmail` find an athlete by identity or `Athlete.register`
 one on first login, so no route touches `AthletesRepository` directly
 (`loadUserMiddleware` goes through `AthleteService.byId`). Each is a
-Nest-managed `@Injectable()` (see Server runtime, above); routes reach
-one via `context.get(xServiceContext)` (the tokens live in
-`app/lib/nest-bridge.server.ts`), never by importing the class or
+plain class Nest constructs through a factory (see Server runtime,
+above); routes reach one via `context.get(xServiceContext)` (the tokens
+live in `app/router/load-context.ts`), never by importing the class or
 constructing it themselves. **They return plain DTOs, never domain
 objects**: React Router serializes loader data, so anything with methods
-cannot cross that boundary. Chart view types live in
-`app/services/progress-view.ts` (no `.server` suffix) precisely so client
-components can import them.
+cannot cross that boundary. That is also what lets a client component
+import a read model's _type_ directly — `use-cases/progress-view.ts`
+for the charts, and the value objects and enums under `~domain/` —
+without dragging a service into the browser bundle.
 
 **Sample data and fork-on-write.** `exercises`, `workouts`, and
 `plans` rows with a null `userId` are seeded sample/system data
@@ -399,21 +460,22 @@ excluded from that user's view so the same logical item doesn't show
 twice. The copy is `aggregate.editableCopyFor(userId, deps)`; deciding
 _whether_ to copy — reusing an existing fork instead of minting a second
 one — needs a query, so it lives in
-`app/services/shared/fork.server.ts` (`resolveEditableCopy`), which
-every mutating service goes through. Because a fork's children get new
+`src/application/shared/fork.ts` (`resolveEditableCopy`), which
+every mutating use case goes through. Because a fork's children get new
 ids, an id that arrived on a form names a child of the _sample_; the
 returned `translateChildId` maps it onto the copy by position. Around
 that sits `ForkableEditor` in the same file, which owns the whole
 sequence a mutation goes through — open a transaction, load what the
 athlete can see, resolve the copy, apply, save, report `forkedId` — so
-the three services construct one rather than restating it.
+the three use cases construct one rather than restating it.
 `ForkableLibrary` adds `remove` and `revert` for the two libraries whose
 rows can simply be deleted; exercises keep their own `revert`, because
 `on delete restrict` means theirs can refuse. Which
 rows a list shows — own rows plus not-yet-forked samples — is
 `LibraryVisibility` in `domain/shared/ownership.ts`, beside `Ownership`
 itself: `selectFrom` answers it for the in-memory adapters, and because
-SQL cannot call a predicate, `repositories/drizzle/shared/visibility.ts`
+SQL cannot call a predicate,
+`src/infrastructure/persistence/drizzle/shared/visibility.ts`
 translates the same rule into one `where` builder the three forkable
 tables share. The two readings are kept in step by tests, not by the
 compiler. So "does this row's `userId` match the current user" isn't
@@ -429,7 +491,7 @@ dropped by `unshare`. It is looked up by
 definition not the owner. `PlanService.share` goes through the same
 `ForkableLibrary` as every other mutation, so sharing a sample forks it
 first and the token lands on the fork; the caller has to follow
-`forkedId`. `app/lib/share-link.server.ts` states the link's shape once,
+`forkedId`. `app/lib/share-link.ts` states the link's shape once,
 and `app/lib/qr.server.ts` encodes it server-side so `qrcode-generator`
 stays out of the client bundle — only a `QrCode` (`app/lib/qr.ts`, no
 `.server` suffix precisely so the component can import it) crosses to
@@ -480,7 +542,7 @@ re-derives it.
 
 **Plans are day-count cycles, not weekdays.** A plan's "today"
 slot is `(days since anchorDate) mod (slot count)` — `Plan.slotOn`
-in `app/domain/plan/plan.ts`. This is strict calendar-day math
+in `src/domain/plan/plan.ts`. This is strict calendar-day math
 done in UTC on `YYYY-MM-DD` strings (`DateOnly`): it does not pause for
 missed days, and a plan's `anchorDate` can be set independently of
 when it was activated or of what weekday it falls on. Only one plan
@@ -516,7 +578,7 @@ mechanism for the whole app rather than a second one only for forms.
 `validateForm` returns `{ success: true; data }` or `{ success: false;
 message }` instead of throwing, since a bad submission is a 400, not a
 boot failure. Both fork-on-write detail routes build a
-`forkableDetail(...)` (`app/lib/forkable-detail.server.ts`) naming their
+`forkableDetail(...)` (`app/lib/forkable-detail.ts`) naming their
 noun and paths, and read the four shared HTTP mappings off it:
 `notFound`, `settle` (not-found is a 404, and a non-null `forkedId` is a
 redirect to the fork's own URL, since the edit would be invisible at the
@@ -538,7 +600,7 @@ would reset scroll position for no reason: that row owns its own
 while `fetcher.state !== 'idle'` so it disappears the instant its own
 delete is submitted rather than waiting on the round trip
 (`app/components/session/logged-sets-list.tsx`,
-`app/routes/weight.tsx`'s `WeightHistoryRow`). `SubmitButton` takes an
+`app/routes/body.tsx`'s `EntryRow`). `SubmitButton` takes an
 explicit `pending` prop for exactly this case. It does not extend to the
 plan/workout builders (`app/routes/plans.$planId.tsx`,
 `workouts.$workoutId.tsx`), which hold to a no-fetcher rule of their own
@@ -594,13 +656,16 @@ providers (`server/auth/oidc-client.provider.ts`,
 (`oidcConfigContext`, `oidcStateCookieContext`) - `oidc-client.provider.ts`
 wraps discovery in a memoizing `get()` rather than resolving it eagerly
 at Nest bootstrap, since it's a real network call to Google that
-shouldn't block every server start. `app/auth/oidc-state.server.ts`
-still holds the actual PKCE/state cookie serialize/parse logic, just
-taking the `Cookie` as a parameter now instead of building its own.
+shouldn't block every server start. `app/auth/oidc-state.ts` holds the
+PKCE/state cookie serialize/parse logic, taking the `Cookie` as a
+parameter rather than building its own.
 Session storage is likewise a Nest provider
 (`server/auth/session-storage.provider.ts`, reached via
-`sessionStorageContext`). `loadUserMiddleware`
-(`app/auth/current-user.server.ts`) reads the session and populates
+`sessionStorageContext`). Identity is the one capability with no port:
+`openid-client` is reached through `server/`, so `src/application` has
+no say in how an athlete is authenticated — only in what happens once
+`AthleteService.signInWithGoogle` is handed a claims object. `loadUserMiddleware`
+(`app/auth/current-user.ts`) reads the session and populates
 `userContext` on every request (registered in `root.tsx`'s
 `middleware` export, ahead of `requireUserMiddleware` which only the
 `_protected` layout adds). Any Google account can sign in (open
@@ -657,8 +722,8 @@ in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
 volt accent for active states/focus rings/progress, dark mode via
 `.dark` class) are defined once in `app/app.css` — extend the token
 set there rather than hardcoding colors in components. Path alias `~/`
-maps to `app/`, `~server/` to `server/` (see `tsconfig.json` and
-`components.json`).
+maps to `app/` (see `tsconfig.json` and `components.json`); the rest
+are under Layers, above.
 `app/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
@@ -704,8 +769,8 @@ against Nest's own names - `verbose`, `debug`, `log`, `warn`, `error`,
 unrecognised value stops the server at boot.
 
 The logger reaches the React Router app via `nestLoggerContext`
-(`app/lib/nest-bridge.server.ts` - see Server runtime, above), read
-through `requestLogger(context)` in `app/lib/logger.server.ts`. That
+(`app/router/load-context.ts` - see Server runtime, above), read
+through `requestLogger(context)` in `app/lib/logger.ts`. That
 is safe on every path, matched route or not, because the load context
 is built before routing. `requestLoggingMiddleware`, registered first
 in `root.tsx`'s `middleware` export so everything it wraps counts
@@ -718,12 +783,13 @@ anywhere under `app/` would hook them inside the vitest process too.
 Log lines are plain sentences with the values interpolated (`created
 plan <id> for user <id>`), and the second argument is Nest's
 context label - `Request`, `Auth`, `Plans`, `Workouts`, `Exercises`,
-`Today`, `Weight`, `Admin`, `Process` - which prints in brackets. There
+`Today`, `History`, `Body`, `Weight`, `Settings`, `Admin`, `Process` -
+which prints in brackets. There
 is no structured-field or correlation-id machinery: `logger.error` takes
 a stack string as its second argument, so an `Error` is passed as
 `err.stack`.
 
-**Build info.** `app/lib/build-info.server.ts`'s `getBuildInfo()`
+**Build info.** `app/lib/build-info.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as
 `date-sha-buildnum` by `containerfile`/`build.yaml`) or, outside a
 container, the working tree's short git SHA. It reaches the browser

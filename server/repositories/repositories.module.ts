@@ -44,7 +44,7 @@ type DatabaseConfig = ConfigType<typeof databaseConfig>;
  * `databaseConfig.databaseUrl`. This is the only place that choice is made.
  *
  * The Drizzle adapter classes are safe to import statically even when
- * running in-memory: they only touch `~infrastructure/persistence/drizzle/index.server`'s lazy
+ * running in-memory: they only touch `~infrastructure/persistence/drizzle/index`'s lazy
  * `db`/`dbScope` proxies when a query actually runs, never at import time.
  */
 function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig) => T): Provider {
@@ -52,7 +52,7 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
     provide: token,
     inject: [databaseConfig.KEY],
     useFactory: (dbConfig: DatabaseConfig) => {
-      // Hands the validated URL to `~infrastructure/persistence/drizzle/index.server` so nothing below has
+      // Hands the validated URL to `~infrastructure/persistence/drizzle/index` so nothing below has
       // to read `process.env` for itself. Connecting is still lazy; this only
       // decides what the connection will be made with.
       if (dbConfig.databaseUrl) {

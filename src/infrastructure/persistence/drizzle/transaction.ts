@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Type-only: `verbatimModuleSyntax` keeps `import { type X }` as a runtime
-// import, which would make this and ./index.server a cycle.
+// import, which would make this and ./index a cycle.
 import type { Transaction } from './index';
 
 /**
@@ -14,7 +14,7 @@ import type { Transaction } from './index';
  * port and force every caller to know whether it was inside one.
  *
  * Instead the transaction is ambient: `UnitOfWork.run` puts it here, and
- * `dbScope` in ./index.server picks it up. AsyncLocalStorage is the right
+ * `dbScope` in ./index picks it up. AsyncLocalStorage is the right
  * tool because a request's async work stays inside its own store even while
  * other requests interleave.
  */

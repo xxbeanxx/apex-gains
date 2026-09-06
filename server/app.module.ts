@@ -16,7 +16,7 @@ import { ServicesModule } from './services/services.module';
       isGlobal: true,
       cache: true,
       // A `registerAs()` factory only becomes an injectable token once it is listed here,
-      // so every slice a provider injects via `@Inject(xConfig.KEY)` has to appear in this array.
+      // so every slice a provider names in its `inject` array has to appear in this array.
       load: [coreConfig, databaseConfig, googleOAuthConfig, sessionConfig, testLoginConfig],
     }),
     AuthModule,

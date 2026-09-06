@@ -60,7 +60,8 @@ export default defineConfig(({ command }) => ({
     // collects them and fails on the `@playwright/test` import.
     exclude: [...configDefaults.exclude, 'e2e/**'],
     env: {
-      // ~/db/index.server reads DATABASE_URL at import time (lazily, via a
+      // ~infrastructure/persistence/drizzle/index reads DATABASE_URL at
+      // import time (lazily, via a
       // Proxy - drizzle-orm/postgres-js never actually opens a connection
       // unless a test queries through it) - dummy values are safe. The rest
       // are no longer read directly by app code (server/config validates
