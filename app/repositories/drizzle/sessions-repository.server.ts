@@ -139,6 +139,36 @@ export class DrizzleSessionsRepository implements SessionsRepository {
   }
 
   /**
+   * `distinct on (exercise_id)` picks the one row per exercise that the
+   * matching `order by` puts first - newest day, ties broken by newest
+   * `created_at` - in a single pass over the athlete's sets rather than one
+   * query per exercise.
+   */
+  async lastSetPerExercise(userId: string, beforeDate: DateOnly): Promise<Map<string, { date: DateOnly; set: LoggedSet }>> {
+    const rows = await dbScope
+      .selectDistinctOn([sessionSets.exerciseId], {
+        date: sessions.date,
+        id: sessionSets.id,
+        exerciseId: sessionSets.exerciseId,
+        setNumber: sessionSets.setNumber,
+        reps: sessionSets.reps,
+        weight: sessionSets.weight,
+        durationSeconds: sessionSets.durationSeconds,
+        speed: sessionSets.speed,
+        resistanceLevel: sessionSets.resistanceLevel,
+        createdAt: sessionSets.createdAt,
+      })
+      .from(sessionSets)
+      .innerJoin(sessions, eq(sessionSets.sessionId, sessions.id))
+      .where(and(eq(sessions.userId, userId), lt(sessions.date, beforeDate.value)))
+      .orderBy(sessionSets.exerciseId, desc(sessions.date), desc(sessionSets.createdAt));
+
+    return new Map(
+      rows.map(({ date, ...set }) => [set.exerciseId, { date: DateOnly.parse(date), set: LoggedSet.fromSnapshot(set) }]),
+    );
+  }
+
+  /**
    * One grouped pass over every session. The left join means a day with no
    * sets still contributes to the counts, and `count(distinct ...)` is what
    * keeps the join's row multiplication out of the session tally.

@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Session } from '~/domain/session/session';
+import type { Clock } from '~/domain/shared/clock';
 import { Weight } from '~/domain/values/weight';
 
 import { DateOnly, deps, exercise, ids, NOW, seedAthletes, session, type ContractSubject, type RepositorySet } from './harness';
 
 const day = (value: string) => DateOnly.parse(value);
+
+/** Ticks forward a millisecond per call, so sets logged in the same test get distinct `createdAt`s to break ties on. */
+function tickingClock(start: Date): Clock {
+  let ms = start.getTime();
+  return { now: () => new Date(ms++) };
+}
 
 export function describeSessionsContract(subject: ContractSubject): void {
   describe('SessionsRepository', () => {
@@ -185,6 +192,56 @@ export function describeSessionsContract(subject: ContractSubject): void {
         await logDay(ids.theirs, '2026-09-03', benchPress, 2, ids.otherAthlete);
 
         expect(await repositories.sessions.recentSetsForExercise(ids.athlete, benchPress, 10)).toEqual([]);
+      });
+    });
+
+    describe('lastSetPerExercise', () => {
+      it('returns the newest set for every exercise the athlete has logged', async () => {
+        const [benchPress, squat] = await seedExercises();
+        await logDay(ids.own, '2026-09-01', benchPress, 1);
+        await logDay(ids.extra, '2026-09-02', squat, 1);
+
+        const latest = await repositories.sessions.lastSetPerExercise(ids.athlete, day('2026-09-03'));
+
+        expect(latest.get(benchPress)?.date.value).toBe('2026-09-01');
+        expect(latest.get(squat)?.date.value).toBe('2026-09-02');
+      });
+
+      it('on the same day, breaks the tie by which set was logged last', async () => {
+        const [benchPress] = await seedExercises();
+        const opened = await repositories.sessions.add(session({ id: ids.own, date: '2026-09-01' }));
+        const ticking = { ...deps, clock: tickingClock(NOW) };
+        opened.logSet(benchPress, { reps: 8 }, ticking);
+        opened.logSet(benchPress, { reps: 10 }, ticking);
+        await repositories.sessions.save(opened);
+
+        const latest = await repositories.sessions.lastSetPerExercise(ids.athlete, day('2026-09-03'));
+
+        expect(latest.get(benchPress)?.set.reps).toBe(10);
+      });
+
+      it('excludes sets logged on the viewed date itself', async () => {
+        const [benchPress] = await seedExercises();
+        await logDay(ids.own, '2026-09-01', benchPress, 1);
+        await logDay(ids.extra, '2026-09-03', benchPress, 1);
+
+        const latest = await repositories.sessions.lastSetPerExercise(ids.athlete, day('2026-09-03'));
+
+        expect(latest.get(benchPress)?.date.value).toBe('2026-09-01');
+      });
+
+      it('omits an exercise never logged before that date', async () => {
+        const [benchPress] = await seedExercises();
+        await logDay(ids.own, '2026-09-03', benchPress, 1);
+
+        expect((await repositories.sessions.lastSetPerExercise(ids.athlete, day('2026-09-03'))).size).toBe(0);
+      });
+
+      it("never crosses to another athlete's sets", async () => {
+        const [benchPress] = await seedExercises();
+        await logDay(ids.theirs, '2026-09-01', benchPress, 1, ids.otherAthlete);
+
+        expect((await repositories.sessions.lastSetPerExercise(ids.athlete, day('2026-09-03'))).size).toBe(0);
       });
     });
 

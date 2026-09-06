@@ -35,6 +35,13 @@ export interface SessionsRepository {
    */
   recentSetsForExercise(userId: string, exerciseId: string, limit: number): Promise<{ date: DateOnly; set: LoggedSet }[]>;
   /**
+   * The single most recent set logged against every exercise the athlete has
+   * ever trained, keyed by exercise id - one query rather than one per
+   * exercise on the log form. `beforeDate` is exclusive, so a set logged on
+   * the day being viewed never prefills its own form.
+   */
+  lastSetPerExercise(userId: string, beforeDate: DateOnly): Promise<Map<string, { date: DateOnly; set: LoggedSet }>>;
+  /**
    * Every athlete's totals in one pass, keyed by user id - the numbers
    * /admin shows per account and sums for the whole instance. Athletes who
    * have never opened a day are absent rather than zeroed, so a caller with

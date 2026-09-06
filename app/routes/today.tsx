@@ -49,12 +49,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const logService = context.get(sessionServiceContext);
   const libraryService = context.get(exerciseLibraryServiceContext);
 
-  const [plan, loggedSets, allExercises, upcomingWeek, pastWeek] = await Promise.all([
+  const [plan, loggedSets, allExercises, upcomingWeek, pastWeek, lastSets] = await Promise.all([
     planService.planFor(athlete, date),
     logService.loggedSetsFor(athlete, date),
     libraryService.listExercises(athlete),
     planService.upcomingWeek(athlete, today),
     planService.pastWeek(athlete, today),
+    logService.lastSetsFor(athlete, date),
   ]);
 
   return {
@@ -66,6 +67,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     allExercises,
     upcomingWeek,
     pastWeek,
+    lastSets,
     weightUnit: athlete.preferences.weightUnit,
     distanceUnit: athlete.preferences.distanceUnit,
   };
@@ -184,8 +186,19 @@ function WeekOverview({
 }
 
 export default function Today({ loaderData }: Route.ComponentProps) {
-  const { date, todayStr, isToday, plan, loggedSets, allExercises, upcomingWeek, pastWeek, weightUnit, distanceUnit } =
-    loaderData;
+  const {
+    date,
+    todayStr,
+    isToday,
+    plan,
+    loggedSets,
+    allExercises,
+    upcomingWeek,
+    pastWeek,
+    lastSets,
+    weightUnit,
+    distanceUnit,
+  } = loaderData;
   const prevDate = DateOnly.parse(date).minusDays(1).value;
   const nextDate = DateOnly.parse(date).plusDays(1).value;
   const dayWord = isToday ? 'today' : 'that day';
@@ -292,6 +305,8 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                   todayStr={todayStr}
                   weightUnit={weightUnit}
                   distanceUnit={distanceUnit}
+                  loggedSets={loggedSets}
+                  lastSets={lastSets}
                 />
               );
 
@@ -371,6 +386,8 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               todayStr={todayStr}
               weightUnit={weightUnit}
               distanceUnit={distanceUnit}
+              loggedSets={loggedSets}
+              lastSets={lastSets}
             />
           </CardContent>
         </Card>

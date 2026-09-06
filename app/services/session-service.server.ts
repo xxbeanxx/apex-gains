@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Athlete } from '~/domain/athlete/athlete';
+import type { AthletePreferences } from '~/domain/athlete/preferences';
+import type { LoggedSet } from '~/domain/session/logged-set';
 import { Session } from '~/domain/session/session';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { DateOnly } from '~/domain/values/date-only';
@@ -17,7 +19,16 @@ import type { DomainDeps } from './shared/deps.server';
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 import { TrainingPlanService } from './training-plan-service.server';
 
-export type LoggedSetView = {
+/** A set as the athlete entered it: their weight unit, their speed unit, minutes. */
+export type SetInput = {
+  reps?: number | null;
+  weight?: number | null;
+  durationMinutes?: number | null;
+  speed?: number | null;
+  resistance?: number | null;
+};
+
+export type LoggedSetView = SetInput & {
   id: string;
   exerciseId: string;
   exerciseName: string;
@@ -33,14 +44,27 @@ export type RecentSetView = {
   summary: string;
 };
 
-/** A set as the athlete entered it: their weight unit, their speed unit, minutes. */
-export type SetInput = {
-  reps?: number | null;
-  weight?: number | null;
-  durationMinutes?: number | null;
-  speed?: number | null;
-  resistance?: number | null;
+/**
+ * The prefill for a log form: the same shape it posts back, plus when it was
+ * logged - "last time" is only worth showing alongside a date.
+ */
+export type LastSetView = SetInput & {
+  /** `YYYY-MM-DD` the set was logged on. */
+  date: string;
+  /** Already formatted in the athlete's units. */
+  summary: string;
 };
+
+/** A logged set's measurements, converted into the athlete's own units - the shape a form field's `defaultValue` wants. */
+function toSetInput(set: LoggedSet, preferences: AthletePreferences): SetInput {
+  return {
+    reps: set.reps,
+    weight: set.weight ? preferences.weightValue(set.weight) : null,
+    durationMinutes: set.duration ? set.duration.inMinutes : null,
+    speed: set.speed ? preferences.speedValue(set.speed) : null,
+    resistance: set.resistanceLevel,
+  };
+}
 
 @Injectable()
 export class SessionService {
@@ -68,6 +92,7 @@ export class SessionService {
       exerciseName: directory.nameOf(set.exerciseId),
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
+      ...toSetInput(set, athlete.preferences),
     }));
   }
 
@@ -81,6 +106,24 @@ export class SessionService {
       date: date.value,
       summary: set.format(athlete.preferences),
     }));
+  }
+
+  /**
+   * The most recent set logged against every exercise the athlete has ever
+   * trained, keyed by exercise id and excluding `date` itself - the log
+   * form's prefill once nothing has been logged for that exercise today.
+   */
+  async lastSetsFor(athlete: Athlete, date: DateOnly): Promise<Record<string, LastSetView>> {
+    const entries = await this.sessions.lastSetPerExercise(athlete.id, date);
+    const result: Record<string, LastSetView> = {};
+    for (const [exerciseId, { date: loggedDate, set }] of entries) {
+      result[exerciseId] = {
+        date: loggedDate.value,
+        summary: set.format(athlete.preferences),
+        ...toSetInput(set, athlete.preferences),
+      };
+    }
+    return result;
   }
 
   /**

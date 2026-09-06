@@ -217,6 +217,36 @@ describe('recent sets for an exercise', () => {
   });
 });
 
+describe('last set per exercise', () => {
+  it('returns nothing for an exercise never logged', async () => {
+    expect(await service.lastSetsFor(athleteWith(), TODAY)).toEqual({});
+  });
+
+  it('prefills from the previous session, converted into the requesting units', async () => {
+    const athlete = athleteWith();
+    const bench = await benchId();
+    await service.logSet(athlete, TODAY.minusDays(1), bench, { reps: 8, weight: 135 });
+
+    const metric = athleteWith({ weightUnit: 'kg' });
+    const lastSets = await service.lastSetsFor(metric, TODAY);
+
+    expect(lastSets[bench]).toMatchObject({
+      date: TODAY.minusDays(1).value,
+      reps: 8,
+      summary: '61.2 kg x 8',
+    });
+    expect(lastSets[bench]!.weight).toBeCloseTo(61.2, 1);
+  });
+
+  it('excludes a set logged on the date being viewed', async () => {
+    const athlete = athleteWith();
+    const bench = await benchId();
+    await service.logSet(athlete, TODAY, bench, { reps: 8, weight: 135 });
+
+    expect(await service.lastSetsFor(athlete, TODAY)).toEqual({});
+  });
+});
+
 describe('removing a set', () => {
   it('takes the set back off the day', async () => {
     const athlete = athleteWith();

@@ -74,6 +74,26 @@ test('logs a strength set from the free-form form and removes it', async ({ page
   await expect(loggedSets(page).filter({ hasText: '135 lb x 8' })).toHaveCount(0);
 });
 
+test('prefills the log form from the last time this exercise was logged', async ({ page, athlete }) => {
+  const exercise = uniqueName('Deadlift');
+  await createExercise(page, { name: exercise });
+
+  await page.goto('/today');
+  await selectOption(page.getByLabel('Exercise'), exercise);
+  await page.getByLabel('Reps').fill('5');
+  await page.getByLabel(/^Weight \(/).fill('225');
+  await page.getByRole('button', { name: 'Log set' }).click();
+  await expect(loggedSets(page).filter({ hasText: '225 lb x 5' })).toBeVisible();
+
+  // A fresh mount - not the same fetcher submission - so this exercises the
+  // loader's prefill rather than the uncontrolled input just keeping what
+  // was typed.
+  await page.reload();
+  await selectOption(page.getByLabel('Exercise'), exercise);
+  await expect(page.getByLabel('Reps')).toHaveValue('5');
+  await expect(page.getByLabel(/^Weight \(/)).toHaveValue('225');
+});
+
 test('logs several sets so pyramids record as they were lifted', async ({ page, athlete }) => {
   const exercise = uniqueName('Squat');
   await createExercise(page, { name: exercise });
