@@ -18,6 +18,7 @@ import { EQUIPMENT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_O
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
+import { nextCopyName } from './shared/duplicate-name';
 import { ExerciseDirectory } from './shared/exercise-directory.server';
 import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
 import { toTargetView, type TargetView } from './shared/target-view.server';
@@ -138,6 +139,34 @@ export class WorkoutService {
     const workout = Workout.create(athlete.id, name, this.deps);
     await this.unitOfWork.run(() => this.workouts.save(workout));
     return toSummary(workout);
+  }
+
+  /**
+   * A personal, editable copy of any workout the athlete can see - their
+   * own, or a sample. Built on `copyForImport`, the same deep copy a shared
+   * link's import uses, with the source's own exercise ids passed straight
+   * through rather than resolved through another athlete's library.
+   *
+   * Deliberately not a fork: duplicating a sample gives a plain row with
+   * `forkedFromId` null - no revert, and no effect on whether the sample
+   * still appears in the athlete's list. That is a different action from
+   * *editing* a sample, which forks it; the two sit side by side in the
+   * list's row menu.
+   */
+  async duplicate(athlete: Athlete, workoutId: string): Promise<Result<{ id: string }, 'not-found'>> {
+    return this.unitOfWork.run(async () => {
+      const source = await this.workouts.findVisible(athlete.id, workoutId);
+      if (!source) return err('not-found' as const);
+
+      const names = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
+      const name = nextCopyName(source.name, new Set(names.map((found) => found.name)));
+
+      const copy = source.copyForImport(athlete.id, (exerciseId) => exerciseId, this.deps);
+      copy.rename(name, this.deps.clock.now());
+
+      await this.workouts.save(copy);
+      return ok({ id: copy.id });
+    });
   }
 
   async rename(athlete: Athlete, workoutId: string, name: string): Promise<WorkoutMutation> {

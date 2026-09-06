@@ -1,8 +1,17 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, EllipsisIcon, ListPlusIcon, PlusIcon, XIcon } from 'lucide-react';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  EllipsisIcon,
+  ListPlusIcon,
+  PlusIcon,
+  XIcon,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useSubmit } from 'react-router';
+import { redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderCanvas } from '~/components/builder/builder-canvas';
@@ -144,6 +153,7 @@ const { settle } = page;
 const intents = {
   delete: intent('delete'),
   revert: intent('revert'),
+  duplicate: intent('duplicate'),
   rename: intent('rename', RenameWorkoutDto, { invalidMessage: 'Invalid name' }),
   addExercise: intent('addExercise', AddExerciseDto, { invalidMessage: 'Invalid exercise' }),
   removeExercise: intent('removeExercise', WorkoutExerciseIdDto),
@@ -164,6 +174,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     ),
 
     handled(intents.revert, async () => page.reverted(intents.revert, await workoutService.revert(athlete, workoutId))),
+
+    handled(intents.duplicate, async () => {
+      const outcome = await workoutService.duplicate(athlete, workoutId);
+      if (!outcome.ok) page.notFound();
+
+      requestLogger(context).log(`duplicated workout ${workoutId} into ${outcome.value.id} for user ${athlete.id}`, 'Workouts');
+      throw redirect(`/workouts/${outcome.value.id}`);
+    }),
 
     handled(intents.rename, async ({ name }) => settle(await workoutService.rename(athlete, workoutId, name))),
 
@@ -428,6 +446,13 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
                 </Field>
               </form>
             </RenameDisclosure>
+            <form method="post">
+              <input {...intents.duplicate.field} />
+              <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
+                <CopyIcon aria-hidden="true" />
+                Duplicate
+              </SubmitButton>
+            </form>
             <RevertOrDeleteForm
               noun="workout"
               isSample={isSample}

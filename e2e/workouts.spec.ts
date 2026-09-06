@@ -112,6 +112,43 @@ test('deletes a workout', async ({ page, athlete }) => {
   await expect(page.getByRole('link', { name })).toHaveCount(0);
 });
 
+test('duplicates a workout from its detail header', async ({ page, athlete }) => {
+  const exercise = uniqueName('Row');
+  const name = uniqueName('Push Day');
+
+  await createExercise(page, { name: exercise });
+  await createWorkout(page, name);
+  await addExercise(page, exercise);
+
+  await page.getByRole('button', { name: 'Duplicate' }).click();
+
+  await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy)`, exact: true })).toBeVisible();
+  // The copy carries the source's exercises.
+  await expect(orderedRows(page).filter({ hasText: exercise })).toBeVisible();
+
+  // The source is untouched, still under its own name.
+  await page.goto('/workouts');
+  await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+});
+
+test('duplicates a workout from the list row menu, and numbers a second copy', async ({ page, athlete }) => {
+  const name = uniqueName('Pull Day');
+  await createWorkout(page, name);
+
+  await page.goto('/workouts');
+  await page.getByRole('button', { name: `Actions for ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy)`, exact: true })).toBeVisible();
+
+  await page.goto('/workouts');
+  await page.getByRole('button', { name: `Actions for ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy 2)`, exact: true })).toBeVisible();
+});
+
 test('offers cardio targets instead of sets and reps', async ({ page, athlete }) => {
   const exercise = uniqueName('Treadmill Walk');
   const workout = uniqueName('Cardio Day');

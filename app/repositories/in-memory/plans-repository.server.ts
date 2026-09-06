@@ -1,7 +1,7 @@
 import { Plan, type PlanSnapshot } from '~/domain/plan/plan';
 import { LibraryVisibility, Ownership } from '~/domain/shared/ownership';
 
-import type { PlansRepository } from '../plans-repository.server';
+import type { PlanName, PlansRepository } from '../plans-repository.server';
 import type { AthleteOwned } from './references';
 
 // Dev-convenience adapter - see plans-repository.server.ts for when it's
@@ -17,6 +17,11 @@ export class InMemoryPlansRepository implements PlansRepository, AthleteOwned {
   async listFor(userId: string, showSampleData: boolean): Promise<Plan[]> {
     const visible = LibraryVisibility.for(userId, showSampleData).selectFrom([...this.byId.values()]);
     return visible.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).map(Plan.fromSnapshot);
+  }
+
+  async listNamesFor(userId: string, showSampleData: boolean): Promise<PlanName[]> {
+    const plans = await this.listFor(userId, showSampleData);
+    return plans.map(({ id, name }) => ({ id, name }));
   }
 
   async findVisible(userId: string, planId: string): Promise<Plan | null> {

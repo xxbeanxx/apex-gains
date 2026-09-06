@@ -28,6 +28,19 @@ export function describePlansContract(subject: ContractSubject): void {
       expect(names).toEqual(['Newer', 'Older']);
     });
 
+    it('lists names in the same order and for the same set as listFor', async () => {
+      await repositories.plans.save(plan({ id: ids.own, name: 'Older', updatedAt: new Date('2026-08-01T00:00:00Z') }));
+      await repositories.plans.save(plan({ id: ids.extra, name: 'Newer', updatedAt: new Date('2026-09-01T00:00:00Z') }));
+      await repositories.plans.save(plan({ id: ids.sample, userId: null, name: 'Sample' }));
+
+      for (const showSamples of [true, false]) {
+        const full = await repositories.plans.listFor(ids.athlete, showSamples);
+        const names = await repositories.plans.listNamesFor(ids.athlete, showSamples);
+
+        expect(names).toEqual(full.map(({ id, name }) => ({ id, name })));
+      }
+    });
+
     it('round-trips the anchor date as a calendar day, not a timestamp', async () => {
       await repositories.plans.save(plan({ id: ids.own, anchorDate: '2026-01-31' }));
 

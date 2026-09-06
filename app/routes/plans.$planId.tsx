@@ -14,6 +14,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CalendarPlusIcon,
+  CopyIcon,
   EllipsisIcon,
   MoonIcon,
   PlusIcon,
@@ -134,6 +135,7 @@ const { settle } = page;
 const intents = {
   delete: intent('delete'),
   revert: intent('revert'),
+  duplicate: intent('duplicate'),
   rename: intent('rename', RenamePlanDto, { invalidMessage: 'Invalid name' }),
   reanchor: intent('reanchor', ReanchorPlanDto, { invalidMessage: 'Invalid date' }),
   activate: intent('activate'),
@@ -168,6 +170,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     ),
 
     handled(intents.revert, async () => page.reverted(intents.revert, await planService.revert(athlete, planId))),
+
+    handled(intents.duplicate, async () => {
+      const outcome = await planService.duplicate(athlete, planId);
+      if (!outcome.ok) page.notFound();
+
+      requestLogger(context).log(`duplicated plan ${planId} into ${outcome.value.id} for user ${athlete.id}`, 'Plans');
+      throw redirect(`/plans/${outcome.value.id}`);
+    }),
 
     handled(intents.rename, async ({ name }) => settle(await planService.rename(athlete, planId, name))),
     handled(intents.reanchor, async ({ anchorDate }) =>
@@ -447,6 +457,13 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
               <SubmitButton variant="outline" size="sm" match={intents.share.match} pendingLabel="Building share link">
                 <Share2Icon aria-hidden="true" />
                 {share ? 'Show link' : 'Share'}
+              </SubmitButton>
+            </form>
+            <form method="post">
+              <input {...intents.duplicate.field} />
+              <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
+                <CopyIcon aria-hidden="true" />
+                Duplicate
               </SubmitButton>
             </form>
             <RevertOrDeleteForm

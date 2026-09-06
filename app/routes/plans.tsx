@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsString, MaxLength, MinLength } from 'class-validator';
-import { PlusIcon, RepeatIcon } from 'lucide-react';
-import { Link, data, redirect } from 'react-router';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { CopyIcon, EllipsisIcon, PlusIcon, RepeatIcon } from 'lucide-react';
+import { Link, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { OwnershipBadge } from '~/components/forkable-header';
@@ -10,6 +10,7 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
@@ -17,8 +18,10 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { DateOnly } from '~/domain/values/date-only';
 import { formatMonthDay, formatWeekday } from '~/lib/format';
 import { requestLogger } from '~/lib/logger.server';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { trim } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
+import type { PlanSummary } from '~/services/plan-service.server';
 
 import { planServiceContext } from '~/lib/nest-bridge.server';
 
@@ -39,6 +42,17 @@ class CreatePlanDto {
   readonly name!: string;
 }
 
+class PlanIdDto {
+  @Expose()
+  @IsUUID()
+  readonly planId!: string;
+}
+
+const intents = {
+  create: intent('create', CreatePlanDto),
+  duplicate: intent('duplicate', PlanIdDto),
+};
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const planService = context.get(planServiceContext);
@@ -47,24 +61,31 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const user = requireAthlete(context);
-  const formData = await request.formData();
-  const result = validateForm(CreatePlanDto, { name: formData.get('name') });
-
-  if (!result.success) {
-    return data({ error: result.message }, { status: 400 });
-  }
-
-  // A new plan is anchored to today, so its first slot is today's - the
-  // athlete can re-anchor it afterwards.
   const planService = context.get(planServiceContext);
-  const plan = await planService.create(user, result.data.name, DateOnly.today(new Date(), user.preferences.timezone));
 
-  requestLogger(context).log(`created plan ${plan.id} for user ${user.id}`, 'Plans');
+  return dispatch(request, [
+    handled(intents.create, async ({ name }) => {
+      // A new plan is anchored to today, so its first slot is today's - the
+      // athlete can re-anchor it afterwards.
+      const plan = await planService.create(user, name, DateOnly.today(new Date(), user.preferences.timezone));
+      requestLogger(context).log(`created plan ${plan.id} for user ${user.id}`, 'Plans');
+      throw redirect(`/plans/${plan.id}`);
+    }),
 
-  throw redirect(`/plans/${plan.id}`);
+    handled(intents.duplicate, async ({ planId }) => {
+      const outcome = await planService.duplicate(user, planId);
+      // A stale row - since deleted or since out of view - is a no-op back
+      // to the list rather than an error, same as a stale form anywhere
+      // else in the builders.
+      if (!outcome.ok) throw redirect('/plans');
+
+      requestLogger(context).log(`duplicated plan ${planId} into ${outcome.value.id} for user ${user.id}`, 'Plans');
+      throw redirect(`/plans/${outcome.value.id}`);
+    }),
+  ]);
 }
 
-function PlanSummaryLine({ plan }: { plan: Route.ComponentProps['loaderData']['plans'][number] }) {
+function PlanSummaryLine({ plan }: { plan: PlanSummary }) {
   if (plan.slotCount === 0) return <>No days yet</>;
   return (
     <>
@@ -73,13 +94,49 @@ function PlanSummaryLine({ plan }: { plan: Route.ComponentProps['loaderData']['p
   );
 }
 
+/** The `⋯` menu every plan card ends in: duplicating it. */
+function PlanRowMenu({ plan }: { plan: PlanSummary }) {
+  const submit = useSubmit();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {
+          // `relative` so this sits above the card-covering Link overlay in
+          // paint order - a positioned sibling later in the DOM beats an
+          // absolutely-positioned one earlier, but only once it is itself
+          // positioned.
+        }
+        <Button variant="ghost" size="icon-sm" className="relative ml-auto shrink-0" aria-label={`Actions for ${plan.name}`}>
+          <EllipsisIcon aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => submit({ intent: intents.duplicate.name, planId: plan.id }, { method: 'post' })}>
+          <CopyIcon aria-hidden="true" />
+          Duplicate
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function Plans({ loaderData, actionData }: Route.ComponentProps) {
-  const error = actionData && 'error' in actionData ? actionData.error : undefined;
+  const error = intents.create.errorIn(actionData);
   const { plans: planList } = loaderData;
 
   const createForm = (
     <form method="post">
-      <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
+      <input {...intents.create.field} />
+      <Field
+        label="Name"
+        error={error}
+        action={
+          <SubmitButton match={intents.create.match} pendingLabel="Creating">
+            Create
+          </SubmitButton>
+        }
+      >
         <Input name="name" placeholder="Push/Pull/Legs" required />
       </Field>
     </form>
@@ -142,6 +199,7 @@ export default function Plans({ loaderData, actionData }: Route.ComponentProps) 
                         </Link>
                         {plan.isActive ? <Badge variant="brand">Active</Badge> : null}
                         <OwnershipBadge isSample={plan.isSample} isCustomized={plan.isCustomized} />
+                        <PlanRowMenu plan={plan} />
                       </span>
                       <span className="text-sm text-muted-foreground tabular-nums">
                         <PlanSummaryLine plan={plan} />
