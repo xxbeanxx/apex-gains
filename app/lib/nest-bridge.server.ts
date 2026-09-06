@@ -47,42 +47,47 @@ import type { AppLogger } from '~server/logging/logger.provider';
  * got wrong silently, and the compiler catches the other two.
  */
 const contexts = {
+  logger: createContext<AppLogger>(),
+  // services
   adminService: createContext<AdminService>(),
   athleteService: createContext<AthleteService>(),
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
   exportService: createContext<ExportService>(),
-  progressService: createContext<ProgressService>(),
   planImportService: createContext<PlanImportService>(),
   planService: createContext<PlanService>(),
-  workoutService: createContext<WorkoutService>(),
-  trainingPlanService: createContext<TrainingPlanService>(),
+  progressService: createContext<ProgressService>(),
   sessionService: createContext<SessionService>(),
-  sessionStorage: createContext<AppSessionStorage>(),
+  trainingPlanService: createContext<TrainingPlanService>(),
+  workoutService: createContext<WorkoutService>(),
+  // misc
   oidcConfig: createContext<OidcClient>(),
   oidcStateCookie: createContext<Cookie>(),
+  sessionStorage: createContext<AppSessionStorage>(),
+  // testing config
   testLoginConfig: createContext<ConfigType<typeof testLoginConfig>>(),
-  /** The process-wide logger, which Nest's own internal logging also goes through. */
-  logger: createContext<AppLogger>(),
 } as const;
 
 export const {
+  logger: nestLoggerContext,
+  //
   adminService: adminServiceContext,
   athleteService: athleteServiceContext,
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,
   exportService: exportServiceContext,
-  progressService: progressServiceContext,
   planImportService: planImportServiceContext,
   planService: planServiceContext,
-  workoutService: workoutServiceContext,
-  trainingPlanService: trainingPlanServiceContext,
+  progressService: progressServiceContext,
   sessionService: sessionServiceContext,
-  sessionStorage: sessionStorageContext,
+  trainingPlanService: trainingPlanServiceContext,
+  workoutService: workoutServiceContext,
+  //
   oidcConfig: oidcConfigContext,
   oidcStateCookie: oidcStateCookieContext,
+  sessionStorage: sessionStorageContext,
+  //
   testLoginConfig: testLoginConfigContext,
-  logger: nestLoggerContext,
 } = contexts;
 
 /**
