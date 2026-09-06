@@ -16,6 +16,18 @@ import { newAthlete, uniqueName } from './fixtures';
  * dialogs, and a second with `javaScriptEnabled: false` - carrying over the
  * first context's `storageState` so it starts already signed in - that does
  * the actual add-exercise/edit-target flow under test.
+ *
+ * That second context also asks for `reducedMotion: 'reduce'`, which is
+ * load-bearing rather than cosmetic. `<main>` carries `animate-rise-in`, so
+ * every full document load - and without JavaScript each form submit is one -
+ * translates the page for the duration of the mount animation. Playwright
+ * holds an action until the target's box stops moving, and on a
+ * JavaScript-disabled page it cannot re-arm that wait once the page falls
+ * idle: script execution is off, so neither timers nor animation-frame
+ * callbacks ever run again. An action begun while the page is still animating
+ * therefore waits out the full timeout instead of settling. `app.css`'s
+ * `prefers-reduced-motion` block collapses every duration to 1ms, so the
+ * element is stable before the first action looks at it.
  */
 test('adds an exercise and edits its target with JavaScript disabled', async ({ browser }) => {
   const exercise = uniqueName('Bench Press');
@@ -30,7 +42,11 @@ test('adds an exercise and edits its target with JavaScript disabled', async ({ 
   const storageState = await setupContext.storageState();
   await setupContext.close();
 
-  const noJsContext = await browser.newContext({ javaScriptEnabled: false, storageState });
+  const noJsContext = await browser.newContext({
+    javaScriptEnabled: false,
+    reducedMotion: 'reduce',
+    storageState,
+  });
   const page = await noJsContext.newPage();
 
   await page.goto(workoutUrl);
