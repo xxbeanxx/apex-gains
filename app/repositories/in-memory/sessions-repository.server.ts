@@ -71,6 +71,31 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
     return entries.slice(0, limit);
   }
 
+  async lastSetPerExercise(userId: string, beforeDate: DateOnly): Promise<Map<string, { date: DateOnly; set: LoggedSet }>> {
+    const latest = new Map<string, { date: string; set: SessionSnapshot['sets'][number] }>();
+
+    for (const snapshot of this.byId.values()) {
+      if (snapshot.userId !== userId || snapshot.date >= beforeDate.value) continue;
+      for (const setSnapshot of snapshot.sets) {
+        const current = latest.get(setSnapshot.exerciseId);
+        if (
+          !current ||
+          snapshot.date > current.date ||
+          (snapshot.date === current.date && setSnapshot.createdAt.getTime() > current.set.createdAt.getTime())
+        ) {
+          latest.set(setSnapshot.exerciseId, { date: snapshot.date, set: setSnapshot });
+        }
+      }
+    }
+
+    return new Map(
+      [...latest].map(([exerciseId, { date, set }]) => [
+        exerciseId,
+        { date: DateOnly.parse(date), set: LoggedSet.fromSnapshot(set) },
+      ]),
+    );
+  }
+
   async trainingTotals(): Promise<Map<string, TrainingTotals>> {
     const totals = new Map<string, { workoutCount: number; setCount: number; lastActiveOn: string | null }>();
 
