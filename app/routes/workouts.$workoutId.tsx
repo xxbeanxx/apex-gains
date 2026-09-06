@@ -8,6 +8,7 @@ import {
   EllipsisIcon,
   ListPlusIcon,
   PlusIcon,
+  TrendingUpIcon,
   XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -41,7 +42,7 @@ import { forkableDetail, type ForkableDetail } from '~/lib/forkable-detail.serve
 import { dispatch, handled } from '~/lib/intent.server';
 import { toOptionalNumber, trim } from '~/lib/validate-form';
 import type { ExerciseView } from '~/services/exercise-library-service.server';
-import type { WorkoutExerciseView } from '~/services/workout-service.server';
+import type { SuggestionView, WorkoutExerciseView } from '~/services/workout-service.server';
 
 import { exerciseLibraryServiceContext, workoutServiceContext } from '~/lib/nest-bridge.server';
 
@@ -64,6 +65,10 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const libraryService = context.get(exerciseLibraryServiceContext);
   return {
     workout,
+    // Array, not the service's Map - loader data serializes like any other
+    // return value, and every other id-keyed lookup on this page is
+    // rebuilt into a Map client-side from an array the same way.
+    suggestions: [...(await workoutService.suggestions(athlete, params.workoutId)).values()],
     exercises: await libraryService.listExercises(athlete),
     weightUnit: athlete.preferences.weightUnit,
     distanceUnit: athlete.preferences.distanceUnit,
@@ -166,12 +171,30 @@ const intents = {
   removeExercise: intent('removeExercise', WorkoutExerciseIdDto),
   move: intent('move', MoveExerciseDto),
   updateTarget: intent('updateTarget', UpdateTargetDto, { invalidMessage: 'Invalid target' }),
+  // Same DTO as updateTarget - applying a suggestion posts back the exact
+  // target it showed, so it validates identically. Kept as its own named
+  // intent so an Apply pending state never crosses with a Save target one.
+  applySuggestion: intent('applySuggestion', UpdateTargetDto, { invalidMessage: 'Invalid target' }),
 };
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
   const workoutId = params.workoutId;
   const workoutService = context.get(workoutServiceContext);
+
+  /** updateTarget and applySuggestion post the identical shape - a manual edit and applying a suggestion are the same write. */
+  const saveTarget = async (input: UpdateTargetDto) =>
+    settle(
+      await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, {
+        sets: input.targetSets,
+        reps: input.targetReps,
+        weight: input.targetWeight,
+        durationMinutes: input.targetDurationMinutes,
+        speed: input.targetSpeed,
+        resistance: input.targetResistance,
+        restSeconds: input.targetRestSeconds,
+      }),
+    );
 
   return dispatch(request, [
     handled(intents.delete, async () =>
@@ -207,19 +230,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       settle(await workoutService.moveExercise(athlete, workoutId, workoutExerciseId, direction)),
     ),
 
-    handled(intents.updateTarget, async (input) =>
-      settle(
-        await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, {
-          sets: input.targetSets,
-          reps: input.targetReps,
-          weight: input.targetWeight,
-          durationMinutes: input.targetDurationMinutes,
-          speed: input.targetSpeed,
-          resistance: input.targetResistance,
-          restSeconds: input.targetRestSeconds,
-        }),
-      ),
-    ),
+    handled(intents.updateTarget, saveTarget),
+    handled(intents.applySuggestion, saveTarget),
   ]);
 }
 
@@ -326,6 +338,38 @@ function EditTargetDetail({
   );
 }
 
+/**
+ * "Suggested: 3 x 8 at 45 lb — you hit 3 x 10 twice", with an Apply that
+ * posts the suggestion's own target back through `updateExerciseTarget` -
+ * never applied on its own, only proposed.
+ */
+function TargetSuggestion({ suggestion }: { suggestion: SuggestionView }) {
+  const { target } = suggestion;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+        <TrendingUpIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        Suggested: <span className="font-medium text-foreground">{suggestion.summary}</span> — {suggestion.because}
+      </span>
+      <form method="post">
+        <input {...intents.applySuggestion.field} />
+        <input type="hidden" name="workoutExerciseId" value={suggestion.workoutExerciseId} />
+        <input type="hidden" name="targetSets" value={target.sets ?? ''} />
+        <input type="hidden" name="targetReps" value={target.reps ?? ''} />
+        <input type="hidden" name="targetWeight" value={target.weightValue ?? ''} />
+        <input type="hidden" name="targetDurationMinutes" value={target.durationMinutesValue ?? ''} />
+        <input type="hidden" name="targetSpeed" value={target.speedValue ?? ''} />
+        <input type="hidden" name="targetResistance" value={target.resistance ?? ''} />
+        <input type="hidden" name="targetRestSeconds" value={target.restSeconds ?? ''} />
+        <SubmitButton size="sm" variant="outline" match={intents.applySuggestion.match} pendingLabel="Applying">
+          Apply
+        </SubmitButton>
+      </form>
+    </div>
+  );
+}
+
 function PaletteExerciseRow({ exercise, disabled }: { exercise: ExerciseView; disabled: boolean }) {
   return (
     <form method="post">
@@ -417,12 +461,13 @@ function ExercisePalette({
 }
 
 export default function WorkoutDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { workout, exercises: exerciseList, weightUnit, distanceUnit } = loaderData;
+  const { workout, suggestions, exercises: exerciseList, weightUnit, distanceUnit } = loaderData;
 
   const exerciseCount = workout.exercises.length;
   const { isSample, isCustomized } = workout;
   const usedExerciseIds = new Set(workout.exercises.map((entry) => entry.exerciseId));
   const exerciseById = new Map(exerciseList.map((exercise) => [exercise.id, exercise]));
+  const suggestionByEntryId = new Map(suggestions.map((suggestion) => [suggestion.workoutExerciseId, suggestion]));
   const defaultCardioFields: CardioFields = { showSpeed: true, showResistance: true };
 
   const renameError = intents.rename.errorIn(actionData);
@@ -519,12 +564,14 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
               <BuilderCanvas>
                 {workout.exercises.map((entry, index) => {
                   const exercise = exerciseById.get(entry.exerciseId);
+                  const suggestion = suggestionByEntryId.get(entry.id);
                   return (
                     <BuilderRow
                       key={entry.id}
                       position={index + 1}
                       title={entry.exerciseName}
                       chips={<TargetChips target={entry.target} />}
+                      note={suggestion ? <TargetSuggestion suggestion={suggestion} /> : undefined}
                       controls={<MoveButtons entry={entry} index={index} count={exerciseCount} />}
                       menu={<RowMenu entry={entry} />}
                       detail={

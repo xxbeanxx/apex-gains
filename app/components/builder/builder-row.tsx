@@ -15,6 +15,7 @@ function BuilderRow({
   position,
   title,
   chips,
+  note,
   controls,
   menu,
   detail,
@@ -22,6 +23,8 @@ function BuilderRow({
   position: number;
   title: React.ReactNode;
   chips?: React.ReactNode;
+  /** A line under the chips - the workout builder's progression suggestion is the one caller. */
+  note?: React.ReactNode;
   controls?: React.ReactNode;
   menu?: React.ReactNode;
   detail?: React.ReactNode;
@@ -38,6 +41,7 @@ function BuilderRow({
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-pretty">{title}</p>
           {chips ? <div className="mt-1 flex flex-wrap gap-1">{chips}</div> : null}
+          {note ? <div className="mt-1.5">{note}</div> : null}
         </div>
         {controls ? <div className="flex shrink-0 items-center gap-0.5">{controls}</div> : null}
         {menu}

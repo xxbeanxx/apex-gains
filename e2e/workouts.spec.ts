@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { createExercise, createWorkout, orderedRows, submitForm } from './helpers';
+import { createExercise, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 /** Adds an exercise to the open workout builder by clicking it in the palette. */
@@ -157,6 +157,48 @@ test('duplicates a workout from the list row menu, and numbers a second copy', a
   await page.getByRole('menuitem', { name: 'Duplicate' }).click();
   await page.waitForURL(/\/workouts\/[0-9a-f-]+$/);
   await expect(page.getByRole('heading', { name: `${name} (copy 2)`, exact: true })).toBeVisible();
+});
+
+/** YYYY-MM-DD for `daysAgo` days before today, in UTC - matches a fresh athlete's default timezone. */
+function dateDaysAgo(daysAgo: number): string {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - daysAgo);
+  return date.toISOString().slice(0, 10);
+}
+
+/** Logs three identical sets for `exercise` on the free-form /today form, on the given date. */
+async function logThreeSets(page: Page, date: string, exercise: string, reps: string, weight: string): Promise<void> {
+  await page.goto(`/today?date=${date}`);
+  await selectOption(page.getByLabel('Exercise'), exercise);
+  for (let i = 0; i < 3; i++) {
+    await page.getByLabel('Reps').fill(reps);
+    await page.getByLabel(/^Weight \(/).fill(weight);
+    await page.getByRole('button', { name: 'Log set' }).click();
+  }
+  await expect(page.locator('ol > li').filter({ hasText: `${weight} lb x ${reps}` })).toHaveCount(3);
+}
+
+test('suggests raising the weight after two strong sessions, and applying it updates the target', async ({ page, athlete }) => {
+  const exercise = uniqueName('Bench Press');
+  const workout = uniqueName('Push Day');
+
+  await createExercise(page, { name: exercise });
+  const workoutId = await createWorkout(page, workout);
+  await addExercise(page, exercise);
+  await setTarget(page, exercise, { sets: '3', reps: '8', weight: '100' });
+
+  await logThreeSets(page, dateDaysAgo(2), exercise, '8', '100');
+  await logThreeSets(page, dateDaysAgo(1), exercise, '8', '100');
+
+  await page.goto(`/workouts/${workoutId}`);
+  const row = orderedRows(page).filter({ hasText: exercise });
+  await expect(row).toContainText('Suggested: 3 x 8, 105 lb — you hit 3 x 8 twice');
+
+  await row.getByRole('button', { name: 'Apply' }).click();
+  await expect(row).toContainText('105 lb');
+  // The just-applied target is heavier than any set on record, so there is
+  // nothing left to suggest until the athlete trains at the new weight.
+  await expect(row.getByText('Suggested:')).toHaveCount(0);
 });
 
 test('offers cardio targets instead of sets and reps', async ({ page, athlete }) => {
