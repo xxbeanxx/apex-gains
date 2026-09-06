@@ -13,7 +13,10 @@ import { requestLoggingMiddleware } from '~/lib/logger.server';
 import type { Route } from './+types/root';
 import './app.css';
 
-export const links: Route.LinksFunction = () => [];
+export const links: Route.LinksFunction = () => [
+  { rel: 'manifest', href: '/manifest.webmanifest' },
+  { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+];
 
 // requestLoggingMiddleware must run first: it is what times the request, so
 // anything it wraps (loadUserMiddleware included) counts towards the duration
@@ -36,6 +39,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {
+          // Not the `meta` route export - a child route's `meta` replaces
+          // the parent's rather than merging, so anything put there would
+          // vanish on every page. These stay literal elements here instead.
+        }
+        <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0d0c08" media="(prefers-color-scheme: dark)" />
         {
           // Must stay blocking and ahead of styles - it prevents the
           // light-mode flash on a dark-mode load.
