@@ -3,18 +3,29 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Athlete } from '~/domain/athlete/athlete';
 import { cardioFieldsFor } from '~/domain/equipment/cardio-fields';
 import type { ExerciseType } from '~/domain/exercise/exercise-type';
+import { suggestNextTarget, type RecentSession, type SuggestionKind } from '~/domain/progress/progression';
+import type { LoggedSet } from '~/domain/session/logged-set';
 import type { MoveDirection } from '~/domain/shared/ordered';
 import { err, ok, type Result } from '~/domain/shared/result';
 import { SetTarget } from '~/domain/workout/set-target';
 import { Workout } from '~/domain/workout/workout';
+import type { DateOnly } from '~/domain/values/date-only';
 import { Duration } from '~/domain/values/duration';
 import { Speed } from '~/domain/values/speed';
+import type { WeightUnit } from '~/domain/values/units';
 import { Weight } from '~/domain/values/weight';
 import type { EquipmentRepository } from '~/repositories/equipment-repository.server';
 import type { ExercisesRepository } from '~/repositories/exercises-repository.server';
+import type { SessionsRepository } from '~/repositories/sessions-repository.server';
 import type { WorkoutsRepository } from '~/repositories/workouts-repository.server';
 import type { UnitOfWork } from '~/repositories/unit-of-work.server';
-import { EQUIPMENT_REPOSITORY, EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK } from '~/repositories/tokens';
+import {
+  EQUIPMENT_REPOSITORY,
+  EXERCISES_REPOSITORY,
+  SESSIONS_REPOSITORY,
+  WORKOUTS_REPOSITORY,
+  UNIT_OF_WORK,
+} from '~/repositories/tokens';
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
@@ -71,6 +82,41 @@ export type TargetInput = {
 
 export type WorkoutMutation = ForkMutation;
 
+/**
+ * A progressive-overload proposal for one workout entry - never applied on
+ * its own, only rendered with its reason and an Apply. `target` reuses
+ * `TargetView`'s athlete-unit fields, since those are exactly what an
+ * "apply" submission needs to post back through `updateExerciseTarget`.
+ */
+export type SuggestionView = {
+  workoutExerciseId: string;
+  kind: Exclude<SuggestionKind, 'hold'>;
+  because: string;
+  summary: string | null;
+  target: TargetView;
+};
+
+/**
+ * How many of an exercise's most recent logged sets to fetch before grouping
+ * them into sessions. Generous enough to cover two sessions at a typical
+ * set count; an exercise logged in unusually high volume in one sitting
+ * could push an earlier qualifying set out of this window, understating
+ * that session rather than overstating it.
+ */
+const RECENT_SET_FETCH_LIMIT = 20;
+
+/** How many of an exercise's most recent sessions `suggestNextTarget` needs. */
+const SESSIONS_NEEDED = 2;
+
+/**
+ * A PR1000's power rods (and comparable fixed-resistance equipment) move in
+ * discrete steps, not a percentage of the current weight - 5 lb for an
+ * athlete who trains in pounds, 2.5 kg for one who trains in kilograms.
+ */
+function weightIncrementFor(unit: WeightUnit): Weight {
+  return unit === 'lb' ? Weight.lb(5) : Weight.kg(2.5);
+}
+
 function toSummary(workout: Workout): WorkoutSummary {
   return {
     id: workout.id,
@@ -88,6 +134,7 @@ export class WorkoutService {
     @Inject(WORKOUTS_REPOSITORY) private readonly workouts: WorkoutsRepository,
     @Inject(EXERCISES_REPOSITORY) private readonly exercises: ExercisesRepository,
     @Inject(EQUIPMENT_REPOSITORY) private readonly equipment: EquipmentRepository,
+    @Inject(SESSIONS_REPOSITORY) private readonly sessions: SessionsRepository,
     @Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWork,
     @Inject(DOMAIN_DEPS) private readonly deps: DomainDeps,
   ) {
@@ -132,6 +179,81 @@ export class WorkoutService {
         target: toTargetView(entry.target, athlete.preferences),
       })),
     };
+  }
+
+  /**
+   * A progressive-overload proposal for each targeted entry that has one -
+   * an untargeted entry, or one with too little history, is simply absent
+   * rather than holding a place with nothing to say. Never writes anything;
+   * applying a suggestion is a separate call through `updateExerciseTarget`.
+   */
+  async suggestions(athlete: Athlete, workoutId: string): Promise<Map<string, SuggestionView>> {
+    const workout = await this.workouts.findVisible(athlete.id, workoutId);
+    const result = new Map<string, SuggestionView>();
+    if (!workout) return result;
+
+    const targeted = workout.exercises.filter((entry) => !entry.target.isEmpty);
+    if (targeted.length === 0) return result;
+
+    const directory = await ExerciseDirectory.of(
+      targeted.map((entry) => entry.exerciseId),
+      this.exercises,
+    );
+    const equipmentList = await this.equipment.findManyByIds(directory.allEquipmentIds);
+    const equipmentById = new Map(equipmentList.map((item) => [item.id, item]));
+    const weightIncrement = weightIncrementFor(athlete.preferences.weightUnit);
+
+    for (const entry of targeted) {
+      const cardioFields = cardioFieldsFor(
+        directory.equipmentIdsOf(entry.exerciseId).map((id) => equipmentById.get(id)?.cardioKind ?? null),
+      );
+      const recent = await this.recentSessionsFor(athlete.id, entry.exerciseId);
+
+      const suggestion = suggestNextTarget(
+        entry.target,
+        recent,
+        directory.typeOf(entry.exerciseId),
+        cardioFields,
+        weightIncrement,
+      );
+      if (!suggestion || suggestion.kind === 'hold') continue;
+
+      result.set(entry.id, {
+        workoutExerciseId: entry.id,
+        kind: suggestion.kind,
+        because: suggestion.because,
+        summary: suggestion.target.format(athlete.preferences),
+        target: toTargetView(suggestion.target, athlete.preferences)!,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * The exercise's most recent sessions, most-recent-first, each carrying
+   * every set logged for it that day - grouped from a flat, newest-first set
+   * list rather than a third query shape over the same rows (see
+   * `RECENT_SET_FETCH_LIMIT` for the trade-off that makes this one query
+   * enough).
+   */
+  private async recentSessionsFor(userId: string, exerciseId: string): Promise<RecentSession[]> {
+    const found = await this.sessions.recentSetsForExercise(userId, exerciseId, RECENT_SET_FETCH_LIMIT);
+
+    const sessions: { date: DateOnly; sets: LoggedSet[] }[] = [];
+    const byDate = new Map<string, { date: DateOnly; sets: LoggedSet[] }>();
+    for (const { date, set } of found) {
+      let session = byDate.get(date.value);
+      if (!session) {
+        if (sessions.length >= SESSIONS_NEEDED) continue;
+        session = { date, sets: [] };
+        byDate.set(date.value, session);
+        sessions.push(session);
+      }
+      session.sets.push(set);
+    }
+
+    return sessions;
   }
 
   async create(athlete: Athlete, name: string): Promise<WorkoutSummary> {

@@ -3,12 +3,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Athlete } from '~/domain/athlete/athlete';
 import { Equipment } from '~/domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~/domain/exercise/exercise';
+import { Session } from '~/domain/session/session';
 import { fixedClock } from '~/domain/shared/clock';
 import { sequentialIds } from '~/domain/shared/ids';
 import { sequentialSecrets } from '~/domain/shared/secrets';
 import { Workout, type WorkoutSnapshot } from '~/domain/workout/workout';
+import { DateOnly } from '~/domain/values/date-only';
+import { Duration } from '~/domain/values/duration';
+import { Speed } from '~/domain/values/speed';
+import { Weight } from '~/domain/values/weight';
 import { InMemoryEquipmentRepository } from '~/repositories/in-memory/equipment-repository.server';
 import { InMemoryExercisesRepository } from '~/repositories/in-memory/exercises-repository.server';
+import { InMemorySessionsRepository } from '~/repositories/in-memory/sessions-repository.server';
 import { InMemoryWorkoutsRepository } from '~/repositories/in-memory/workouts-repository.server';
 import { InMemoryUnitOfWork } from '~/repositories/in-memory/unit-of-work.server';
 
@@ -74,17 +80,21 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
 let workouts: InMemoryWorkoutsRepository;
 let exercises: InMemoryExercisesRepository;
 let equipment: InMemoryEquipmentRepository;
+let sessions: InMemorySessionsRepository;
 let service: WorkoutService;
+let deps: {
+  ids: ReturnType<typeof sequentialIds>;
+  clock: ReturnType<typeof fixedClock>;
+  secrets: ReturnType<typeof sequentialSecrets>;
+};
 
 beforeEach(() => {
   workouts = new InMemoryWorkoutsRepository();
   exercises = new InMemoryExercisesRepository();
   equipment = new InMemoryEquipmentRepository();
-  service = new WorkoutService(workouts, exercises, equipment, new InMemoryUnitOfWork(), {
-    ids: sequentialIds('new'),
-    clock: fixedClock(NOW),
-    secrets: sequentialSecrets('token'),
-  });
+  sessions = new InMemorySessionsRepository();
+  deps = { ids: sequentialIds('new'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
+  service = new WorkoutService(workouts, exercises, equipment, sessions, new InMemoryUnitOfWork(), deps);
 });
 
 describe('create', () => {
@@ -262,6 +272,163 @@ describe('updateExerciseTarget', () => {
   it('reports the workout as not found when it is not visible', async () => {
     const outcome = await service.updateExerciseTarget(athlete, 'nope', 'sample-entry-0', {});
     expect(outcome).toEqual({ ok: false, error: 'not-found' });
+  });
+});
+
+describe('suggestions', () => {
+  function targetedEntry(overrides: Partial<WorkoutSnapshot['exercises'][number]> = {}) {
+    return {
+      id: 'entry-0',
+      exerciseId: 'exercise-1',
+      position: 0,
+      targetSets: 3,
+      targetReps: 10,
+      targetWeight: '135.00',
+      targetDurationSeconds: null,
+      targetSpeed: null,
+      targetResistance: null,
+      ...overrides,
+    };
+  }
+
+  function logDay(date: string, measurements: { reps: number; weight: number }[]): Promise<void> {
+    const day = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay: false }, deps);
+    for (const { reps, weight } of measurements) {
+      day.logSet('exercise-1', { reps, weight: Weight.lb(weight) }, deps);
+    }
+    return sessions.save(day);
+  }
+
+  it('is empty for an untargeted entry, even with plenty of history', async () => {
+    await workouts.save(
+      sampleWorkout({
+        id: 'own-1',
+        userId: 'user-1',
+        exercises: [targetedEntry({ targetSets: null, targetReps: null, targetWeight: null })],
+      }),
+    );
+    await exercises.save(exercise());
+    await logDay('2026-08-29', [{ reps: 10, weight: 135 }]);
+    await logDay('2026-08-27', [{ reps: 10, weight: 135 }]);
+
+    expect((await service.suggestions(athlete, 'own-1')).size).toBe(0);
+  });
+
+  it('is empty for a workout that is not visible', async () => {
+    expect((await service.suggestions(athlete, 'nope')).size).toBe(0);
+  });
+
+  it('is empty under two sessions of history', async () => {
+    await workouts.save(sampleWorkout({ id: 'own-1', userId: 'user-1', exercises: [targetedEntry()] }));
+    await exercises.save(exercise());
+    await logDay('2026-08-29', [
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+    ]);
+
+    expect((await service.suggestions(athlete, 'own-1')).size).toBe(0);
+  });
+
+  it('suggests raising the weight after two strong sessions, keyed by the workout-exercise id', async () => {
+    await workouts.save(sampleWorkout({ id: 'own-1', userId: 'user-1', exercises: [targetedEntry()] }));
+    await exercises.save(exercise());
+    await logDay('2026-08-29', [
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+    ]);
+    await logDay('2026-08-27', [
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+    ]);
+
+    const suggestions = await service.suggestions(athlete, 'own-1');
+
+    const suggestion = suggestions.get('entry-0');
+    expect(suggestion).toMatchObject({
+      workoutExerciseId: 'entry-0',
+      kind: 'increase-weight',
+      because: 'you hit 3 x 10 twice',
+    });
+    expect(suggestion?.target.weightValue).toBe(140);
+    expect(suggestion?.summary).toBe('3 x 10, 140 lb');
+  });
+
+  it('picks a 2.5 kg increment for an athlete who trains in kilograms', async () => {
+    const kgAthlete = Athlete.fromSnapshot({
+      id: 'user-1',
+      googleSub: 'google-1',
+      email: 'athlete@example.com',
+      name: 'Athlete',
+      avatarUrl: null,
+      weightUnit: 'kg',
+      distanceUnit: 'km',
+      showSampleData: true,
+      timezone: 'UTC',
+      isAdmin: false,
+      createdAt: NOW,
+      updatedAt: NOW,
+    });
+    // targetWeight is stored canonically in pounds, whatever unit the
+    // athlete trains in - 60 kg is ~132.28 lb.
+    const sixtyKilosInPounds = Weight.kg(60).inPounds;
+    await workouts.save(
+      sampleWorkout({
+        id: 'own-1',
+        userId: 'user-1',
+        exercises: [targetedEntry({ targetWeight: sixtyKilosInPounds.toFixed(2) })],
+      }),
+    );
+    await exercises.save(exercise());
+    await logDay('2026-08-29', [
+      { reps: 10, weight: sixtyKilosInPounds },
+      { reps: 10, weight: sixtyKilosInPounds },
+      { reps: 10, weight: sixtyKilosInPounds },
+    ]);
+    await logDay('2026-08-27', [
+      { reps: 10, weight: sixtyKilosInPounds },
+      { reps: 10, weight: sixtyKilosInPounds },
+      { reps: 10, weight: sixtyKilosInPounds },
+    ]);
+
+    const suggestion = (await service.suggestions(kgAthlete, 'own-1')).get('entry-0');
+
+    expect(suggestion?.target.weightValue).toBeCloseTo(62.5, 1);
+  });
+
+  it('suggests raising the speed for a cardio entry once its equipment reports speed', async () => {
+    await equipment.save(
+      Equipment.fromSnapshot({ id: 'treadmill', userId: null, name: 'Treadmill', cardioKind: 'speed', createdAt: NOW }),
+    );
+    await exercises.save(exercise({ exerciseType: 'cardio', equipmentIds: ['treadmill'] }));
+    await workouts.save(
+      sampleWorkout({
+        id: 'own-1',
+        userId: 'user-1',
+        exercises: [
+          targetedEntry({
+            targetSets: null,
+            targetReps: null,
+            targetWeight: null,
+            targetDurationSeconds: 1200,
+            targetSpeed: '8.00',
+          }),
+        ],
+      }),
+    );
+
+    for (const date of ['2026-08-29', '2026-08-27']) {
+      const day = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay: false }, deps);
+      day.logSet('exercise-1', { duration: Duration.minutes(20), speed: Speed.kmh(8) }, deps);
+      await sessions.save(day);
+    }
+
+    const suggestion = (await service.suggestions(athlete, 'own-1')).get('entry-0');
+
+    expect(suggestion?.kind).toBe('increase-speed');
+    expect(suggestion?.target.speedValue).toBe(8.5);
   });
 });
 
