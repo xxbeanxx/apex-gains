@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, RulerIcon, ScaleIcon, XIcon } from 'lucide-react';
-import { useFetcher } from 'react-router';
+import { Form, useFetcher } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
@@ -217,7 +217,7 @@ function BodySection({ loaderData, actionData }: Pick<Route.ComponentProps, 'loa
       <Section title={`Log ${label.toLowerCase()}`}>
         <Card>
           <CardContent>
-            <form method="post" className="flex flex-wrap items-end gap-4">
+            <Form method="post" className="flex flex-wrap items-end gap-4">
               <input {...logIntent.field} />
               {measurement ? <input type="hidden" name="metric" value={section} /> : null}
               <Field label="Date" className="w-40">
@@ -239,7 +239,7 @@ function BodySection({ loaderData, actionData }: Pick<Route.ComponentProps, 'loa
               <SubmitButton match={logIntent.match} pendingLabel="Saving">
                 Save
               </SubmitButton>
-            </form>
+            </Form>
 
             <div aria-live="polite" className="empty:hidden">
               {logIntent.succeededIn(actionData) ? (

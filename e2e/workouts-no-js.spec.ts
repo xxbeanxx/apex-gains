@@ -5,8 +5,9 @@ import { newAthlete, uniqueName } from './fixtures';
 
 /**
  * The workout builder's palette add and edit-target `<details>` disclosure
- * are both plain `<form method="post">`s specifically so they keep working
- * with JavaScript disabled - this is the regression guard for that decision.
+ * both submit a `<Form method="post">`, which without JavaScript to hydrate
+ * it renders and behaves as an ordinary `<form>` - this is the regression
+ * guard for that fallback.
  *
  * `./fixtures`'s `page` fixture waits for React to hydrate after every
  * navigation, which a JavaScript-disabled page never does, so this spec
@@ -33,13 +34,12 @@ test('adds an exercise and edits its target with JavaScript disabled', async ({ 
   const page = await noJsContext.newPage();
 
   await page.goto(workoutUrl);
-  // `dispatchEvent`, not `click`: a plain form submit navigates the whole
-  // document, detaching the clicked button mid-action. `click()`'s
-  // actionability retry treats that detachment as ambiguous and re-resolves
-  // the same-named button on the post-navigation page, where it's now
-  // permanently `disabled` (already added) - so it waits forever for it to
-  // become enabled. Dispatching the event directly submits the form without
-  // that retry loop; the row assertion below is what waits for the
+  // `dispatchEvent`, not `click`: without JavaScript the form submit navigates the whole
+  // document, detaching the clicked button mid-action. `click()`'s actionability retry
+  // treats that detachment as ambiguous and re-resolves the same-named button on the
+  // post-navigation page, where it's now permanently `disabled` (already added) - so it
+  // waits forever for it to become enabled. Dispatching the event directly submits the
+  // form without that retry loop; the row assertion below is what waits for the
   // navigation to land.
   await page.getByRole('button', { name: exercise, exact: true }).dispatchEvent('click');
 

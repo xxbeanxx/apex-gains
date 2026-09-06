@@ -1,17 +1,25 @@
 import { PencilIcon } from 'lucide-react';
-import type * as React from 'react';
+import * as React from 'react';
 
 import { buttonVariants } from '~/components/ui/button';
+import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { cn } from '~/lib/utils';
 
 /**
  * The header's "Rename" action: a `<details>` popover rather than a dialog,
  * so it needs no open/close state of its own - the native element already
- * closes on an outside click, and a page reusing it just supplies the form.
+ * closes on an outside click. It closes itself once the form it wraps
+ * submits, since the native element otherwise stays open across the
+ * client-side transition that follows.
  */
 function RenameDisclosure({ label = 'Rename', children }: { label?: string; children: React.ReactNode }) {
+  const detailsRef = React.useRef<HTMLDetailsElement>(null);
+  useCloseOnSubmit(() => {
+    if (detailsRef.current) detailsRef.current.open = false;
+  });
+
   return (
-    <details className="relative">
+    <details ref={detailsRef} className="relative">
       <summary
         role="button"
         className={cn(

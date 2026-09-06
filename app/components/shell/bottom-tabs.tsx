@@ -29,7 +29,7 @@ function TabCell({ children, isActive, label }: { children: React.ReactNode; isA
   );
 }
 
-function MoreMenu({ user, items }: { user: NavUser; items: NavItem[] }) {
+function MoreMenu({ user, items, buildInfo }: { user: NavUser; items: NavItem[]; buildInfo: string }) {
   const submit = useSubmit();
 
   return (
@@ -62,6 +62,8 @@ function MoreMenu({ user, items }: { user: NavUser; items: NavItem[] }) {
           <LogOutIcon aria-hidden="true" />
           Sign out
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <div className="px-2 py-1.5 text-center text-xs text-muted-foreground">{buildInfo}</div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -71,7 +73,7 @@ function MoreMenu({ user, items }: { user: NavUser; items: NavItem[] }) {
  * Mobile tab bar, `md:hidden`. Five equal cells: the four `tab`-numbered
  * items in slot order, plus "More" opening a menu with everything else.
  */
-function BottomTabs({ user, items }: { user: NavUser; items: NavItem[] }) {
+function BottomTabs({ user, items, buildInfo }: { user: NavUser; items: NavItem[]; buildInfo: string }) {
   const tabbed = [1, 2, 3, 4]
     .map((slot) => items.find((item) => item.tab === slot))
     .filter((item): item is NavItem => item !== undefined);
@@ -91,7 +93,7 @@ function BottomTabs({ user, items }: { user: NavUser; items: NavItem[] }) {
           )}
         </NavLink>
       ))}
-      <MoreMenu user={user} items={rest} />
+      <MoreMenu user={user} items={rest} buildInfo={buildInfo} />
     </nav>
   );
 }

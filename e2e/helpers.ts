@@ -162,20 +162,28 @@ export function orderedRows(page: Page): Locator {
 }
 
 /**
- * Clicks a control that submits a plain `<form method="post">`.
+ * Clicks a control that submits a `<Form>` (`method="post"` or the default
+ * `"get"`, as the plan/workout builders' own filters use).
  *
- * Those navigate the whole document, and what comes back is server-rendered
- * markup that React attaches to a beat later. A submit fired inside that
- * window can be lost outright: React has already intercepted the event but is
- * not yet in a state to act on it, so neither it nor the browser sends the
- * form. Waiting for the current document to be live first closes that window.
+ * `<Form>` submits over `fetch` rather than a real document navigation, so
+ * `Locator.click()` returns as soon as the click fires - it does not wait for
+ * that request to land the way a plain form's full-page navigation would.
+ * A caller that immediately depends on the submission having taken effect - a
+ * same-page assertion tolerates the lag by retrying, but a `page.goto`
+ * elsewhere does not, and can abort the fetch outright mid-flight - needs
+ * that guarantee, so this waits for its response before returning.
  *
- * Only needed for a submit that follows another navigation - `page.goto` and
- * `page.reload` already wait, and a `useFetcher` form never navigates.
+ * Waiting for hydration first still matters on a freshly loaded document:
+ * React attaches its click handler a beat after the document is live, and a
+ * click fired inside that window can be lost outright.
  */
 export async function submitForm(control: Locator): Promise<void> {
-  await waitForHydration(control.page());
-  await control.click();
+  const page = control.page();
+  await waitForHydration(page);
+  await Promise.all([
+    page.waitForResponse((response) => ['fetch', 'xhr', 'document'].includes(response.request().resourceType())),
+    control.click(),
+  ]);
 }
 
 /** Signs out through the top bar's account menu, present at every viewport. */

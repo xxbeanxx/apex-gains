@@ -173,7 +173,7 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
                       account.isSelf ? (
                         <span className="text-sm text-muted-foreground">—</span>
                       ) : (
-                        <form method="post">
+                        <Form method="post">
                           <input type="hidden" name="userId" value={account.id} />
                           <input type="hidden" name="isAdmin" value={account.isAdmin ? 'false' : 'true'} />
                           <SubmitButton variant="ghost" size="sm" match={{ userId: account.id }} pendingLabel="Updating access">
@@ -190,7 +190,7 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
                             )}
                             <span className="sr-only"> admin access for {account.name}</span>
                           </SubmitButton>
-                        </form>
+                        </Form>
                       )
                     }
                   </TableCell>

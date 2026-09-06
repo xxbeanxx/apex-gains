@@ -51,7 +51,15 @@ function TopBar({ user }: { user: NavUser | null }) {
   return (
     <header className="sticky top-0 z-30 flex h-(--header-h) items-center gap-2 border-b border-border bg-background/80 px-(--page-px) backdrop-blur-md supports-backdrop-filter:bg-background/65">
       {user ? (
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Link to="/" aria-label="Home" className="flex shrink-0 items-center rounded-lg md:hidden">
+            <span
+              aria-hidden="true"
+              className="flex size-7 items-center justify-center rounded-lg bg-brand text-brand-foreground"
+            >
+              <DumbbellIcon className="size-4" />
+            </span>
+          </Link>
           <Breadcrumbs />
         </div>
       ) : (

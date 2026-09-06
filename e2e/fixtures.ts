@@ -77,8 +77,9 @@ export async function newAthlete(page: Page, options: { asAdministrator?: boolea
 
 export const test = base.extend<{ athlete: Athlete; administrator: Athlete }>({
   // Folds the hydration wait into navigation so no spec has to remember it.
-  // A plain `<form method="post">` submit navigates without going through
-  // either of these, so helpers that submit one wait explicitly.
+  // A `<Form method="post">` submit goes through neither `goto` nor
+  // `reload` - it transitions client-side rather than navigating - so
+  // `submitForm` waits explicitly instead.
   page: async ({ page }, use) => {
     const goto = page.goto.bind(page);
     const reload = page.reload.bind(page);

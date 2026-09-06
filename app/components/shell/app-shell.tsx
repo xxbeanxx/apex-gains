@@ -38,7 +38,7 @@ function AppShell({ user, buildInfo, children }: { user: NavUser | null; buildIn
         </footer>
       </div>
 
-      {user ? <BottomTabs user={user} items={items} /> : null}
+      {user ? <BottomTabs user={user} items={items} buildInfo={buildInfo} /> : null}
     </div>
   );
 }

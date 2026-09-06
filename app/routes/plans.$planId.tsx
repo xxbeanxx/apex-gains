@@ -23,7 +23,7 @@ import {
   XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link, data, redirect, useSearchParams, useSubmit } from 'react-router';
+import { Form, Link, data, redirect, useSearchParams, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderCanvas } from '~/components/builder/builder-canvas';
@@ -32,6 +32,7 @@ import { BuilderOutline, BuilderOutlineItem } from '~/components/builder/builder
 import { BuilderPalette, BuilderPaletteSearch } from '~/components/builder/builder-palette';
 import { BuilderRow } from '~/components/builder/builder-row';
 import { RenameDisclosure } from '~/components/builder/rename-disclosure';
+import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { SharePlanDialog } from '~/components/share-plan-dialog';
@@ -219,7 +220,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 function MoveButtons({ slot, index, count }: { slot: PlanSlotView; index: number; count: number }) {
   return (
     <>
-      <form method="post">
+      <Form method="post">
         <input {...intents.move.field} />
         <input type="hidden" name="slotId" value={slot.id} />
         <input type="hidden" name="direction" value="up" />
@@ -227,8 +228,8 @@ function MoveButtons({ slot, index, count }: { slot: PlanSlotView; index: number
           <ArrowUpIcon aria-hidden="true" />
           <span className="sr-only">Move day {index + 1} up</span>
         </Button>
-      </form>
-      <form method="post">
+      </Form>
+      <Form method="post">
         <input {...intents.move.field} />
         <input type="hidden" name="slotId" value={slot.id} />
         <input type="hidden" name="direction" value="down" />
@@ -236,7 +237,7 @@ function MoveButtons({ slot, index, count }: { slot: PlanSlotView; index: number
           <ArrowDownIcon aria-hidden="true" />
           <span className="sr-only">Move day {index + 1} down</span>
         </Button>
-      </form>
+      </Form>
     </>
   );
 }
@@ -308,7 +309,7 @@ type PaletteItem = { id: string; label: string };
 
 function PaletteSlotRow({ item }: { item: PaletteItem }) {
   return (
-    <form method="post">
+    <Form method="post">
       <input {...intents.addSlot.field} />
       <input type="hidden" name="workoutId" value={item.id} />
       <button
@@ -319,7 +320,7 @@ function PaletteSlotRow({ item }: { item: PaletteItem }) {
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         <PlusIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </button>
-    </form>
+    </Form>
   );
 }
 
@@ -362,9 +363,10 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
   const workoutById = new Map(workoutList.map((workout) => [workout.id, workout]));
 
   // The share action redirects back here with `?share`, which is what opens
-  // the dialog - a plain form post navigates, so there is no component state
-  // that survives minting the link. Closing drops the parameter so a reload
-  // doesn't reopen it.
+  // the dialog - open state is derived from the URL rather than local
+  // component state, since the fork a *sample* plan takes on first share
+  // lands on a different URL entirely. Closing drops the parameter so a
+  // reload doesn't reopen it.
   const [searchParams, setSearchParams] = useSearchParams();
   const shareOpen = share !== null && searchParams.has('share');
   const setShareOpen = (open: boolean) => {
@@ -381,6 +383,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
   const renameError = intents.rename.errorIn(actionData);
   const reanchorError = intents.reanchor.errorIn(actionData);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  useCloseOnSubmit(() => setMobilePaletteOpen(false));
 
   const palette = <PlanPalette workoutList={workoutList} />;
 
@@ -408,7 +411,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
         actions={
           <div className="flex flex-wrap items-center gap-1.5">
             <RenameDisclosure>
-              <form method="post">
+              <Form method="post">
                 <input {...intents.rename.field} />
                 <Field
                   label="Name"
@@ -419,12 +422,12 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                     </SubmitButton>
                   }
                 >
-                  <Input name="name" defaultValue={plan.name} required />
+                  <Input key={plan.name} name="name" defaultValue={plan.name} required />
                 </Field>
-              </form>
+              </Form>
             </RenameDisclosure>
             <RenameDisclosure label="Anchor date">
-              <form method="post">
+              <Form method="post">
                 <input {...intents.reanchor.field} />
                 <Field
                   label="Anchor date"
@@ -436,11 +439,11 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                     </SubmitButton>
                   }
                 >
-                  <Input name="anchorDate" type="date" defaultValue={plan.anchorDate} required />
+                  <Input key={plan.anchorDate} name="anchorDate" type="date" defaultValue={plan.anchorDate} required />
                 </Field>
-              </form>
+              </Form>
             </RenameDisclosure>
-            <form method="post">
+            <Form method="post">
               <input {...(plan.isActive ? intents.deactivate : intents.activate).field} />
               <SubmitButton
                 variant={plan.isActive ? 'outline' : 'brand'}
@@ -451,21 +454,21 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                 <PowerIcon aria-hidden="true" />
                 {plan.isActive ? 'Deactivate' : 'Set active'}
               </SubmitButton>
-            </form>
-            <form method="post">
+            </Form>
+            <Form method="post">
               <input {...intents.share.field} />
               <SubmitButton variant="outline" size="sm" match={intents.share.match} pendingLabel="Building share link">
                 <Share2Icon aria-hidden="true" />
                 {share ? 'Show link' : 'Share'}
               </SubmitButton>
-            </form>
-            <form method="post">
+            </Form>
+            <Form method="post">
               <input {...intents.duplicate.field} />
               <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
                 <CopyIcon aria-hidden="true" />
                 Duplicate
               </SubmitButton>
-            </form>
+            </Form>
             <RevertOrDeleteForm
               noun="plan"
               isSample={isSample}

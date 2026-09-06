@@ -1,5 +1,6 @@
 import { CheckIcon, CopyIcon, Share2Icon } from 'lucide-react';
 import { useState } from 'react';
+import { Form } from 'react-router';
 
 import { QrCodeImage } from '~/components/qr-code';
 import { Button } from '~/components/ui/button';
@@ -57,13 +58,13 @@ export function SharePlanDialog({
           </div>
         </div>
 
-        <form method="post" className="flex justify-end">
+        <Form method="post" className="flex justify-end">
           <input {...unshare.field} />
           <SubmitButton variant="outline" size="sm" match={unshare.match} pendingLabel="Revoking link">
             <Share2Icon aria-hidden="true" />
             Stop sharing
           </SubmitButton>
-        </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

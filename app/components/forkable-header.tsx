@@ -1,5 +1,6 @@
 import { RotateCcwIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
+import { Form } from 'react-router';
 
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -57,9 +58,9 @@ export function RevertOrDeleteForm({
 
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <form method="post" id={formId} className="contents">
+      <Form method="post" id={formId} className="contents">
         <input {...intent.field} />
-      </form>
+      </Form>
       {isCustomized ? (
         <ConfirmDialog
           trigger={

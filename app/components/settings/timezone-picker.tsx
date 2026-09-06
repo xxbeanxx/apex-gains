@@ -48,7 +48,7 @@ function groupByRegion(zones: readonly string[]): ReadonlyArray<{ region: string
  * A dialog timezone picker: search box, grouped by IANA region, each row
  * showing that zone's current local time and UTC offset, plus a "Detect
  * automatically" shortcut reading the browser's own timezone. Renders a
- * hidden `name`d input, so it drops into a plain `<form method="post">` like
+ * hidden `name`d input, so it drops into a `<Form method="post">` like
  * any other field - there is no client-side submission here.
  */
 function TimezonePicker({

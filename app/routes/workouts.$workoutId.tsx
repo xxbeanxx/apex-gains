@@ -11,8 +11,8 @@ import {
   TrendingUpIcon,
   XIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { redirect, useSubmit } from 'react-router';
+import { useMemo, useRef, useState } from 'react';
+import { Form, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderCanvas } from '~/components/builder/builder-canvas';
@@ -22,6 +22,7 @@ import { BuilderPalette, BuilderPaletteSearch } from '~/components/builder/build
 import { BuilderRow } from '~/components/builder/builder-row';
 import { RenameDisclosure } from '~/components/builder/rename-disclosure';
 import { TargetFields } from '~/components/builder/target-fields';
+import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
 import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -238,7 +239,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; index: number; count: number }) {
   return (
     <>
-      <form method="post">
+      <Form method="post">
         <input {...intents.move.field} />
         <input type="hidden" name="workoutExerciseId" value={entry.id} />
         <input type="hidden" name="direction" value="up" />
@@ -246,8 +247,8 @@ function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; inde
           <ArrowUpIcon aria-hidden="true" />
           <span className="sr-only">Move {entry.exerciseName} up</span>
         </Button>
-      </form>
-      <form method="post">
+      </Form>
+      <Form method="post">
         <input {...intents.move.field} />
         <input type="hidden" name="workoutExerciseId" value={entry.id} />
         <input type="hidden" name="direction" value="down" />
@@ -255,7 +256,7 @@ function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; inde
           <ArrowDownIcon aria-hidden="true" />
           <span className="sr-only">Move {entry.exerciseName} down</span>
         </Button>
-      </form>
+      </Form>
     </>
   );
 }
@@ -299,8 +300,13 @@ function EditTargetDetail({
   distanceUnit: Route.ComponentProps['loaderData']['distanceUnit'];
   error?: string;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useCloseOnSubmit(() => {
+    if (detailsRef.current) detailsRef.current.open = false;
+  });
+
   return (
-    <details>
+    <details ref={detailsRef}>
       <summary
         role="button"
         className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
@@ -311,7 +317,7 @@ function EditTargetDetail({
         />
         Edit target
       </summary>
-      <form method="post" className="mt-3 flex flex-col gap-3">
+      <Form method="post" className="mt-3 flex flex-col gap-3" key={JSON.stringify(entry.target)}>
         <input {...intents.updateTarget.field} />
         <input type="hidden" name="workoutExerciseId" value={entry.id} />
         <TargetFields
@@ -333,7 +339,7 @@ function EditTargetDetail({
         <SubmitButton size="sm" match={intents.updateTarget.match} pendingLabel="Saving" className="self-start">
           Save target
         </SubmitButton>
-      </form>
+      </Form>
     </details>
   );
 }
@@ -352,7 +358,7 @@ function TargetSuggestion({ suggestion }: { suggestion: SuggestionView }) {
         <TrendingUpIcon className="size-3.5 shrink-0" aria-hidden="true" />
         Suggested: <span className="font-medium text-foreground">{suggestion.summary}</span> — {suggestion.because}
       </span>
-      <form method="post">
+      <Form method="post">
         <input {...intents.applySuggestion.field} />
         <input type="hidden" name="workoutExerciseId" value={suggestion.workoutExerciseId} />
         <input type="hidden" name="targetSets" value={target.sets ?? ''} />
@@ -365,14 +371,14 @@ function TargetSuggestion({ suggestion }: { suggestion: SuggestionView }) {
         <SubmitButton size="sm" variant="outline" match={intents.applySuggestion.match} pendingLabel="Applying">
           Apply
         </SubmitButton>
-      </form>
+      </Form>
     </div>
   );
 }
 
 function PaletteExerciseRow({ exercise, disabled }: { exercise: ExerciseView; disabled: boolean }) {
   return (
-    <form method="post">
+    <Form method="post">
       <input {...intents.addExercise.field} />
       <input type="hidden" name="exerciseId" value={exercise.id} />
       <button
@@ -383,7 +389,7 @@ function PaletteExerciseRow({ exercise, disabled }: { exercise: ExerciseView; di
         <span className="min-w-0 flex-1 truncate">{exercise.name}</span>
         <PlusIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </button>
-    </form>
+    </Form>
   );
 }
 
@@ -473,6 +479,7 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
   const renameError = intents.rename.errorIn(actionData);
   const updateTargetError = intents.updateTarget.errorIn(actionData);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  useCloseOnSubmit(() => setMobilePaletteOpen(false));
 
   const palette = <ExercisePalette exerciseList={exerciseList} usedExerciseIds={usedExerciseIds} />;
 
@@ -485,7 +492,7 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
         actions={
           <div className="flex items-center gap-1.5">
             <RenameDisclosure>
-              <form method="post">
+              <Form method="post">
                 <input {...intents.rename.field} />
                 <Field
                   label="Name"
@@ -496,17 +503,17 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
                     </SubmitButton>
                   }
                 >
-                  <Input name="name" defaultValue={workout.name} required />
+                  <Input key={workout.name} name="name" defaultValue={workout.name} required />
                 </Field>
-              </form>
+              </Form>
             </RenameDisclosure>
-            <form method="post">
+            <Form method="post">
               <input {...intents.duplicate.field} />
               <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
                 <CopyIcon aria-hidden="true" />
                 Duplicate
               </SubmitButton>
-            </form>
+            </Form>
             <RevertOrDeleteForm
               noun="workout"
               isSample={isSample}

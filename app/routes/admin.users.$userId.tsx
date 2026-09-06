@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer';
 import { IsIn, IsString } from 'class-validator';
 import { ArrowLeftIcon, ShieldCheckIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
-import { Link, data, redirect } from 'react-router';
+import { Form, Link, data, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -192,7 +192,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                <form method="post">
+                <Form method="post">
                   <input {...intents.changeAdminAccess.field} />
                   <input type="hidden" name="isAdmin" value={account.isAdmin ? 'false' : 'true'} />
                   <SubmitButton
@@ -212,7 +212,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                       </>
                     )}
                   </SubmitButton>
-                </form>
+                </Form>
                 <div aria-live="polite" className="empty:hidden">
                   {intents.changeAdminAccess.errorIn(actionData) ? (
                     <p className="text-sm font-medium text-destructive">{intents.changeAdminAccess.errorIn(actionData)}</p>
@@ -237,7 +237,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form method="post">
+                <Form method="post">
                   <input {...intents.deleteAccount.field} />
                   <Field
                     label="Type the account's email to confirm"
@@ -252,7 +252,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                   >
                     <Input name="confirmEmail" type="email" autoComplete="off" required />
                   </Field>
-                </form>
+                </Form>
               </CardContent>
             </Card>
           ),

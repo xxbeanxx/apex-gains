@@ -12,7 +12,7 @@ type SubmitButtonProps = React.ComponentProps<typeof Button> & {
    */
   pending?: boolean;
   /**
-   * For plain `<form method="post">`, the hidden fields identifying *this*
+   * For a `<Form method="post">`, the hidden fields identifying *this*
    * form, e.g. `{ intent: "rename" }`. Without it a page with several forms
    * would spin every button on any submission.
    */

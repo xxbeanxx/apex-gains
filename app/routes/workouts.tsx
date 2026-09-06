@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { ClipboardListIcon, CopyIcon, EllipsisIcon, PlusIcon } from 'lucide-react';
-import { Link, redirect, useSubmit } from 'react-router';
+import { Form, Link, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { OwnershipBadge } from '~/components/forkable-header';
@@ -114,7 +114,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
   const { workouts: workoutList } = loaderData;
 
   const createForm = (
-    <form method="post">
+    <Form method="post">
       <input {...intents.create.field} />
       <Field
         label="Name"
@@ -127,7 +127,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
       >
         <Input name="name" placeholder="Push Day" required />
       </Field>
-    </form>
+    </Form>
   );
 
   return (

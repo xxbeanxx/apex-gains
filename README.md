@@ -222,8 +222,10 @@ made rather than asserting on the whole table.
 Every page is server-rendered, which means a button is clickable a beat
 before React attaches to it. `e2e/fixtures.ts` folds a hydration wait into
 `page.goto`/`page.reload`, and `submitForm` in `e2e/helpers.ts` covers the
-other case, a plain `<form method="post">` submit that follows an earlier
-navigation.
+other case: a `<Form>` submission that a later step in the same test
+depends on having actually reached the server, since it transitions
+client-side rather than triggering a document navigation Playwright would
+otherwise wait on by itself.
 
 ## Build output
 

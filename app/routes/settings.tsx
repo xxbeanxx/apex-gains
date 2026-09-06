@@ -2,7 +2,7 @@ import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsPositive, IsString } from 'class-validator';
 import { CheckCircle2Icon, DownloadIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
-import { data, redirect } from 'react-router';
+import { data, Form, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -194,7 +194,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form method="post" className="flex flex-col gap-6">
+            <Form method="post" className="flex flex-col gap-6">
               <input {...intents.updateUnits.field} />
               <Field label="Weight" error={error}>
                 {({ id, describedBy }) => (
@@ -254,7 +254,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <SubmitButton match={intents.updateUnits.match} pendingLabel="Saving" className="self-start">
                 Save
               </SubmitButton>
-            </form>
+            </Form>
           </CardContent>
         </Card>
       ),
@@ -271,7 +271,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form method="post" className="flex flex-col gap-6">
+            <Form method="post" className="flex flex-col gap-6">
               <input {...intents.updateTimezone.field} />
               <Field label="Timezone" error={intents.updateTimezone.errorIn(actionData)}>
                 {({ id, describedBy }) => (
@@ -297,7 +297,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <SubmitButton match={intents.updateTimezone.match} pendingLabel="Saving" className="self-start">
                 Save
               </SubmitButton>
-            </form>
+            </Form>
           </CardContent>
         </Card>
       ),
@@ -315,7 +315,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form method="post" className="flex flex-col gap-6">
+            <Form method="post" className="flex flex-col gap-6">
               <input {...intents.updateRestDuration.field} />
               <Field label="Seconds" error={intents.updateRestDuration.errorIn(actionData)} className="sm:max-w-40">
                 {({ id, describedBy }) => (
@@ -344,7 +344,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <SubmitButton match={intents.updateRestDuration.match} pendingLabel="Saving" className="self-start">
                 Save
               </SubmitButton>
-            </form>
+            </Form>
           </CardContent>
         </Card>
       ),
@@ -362,7 +362,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form method="post" className="flex flex-col gap-4">
+            <Form method="post" className="flex flex-col gap-4">
               <input {...intents.updateSampleDataVisibility.field} />
               <label className="flex cursor-pointer items-center gap-2.5 text-sm">
                 <Checkbox name="showSampleData" value="true" defaultChecked={loaderData.showSampleData} />
@@ -381,7 +381,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <SubmitButton match={intents.updateSampleDataVisibility.match} pendingLabel="Saving" className="self-start">
                 Save
               </SubmitButton>
-            </form>
+            </Form>
           </CardContent>
         </Card>
       ),
@@ -425,7 +425,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form method="post" id={deleteAccountFormId} className="flex flex-col gap-3">
+              <Form method="post" id={deleteAccountFormId} className="flex flex-col gap-3">
                 <input {...intents.deleteAccount.field} />
                 <Field
                   label="Type your email to confirm"
@@ -435,7 +435,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
                 >
                   <Input name="confirmEmail" type="email" autoComplete="off" required />
                 </Field>
-              </form>
+              </Form>
 
               <ConfirmDialog
                 trigger={

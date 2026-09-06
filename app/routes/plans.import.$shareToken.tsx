@@ -1,6 +1,6 @@
 import { DownloadIcon, MoonIcon } from 'lucide-react';
 import { Expose } from 'class-transformer';
-import { data, redirect } from 'react-router';
+import { data, Form, redirect } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -146,7 +146,7 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
             </p>
           </CardHeader>
           <CardContent>
-            <form method="post">
+            <Form method="post">
               <Field
                 label="Anchor date"
                 description="Day 1 of the cycle falls on this date. It starts where the original does; move it to start today."
@@ -160,7 +160,7 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
               >
                 <Input name="anchorDate" type="date" defaultValue={shared.anchorDate} required />
               </Field>
-            </form>
+            </Form>
           </CardContent>
         </Card>
       </Section>

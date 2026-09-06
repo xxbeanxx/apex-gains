@@ -528,18 +528,19 @@ sample's), `deleted` and `reverted`. Their shared header chrome — the
 Sample/Customized badge and the revert-or-delete form that follows from
 it — is `app/components/forkable-header.tsx`. What is left in each route
 is what the two pages genuinely do differently: re-anchoring and
-activating a plan, adding a targeted exercise to a workout. Every mutating form is a
-plain `<form method="post">` (no client-side fetchers for these), and
-`~/components/ui/submit-button.tsx` (`SubmitButton`) infers its own
-pending state from `useNavigation()` matched against a `match` prop —
-pass `intent.match` whenever a page has more than one form, or every
-submit button on the page will spin together. The one exception is a
-quick-action row inside an already-loaded list — removing a logged set
-or a body-weight entry, say — where a plain form's full-document
-navigation would reset scroll position for no reason: that row owns its
-own `useFetcher()` and renders `<fetcher.Form>`, with the row itself
-`hidden` while `fetcher.state !== 'idle'` so it disappears the instant
-its own delete is submitted rather than waiting on the round trip
+activating a plan, adding a targeted exercise to a workout. Every mutating
+form is a `<Form method="post">` (react-router's, never a fetcher), which
+still navigates and triggers a full loader revalidation — just without a
+document reload; `~/components/ui/submit-button.tsx` (`SubmitButton`)
+infers its own pending state from `useNavigation()` matched against a
+`match` prop — pass `intent.match` whenever a page has more than one
+form, or every submit button on the page will spin together. The one
+exception is a quick-action row inside an already-loaded list — removing
+a logged set or a body-weight entry, say — where even that navigation
+would reset scroll position for no reason: that row owns its own
+`useFetcher()` and renders `<fetcher.Form>`, with the row itself `hidden`
+while `fetcher.state !== 'idle'` so it disappears the instant its own
+delete is submitted rather than waiting on the round trip
 (`app/components/session/logged-sets-list.tsx`,
 `app/routes/weight.tsx`'s `WeightHistoryRow`). `SubmitButton` takes an
 explicit `pending` prop for exactly this case. It does not extend to the
@@ -547,7 +548,13 @@ plan/workout builders (`app/routes/plans.$planId.tsx`,
 `workouts.$workoutId.tsx`), which hold to a no-fetcher rule of their own
 for reordering and adding/removing days or exercises — a full
 revalidation keeps their derived state (positions, cycle math) from
-drifting out of sync with an optimistic guess.
+drifting out of sync with an optimistic guess. Neither builder gets a
+document reload to reset transient UI state for free any more, so a
+`<details>` disclosure or controlled `Dialog` that a submission inside it
+should close — the rename/re-anchor popover, the mobile "Add day"/"Add
+exercise" palette — closes itself instead: `useCloseOnSubmit`
+(`app/components/builder/use-close-on-submit.ts`) runs a callback once
+`useNavigation()` settles back to idle.
 
 A destructive action that deletes or discards a whole item — deleting a
 plan/workout/equipment row, or reverting a customized plan, workout, or
