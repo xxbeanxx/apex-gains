@@ -1,11 +1,10 @@
-import * as client from 'openid-client';
 import { redirect } from 'react-router';
 
 import { serializeOidcState } from '~/auth/oidc-state';
 import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
 
-import { oidcConfigContext, oidcStateCookieContext } from '~/router/load-context';
+import { identityServiceContext, oidcStateCookieContext } from '~/router/load-context';
 
 import type { Route } from './+types/auth.google';
 
@@ -22,20 +21,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // as the OAuth client's redirect URI.
   const origin = new URL(request.url).origin;
 
-  const codeVerifier = client.randomPKCECodeVerifier();
-  const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
-  const nonce = client.randomNonce();
-  const state = client.randomState();
-
   const url = new URL(request.url);
   const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
 
-  const authorizationUrl = await context.get(oidcConfigContext).buildAuthorizationUrl({
-    redirectUri: `${origin}/auth/google/callback`,
-    codeChallenge: codeChallenge,
-    nonce: nonce,
-    state: state,
-  });
+  const { authorizationUrl, codeVerifier, nonce, state } = await context
+    .get(identityServiceContext)
+    .beginGoogleLogin(`${origin}/auth/google/callback`);
 
   return redirect(authorizationUrl.href, {
     headers: {

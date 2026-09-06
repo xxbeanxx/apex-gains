@@ -8,6 +8,7 @@ import type { BodyMeasurementsService } from '~application/use-cases/body-measur
 import type { BodyWeightService } from '~application/use-cases/body-weight-service';
 import type { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import type { ExportService } from '~application/use-cases/export-service';
+import type { IdentityService } from '~application/use-cases/identity-service';
 import type { ProgressService } from '~application/use-cases/progress-service';
 import type { PlanImportService } from '~application/use-cases/plan-import-service';
 import type { PlanService } from '~application/use-cases/plan-service';
@@ -15,7 +16,6 @@ import type { WorkoutService } from '~application/use-cases/workout-service';
 import type { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import type { SessionService } from '~application/use-cases/session-service';
 
-import type { OidcClient } from '~server/auth/oidc-client.provider';
 import type { AppSessionStorage } from '~server/auth/session-storage.provider';
 import type { testLoginConfig } from '~server/config/test-login.config';
 import type { AppLogger } from '~server/logging/logger.provider';
@@ -56,6 +56,7 @@ const contexts = {
   bodyWeightService: createContext<BodyWeightService>(),
   exerciseLibraryService: createContext<ExerciseLibraryService>(),
   exportService: createContext<ExportService>(),
+  identityService: createContext<IdentityService>(),
   planImportService: createContext<PlanImportService>(),
   planService: createContext<PlanService>(),
   progressService: createContext<ProgressService>(),
@@ -63,7 +64,6 @@ const contexts = {
   trainingPlanService: createContext<TrainingPlanService>(),
   workoutService: createContext<WorkoutService>(),
   // misc
-  oidcConfig: createContext<OidcClient>(),
   oidcStateCookie: createContext<Cookie>(),
   sessionStorage: createContext<AppSessionStorage>(),
   // testing config
@@ -79,6 +79,7 @@ export const {
   bodyWeightService: bodyWeightServiceContext,
   exerciseLibraryService: exerciseLibraryServiceContext,
   exportService: exportServiceContext,
+  identityService: identityServiceContext,
   planImportService: planImportServiceContext,
   planService: planServiceContext,
   progressService: progressServiceContext,
@@ -86,7 +87,6 @@ export const {
   trainingPlanService: trainingPlanServiceContext,
   workoutService: workoutServiceContext,
   //
-  oidcConfig: oidcConfigContext,
   oidcStateCookie: oidcStateCookieContext,
   sessionStorage: sessionStorageContext,
   //

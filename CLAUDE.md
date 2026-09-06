@@ -366,16 +366,18 @@ route through `nestLoadContext` carries the _Nest bundle's_ copy of
 every class it was built from, not the route bundle's. A Nest provider
 must never hand a route a raw instance of a third-party class that
 itself runs `instanceof` checks - `openid-client`'s `Configuration` is
-one such class, which is why `server/auth/oidc-client.provider.ts`
+one such class, which is why `GoogleIdentityAdapter`
+(`src/infrastructure/identity/google/google-identity-adapter.ts`)
 performs every `openid-client` call (`discovery`, `buildAuthorizationUrl`,
 `authorizationCodeGrant`) itself and exposes only plain data (a `URL`,
-a claims object) through `OidcClientProvider`. Handing whole service
-instances across the same boundary (`AthleteService`, `PlanService`,
-...) is fine, because nothing on the route side checks their class
-identity - it only calls their methods. `e2e/auth.spec.ts`'s "really
-can build a Google authorization URL" test is the one spec that
-exercises `/auth/google` against the real bundled build rather than
-through `ENABLE_TEST_LOGIN`, specifically to catch a regression here -
+an athlete profile) through the `GoogleIdentityProvider` port it
+implements. Handing whole service instances across the same boundary
+(`AthleteService`, `PlanService`, `IdentityService`, ...) is fine,
+because nothing on the route side checks their class identity - it
+only calls their methods. `e2e/auth.spec.ts`'s "really can build a
+Google authorization URL" test is the one spec that exercises
+`/auth/google` against the real bundled build rather than through
+`ENABLE_TEST_LOGIN`, specifically to catch a regression here -
 typecheck and unit tests each run one layer in isolation and never load
 the two production bundles side by side.
 
@@ -649,22 +651,35 @@ and `requireAthlete` states that once instead of asserting it at every
 call site. `home.tsx` and `auth.logout.tsx` are outside the layout and
 read the nullable context directly.
 
-**Auth.** Google OIDC via `openid-client`. The OIDC discovery
-`Configuration` and the PKCE/state cookie are both built by Nest
-providers (`server/auth/oidc-client.provider.ts`,
-`oidc-state-cookie.provider.ts`) and reached via context
-(`oidcConfigContext`, `oidcStateCookieContext`) - `oidc-client.provider.ts`
-wraps discovery in a memoizing `get()` rather than resolving it eagerly
-at Nest bootstrap, since it's a real network call to Google that
-shouldn't block every server start. `app/auth/oidc-state.ts` holds the
-PKCE/state cookie serialize/parse logic, taking the `Cookie` as a
-parameter rather than building its own.
-Session storage is likewise a Nest provider
+**Auth.** Google OIDC via `openid-client`, reached through an
+application port like every other outside capability. `GoogleIdentityProvider`
+(`src/application/ports/identity/google-identity-provider.ts`) declares
+`beginLogin`/`completeLogin` over plain data - a `URL`, PKCE/state
+strings, a `NewAthlete` profile - never an `openid-client` type.
+`GoogleIdentityAdapter` (`src/infrastructure/identity/google/google-identity-adapter.ts`)
+is the only place that imports `openid-client`: it wraps OIDC discovery
+in a memoizing `discover()` rather than resolving it eagerly at Nest
+bootstrap, since it's a real network call to Google that shouldn't
+block every server start, and both PKCE/state generation and callback
+claims validation happen inside it, alongside the discovery/authorize/grant
+calls (see "Server runtime" above for why every `openid-client` call has
+to stay on this one side of the Nest/route bundle split). `IdentityService`
+(`src/application/use-cases/identity-service.ts`) is the thin use case
+that holds the port; `server/auth/google-identity.provider.ts` binds it
+to the adapter under the `GOOGLE_IDENTITY_PROVIDER` token, and
+`identityServiceContext` is how a route reaches it. It exists
+separately from `AthleteService`: identity (proving who is asking) and
+registration/sign-in (what happens once they're proven) are different
+concerns, so `app/routes/auth.google.callback.tsx` calls
+`IdentityService.completeGoogleLogin` for a validated profile and then
+`AthleteService.signInWithGoogle` with it. The PKCE/state cookie itself
+stays HTTP transport, owned by the React Router adapter: `app/auth/oidc-state.ts`
+holds its serialize/parse logic, taking the `Cookie` as a parameter
+rather than building its own, and the cookie itself is a Nest provider
+(`server/auth/oidc-state-cookie.provider.ts`, reached via
+`oidcStateCookieContext`). Session storage is likewise a Nest provider
 (`server/auth/session-storage.provider.ts`, reached via
-`sessionStorageContext`). Identity is the one capability with no port:
-`openid-client` is reached through `server/`, so `src/application` has
-no say in how an athlete is authenticated — only in what happens once
-`AthleteService.signInWithGoogle` is handed a claims object. `loadUserMiddleware`
+`sessionStorageContext`). `loadUserMiddleware`
 (`app/auth/current-user.ts`) reads the session and populates
 `userContext` on every request (registered in `root.tsx`'s
 `middleware` export, ahead of `requireUserMiddleware` which only the

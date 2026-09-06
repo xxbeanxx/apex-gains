@@ -6,6 +6,7 @@ import { BodyMeasurementsService } from '~application/use-cases/body-measurement
 import { BodyWeightService } from '~application/use-cases/body-weight-service';
 import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import { ExportService } from '~application/use-cases/export-service';
+import { IdentityService } from '~application/use-cases/identity-service';
 import { ProgressService } from '~application/use-cases/progress-service';
 import { PlanImportService } from '~application/use-cases/plan-import-service';
 import { PlanService } from '~application/use-cases/plan-service';
@@ -13,6 +14,7 @@ import { productionDeps } from '~application/ports/domain-deps';
 import { WorkoutService } from '~application/use-cases/workout-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { DOMAIN_DEPS } from '~server/providers/domain-deps.token';
+import { GOOGLE_IDENTITY_PROVIDER } from '~server/providers/identity.token';
 import { SessionService } from '~application/use-cases/session-service';
 import {
   ADMIN_ACTIONS_REPOSITORY,
@@ -27,6 +29,7 @@ import {
   WORKOUTS_REPOSITORY,
 } from '~server/providers/persistence.tokens';
 
+import { AuthModule } from '../auth/auth.module';
 import { RepositoriesModule } from '../repositories/repositories.module';
 
 const services: Provider[] = [
@@ -34,6 +37,11 @@ const services: Provider[] = [
     provide: AthleteService,
     inject: [ATHLETES_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
     useFactory: (athletes, unitOfWork, deps) => new AthleteService(athletes, unitOfWork, deps),
+  },
+  {
+    provide: IdentityService,
+    inject: [GOOGLE_IDENTITY_PROVIDER],
+    useFactory: (google) => new IdentityService(google),
   },
   {
     provide: BodyMeasurementsService,
@@ -107,7 +115,7 @@ const services: Provider[] = [
 ];
 
 @Module({
-  imports: [RepositoriesModule],
+  imports: [AuthModule, RepositoriesModule],
   providers: [{ provide: DOMAIN_DEPS, useValue: productionDeps }, ...services],
   exports: services,
 })

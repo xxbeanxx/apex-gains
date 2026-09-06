@@ -7,6 +7,7 @@ import { BodyMeasurementsService } from '~application/use-cases/body-measurement
 import { BodyWeightService } from '~application/use-cases/body-weight-service';
 import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import { ExportService } from '~application/use-cases/export-service';
+import { IdentityService } from '~application/use-cases/identity-service';
 import { ProgressService } from '~application/use-cases/progress-service';
 import { PlanImportService } from '~application/use-cases/plan-import-service';
 import { PlanService } from '~application/use-cases/plan-service';
@@ -14,7 +15,7 @@ import { WorkoutService } from '~application/use-cases/workout-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { SessionService } from '~application/use-cases/session-service';
 
-import { OIDC_CLIENT_CONFIG, OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
+import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '../auth/tokens';
 import { testLoginConfig } from '../config/test-login.config';
 import { LOGGER } from '../logging/tokens';
 
@@ -33,6 +34,7 @@ export function collectNestSingletons(app: INestApplication): NestSingletons {
     bodyWeightService: app.get(BodyWeightService),
     exerciseLibraryService: app.get(ExerciseLibraryService),
     exportService: app.get(ExportService),
+    identityService: app.get(IdentityService),
     planImportService: app.get(PlanImportService),
     planService: app.get(PlanService),
     progressService: app.get(ProgressService),
@@ -40,7 +42,6 @@ export function collectNestSingletons(app: INestApplication): NestSingletons {
     trainingPlanService: app.get(TrainingPlanService),
     workoutService: app.get(WorkoutService),
     //
-    oidcConfig: app.get(OIDC_CLIENT_CONFIG),
     oidcStateCookie: app.get(OIDC_STATE_COOKIE),
     sessionStorage: app.get(SESSION_STORAGE),
     //

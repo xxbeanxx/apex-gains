@@ -5,7 +5,12 @@ import { safeRedirect } from '~/auth/safe-redirect';
 import { ErrorPage } from '~/components/error-page';
 import { requestLogger } from '~/lib/logger';
 
-import { athleteServiceContext, oidcConfigContext, oidcStateCookieContext, sessionStorageContext } from '~/router/load-context';
+import {
+  athleteServiceContext,
+  identityServiceContext,
+  oidcStateCookieContext,
+  sessionStorageContext,
+} from '~/router/load-context';
 
 import type { Route } from './+types/auth.google.callback';
 
@@ -37,33 +42,22 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
 
-  const claims = await context.get(oidcConfigContext).authorizationCodeGrant({
+  const profile = await context.get(identityServiceContext).completeGoogleLogin({
     currentUrl: requestUrl,
     redirectUri: `${origin}/auth/google/callback`,
-    pkceCodeVerifier: state.codeVerifier,
-    expectedNonce: state.nonce,
-    expectedState: state.state,
+    codeVerifier: state.codeVerifier,
+    nonce: state.nonce,
+    state: state.state,
   });
 
-  if (!claims?.sub || typeof claims.email !== 'string') {
-    logger.error(
-      'oauth callback did not return the expected profile claims ' +
-        `(sub: ${claims?.sub ? 'present' : 'missing'}, ` +
-        `email: ${typeof claims?.email})`,
-      undefined,
-      AUTH,
-    );
+  if (!profile) {
+    logger.error('oauth callback did not return the expected profile claims (sub and email)', undefined, AUTH);
     throw new Response('Google did not return the expected profile claims', {
       status: 400,
     });
   }
 
-  const { athlete, isNew } = await context.get(athleteServiceContext).signInWithGoogle({
-    googleSub: claims.sub,
-    email: claims.email,
-    name: typeof claims.name === 'string' ? claims.name : claims.email,
-    avatarUrl: typeof claims.picture === 'string' ? claims.picture : null,
-  });
+  const { athlete, isNew } = await context.get(athleteServiceContext).signInWithGoogle(profile);
 
   logger.log(isNew ? `signed up user ${athlete.id}` : `logged in user ${athlete.id}`, AUTH);
 

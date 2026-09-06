@@ -1,3 +1,2 @@
 export const SESSION_STORAGE = Symbol('SESSION_STORAGE');
-export const OIDC_CLIENT_CONFIG = Symbol('OIDC_CLIENT_CONFIG');
 export const OIDC_STATE_COOKIE = Symbol('OIDC_STATE_COOKIE');
