@@ -6,16 +6,72 @@ import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import { cn } from '~/lib/utils';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 
-function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
+/**
+ * Radix opens a dropdown on the trigger's `pointerdown`, which fires the
+ * instant a finger touches the screen - before the browser can tell a tap
+ * from the start of a scroll. `DropdownMenu` keeps its own open state (even
+ * when uncontrolled) so `DropdownMenuTrigger` can hold that touch open,
+ * deciding on `pointerup`/`pointercancel` once the gesture is known instead.
+ */
+const DropdownMenuOpenStateContext = React.createContext<{ open: boolean; setOpen: (open: boolean) => void } | null>(null);
+
+function DropdownMenu({ open: openProp, onOpenChange, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+  const open = openProp ?? uncontrolledOpen;
+  const setOpen = React.useCallback(
+    (value: boolean) => {
+      if (openProp === undefined) setUncontrolledOpen(value);
+      onOpenChange?.(value);
+    },
+    [openProp, onOpenChange],
+  );
+
+  return (
+    <DropdownMenuOpenStateContext.Provider value={{ open, setOpen }}>
+      <DropdownMenuPrimitive.Root data-slot="dropdown-menu" open={open} onOpenChange={setOpen} {...props} />
+    </DropdownMenuOpenStateContext.Provider>
+  );
 }
 
 function DropdownMenuPortal({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
   return <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />;
 }
 
-function DropdownMenuTrigger({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
-  return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
+function DropdownMenuTrigger({
+  onPointerDown,
+  onPointerUp,
+  onPointerCancel,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const openState = React.useContext(DropdownMenuOpenStateContext);
+  const touchStart = React.useRef<{ x: number; y: number } | null>(null);
+
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      onPointerDown={(event) => {
+        if (event.pointerType === 'touch') {
+          touchStart.current = { x: event.clientX, y: event.clientY };
+          event.preventDefault();
+          return;
+        }
+        onPointerDown?.(event);
+      }}
+      onPointerUp={(event) => {
+        const start = touchStart.current;
+        touchStart.current = null;
+        if (event.pointerType === 'touch' && start && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 10) {
+          openState?.setOpen(!openState.open);
+        }
+        onPointerUp?.(event);
+      }}
+      onPointerCancel={(event) => {
+        touchStart.current = null;
+        onPointerCancel?.(event);
+      }}
+      {...props}
+    />
+  );
 }
 
 function DropdownMenuContent({
