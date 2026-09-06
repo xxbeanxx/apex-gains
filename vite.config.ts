@@ -54,7 +54,6 @@ export default defineConfig(({ command }) => ({
   },
   test: {
     environment: 'node',
-    setupFiles: ['./vitest.setup.ts'],
     // Unit tests are `*.test.ts` beside the code they cover; `e2e/` holds
     // Playwright specs, which need a browser and a running server and are
     // configured separately in `playwright.config.ts`. Without this, vitest
