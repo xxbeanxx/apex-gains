@@ -5,7 +5,7 @@ import { planSlots, plans, type Plan as PlanRow, type PlanSlot as PlanSlotRow } 
 import { Plan } from '~/domain/plan/plan';
 import { LibraryVisibility } from '~/domain/shared/ownership';
 
-import type { PlansRepository } from '../plans-repository.server';
+import type { PlanName, PlansRepository } from '../plans-repository.server';
 import { diffChildren } from '../shared/diff-children';
 import { writePositions } from '../shared/write-positions';
 import { visibleRowsWhere, visibleRowWhere } from './shared/visibility';
@@ -47,6 +47,15 @@ export class DrizzlePlansRepository implements PlansRepository {
       with: { slots: { orderBy: asc(planSlots.position) } },
     });
     return rows.map(toPlan);
+  }
+
+  /** Two columns, no child join - see the port for why this exists. */
+  async listNamesFor(userId: string, showSampleData: boolean): Promise<PlanName[]> {
+    return dbScope
+      .select({ id: plans.id, name: plans.name })
+      .from(plans)
+      .where(visibleRowsWhere(visibility, LibraryVisibility.for(userId, showSampleData)))
+      .orderBy(desc(plans.updatedAt));
   }
 
   async findVisible(userId: string, planId: string): Promise<Plan | null> {

@@ -13,6 +13,7 @@ import { PLANS_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK } from '~/repositor
 import { DOMAIN_DEPS } from '~/services/shared/tokens';
 
 import type { DomainDeps } from './shared/deps.server';
+import { nextCopyName } from './shared/duplicate-name';
 import { ForkableLibrary, type ForkMutation } from './shared/fork.server';
 
 export type PlanSummary = {
@@ -120,6 +121,37 @@ export class PlanService {
     const plan = Plan.create(athlete.id, name, anchorDate, this.deps);
     await this.unitOfWork.run(() => this.plans.save(plan));
     return toSummary(plan);
+  }
+
+  /**
+   * A personal, editable copy of any plan the athlete can see - their own,
+   * or a sample. Built on `copyForImport`, the same deep copy a shared
+   * link's import uses, with the source's own workout ids passed straight
+   * through rather than resolved through another athlete's library - unlike
+   * an import, this athlete already has access to everything the source
+   * schedules. The copy keeps the source's anchor date and starts inactive
+   * and unshared, same as an import.
+   *
+   * Deliberately not a fork: duplicating a sample gives a plain row with
+   * `forkedFromId` null - no revert, and no effect on whether the sample
+   * still appears in the athlete's list. That is a different action from
+   * *editing* a sample, which forks it; the two sit side by side in the
+   * list's row menu.
+   */
+  async duplicate(athlete: Athlete, planId: string): Promise<Result<{ id: string }, 'not-found'>> {
+    return this.unitOfWork.run(async () => {
+      const source = await this.plans.findVisible(athlete.id, planId);
+      if (!source) return err('not-found' as const);
+
+      const names = await this.plans.listNamesFor(athlete.id, athlete.preferences.showSampleData);
+      const name = nextCopyName(source.name, new Set(names.map((found) => found.name)));
+
+      const copy = source.copyForImport(athlete.id, source.anchorDate, (workoutId) => workoutId, this.deps);
+      copy.rename(name, this.deps.clock.now());
+
+      await this.plans.save(copy);
+      return ok({ id: copy.id });
+    });
   }
 
   async rename(athlete: Athlete, planId: string, name: string): Promise<PlanMutation> {

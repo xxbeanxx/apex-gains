@@ -117,6 +117,48 @@ test('deletes a plan', async ({ page, athlete }) => {
   await expect(page.getByRole('link', { name })).toHaveCount(0);
 });
 
+test('duplicates a plan from its detail header, keeping its days', async ({ page, athlete }) => {
+  const workout = uniqueName('Push');
+  await createWorkout(page, workout);
+
+  const name = uniqueName('Split');
+  await createPlan(page, name);
+  await addDay(page, workout);
+  await submitForm(page.getByRole('button', { name: 'Set active' }));
+
+  await page.getByRole('button', { name: 'Duplicate' }).click();
+
+  await page.waitForURL(/\/plans\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy)`, exact: true })).toBeVisible();
+  // The copy carries the source's days but starts inactive.
+  await expect(orderedRows(page).nth(0)).toContainText(workout);
+  await expect(page.getByText('Inactive')).toBeVisible();
+
+  // The source is untouched, still active under its own name. Filtered by
+  // an exact link name, not `hasText` - a substring match on the plan's own
+  // name would also catch its "(copy)" row.
+  await page.goto('/plans');
+  const sourceRow = page.getByRole('listitem').filter({ has: page.getByRole('link', { name, exact: true }) });
+  await expect(sourceRow.getByText('Active', { exact: true })).toBeVisible();
+});
+
+test('duplicates a plan from the list row menu, and numbers a second copy', async ({ page, athlete }) => {
+  const name = uniqueName('Cycle');
+  await createPlan(page, name);
+
+  await page.goto('/plans');
+  await page.getByRole('button', { name: `Actions for ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await page.waitForURL(/\/plans\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy)`, exact: true })).toBeVisible();
+
+  await page.goto('/plans');
+  await page.getByRole('button', { name: `Actions for ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await page.waitForURL(/\/plans\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name: `${name} (copy 2)`, exact: true })).toBeVisible();
+});
+
 test('points at the workouts page when there are none to add', async ({ page, athlete }) => {
   await createPlan(page, uniqueName('Empty'));
 

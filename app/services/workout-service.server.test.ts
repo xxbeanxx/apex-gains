@@ -388,6 +388,41 @@ describe('revert', () => {
   });
 });
 
+describe('duplicate', () => {
+  it('copies a sample into a plain, unforked personal workout named "<name> (copy)"', async () => {
+    await workouts.save(sampleWorkout());
+
+    const outcome = await service.duplicate(athlete, 'sample-1');
+
+    expect(outcome.ok).toBe(true);
+    const copyId = outcome.ok ? outcome.value.id : null;
+    const copy = await workouts.findVisible(athlete.id, copyId!);
+    expect(copy?.name).toBe('Push Day (copy)');
+    expect(copy?.ownership.isSample).toBe(false);
+    expect(copy?.forkedFromId).toBeNull();
+    expect(copy?.exercises.map((entry) => entry.exerciseId)).toEqual(['exercise-1']);
+
+    // The sample is untouched and still shows in the athlete's list.
+    const sample = await workouts.findVisible(athlete.id, 'sample-1');
+    expect(sample).not.toBeNull();
+  });
+
+  it('numbers a second duplicate past the first', async () => {
+    await workouts.save(sampleWorkout({ id: 'own-1', userId: 'user-1', name: 'Push Day' }));
+    await service.duplicate(athlete, 'own-1');
+
+    const second = await service.duplicate(athlete, 'own-1');
+
+    const copyId = second.ok ? second.value.id : null;
+    const copy = await workouts.findVisible(athlete.id, copyId!);
+    expect(copy?.name).toBe('Push Day (copy 2)');
+  });
+
+  it("reports a workout that isn't visible as not found", async () => {
+    expect(await service.duplicate(athlete, 'nope')).toEqual({ ok: false, error: 'not-found' });
+  });
+});
+
 describe('list and listForPicker', () => {
   it('sorts the picker list by name, unlike the plain list', async () => {
     await workouts.save(sampleWorkout({ id: 'z', userId: 'user-1', name: 'Zeta', updatedAt: NOW }));

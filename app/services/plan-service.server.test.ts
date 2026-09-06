@@ -281,6 +281,43 @@ describe('sharing', () => {
   });
 });
 
+describe('duplicate', () => {
+  it('copies a sample into a plain, unforked personal plan named "<name> (copy)", keeping its slots and anchor', async () => {
+    await plans.save(samplePlan());
+
+    const outcome = await service.duplicate(athlete, 'sample-1');
+
+    expect(outcome.ok).toBe(true);
+    const copyId = outcome.ok ? outcome.value.id : null;
+    const copy = await plans.findVisible(athlete.id, copyId!);
+    expect(copy?.name).toBe('Sample PPL (copy)');
+    expect(copy?.ownership.isSample).toBe(false);
+    expect(copy?.forkedFromId).toBeNull();
+    expect(copy?.isActive).toBe(false);
+    expect(copy?.anchorDate.value).toBe('2026-09-01');
+    expect(copy?.slots.map((slot) => slot.workoutId)).toEqual(['workout-push', null]);
+
+    // The sample is untouched and still shows in the athlete's list.
+    const sample = await plans.findVisible(athlete.id, 'sample-1');
+    expect(sample).not.toBeNull();
+  });
+
+  it('numbers a second duplicate past the first', async () => {
+    await plans.save(samplePlan({ id: 'own-1', userId: 'user-1', name: 'PPL', slots: [] }));
+    await service.duplicate(athlete, 'own-1');
+
+    const second = await service.duplicate(athlete, 'own-1');
+
+    const copyId = second.ok ? second.value.id : null;
+    const copy = await plans.findVisible(athlete.id, copyId!);
+    expect(copy?.name).toBe('PPL (copy 2)');
+  });
+
+  it("reports a plan that isn't visible as not found", async () => {
+    expect(await service.duplicate(athlete, 'nope')).toEqual({ ok: false, error: 'not-found' });
+  });
+});
+
 describe('next occurrence dates', () => {
   it('gives each slot the next date its turn comes round, in the athlete s timezone', async () => {
     // NOW is 2026-09-03T12:00:00Z; the plan's own anchor is 2026-09-01, so a

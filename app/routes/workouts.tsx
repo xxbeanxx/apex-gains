@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsString, MaxLength, MinLength } from 'class-validator';
-import { ClipboardListIcon, PlusIcon } from 'lucide-react';
-import { Link, data, redirect } from 'react-router';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { ClipboardListIcon, CopyIcon, EllipsisIcon, PlusIcon } from 'lucide-react';
+import { Link, redirect, useSubmit } from 'react-router';
 
 import { requireAthlete } from '~/auth/user-context';
 import { OwnershipBadge } from '~/components/forkable-header';
@@ -9,13 +9,16 @@ import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { requestLogger } from '~/lib/logger.server';
+import { intent } from '~/lib/intent';
+import { dispatch, handled } from '~/lib/intent.server';
 import { trim } from '~/lib/validate-form';
-import { validateForm } from '~/lib/validate-form.server';
+import type { WorkoutSummary } from '~/services/workout-service.server';
 
 import { workoutServiceContext } from '~/lib/nest-bridge.server';
 
@@ -36,6 +39,17 @@ class CreateWorkoutDto {
   readonly name!: string;
 }
 
+class WorkoutIdDto {
+  @Expose()
+  @IsUUID()
+  readonly workoutId!: string;
+}
+
+const intents = {
+  create: intent('create', CreateWorkoutDto),
+  duplicate: intent('duplicate', WorkoutIdDto),
+};
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const workoutService = context.get(workoutServiceContext);
@@ -44,28 +58,73 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const user = requireAthlete(context);
-  const formData = await request.formData();
-  const result = validateForm(CreateWorkoutDto, { name: formData.get('name') });
-
-  if (!result.success) {
-    return data({ error: result.message }, { status: 400 });
-  }
-
   const workoutService = context.get(workoutServiceContext);
-  const workout = await workoutService.create(user, result.data.name);
 
-  requestLogger(context).log(`created workout ${workout.id} for user ${user.id}`, 'Workouts');
+  return dispatch(request, [
+    handled(intents.create, async ({ name }) => {
+      const workout = await workoutService.create(user, name);
+      requestLogger(context).log(`created workout ${workout.id} for user ${user.id}`, 'Workouts');
+      throw redirect(`/workouts/${workout.id}`);
+    }),
 
-  throw redirect(`/workouts/${workout.id}`);
+    handled(intents.duplicate, async ({ workoutId }) => {
+      const outcome = await workoutService.duplicate(user, workoutId);
+      // A stale row - since deleted or since out of view - is a no-op back
+      // to the list rather than an error, same as a stale form anywhere
+      // else in the builders.
+      if (!outcome.ok) throw redirect('/workouts');
+
+      requestLogger(context).log(`duplicated workout ${workoutId} into ${outcome.value.id} for user ${user.id}`, 'Workouts');
+      throw redirect(`/workouts/${outcome.value.id}`);
+    }),
+  ]);
+}
+
+/** The `⋯` menu every workout card ends in: duplicating it. */
+function WorkoutRowMenu({ workout }: { workout: WorkoutSummary }) {
+  const submit = useSubmit();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {
+          // `relative` so this sits above the card-covering Link overlay in
+          // paint order - a positioned sibling later in the DOM beats an
+          // absolutely-positioned one earlier, but only once it is itself
+          // positioned.
+        }
+        <Button variant="ghost" size="icon-sm" className="relative ml-auto shrink-0" aria-label={`Actions for ${workout.name}`}>
+          <EllipsisIcon aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onSelect={() => submit({ intent: intents.duplicate.name, workoutId: workout.id }, { method: 'post' })}
+        >
+          <CopyIcon aria-hidden="true" />
+          Duplicate
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export default function Workouts({ loaderData, actionData }: Route.ComponentProps) {
-  const error = actionData && 'error' in actionData ? actionData.error : undefined;
+  const error = intents.create.errorIn(actionData);
   const { workouts: workoutList } = loaderData;
 
   const createForm = (
     <form method="post">
-      <Field label="Name" error={error} action={<SubmitButton pendingLabel="Creating">Create</SubmitButton>}>
+      <input {...intents.create.field} />
+      <Field
+        label="Name"
+        error={error}
+        action={
+          <SubmitButton match={intents.create.match} pendingLabel="Creating">
+            Create
+          </SubmitButton>
+        }
+      >
         <Input name="name" placeholder="Push Day" required />
       </Field>
     </form>
@@ -128,6 +187,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
                           {workout.name}
                         </Link>
                         <OwnershipBadge isSample={workout.isSample} isCustomized={workout.isCustomized} />
+                        <WorkoutRowMenu workout={workout} />
                       </span>
                       <span className="text-sm text-muted-foreground tabular-nums">
                         {workout.exerciseCount} exercise
