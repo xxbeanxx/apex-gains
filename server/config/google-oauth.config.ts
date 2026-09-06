@@ -4,7 +4,9 @@ import { IsString, MinLength } from 'class-validator';
 
 import { validateConfigSlice } from './validate';
 
-/** Google OIDC client credentials, used to build/validate the OIDC flow. */
+/**
+ * Google OIDC client credentials, used to build/validate the OIDC flow.
+ */
 export class GoogleOAuthConfig {
   @Expose({ name: 'GOOGLE_CLIENT_ID' })
   @IsString({ message: 'GOOGLE_CLIENT_ID must be set' })

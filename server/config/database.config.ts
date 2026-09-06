@@ -11,8 +11,8 @@ import { validateConfigSlice } from './validate';
  * what actually branches on `databaseUrl` being present.
  */
 export class DatabaseConfig {
-  @Expose({ name: 'DATABASE_URL' })
   @IsOptional()
+  @Expose({ name: 'DATABASE_URL' })
   @IsString({ message: 'DATABASE_URL must be a string' })
   readonly databaseUrl?: string;
 }

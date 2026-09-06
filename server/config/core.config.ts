@@ -11,9 +11,7 @@ import { toNumber, validateConfigSlice } from './validate';
  */
 export class CoreConfig {
   @Expose({ name: 'NODE_ENV' })
-  @IsIn(['development', 'production', 'test'], {
-    message: 'NODE_ENV must be one of: development, production, test',
-  })
+  @IsIn(['development', 'production', 'test'], { message: 'NODE_ENV must be one of: development, production, test' })
   readonly nodeEnv: 'development' | 'production' | 'test' = 'development';
 
   @Transform(toNumber())
@@ -29,14 +27,14 @@ export class CoreConfig {
    * "info", and "verbose" where they say "trace".
    */
   @Expose({ name: 'LOG_LEVEL' })
-  @IsIn(LOG_LEVELS, {
-    message: `LOG_LEVEL must be one of: ${LOG_LEVELS.join(', ')}`,
-  })
+  @IsIn(LOG_LEVELS, { message: `LOG_LEVEL must be one of: ${LOG_LEVELS.join(', ')}` })
   readonly logLevel: LogLevel = 'log';
 
-  /** Optional bind address override - unset binds to every interface. */
-  @Expose({ name: 'HOST' })
+  /**
+   * Optional bind address override - unset binds to every interface.
+   */
   @IsOptional()
+  @Expose({ name: 'HOST' })
   @IsString({ message: 'HOST must be a string' })
   readonly host?: string;
 

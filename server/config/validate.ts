@@ -1,14 +1,18 @@
 import { plainToInstance, type TransformFnParams } from 'class-transformer';
 import { validateSync, ValidationError } from 'class-validator';
 
-/** Coerces an incoming environment variable string to a boolean. */
+/**
+ * Coerces an incoming environment variable string to a boolean.
+ */
 export function toBoolean(): (params: TransformFnParams) => boolean {
   return ({ value }: TransformFnParams) => {
     return String(value).toLowerCase() === 'true';
   };
 }
 
-/** Coerces an incoming environment variable string to a number. */
+/**
+ * Coerces an incoming environment variable string to a number.
+ */
 export function toNumber(): (params: TransformFnParams) => number {
   return ({ value }: TransformFnParams) => {
     return Number(value);
