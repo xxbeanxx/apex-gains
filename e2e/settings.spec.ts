@@ -1,4 +1,4 @@
-import { createExercise, selectOption } from './helpers';
+import { chooseTimezone, createExercise, selectOption } from './helpers';
 import { expect, test, uniqueName } from './fixtures';
 
 test('defaults to pounds and kilometres', async ({ page, athlete }) => {
@@ -19,12 +19,12 @@ test('the sub-nav switches sections, and a save stays on the section that made i
   await expect(page.getByLabel('Timezone')).toBeVisible();
   await expect(page.getByLabel('Weight')).toHaveCount(0);
 
-  await page.getByLabel('Timezone').selectOption('America/Toronto');
+  await chooseTimezone(page.getByLabel('Timezone'), 'Toronto');
   await page.getByRole('button', { name: 'Save' }).click();
 
   await expect(page).toHaveURL(/\?section=timezone$/);
   await expect(page.getByText('Saved.')).toBeVisible();
-  await expect(page.getByLabel('Timezone')).toHaveValue('America/Toronto');
+  await expect(page.getByLabel('Timezone')).toContainText('Toronto');
 });
 
 test('changing the weight unit re-labels the logging form', async ({ page, athlete }) => {
@@ -60,14 +60,14 @@ test('defaults to UTC and the timezone choice survives a reload', async ({ page,
   await page.goto('/settings?section=timezone');
 
   const timezone = page.getByLabel('Timezone');
-  await expect(timezone).toHaveValue('UTC');
+  await expect(timezone).toContainText('UTC');
 
-  await timezone.selectOption('America/Toronto');
+  await chooseTimezone(timezone, 'Toronto');
   await page.locator('form', { has: timezone }).getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
 
   await page.reload();
-  await expect(page.getByLabel('Timezone')).toHaveValue('America/Toronto');
+  await expect(page.getByLabel('Timezone')).toContainText('Toronto');
 });
 
 test('toggles sample data visibility', async ({ page, athlete }) => {
