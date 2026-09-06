@@ -175,10 +175,6 @@ with a `crumb(data)` function (`app/lib/breadcrumbs.ts`), which
 `app/components/shell/top-bar.tsx` reads off `useMatches()`. A route
 that is never itself the current page — a resource route fetched with
 `fetcher.load`, a loader-only redirect — simply exports none.
-`/routines` and `/templates` are the pre-rename paths and survive as
-301s through `routes/legacy-redirect.tsx`, deliberately outside
-`_protected` so a signed-out scanner following an old share link lands
-on the surviving path before being sent to Google.
 
 **Layers.** Four, strictly one-directional — `app/domain/` depends on
 nothing, and nothing above it may be skipped:

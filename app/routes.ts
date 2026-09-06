@@ -8,11 +8,6 @@ export default [
   route('auth/logout', 'routes/auth.logout.tsx'),
   route('auth/test-login', 'routes/auth.test-login.tsx'),
   //
-  route('routines', 'routes/legacy-redirect.tsx', { id: 'legacy-routines' }),
-  route('routines/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-routine' }),
-  route('templates', 'routes/legacy-redirect.tsx', { id: 'legacy-templates' }),
-  route('templates/:rest/*', 'routes/legacy-redirect.tsx', { id: 'legacy-template' }),
-  route('weight', 'routes/legacy-redirect.tsx', { id: 'legacy-weight' }),
   layout('routes/_protected.tsx', [
     route('today', 'routes/today.tsx'),
     //
