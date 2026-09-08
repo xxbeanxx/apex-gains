@@ -178,8 +178,8 @@ export class ProgressService {
    * show first - one call rather than the page reaching into plans,
    * workouts and sessions separately.
    */
-  async dashboard(athlete: Athlete): Promise<DashboardView> {
-    const today = DateOnly.today(new Date(), athlete.preferences.timezone);
+  async dashboard(athlete: Athlete, asOf?: DateOnly): Promise<DashboardView> {
+    const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);
     const weekStart = today.startOfWeek();
     const weekEnd = weekStart.plusDays(6);
 

@@ -143,7 +143,7 @@ describe('dashboard', () => {
     lastWeek.logSet('bench', { reps: 5, weight: Weight.lb(200) }, deps);
     await sessions.save(lastWeek);
 
-    const view = await service.dashboard(athlete());
+    const view = await service.dashboard(athlete(), TODAY);
 
     expect(view.sessionsThisWeek).toBe(2);
     expect(view.setsThisWeek).toBe(1);
@@ -154,7 +154,7 @@ describe('dashboard', () => {
   });
 
   it('reports no active plan when none is set', async () => {
-    const view = await service.dashboard(athlete());
+    const view = await service.dashboard(athlete(), TODAY);
 
     expect(view.activePlanName).toBeNull();
     expect(view.sessionsThisWeek).toBe(0);
