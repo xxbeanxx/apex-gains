@@ -20,16 +20,24 @@ import type { Intent } from '~/lib/intent';
  */
 
 type Ownership = {
-  /** Shared library data, read-only until the athlete edits it. */
+  /**
+   * Shared library data, read-only until the athlete edits it.
+   */
   readonly isSample: boolean;
-  /** Their own copy of a sample - shown as "Customized" rather than "Sample". */
+  /**
+   * Their own copy of a sample - shown as "Customized" rather than "Sample".
+   */
   readonly isCustomized: boolean;
 };
 
 export function OwnershipBadge({ isSample, isCustomized }: Ownership) {
-  if (isSample) return <Badge variant="outline">Sample</Badge>;
-  if (isCustomized) return <Badge variant="secondary">Customized</Badge>;
-  return null;
+  if (isSample) {
+    return <Badge variant="outline">Sample</Badge>;
+  }
+
+  if (isCustomized) {
+    return <Badge variant="secondary">Customized</Badge>;
+  }
 }
 
 /**
@@ -45,7 +53,9 @@ export function RevertOrDeleteForm({
   remove,
   actionData,
 }: Ownership & {
-  /** Lower-case, as a button says it: "Delete plan". */
+  /**
+   * Lower-case, as a button says it: "Delete plan".
+   */
   noun: string;
   revert: Intent<void>;
   remove: Intent<void>;
@@ -53,7 +63,9 @@ export function RevertOrDeleteForm({
 }) {
   const formId = useId();
 
-  if (isSample) return null;
+  if (isSample) {
+    return;
+  }
 
   const intent = isCustomized ? revert : remove;
   const error = intent.errorIn(actionData);

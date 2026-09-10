@@ -6,8 +6,10 @@ import NProgress from 'nprogress';
 
 NProgress.configure({ showSpinner: false });
 
-/** Drives an NProgress bar off React Router's navigation state, since
- * client-side transitions give no browser loading indicator otherwise. */
+/**
+ * Drives an NProgress bar off React Router's navigation state, since
+ * client-side transitions give no browser loading indicator otherwise.
+ */
 export function NavProgress() {
   const navigation = useNavigation();
 

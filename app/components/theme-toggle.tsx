@@ -41,7 +41,9 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = isDark ? 'dark' : 'light';
 }
 
-/** Flips light/dark from wherever the theme currently resolves to - used by the command palette's "Toggle theme" action. */
+/**
+ * Flips light/dark from wherever the theme currently resolves to - used by the command palette's "Toggle theme" action.
+ */
 export function toggleTheme() {
   const next: Theme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
   localStorage.setItem(STORAGE_KEY, next);

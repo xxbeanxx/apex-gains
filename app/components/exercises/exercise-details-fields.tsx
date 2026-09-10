@@ -3,7 +3,9 @@ import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Textarea } from '~/components/ui/textarea';
 
-/** Every id here comes from `Field`'s `useId`, so rendering this block twice on one page - the create form and an edit dialog - never produces colliding ids or labels pointing at the wrong input. */
+/**
+ * Every id here comes from `Field`'s `useId`, so rendering this block twice on one page - the create form and an edit dialog - never produces colliding ids or labels pointing at the wrong input.
+ */
 function ExerciseDetailsFields({
   defaultValues,
   error,

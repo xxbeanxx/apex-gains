@@ -13,9 +13,6 @@ import { requestLogger } from '~/lib/logger';
 
 export const streamTimeout = 5_000;
 
-/** Nest logger context label for the lines this module emits. */
-const REQUEST = 'Request';
-
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,
@@ -23,12 +20,12 @@ export default function handleRequest(
   routerContext: EntryContext,
   loadContext: RouterContextProvider,
 ) {
+  //
   // https://httpwg.org/specs/rfc9110.html#HEAD
+  //
+
   if (request.method.toUpperCase() === 'HEAD') {
-    return new Response(null, {
-      status: responseStatusCode,
-      headers: responseHeaders,
-    });
+    return new Response(null, { status: responseStatusCode, headers: responseHeaders });
   }
 
   return new Promise((resolve, reject) => {
@@ -37,11 +34,15 @@ export default function handleRequest(
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
-    let readyOption: keyof RenderToPipeableStreamOptions =
-      (userAgent && isbot(userAgent)) || routerContext.isSpaMode ? 'onAllReady' : 'onShellReady';
 
-    // Abort the rendering stream after the `streamTimeout` so it has time to
-    // flush down the rejected boundaries
+    let readyOption: keyof RenderToPipeableStreamOptions =
+      (userAgent && isbot(userAgent)) || //
+      routerContext.isSpaMode
+        ? 'onAllReady'
+        : 'onShellReady';
+
+    // Abort the rendering stream after the `streamTimeout` so it has time to flush down the rejected boundaries
+
     let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(() => abort(), streamTimeout + 1000);
 
     const { pipe, abort } = renderToPipeableStream(<ServerRouter context={routerContext} url={request.url} />, {
@@ -49,24 +50,19 @@ export default function handleRequest(
         shellRendered = true;
         const body = new PassThrough({
           final(callback) {
-            // Clear the timeout to prevent retaining the closure and memory leak
             clearTimeout(timeoutId);
             timeoutId = undefined;
             callback();
           },
         });
+
         const stream = createReadableStreamFromReadable(body);
 
         responseHeaders.set('Content-Type', 'text/html');
 
         pipe(body);
 
-        resolve(
-          new Response(stream, {
-            headers: responseHeaders,
-            status: responseStatusCode,
-          }),
-        );
+        resolve(new Response(stream, { headers: responseHeaders, status: responseStatusCode }));
       },
       onShellError(error: unknown) {
         reject(error);
@@ -76,12 +72,10 @@ export default function handleRequest(
         // Log streaming rendering errors from inside the shell. Don't log
         // errors encountered during initial shell rendering since they'll
         // reject and get logged via handleError below.
+
         if (shellRendered) {
-          requestLogger(loadContext).error(
-            'streaming render error',
-            error instanceof Error ? error.stack : String(error),
-            REQUEST,
-          );
+          const details = error instanceof Error ? error.stack : String(error);
+          requestLogger(loadContext).error('streaming render error', details, 'Request');
         }
       },
     });
@@ -102,7 +96,9 @@ type HandleErrorArgs = {
  * (4xx, logged as a warning) from ours (everything else, logged as an error).
  */
 export function handleError(error: unknown, { request, context }: HandleErrorArgs) {
-  if (request.signal.aborted) return;
+  if (request.signal.aborted) {
+    return;
+  }
 
   const logger = requestLogger(context);
 
@@ -114,7 +110,8 @@ export function handleError(error: unknown, { request, context }: HandleErrorArg
   // only line that will mention it.
   if (isRouteErrorResponse(error) && error.status < 500) {
     const { pathname } = new URL(request.url);
-    logger.warn(`${request.method} ${pathname} ${error.status}`, REQUEST);
+
+    logger.warn(`${request.method} ${pathname} ${error.status}`, 'Request');
     return;
   }
 
@@ -122,5 +119,5 @@ export function handleError(error: unknown, { request, context }: HandleErrorArg
   // was synthesized from one) is private in react-router's public types, so
   // reach it structurally rather than through the nominal ErrorResponse type.
   const cause = isRouteErrorResponse(error) ? ((error as { error?: unknown }).error ?? error) : error;
-  logger.error('unhandled server error', cause instanceof Error ? cause.stack : String(cause), REQUEST);
+  logger.error('unhandled server error', cause instanceof Error ? cause.stack : String(cause), 'Request');
 }

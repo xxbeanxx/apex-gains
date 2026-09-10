@@ -10,7 +10,9 @@ import { defineConfig, devices } from '@playwright/test';
  * a page mid-assertion.
  */
 
-/** Not 3000: `npm run dev` owns that, and this server must not collide. */
+/**
+ * Not 3000: `npm run dev` owns that, and this server must not collide.
+ */
 const PORT = 3100;
 const BASE_URL = `http://localhost:${PORT}/`;
 

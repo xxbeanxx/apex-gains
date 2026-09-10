@@ -24,7 +24,9 @@ function BuilderRow({
   position: number;
   title: ReactNode;
   chips?: ReactNode;
-  /** A line under the chips - the workout builder's progression suggestion is the one caller. */
+  /**
+   * A line under the chips - the workout builder's progression suggestion is the one caller.
+   */
   note?: ReactNode;
   controls?: ReactNode;
   menu?: ReactNode;
