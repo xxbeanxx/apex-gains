@@ -52,7 +52,6 @@ export default defineConfig(({ command }) => ({
     },
   },
   test: {
-    environment: 'node',
     // Unit tests are `*.test.ts` beside the code they cover; `e2e/` holds
     // Playwright specs, which need a browser and a running server and are
     // configured separately in `playwright.config.ts`. Without this, vitest
@@ -73,5 +72,36 @@ export default defineConfig(({ command }) => ({
     },
     fsModuleCache: true,
     isolate: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'jsdom',
+          environment: 'jsdom',
+          include: [
+            '**/app/**/components/*.test.(ts|tsx)', //
+            '**/app/**/routes/*.test.(ts|tsx)',
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: [
+            '**/app/**/*.test.(ts|tsx)', //
+            '**/server/**/*.test.(ts|tsx)',
+            '**/src/**/*.test.(ts|tsx)',
+          ],
+          exclude: [
+            '**/app/**/components/*.test.(ts|tsx)', //
+            '**/app/**/routes/*.test.(ts|tsx)',
+            '**/e2e/**',
+            ...configDefaults.exclude,
+          ],
+        },
+      },
+    ],
   },
 }));
