@@ -7,7 +7,9 @@ import { type Result, ok } from '~domain/shared/result';
 import { Duration } from '~domain/values/duration';
 import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
 
-/** Who signed in, and whether this was their first time. */
+/**
+ * Who signed in, and whether this was their first time.
+ */
 export type SignIn = {
   athlete: Athlete;
   isNew: boolean;
@@ -27,7 +29,9 @@ export class AthleteService {
     private readonly deps: DomainDeps,
   ) {}
 
-  /** The signed-in athlete, or null - what `loadUserMiddleware` resolves. */
+  /**
+   * The signed-in athlete, or null - what `loadUserMiddleware` resolves.
+   */
   async byId(userId: string): Promise<Athlete | null> {
     return this.athletes.findById(userId);
   }
@@ -80,7 +84,9 @@ export class AthleteService {
     await this.athletes.save(athlete);
   }
 
-  /** `null` turns the rest timer off. */
+  /**
+   * `null` turns the rest timer off.
+   */
   async changeRestDuration(athlete: Athlete, restSeconds: number | null): Promise<void> {
     athlete.changeRestDuration(restSeconds != null ? Duration.seconds(restSeconds) : null, this.deps.clock.now());
     await this.athletes.save(athlete);
