@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   cleanup:
@@ -24,4 +25,3 @@ jobs:
           package-name: apex-gains
           package-type: container
           min-versions-to-keep: 5
-          token: ${{ secrets.GHCR_DELETE_TOKEN }}
