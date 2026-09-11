@@ -34,3 +34,15 @@ export function formatNumber(value: number, maxDecimals = 1): string {
   const rounded = Number(value.toFixed(maxDecimals));
   return String(rounded);
 }
+
+/**
+ * Rounds a converted value to `decimals` places, defaulting to the
+ * `numeric(_, 2)` precision every measurement column stores. A value that
+ * round-trips through storage and back through unit conversion (e.g. mph ->
+ * km/h on save, km/h -> mph on the next read) otherwise comes back with
+ * floating-point noise like `5.002036550000001` instead of `5`.
+ */
+export function round(value: number, decimals = 2): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}

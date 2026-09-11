@@ -104,6 +104,13 @@ describe('formatting', () => {
     expect(preferences.weightValue(Weight.lb(100))).toBeCloseTo(45.36, 2);
   });
 
+  it('rounds away the float noise a storage round-trip introduces', () => {
+    const preferences = new AthletePreferences('lb', 'mi', 'in', true, 'UTC');
+    const roundTripped = Speed.fromStorage(Speed.mph(5).toStorage());
+
+    expect(preferences.speedValue(roundTripped!)).toBe(5);
+  });
+
   it('exposes the bare numeric value for an editable length field', () => {
     const preferences = new AthletePreferences('lb', 'km', 'in', true, 'UTC');
     expect(preferences.lengthValue(Length.cm(2.54))).toBeCloseTo(1, 5);

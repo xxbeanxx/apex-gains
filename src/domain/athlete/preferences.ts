@@ -2,7 +2,7 @@ import type { Duration } from '~domain/values/duration';
 import type { Length } from '~domain/values/length';
 import type { Speed } from '~domain/values/speed';
 import { DEFAULT_TIMEZONE } from '~domain/values/timezone';
-import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
+import { type DistanceUnit, type LengthUnit, type WeightUnit, round } from '~domain/values/units';
 import type { Weight } from '~domain/values/weight';
 
 /**
@@ -89,16 +89,16 @@ export class AthletePreferences {
 
   /** The bare number for a chart axis, without the unit suffix. */
   weightValue(weight: Weight): number {
-    return weight.as(this.weightUnit);
+    return round(weight.as(this.weightUnit));
   }
 
   /** The bare number for an editable field, without the unit suffix. */
   speedValue(speed: Speed): number {
-    return speed.as(this.distanceUnit);
+    return round(speed.as(this.distanceUnit));
   }
 
   /** The bare number for an editable field, without the unit suffix. */
   lengthValue(length: Length): number {
-    return length.as(this.lengthUnit);
+    return round(length.as(this.lengthUnit));
   }
 }

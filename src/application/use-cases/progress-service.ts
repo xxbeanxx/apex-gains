@@ -23,6 +23,7 @@ import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~domain/prog
 import type { Session } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
+import { round } from '~domain/values/units';
 import { Weight } from '~domain/values/weight';
 import { formatMonthDay } from '~shared/format';
 
@@ -147,10 +148,6 @@ function describeMetric(
         convert: (value) => value,
       };
   }
-}
-
-function round(value: number): number {
-  return Math.round(value * 100) / 100;
 }
 
 /**
