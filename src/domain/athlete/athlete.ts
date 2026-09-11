@@ -125,7 +125,9 @@ export class Athlete {
     return this.lastUpdatedAt;
   }
 
-  /** May reach the `/admin` area, and every other athlete's account with it. */
+  /**
+   * May reach the `/admin` area, and every other athlete's account with it.
+   */
   get isAdmin(): boolean {
     return this.administrator;
   }
@@ -156,7 +158,9 @@ export class Athlete {
     this.lastUpdatedAt = now;
   }
 
-  /** `null` turns the rest timer off. */
+  /**
+   * `null` turns the rest timer off.
+   */
   changeRestDuration(restDuration: Duration | null, now: Date): void {
     this.currentPreferences = this.currentPreferences.withRestDuration(restDuration);
     this.lastUpdatedAt = now;

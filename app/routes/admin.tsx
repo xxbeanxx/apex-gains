@@ -18,7 +18,9 @@ import { formatCount, formatDateTime, formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/admin';
 
-/** "granted admin access to", not just the raw `AdminActionKind` a route never shows verbatim. */
+/**
+ * "granted admin access to", not just the raw `AdminActionKind` a route never shows verbatim.
+ */
 const ACTION_VERBS: Record<AdminActionKind, string> = {
   'grant-admin': 'granted admin access to',
   'revoke-admin': 'revoked admin access from',
@@ -36,7 +38,9 @@ export async function loader({ context }: Route.LoaderArgs) {
   return { overview: await context.get(adminServiceContext).overview(administrator) };
 }
 
-/** A shortlist row: who, and the one number the list is sorted by. */
+/**
+ * A shortlist row: who, and the one number the list is sorted by.
+ */
 function AccountRow({ account, measure }: { account: AdminAccountView; measure: ReactNode }) {
   return (
     <li className="relative flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors duration-(--dur) hover:border-ring/30">

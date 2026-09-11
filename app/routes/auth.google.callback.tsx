@@ -13,7 +13,9 @@ import {
 
 import type { Route } from './+types/auth.google.callback';
 
-/** Nest logger context label for this route's lines. */
+/**
+ * Nest logger context label for this route's lines.
+ */
 const AUTH = 'Auth';
 
 // No `default` export: this route only ever redirects on success. An

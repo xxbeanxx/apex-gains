@@ -50,7 +50,9 @@ function EquipmentCheckboxRow({
   );
 }
 
-/** Name/type/muscle/description, equipment links, and - for a customized copy - reverting to the sample. */
+/**
+ * Name/type/muscle/description, equipment links, and - for a customized copy - reverting to the sample.
+ */
 function ExerciseEditorDialog({
   exercise,
   allEquipment,

@@ -80,7 +80,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
-/** The `⋯` menu every workout card ends in: duplicating it. */
+/**
+ * The `⋯` menu every workout card ends in: duplicating it.
+ */
 function WorkoutRowMenu({ workout }: { workout: WorkoutSummary }) {
   const submit = useSubmit();
 

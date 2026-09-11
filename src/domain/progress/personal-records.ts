@@ -125,7 +125,9 @@ export function progressSeries(history: TrainingHistory): ProgressSeries[] {
     .sort((a, b) => b.points.length - a.points.length);
 }
 
-/** Each exercise's all-time best, most-recently-set first. Ties go to the earlier date. */
+/**
+ * Each exercise's all-time best, most-recently-set first. Ties go to the earlier date.
+ */
 export function personalRecords(history: TrainingHistory): PersonalRecord[] {
   const records = exerciseProgress(history).map((progress) => {
     const entries = [...progress.bestByDate.entries()];

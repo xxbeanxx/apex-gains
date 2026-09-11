@@ -9,7 +9,9 @@
  * crosses the loader boundary - domain objects don't serialize.
  */
 
-/** Groups thousands, and compacts once a headline number stops fitting: "12.9K". */
+/**
+ * Groups thousands, and compacts once a headline number stops fitting: "12.9K".
+ */
 export function formatCount(value: number): string {
   return value.toLocaleString(undefined, value >= 10_000 ? { notation: 'compact', maximumFractionDigits: 1 } : {});
 }
@@ -19,14 +21,18 @@ function toLocalDate(dateStr: string): Date {
   return new Date(year, month - 1, day);
 }
 
-/** "Tue" - for the week strip. */
+/**
+ * "Tue" - for the week strip.
+ */
 export function formatWeekday(dateStr: string): string {
   return toLocalDate(dateStr).toLocaleDateString(undefined, {
     weekday: 'short',
   });
 }
 
-/** "2 Sep" - for chart axis labels. */
+/**
+ * "2 Sep" - for chart axis labels.
+ */
 export function formatMonthDay(dateStr: string): string {
   return toLocalDate(dateStr).toLocaleDateString(undefined, {
     month: 'short',
@@ -34,7 +40,9 @@ export function formatMonthDay(dateStr: string): string {
   });
 }
 
-/** "Tuesday, 2 September" - for page headings and history groups. */
+/**
+ * "Tuesday, 2 September" - for page headings and history groups.
+ */
 export function formatFullDate(dateStr: string): string {
   return toLocalDate(dateStr).toLocaleDateString(undefined, {
     weekday: 'long',
@@ -43,7 +51,9 @@ export function formatFullDate(dateStr: string): string {
   });
 }
 
-/** "September 2026" - for the history timeline's month dividers. */
+/**
+ * "September 2026" - for the history timeline's month dividers.
+ */
 export function formatMonthYear(dateStr: string): string {
   const [year, month] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString(undefined, {

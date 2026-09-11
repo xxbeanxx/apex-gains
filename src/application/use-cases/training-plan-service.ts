@@ -15,9 +15,13 @@ export type PlanItem = {
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
-  /** Which cardio measurements the log form should offer - see `cardioFieldsFor`. */
+  /**
+   * Which cardio measurements the log form should offer - see `cardioFieldsFor`.
+   */
   cardioFields: CardioFields;
-  /** Null when the exercise carries no target at all. */
+  /**
+   * Null when the exercise carries no target at all.
+   */
   target: TargetView | null;
 };
 
@@ -105,7 +109,9 @@ export class TrainingPlanService {
     };
   }
 
-  /** What a session opened on `date` should record about the day's plan. */
+  /**
+   * What a session opened on `date` should record about the day's plan.
+   */
   static sessionPlanFrom(plan: DayPlan): SessionPlan {
     return {
       planId: plan.type === 'none' ? null : plan.planId,
@@ -114,7 +120,9 @@ export class TrainingPlanService {
     };
   }
 
-  /** The next seven days according to the active plan's cycle. */
+  /**
+   * The next seven days according to the active plan's cycle.
+   */
   async upcomingWeek(athlete: Athlete, from: DateOnly): Promise<WeekPlanDay[]> {
     const dates = from.range(WEEK);
     const plan = await this.plans.findActive(athlete.id);
@@ -138,7 +146,9 @@ export class TrainingPlanService {
     });
   }
 
-  /** The seven days before `throughExclusive`, from what was actually logged. */
+  /**
+   * The seven days before `throughExclusive`, from what was actually logged.
+   */
   async pastWeek(athlete: Athlete, throughExclusive: DateOnly): Promise<WeekHistoryDay[]> {
     const start = throughExclusive.minusDays(WEEK);
     const sessions = await this.sessions.listForDateRange(athlete.id, start, throughExclusive);

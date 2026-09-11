@@ -18,9 +18,13 @@ export type PlanSummary = {
   anchorDate: string;
   slotCount: number;
   isSample: boolean;
-  /** Non-null once the athlete has minted a share link for this plan. */
+  /**
+   * Non-null once the athlete has minted a share link for this plan.
+   */
   shareToken: string | null;
-  /** A personal copy of a sample - shown as "Customized" rather than "Sample". */
+  /**
+   * A personal copy of a sample - shown as "Customized" rather than "Sample".
+   */
   isCustomized: boolean;
 };
 
@@ -30,7 +34,9 @@ export type PlanSlotView = {
   workoutId: string | null;
   workoutName: string | null;
   isRestDay: boolean;
-  /** The next calendar date this slot comes up, as YYYY-MM-DD - today itself if it's already due. */
+  /**
+   * The next calendar date this slot comes up, as YYYY-MM-DD - today itself if it's already due.
+   */
   nextDate: string;
 };
 
@@ -74,7 +80,9 @@ export class PlanService {
     this.editor = new ForkableLibrary(this.plans, this.unitOfWork, this.deps, (plan) => plan.slots);
   }
 
-  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  /**
+   * Load, fork if needed, apply, save - see `shared/fork.server.ts`.
+   */
   private readonly editor: ForkableLibrary<Plan>;
 
   async list(athlete: Athlete): Promise<PlanSummary[]> {
@@ -196,7 +204,9 @@ export class PlanService {
     return outcome.ok ? ok({ forkedId: outcome.value.forkedId, token }) : err(outcome.error);
   }
 
-  /** Revokes the link. The token is dropped, never reissued. */
+  /**
+   * Revokes the link. The token is dropped, never reissued.
+   */
   async unshare(athlete: Athlete, planId: string): Promise<PlanMutation> {
     return this.editor.mutate(athlete.id, planId, (plan) => plan.unshare(this.deps.clock.now()));
   }
@@ -221,7 +231,9 @@ export class PlanService {
     return this.editor.remove(athlete.id, planId);
   }
 
-  /** See `ForkableLibrary.revert` - the caller redirects to the original. */
+  /**
+   * See `ForkableLibrary.revert` - the caller redirects to the original.
+   */
   async revert(athlete: Athlete, planId: string): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
     return this.editor.revert(athlete.id, planId);
   }

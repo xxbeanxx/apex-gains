@@ -12,12 +12,16 @@ import {
   submitForm,
 } from './helpers';
 
-/** Logged sets render as an `ol`; the two week rails above them are `ul`s. */
+/**
+ * Logged sets render as an `ol`; the two week rails above them are `ul`s.
+ */
 function loggedSets(page: Page) {
   return page.locator('ol > li');
 }
 
-/** Builds a one-day plan around `exercise` and makes it the active one. */
+/**
+ * Builds a one-day plan around `exercise` and makes it the active one.
+ */
 async function activePlanWith(page: Page, exercise: string, targets?: { sets?: string; reps?: string }) {
   const workout = uniqueName('Day');
   await createWorkout(page, workout);

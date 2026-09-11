@@ -285,7 +285,9 @@ describe('SetTarget', () => {
     expect(target.format(imperial)).toBe('30 min, 8.5 km/h, resistance 4');
   });
 
-  /** The whole point of the value objects: one target, two readers, two units. */
+  /**
+   * The whole point of the value objects: one target, two readers, two units.
+   */
   it("renders the same target in each athlete's units", () => {
     const target = SetTarget.of({
       sets: 3,

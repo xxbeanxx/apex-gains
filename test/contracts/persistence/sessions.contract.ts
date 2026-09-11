@@ -9,7 +9,9 @@ import { type ContractSubject, DateOnly, NOW, type RepositorySet, deps, exercise
 
 const day = (value: string) => DateOnly.parse(value);
 
-/** Ticks forward a millisecond per call, so sets logged in the same test get distinct `createdAt`s to break ties on. */
+/**
+ * Ticks forward a millisecond per call, so sets logged in the same test get distinct `createdAt`s to break ties on.
+ */
 function tickingClock(start: Date): Clock {
   let ms = start.getTime();
   return { now: () => new Date(ms++) };
@@ -25,7 +27,9 @@ export function describeSessionsContract(subject: ContractSubject): void {
       return [ids.child, ids.otherChild];
     }
 
-    /** Opens a day and logs `count` sets of `exerciseId` against it. */
+    /**
+     * Opens a day and logs `count` sets of `exerciseId` against it.
+     */
     async function logDay(sessionId: string, date: string, exerciseId: string, count: number, userId = ids.athlete) {
       const opened = await repositories.sessions.add(session({ id: sessionId, userId, date }));
       for (let n = 0; n < count; n++) {

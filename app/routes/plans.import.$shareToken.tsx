@@ -79,7 +79,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   throw redirect(`/plans/${outcome.value.planId}`);
 }
 
-/** "3 workouts and 2 exercises", or null when the import adds neither. */
+/**
+ * "3 workouts and 2 exercises", or null when the import adds neither.
+ */
 function additionsSummary(newWorkouts: number, newExercises: number): string | null {
   const parts: string[] = [];
   if (newWorkouts > 0) parts.push(`${newWorkouts} ${newWorkouts === 1 ? 'workout' : 'workouts'}`);

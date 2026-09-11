@@ -221,7 +221,9 @@ export function adminAction(
   });
 }
 
-/** Seeds the athletes every other contract's foreign keys depend on. */
+/**
+ * Seeds the athletes every other contract's foreign keys depend on.
+ */
 export async function seedAthletes(repositories: RepositorySet): Promise<void> {
   await repositories.athletes.save(athlete(ids.athlete));
   await repositories.athletes.save(athlete(ids.otherAthlete));

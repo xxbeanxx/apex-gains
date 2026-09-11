@@ -20,7 +20,9 @@ export interface AthletesRepository {
    * `requireAdminMiddleware` is what stands between it and anyone else.
    */
   listAll(): Promise<Athlete[]>;
-  /** Inserts a newly registered athlete, or updates an existing one. */
+  /**
+   * Inserts a newly registered athlete, or updates an existing one.
+   */
   save(athlete: Athlete): Promise<void>;
   /**
    * Closes an account for good. Everything an athlete owns hangs off their

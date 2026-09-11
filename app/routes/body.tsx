@@ -29,7 +29,9 @@ const WEIGHT_SECTION = 'weight' as const;
 const SECTION_IDS = [WEIGHT_SECTION, ...BODY_MEASUREMENT_METRICS] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
-/** Chart title, tab label, and empty-state copy for a section - the same regardless of the athlete's unit. */
+/**
+ * Chart title, tab label, and empty-state copy for a section - the same regardless of the athlete's unit.
+ */
 const SECTION_LABELS: Record<SectionId, string> = {
   weight: 'Weight',
   waist: 'Waist',
@@ -169,7 +171,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
-/** Its own fetcher, so removing one entry hides only that row while its delete is in flight. */
+/**
+ * Its own fetcher, so removing one entry hides only that row while its delete is in flight.
+ */
 function EntryRow({
   entry,
   unit,

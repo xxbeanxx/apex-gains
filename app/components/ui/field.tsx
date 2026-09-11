@@ -5,18 +5,26 @@ import { Label } from '~/components/ui/label';
 import { cn } from '~/lib/utils';
 
 type FieldRenderArgs = {
-  /** Unique per-instance id. Wire this onto the control. */
+  /**
+   * Unique per-instance id. Wire this onto the control.
+   */
   id: string;
-  /** Pass to the control as `aria-describedby`. Undefined when nothing to say. */
+  /**
+   * Pass to the control as `aria-describedby`. Undefined when nothing to say.
+   */
   describedBy: string | undefined;
   invalid: boolean;
 };
 
 type FieldProps = {
   label: ReactNode;
-  /** Helper text rendered under the label and linked via aria-describedby. */
+  /**
+   * Helper text rendered under the label and linked via aria-describedby.
+   */
   description?: ReactNode;
-  /** Error text. Presence marks the control aria-invalid. */
+  /**
+   * Error text. Presence marks the control aria-invalid.
+   */
   error?: ReactNode;
   /**
    * Control rendered inline beside the input - typically a submit button.

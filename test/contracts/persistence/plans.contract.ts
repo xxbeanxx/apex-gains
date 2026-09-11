@@ -124,7 +124,9 @@ export function describePlansContract(subject: ContractSubject): void {
         expect(found?.slots.map((slot) => slot.workoutId)).toEqual([second, null]);
       });
 
-      /** Same per-statement uniqueness hazard as a workout's exercises. */
+      /**
+       * Same per-statement uniqueness hazard as a workout's exercises.
+       */
       it('swaps two neighbours without tripping the position uniqueness', async () => {
         const [first, second] = await seedWorkouts(2);
         const saved = plan({ id: ids.own });

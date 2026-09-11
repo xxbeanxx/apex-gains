@@ -31,7 +31,9 @@ class MoveDto {
   readonly position!: number;
 }
 
-/** A POST carrying the fields a browser would have submitted. */
+/**
+ * A POST carrying the fields a browser would have submitted.
+ */
 function post(fields: Record<string, string>): Request {
   const body = new FormData();
   for (const [key, value] of Object.entries(fields)) body.append(key, value);

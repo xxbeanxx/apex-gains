@@ -16,9 +16,13 @@ export type TargetView = {
   speed: string | null;
   speedValue: number | null;
   resistance: number | null;
-  /** Formatted in minutes, same as `duration` - "1.5 min". */
+  /**
+   * Formatted in minutes, same as `duration` - "1.5 min".
+   */
   rest: string | null;
-  /** Raw seconds - what the rest timer counts down from. */
+  /**
+   * Raw seconds - what the rest timer counts down from.
+   */
   restSeconds: number | null;
 };
 

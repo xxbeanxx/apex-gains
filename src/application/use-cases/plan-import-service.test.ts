@@ -57,7 +57,9 @@ function deps(prefix: string) {
   return { ids: sequentialIds(prefix), clock: fixedClock(NOW), secrets: sequentialSecrets(`${prefix}-token`) };
 }
 
-/** Dana's own exercise, workout and plan, shared under one token. */
+/**
+ * Dana's own exercise, workout and plan, shared under one token.
+ */
 async function seedSharedPlan(options: { exerciseForkedFrom?: string | null } = {}): Promise<string> {
   const exercise = Exercise.fromSnapshot({
     id: 'their-bench',

@@ -43,12 +43,16 @@ export class Speed {
     return unit === 'km' ? this.inKmPerHour : this.inMilesPerHour;
   }
 
-  /** `numeric(5, 2)`. */
+  /**
+   * `numeric(5, 2)`.
+   */
   toStorage(): string {
     return this.kmPerHour.toFixed(2);
   }
 
-  /** "8.5 km/h", "5.3 mph". */
+  /**
+   * "8.5 km/h", "5.3 mph".
+   */
   format(unit: DistanceUnit): string {
     return `${formatNumber(this.as(unit))} ${speedUnitLabel(unit)}`;
   }

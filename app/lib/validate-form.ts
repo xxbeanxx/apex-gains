@@ -24,12 +24,16 @@ import { Rpe } from '~domain/values/rpe';
  * records metadata, so this stays inert in the browser.
  */
 
-/** Trims a string form value; leaves other values untouched. */
+/**
+ * Trims a string form value; leaves other values untouched.
+ */
 export function trim(): (params: TransformFnParams) => unknown {
   return ({ value }: TransformFnParams) => (typeof value === 'string' ? value.trim() : value);
 }
 
-/** Trims a string form value and maps a blank result to `undefined`, for optional free-text fields. */
+/**
+ * Trims a string form value and maps a blank result to `undefined`, for optional free-text fields.
+ */
 export function optionalTrim(): (params: TransformFnParams) => unknown {
   return ({ value }: TransformFnParams) => {
     const trimmed = typeof value === 'string' ? value.trim() : value;
@@ -37,7 +41,9 @@ export function optionalTrim(): (params: TransformFnParams) => unknown {
   };
 }
 
-/** Coerces a form value to a number. */
+/**
+ * Coerces a form value to a number.
+ */
 export function toNumber(): (params: TransformFnParams) => unknown {
   return ({ value }: TransformFnParams) => Number(value);
 }
@@ -61,7 +67,9 @@ class IsDateOnlyConstraint implements ValidatorConstraintInterface {
   }
 }
 
-/** Validates a `YYYY-MM-DD` calendar-day string via `DateOnly.isValid`. */
+/**
+ * Validates a `YYYY-MM-DD` calendar-day string via `DateOnly.isValid`.
+ */
 export function IsDateOnly(validationOptions?: ValidationOptions): PropertyDecorator {
   return function (object: object, propertyName: string | symbol) {
     registerDecorator({
@@ -84,7 +92,9 @@ class IsRpeConstraint implements ValidatorConstraintInterface {
   }
 }
 
-/** Validates a rate-of-perceived-exertion rating via `Rpe.isValid`. */
+/**
+ * Validates a rate-of-perceived-exertion rating via `Rpe.isValid`.
+ */
 export function IsRpe(validationOptions?: ValidationOptions): PropertyDecorator {
   return function (object: object, propertyName: string | symbol) {
     registerDecorator({

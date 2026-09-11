@@ -187,7 +187,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   ]);
 }
 
-/** The two week rails, shared by the always-visible desktop copy and the collapsed mobile one. */
+/**
+ * The two week rails, shared by the always-visible desktop copy and the collapsed mobile one.
+ */
 function WeekOverview({
   upcomingWeek,
   pastWeek,

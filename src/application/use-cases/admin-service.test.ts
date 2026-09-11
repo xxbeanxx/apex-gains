@@ -21,7 +21,9 @@ let sessions: InMemorySessionsRepository;
 let adminActions: InMemoryAdminActionsRepository;
 let service: AdminService;
 
-/** Registers an athlete, back-dating the account so ordering is assertable. */
+/**
+ * Registers an athlete, back-dating the account so ordering is assertable.
+ */
 async function register(name: string, options: { isAdmin?: boolean; joinedDaysAgo?: number } = {}): Promise<Athlete> {
   const joinedAt = new Date(NOW.getTime() - (options.joinedDaysAgo ?? 0) * 86_400_000);
   const athlete = Athlete.register(
@@ -33,7 +35,9 @@ async function register(name: string, options: { isAdmin?: boolean; joinedDaysAg
   return athlete;
 }
 
-/** Opens a day for an athlete and logs `setCount` sets into it. */
+/**
+ * Opens a day for an athlete and logs `setCount` sets into it.
+ */
 async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestDay = false): Promise<void> {
   const session = Session.open(athlete.id, date, { planId: null, workoutId: null, isRestDay }, deps);
   for (let i = 0; i < setCount; i += 1) {

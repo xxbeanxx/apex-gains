@@ -159,6 +159,20 @@ predict what the code does and why it is shaped that way. If yes, it was
 narration - leave it out. Describe the current design as if it had always
 been this way, because that is the only version anyone has to work with.
 
+A JSDoc comment is always multi-line, even for a single sentence:
+
+```ts
+/**
+ * A single sentence still gets its own lines.
+ */
+```
+
+never the single-line form:
+
+```ts
+/** A single sentence still gets its own lines. */
+```
+
 ## Architecture
 
 **Routing.** `app/routes.ts` is the single route manifest (Framework

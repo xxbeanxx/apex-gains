@@ -154,7 +154,9 @@ describe('activation', () => {
     expect((await plans.findActive(athlete.id))?.id).toBe('a');
   });
 
-  /** Only one plan per athlete may be active. */
+  /**
+   * Only one plan per athlete may be active.
+   */
   it('stands down the previously active plan', async () => {
     await service.activate(athlete, 'a');
     await service.activate(athlete, 'b');

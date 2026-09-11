@@ -67,7 +67,9 @@ function PageHeader({
   );
 }
 
-/** A titled band of content, separated by the shared section rhythm. */
+/**
+ * A titled band of content, separated by the shared section rhythm.
+ */
 function Section({
   title,
   description,

@@ -20,7 +20,9 @@ type SubmitButtonProps = ComponentProps<typeof Button> & {
    * would spin every button on any submission.
    */
   match?: Record<string, string>;
-  /** Announced to screen readers while pending. */
+  /**
+   * Announced to screen readers while pending.
+   */
   pendingLabel?: string;
 };
 

@@ -19,7 +19,9 @@
  */
 import { data } from 'react-router';
 
-/** A form DTO class, as `validateForm` takes it. */
+/**
+ * A form DTO class, as `validateForm` takes it.
+ */
 type Constructor<T> = new () => T;
 
 export type IntentOptions = {
@@ -52,7 +54,9 @@ export type Intent<T extends object | void = void> = {
   readonly schema: Constructor<T & object> | undefined;
   readonly options: IntentOptions;
 
-  /** Spread onto the hidden input that names this intent: `<input {...intent.field} />`. */
+  /**
+   * Spread onto the hidden input that names this intent: `<input {...intent.field} />`.
+   */
   readonly field: { readonly type: 'hidden'; readonly name: 'intent'; readonly value: string };
 
   /**
@@ -67,10 +71,14 @@ export type Intent<T extends object | void = void> = {
    */
   reject(message: string): ReturnType<typeof data<IntentRejection>>;
 
-  /** This intent's rejection message out of `actionData`, if the last submission was its own. */
+  /**
+   * This intent's rejection message out of `actionData`, if the last submission was its own.
+   */
   errorIn(actionData: unknown): string | undefined;
 
-  /** Whether `actionData` reports this intent succeeding. */
+  /**
+   * Whether `actionData` reports this intent succeeding.
+   */
   succeededIn(actionData: unknown): boolean;
 };
 

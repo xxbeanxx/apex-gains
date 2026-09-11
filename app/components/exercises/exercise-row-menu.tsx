@@ -13,7 +13,9 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { intents } from '~/routes/exercises';
 import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
-/** The `⋯` menu every exercise row (table or card) ends in: edit, recent history, and reverting a customized copy. */
+/**
+ * The `⋯` menu every exercise row (table or card) ends in: edit, recent history, and reverting a customized copy.
+ */
 function ExerciseRowMenu({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
   const [editOpen, setEditOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);

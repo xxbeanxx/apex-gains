@@ -12,7 +12,9 @@ const page: ForkableDetail = forkableDetail({
 const remove = intent('delete');
 const revert = intent('revert');
 
-/** Runs `work` and returns whatever it threw, which is how a route answers a redirect. */
+/**
+ * Runs `work` and returns whatever it threw, which is how a route answers a redirect.
+ */
 function thrownBy(work: () => unknown): unknown {
   try {
     work();

@@ -14,7 +14,9 @@ import { visibleRowWhere, visibleRowsWhere } from '~infrastructure/persistence/d
 import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
 import { writePositions } from '~infrastructure/persistence/shared/write-positions';
 
-/** The columns `shared/visibility.ts` reads to build this table's clauses. */
+/**
+ * The columns `shared/visibility.ts` reads to build this table's clauses.
+ */
 const visibility = {
   table: workouts,
   id: workouts.id,
@@ -77,7 +79,9 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
     return rows.map(toWorkout);
   }
 
-  /** Two columns, no child join - see the port for why this exists. */
+  /**
+   * Two columns, no child join - see the port for why this exists.
+   */
   async listNamesFor(userId: string, showSampleData: boolean): Promise<WorkoutName[]> {
     return dbScope
       .select({ id: workouts.id, name: workouts.name })

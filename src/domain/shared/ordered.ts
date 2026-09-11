@@ -24,7 +24,9 @@ export class OrderedChildren<T extends Positioned> {
     this.renumber();
   }
 
-  /** In position order. Callers must not mutate the array. */
+  /**
+   * In position order. Callers must not mutate the array.
+   */
   get items(): readonly T[] {
     return this.children;
   }
@@ -54,7 +56,9 @@ export class OrderedChildren<T extends Positioned> {
     this.renumber();
   }
 
-  /** Returns false if no child has that id, so a caller can report a no-op. */
+  /**
+   * Returns false if no child has that id, so a caller can report a no-op.
+   */
   remove(id: string): boolean {
     const index = this.indexOf(id);
     if (index === -1) return false;

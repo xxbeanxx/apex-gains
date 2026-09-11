@@ -41,7 +41,9 @@ export class BodyWeightService {
     });
   }
 
-  /** Silently ignores an entry that isn't the athlete's, same as a stale form. */
+  /**
+   * Silently ignores an entry that isn't the athlete's, same as a stale form.
+   */
   async remove(athlete: Athlete, date: DateOnly, entryId: string): Promise<Result<void, never>> {
     await this.unitOfWork.run(async () => {
       const entry = await this.entries.findForDate(athlete.id, date);

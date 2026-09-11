@@ -36,7 +36,9 @@ function Calendar({
 }: {
   selected: string;
   today: string;
-  /** Dates after this (string-compared, so also `YYYY-MM-DD`) are shown disabled. */
+  /**
+   * Dates after this (string-compared, so also `YYYY-MM-DD`) are shown disabled.
+   */
   maxDate?: string;
   onSelect: (dateStr: string) => void;
   className?: string;

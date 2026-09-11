@@ -8,8 +8,12 @@
  * fails the build with "Server-only module referenced by client".
  */
 export type QrCode = {
-  /** The code's width in modules, quiet zone included - the SVG's viewBox. */
+  /**
+   * The code's width in modules, quiet zone included - the SVG's viewBox.
+   */
   readonly size: number;
-  /** One `<path d>` covering every dark module, drawn at one unit per module. */
+  /**
+   * One `<path d>` covering every dark module, drawn at one unit per module.
+   */
   readonly path: string;
 };

@@ -38,9 +38,13 @@ export type TimelineDay = {
   id: string;
   date: string;
   isRestDay: boolean;
-  /** The workout the session snapshot named, if any - null for a rest day or a plan-less one. */
+  /**
+   * The workout the session snapshot named, if any - null for a rest day or a plan-less one.
+   */
   workoutName: string | null;
-  /** Formatted in the athlete's weight unit; null when nothing weighted was logged. */
+  /**
+   * Formatted in the athlete's weight unit; null when nothing weighted was logged.
+   */
   tonnage: string | null;
   sets: TimelineSet[];
 };
@@ -67,7 +71,9 @@ export type HistoryView = {
 export type DashboardView = {
   sessionsThisWeek: number;
   setsThisWeek: number;
-  /** Over the same recent window `/history`'s own totals use, not literally all-time. */
+  /**
+   * Over the same recent window `/history`'s own totals use, not literally all-time.
+   */
   workoutsLogged: number;
   activePlanName: string | null;
   recentSessions: TimelineDay[];
@@ -106,7 +112,9 @@ const MUSCLE_BALANCE_DAYS = 28;
 const BODY_WEIGHT_HISTORY_LIMIT = 180;
 const BODY_MEASUREMENT_HISTORY_LIMIT = 180;
 
-/** Chart title and table label for a metric - the same on every athlete's page, unlike the unit. */
+/**
+ * Chart title and table label for a metric - the same on every athlete's page, unlike the unit.
+ */
 const BODY_MEASUREMENT_LABELS: Record<BodyMeasurementMetric, string> = {
   waist: 'Waist',
   chest: 'Chest',

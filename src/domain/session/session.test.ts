@@ -109,7 +109,9 @@ describe('how a day reads', () => {
     expect(openSession(false).status).toBe('none');
   });
 
-  /** Training through a scheduled rest day still counts as having trained. */
+  /**
+   * Training through a scheduled rest day still counts as having trained.
+   */
   it('reads as a workout once sets exist, even on a planned rest day', () => {
     const session = openSession(true);
     session.logSet('bench', { reps: 10 }, deps());

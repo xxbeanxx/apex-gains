@@ -20,7 +20,9 @@ export class InMemoryAdminActionsRepository implements AdminActionsRepository, A
       .map(AdminAction.fromSnapshot);
   }
 
-  /** Mirrors the schema's `on delete set null`: the entries stay, only the id they can no longer resolve is cleared. */
+  /**
+   * Mirrors the schema's `on delete set null`: the entries stay, only the id they can no longer resolve is cleared.
+   */
   clearAthlete(userId: string): void {
     for (const [id, snapshot] of this.byId) {
       if (snapshot.actorId !== userId && snapshot.targetId !== userId) continue;

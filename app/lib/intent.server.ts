@@ -11,7 +11,9 @@ import { validateForm } from '~/lib/validate-form.server';
  * and what its failures mean.
  */
 
-/** The 400 an intent returns when its own submission doesn't validate. */
+/**
+ * The 400 an intent returns when its own submission doesn't validate.
+ */
 export type IntentResponse = ReturnType<Intent<never>['reject']>;
 
 /**
@@ -24,7 +26,9 @@ export type HandledIntent<Result> = {
   run(formData: FormData): Promise<Result | IntentResponse>;
 };
 
-/** Any bound intent, with its own result type erased. */
+/**
+ * Any bound intent, with its own result type erased.
+ */
 type AnyHandledIntent = { readonly intent: Intent<never>; run(formData: FormData): Promise<unknown> };
 
 /**
@@ -75,7 +79,9 @@ export function handled<T extends object, Result>(
  * hand-rolled request, and answering "ok" would look to the browser like the
  * mutation happened.
  */
-/** Names an intent the page never declared, only so the 400 can be tagged with it. */
+/**
+ * Names an intent the page never declared, only so the 400 can be tagged with it.
+ */
 function unknownIntent(name: string): Intent<void> {
   return intent(name);
 }

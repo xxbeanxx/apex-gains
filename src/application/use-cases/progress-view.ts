@@ -10,7 +10,9 @@
 
 export type WeeklyPointView = {
   weekStart: string;
-  /** Pre-formatted axis label, e.g. "2 Sep". */
+  /**
+   * Pre-formatted axis label, e.g. "2 Sep".
+   */
   label: string;
   value: number;
   isCurrentWeek: boolean;
@@ -30,9 +32,13 @@ export type MuscleBalanceView = {
 export type ProgressSeriesView = {
   exerciseId: string;
   exerciseName: string;
-  /** What the number means, e.g. "Est. best set (1RM)". */
+  /**
+   * What the number means, e.g. "Est. best set (1RM)".
+   */
   metricLabel: string;
-  /** The unit it is expressed in, e.g. "lb", "reps", "min". */
+  /**
+   * The unit it is expressed in, e.g. "lb", "reps", "min".
+   */
   unit: string;
   points: { date: string; value: number }[];
 };

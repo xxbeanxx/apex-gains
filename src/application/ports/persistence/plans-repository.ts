@@ -8,7 +8,9 @@ import type { Plan } from '~domain/plan/plan';
 // as one unit. The rules - fork on first edit, reordering, standing down the
 // previously active plan - live on the `Plan` aggregate and in
 // domain/plan/activation.ts.
-/** Just enough of a plan to check a new name for a collision. */
+/**
+ * Just enough of a plan to check a new name for a collision.
+ */
 export type PlanName = {
   readonly id: string;
   readonly name: string;
@@ -23,7 +25,9 @@ export interface PlansRepository {
    */
   listNamesFor(userId: string, showSampleData: boolean): Promise<PlanName[]>;
   findVisible(userId: string, planId: string): Promise<Plan | null>;
-  /** At most one per user - the partial unique index enforces it. */
+  /**
+   * At most one per user - the partial unique index enforces it.
+   */
   findActive(userId: string): Promise<Plan | null>;
   /**
    * The plan a share token names, whoever owns it.

@@ -15,7 +15,9 @@ export interface SecretGenerator {
   next(): string;
 }
 
-/** 128 bits, base64url, no padding - 22 characters. */
+/**
+ * 128 bits, base64url, no padding - 22 characters.
+ */
 export const randomSecrets: SecretGenerator = {
   next: () => {
     const bytes = crypto.getRandomValues(new Uint8Array(16));

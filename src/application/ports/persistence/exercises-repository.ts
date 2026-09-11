@@ -15,7 +15,9 @@ export type DeleteExerciseOutcome = 'deleted' | 'in-use';
 // lookups. The rules - forking a sample on first edit, copying its equipment
 // links - belong to the aggregate, not to these methods.
 export interface ExercisesRepository {
-  /** Own exercises plus, when asked for, samples the user hasn't forked. */
+  /**
+   * Own exercises plus, when asked for, samples the user hasn't forked.
+   */
   listFor(userId: string, showSampleData: boolean): Promise<Exercise[]>;
   findById(exerciseId: string): Promise<Exercise | null>;
   /**
@@ -28,9 +30,13 @@ export interface ExercisesRepository {
    * charts look them up by id instead.
    */
   findManyByIds(exerciseIds: readonly string[]): Promise<Exercise[]>;
-  /** The user's own, or a sample - anything they're allowed to act on. */
+  /**
+   * The user's own, or a sample - anything they're allowed to act on.
+   */
   findVisible(userId: string, exerciseId: string): Promise<Exercise | null>;
-  /** Backs the duplicate-name check; names are unique per user. */
+  /**
+   * Backs the duplicate-name check; names are unique per user.
+   */
   findOwnByName(userId: string, name: string): Promise<Exercise | null>;
   /**
    * The user's existing fork of a sample, if they already have one. Forking

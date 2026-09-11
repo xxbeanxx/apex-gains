@@ -141,7 +141,9 @@ export class Plan {
     return this.forkedFrom;
   }
 
-  /** Non-null once shared: the bearer token in the link and the QR code. */
+  /**
+   * Non-null once shared: the bearer token in the link and the QR code.
+   */
   get shareToken(): string | null {
     return this.token;
   }
@@ -247,14 +249,18 @@ export class Plan {
     return this.token;
   }
 
-  /** Revokes the link. A token is never reissued, so a leaked one stays dead. */
+  /**
+   * Revokes the link. A token is never reissued, so a leaked one stays dead.
+   */
   unshare(now: Date): void {
     if (this.token === null) return;
     this.token = null;
     this.touch(now);
   }
 
-  /** A null `workoutId` adds a rest day. */
+  /**
+   * A null `workoutId` adds a rest day.
+   */
   addSlot(workoutId: string | null, deps: { ids: IdGenerator; clock: Clock }): PlanSlot {
     const slot = new PlanSlot(deps.ids.next(), this.slotList.size, workoutId);
     this.slotList.append(slot);

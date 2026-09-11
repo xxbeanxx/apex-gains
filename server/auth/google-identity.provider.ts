@@ -6,7 +6,9 @@ import { GoogleIdentityAdapter } from '~infrastructure/identity/google/google-id
 import { googleOAuthConfig } from '~server/config/google-oauth.config';
 import { GOOGLE_IDENTITY_PROVIDER } from '~server/providers/identity.token';
 
-/** Binds the `GoogleIdentityProvider` port to the Google/`openid-client` adapter. */
+/**
+ * Binds the `GoogleIdentityProvider` port to the Google/`openid-client` adapter.
+ */
 export const googleIdentityProvider: Provider = {
   inject: [googleOAuthConfig.KEY],
   provide: GOOGLE_IDENTITY_PROVIDER,

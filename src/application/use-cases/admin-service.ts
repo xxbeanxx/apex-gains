@@ -10,14 +10,18 @@ import { type Result, err, ok } from '~domain/shared/result';
 import { DateOnly } from '~domain/values/date-only';
 import type { DistanceUnit, LengthUnit, WeightUnit } from '~domain/values/units';
 
-/** One row of the user manager. */
+/**
+ * One row of the user manager.
+ */
 export type AdminAccountView = {
   id: string;
   name: string;
   email: string;
   avatarUrl: string | null;
   isAdmin: boolean;
-  /** Marks the administrator doing the looking, whose account they may not act on. */
+  /**
+   * Marks the administrator doing the looking, whose account they may not act on.
+   */
   isSelf: boolean;
   joinedOn: string;
   lastActiveOn: string | null;
@@ -25,7 +29,9 @@ export type AdminAccountView = {
   setCount: number;
 };
 
-/** One account in full, as /admin/users/:userId shows it. */
+/**
+ * One account in full, as /admin/users/:userId shows it.
+ */
 export type AdminAccountDetailView = AdminAccountView & {
   weightUnit: WeightUnit;
   distanceUnit: DistanceUnit;
@@ -44,7 +50,9 @@ export type AdminActionView = {
   action: AdminActionKind;
   actorEmail: string;
   targetEmail: string;
-  /** ISO timestamp - a moment, not a calendar day, so it stays a full timestamp rather than the `YYYY-MM-DD` other views use. */
+  /**
+   * ISO timestamp - a moment, not a calendar day, so it stays a full timestamp rather than the `YYYY-MM-DD` other views use.
+   */
   createdAt: string;
 };
 
@@ -55,17 +63,23 @@ export type InstanceOverview = {
   activeRecently: number;
   totalWorkouts: number;
   totalSets: number;
-  /** How many days "recently" spans, so the dashboard can label its own numbers. */
+  /**
+   * How many days "recently" spans, so the dashboard can label its own numbers.
+   */
   recentWindowDays: number;
   newestAccounts: AdminAccountView[];
   busiestAccounts: AdminAccountView[];
-  /** Newest first. Reads are not logged - only this list's own existence is a read, and it records nothing. */
+  /**
+   * Newest first. Reads are not logged - only this list's own existence is a read, and it records nothing.
+   */
   recentActions: AdminActionView[];
 };
 
 export type AdminMutation = Result<{ name: string }, 'not-found' | AdminRefusal>;
 
-/** What "new" and "active" mean on the dashboard. */
+/**
+ * What "new" and "active" mean on the dashboard.
+ */
 const RECENT_WINDOW_DAYS = 30;
 const DASHBOARD_LIST_SIZE = 5;
 
@@ -90,7 +104,9 @@ export class AdminService {
     private readonly deps: DomainDeps,
   ) {}
 
-  /** Instance-wide numbers, plus the shortlists the dashboard leads with. */
+  /**
+   * Instance-wide numbers, plus the shortlists the dashboard leads with.
+   */
   async overview(actor: Athlete): Promise<InstanceOverview> {
     const [accounts, recentActions] = await Promise.all([
       this.accounts(actor),
@@ -121,7 +137,9 @@ export class AdminService {
     };
   }
 
-  /** Every account, oldest first, each with its training totals folded in. */
+  /**
+   * Every account, oldest first, each with its training totals folded in.
+   */
   async accounts(actor: Athlete): Promise<AdminAccountView[]> {
     const [athletes, totals] = await Promise.all([this.athletes.listAll(), this.sessions.trainingTotals()]);
     return athletes.map((athlete) => toView(athlete, totals.get(athlete.id) ?? NO_TRAINING, actor));
@@ -174,7 +192,9 @@ export class AdminService {
     });
   }
 
-  /** Both mutations write their entry inside the same transaction as the change - a failed mutation leaves no entry, a successful one always has one. */
+  /**
+   * Both mutations write their entry inside the same transaction as the change - a failed mutation leaves no entry, a successful one always has one.
+   */
   private async record(action: AdminAction['action'], actor: Athlete, target: Athlete): Promise<void> {
     await this.adminActions.record(
       AdminAction.record(action, { id: actor.id, email: actor.email }, { id: target.id, email: target.email }, this.deps),

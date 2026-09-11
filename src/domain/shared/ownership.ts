@@ -9,7 +9,9 @@
 export class Ownership {
   private constructor(readonly userId: string | null) {}
 
-  /** Shared, read-only library data seeded by `db/seed.ts`. */
+  /**
+   * Shared, read-only library data seeded by `db/seed.ts`.
+   */
   static sample(): Ownership {
     return new Ownership(null);
   }
@@ -18,7 +20,9 @@ export class Ownership {
     return new Ownership(userId);
   }
 
-  /** Reads the nullable `user_id` column back into the distinction it encodes. */
+  /**
+   * Reads the nullable `user_id` column back into the distinction it encodes.
+   */
   static fromUserId(userId: string | null): Ownership {
     return userId === null ? Ownership.sample() : Ownership.of(userId);
   }
@@ -79,7 +83,9 @@ export class LibraryVisibility {
     return new LibraryVisibility(userId, showSampleData);
   }
 
-  /** The sample ids this user has already forked, read off their own rows. */
+  /**
+   * The sample ids this user has already forked, read off their own rows.
+   */
   forkedSampleIds(records: Iterable<ForkableRecord>): Set<string> {
     const ids = new Set<string>();
     for (const record of records) {
@@ -90,7 +96,9 @@ export class LibraryVisibility {
     return ids;
   }
 
-  /** The subset of `records` this user's list shows, in the order given. */
+  /**
+   * The subset of `records` this user's list shows, in the order given.
+   */
   selectFrom<T extends ForkableRecord>(records: readonly T[]): T[] {
     const forked = this.forkedSampleIds(records);
     return records.filter((record) => {

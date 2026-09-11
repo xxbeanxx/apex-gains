@@ -97,7 +97,9 @@ function CollapseToggle() {
   );
 }
 
-/** Desktop rail. Hidden below `md:`, where the bottom tab bar takes over. */
+/**
+ * Desktop rail. Hidden below `md:`, where the bottom tab bar takes over.
+ */
 function Sidebar({ items }: { items: NavItem[] }) {
   const groups = (['primary', 'training', 'account'] as const).map((group) => ({
     group,

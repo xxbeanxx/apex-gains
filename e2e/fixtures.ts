@@ -13,7 +13,9 @@ import { type Page, test as base, expect } from '@playwright/test';
  * name it with `uniqueName`, or it will collide with a parallel worker.
  */
 
-/** A signed-in athlete, unique to one test. */
+/**
+ * A signed-in athlete, unique to one test.
+ */
 export type Athlete = {
   email: string;
   name: string;
@@ -66,7 +68,9 @@ export async function signIn(
   return { email: details.email, name: details.name };
 }
 
-/** A fresh athlete, signed in - an administrator when `asAdministrator`. */
+/**
+ * A fresh athlete, signed in - an administrator when `asAdministrator`.
+ */
 export async function newAthlete(page: Page, options: { asAdministrator?: boolean } = {}): Promise<Athlete> {
   return signIn(page, {
     email: `${uniqueName('athlete')}@example.test`,

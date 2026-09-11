@@ -11,7 +11,9 @@ import { cn } from '~/lib/utils';
 import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';
 import { formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
 
-/** One day in a week rail. Shared by the upcoming plan and the past summary. */
+/**
+ * One day in a week rail. Shared by the upcoming plan and the past summary.
+ */
 function DayCell({
   date,
   isToday = false,
@@ -21,9 +23,13 @@ function DayCell({
 }: {
   date: string;
   isToday?: boolean;
-  /** Full sentence for screen readers, e.g. "Tuesday 2 September, Push Day". */
+  /**
+   * Full sentence for screen readers, e.g. "Tuesday 2 September, Push Day".
+   */
   label: string;
-  /** When set, the whole cell links here (e.g. to log that day). */
+  /**
+   * When set, the whole cell links here (e.g. to log that day).
+   */
   to?: string;
   children: ReactNode;
 }) {

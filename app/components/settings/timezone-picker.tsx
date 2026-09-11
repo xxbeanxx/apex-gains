@@ -9,7 +9,9 @@ import { cn } from '~/lib/utils';
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
-/** e.g. "2:32 PM GMT-5". Formatters are cached per zone since they're safe to reuse across calls. */
+/**
+ * e.g. "2:32 PM GMT-5". Formatters are cached per zone since they're safe to reuse across calls.
+ */
 function timeIn(zone: string, at: Date): string {
   let formatter = formatters.get(zone);
   if (!formatter) {
@@ -28,7 +30,9 @@ function regionOf(zone: string): string {
   return zone.includes('/') ? zone.slice(0, zone.indexOf('/')) : zone;
 }
 
-/** "America/Argentina/Buenos_Aires" -> "Argentina/Buenos Aires"; "UTC" -> "UTC". */
+/**
+ * "America/Argentina/Buenos_Aires" -> "Argentina/Buenos Aires"; "UTC" -> "UTC".
+ */
 function labelFor(zone: string): string {
   const region = regionOf(zone);
   return zone === region ? zone : zone.slice(region.length + 1).replaceAll('_', ' ');

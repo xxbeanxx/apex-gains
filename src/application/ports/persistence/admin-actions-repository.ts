@@ -11,6 +11,8 @@ import type { AdminAction } from '~domain/admin/admin-action';
 // oversight at this instance's scale.
 export interface AdminActionsRepository {
   record(action: AdminAction): Promise<void>;
-  /** Newest first. */
+  /**
+   * Newest first.
+   */
   listRecent(limit: number): Promise<AdminAction[]>;
 }

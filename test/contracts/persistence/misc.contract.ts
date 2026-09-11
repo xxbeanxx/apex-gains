@@ -143,7 +143,9 @@ export function describeEquipmentContract(subject: ContractSubject): void {
       expect(names).toEqual(['Barbell', 'Treadmill']);
     });
 
-    /** Equipment has no fork-on-write rule, so hiding samples hides them all. */
+    /**
+     * Equipment has no fork-on-write rule, so hiding samples hides them all.
+     */
     it('lists only own equipment when sample data is hidden', async () => {
       await repositories.equipment.save(equipmentItem(ids.own, 'Treadmill'));
       await repositories.equipment.save(equipmentItem(ids.sample, 'Barbell', null));
@@ -294,7 +296,9 @@ export function describeBodyMeasurementsContract(subject: ContractSubject): void
       expect(listed[0]!.value.as('cm')).toBeCloseTo(85, 2);
     });
 
-    /** A different metric on the same day is a separate entry, not a collision. */
+    /**
+     * A different metric on the same day is a separate entry, not a collision.
+     */
     it('keeps different metrics on the same day as separate entries', async () => {
       await repositories.bodyMeasurements.save(measurement(ids.own, '2026-09-03', 'waist', 86));
       await repositories.bodyMeasurements.save(measurement(ids.child, '2026-09-03', 'chest', 102));

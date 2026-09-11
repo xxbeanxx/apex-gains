@@ -16,7 +16,9 @@ function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: stri
   return groups;
 }
 
-/** The most recent sets logged against an exercise, fetched from the same resource route the "Today" logging form's history popover uses. */
+/**
+ * The most recent sets logged against an exercise, fetched from the same resource route the "Today" logging form's history popover uses.
+ */
 function ExerciseHistoryDialog({
   exerciseId,
   exerciseName,

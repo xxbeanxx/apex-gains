@@ -11,11 +11,17 @@ export function WeeklyBarChart({
   ariaLabel,
 }: {
   points: WeeklyPointView[];
-  /** Names the series in the tooltip, e.g. "Sets" or "Tonnage". */
+  /**
+   * Names the series in the tooltip, e.g. "Sets" or "Tonnage".
+   */
   seriesLabel: string;
-  /** Formats a value with its unit, for the tooltip, e.g. "12 sets" or "4,250 lb". */
+  /**
+   * Formats a value with its unit, for the tooltip, e.g. "12 sets" or "4,250 lb".
+   */
   formatValue: (value: number) => string;
-  /** Short and unitless - the y axis ticks and the current week's direct label, e.g. "12" or "4,250". */
+  /**
+   * Short and unitless - the y axis ticks and the current week's direct label, e.g. "12" or "4,250".
+   */
   formatCompact: (value: number) => string;
   ariaLabel: string;
 }) {

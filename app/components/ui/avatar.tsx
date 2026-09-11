@@ -1,6 +1,8 @@
 import { cn } from '~/lib/utils';
 
-/** First letter of the display name, for the fallback when there is no picture. */
+/**
+ * First letter of the display name, for the fallback when there is no picture.
+ */
 function initial(name: string | null) {
   return name?.trim()?.charAt(0)?.toUpperCase() || '?';
 }

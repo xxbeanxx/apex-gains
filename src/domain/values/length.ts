@@ -22,12 +22,16 @@ export class Length {
     return new Length(value * CM_PER_IN);
   }
 
-  /** Reads a number the athlete typed, in whichever unit they have selected. */
+  /**
+   * Reads a number the athlete typed, in whichever unit they have selected.
+   */
   static of(unit: LengthUnit, value: number): Length {
     return unit === 'cm' ? Length.cm(value) : Length.in(value);
   }
 
-  /** Parses a `numeric` column. Null, empty and unparseable all read as absent. */
+  /**
+   * Parses a `numeric` column. Null, empty and unparseable all read as absent.
+   */
   static fromStorage(value: string | null | undefined): Length | null {
     if (value == null || value === '') return null;
     const parsed = Number(value);
@@ -46,12 +50,16 @@ export class Length {
     return unit === 'cm' ? this.inCentimetres : this.inInches;
   }
 
-  /** `numeric(5, 2)` - two decimal places is the column's full precision. */
+  /**
+   * `numeric(5, 2)` - two decimal places is the column's full precision.
+   */
   toStorage(): string {
     return this.centimetres.toFixed(2);
   }
 
-  /** "86 cm", "34 in" - what the UI shows. */
+  /**
+   * "86 cm", "34 in" - what the UI shows.
+   */
   format(unit: LengthUnit): string {
     return `${formatNumber(this.as(unit))} ${unit}`;
   }

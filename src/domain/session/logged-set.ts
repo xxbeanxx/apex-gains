@@ -122,7 +122,9 @@ export class LoggedSet {
     return this.weight.times(this.reps);
   }
 
-  /** "135 lb x 8 @ RPE 8", "30 min, 8.5 km/h" - one set as a line of text. */
+  /**
+   * "135 lb x 8 @ RPE 8", "30 min, 8.5 km/h" - one set as a line of text.
+   */
   format(preferences: AthletePreferences): string {
     const parts: string[] = [];
 

@@ -31,7 +31,9 @@ import { type RepositorySet, describeRepositoryContract } from './index';
  */
 const url = process.env.TEST_DATABASE_URL;
 
-/** Every table, children first, so a truncate needs no cascade reasoning. */
+/**
+ * Every table, children first, so a truncate needs no cascade reasoning.
+ */
 const TABLES = [
   'admin_actions',
   'session_sets',

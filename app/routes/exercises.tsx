@@ -58,7 +58,9 @@ export async function loader({ context }: Route.LoaderArgs) {
   return await libraryService.library(athlete);
 }
 
-/** Maps the wire-level `'none'` sentinel to the domain's actual "no restriction" value. */
+/**
+ * Maps the wire-level `'none'` sentinel to the domain's actual "no restriction" value.
+ */
 function toCardioKind(value: (typeof cardioKindOptionValues)[number]): CardioKind | null {
   return value === NO_CARDIO_KIND ? null : value;
 }

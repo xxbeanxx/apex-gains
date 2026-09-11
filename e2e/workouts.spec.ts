@@ -3,13 +3,17 @@ import type { Page } from '@playwright/test';
 import { expect, test, uniqueName } from './fixtures';
 import { createExercise, createWorkout, orderedRows, selectOption, submitForm } from './helpers';
 
-/** Adds an exercise to the open workout builder by clicking it in the palette. */
+/**
+ * Adds an exercise to the open workout builder by clicking it in the palette.
+ */
 async function addExercise(page: Page, exercise: string): Promise<void> {
   await page.getByRole('button', { name: exercise, exact: true }).click();
   await expect(orderedRows(page).filter({ hasText: exercise })).toBeVisible();
 }
 
-/** Opens a canvas row's "Edit target" disclosure and saves the given fields. */
+/**
+ * Opens a canvas row's "Edit target" disclosure and saves the given fields.
+ */
 async function setTarget(
   page: Page,
   exercise: string,
@@ -159,14 +163,18 @@ test('duplicates a workout from the list row menu, and numbers a second copy', a
   await expect(page.getByRole('heading', { name: `${name} (copy 2)`, exact: true })).toBeVisible();
 });
 
-/** YYYY-MM-DD for `daysAgo` days before today, in UTC - matches a fresh athlete's default timezone. */
+/**
+ * YYYY-MM-DD for `daysAgo` days before today, in UTC - matches a fresh athlete's default timezone.
+ */
 function dateDaysAgo(daysAgo: number): string {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - daysAgo);
   return date.toISOString().slice(0, 10);
 }
 
-/** Logs three identical sets for `exercise` on the free-form /today form, on the given date. */
+/**
+ * Logs three identical sets for `exercise` on the free-form /today form, on the given date.
+ */
 async function logThreeSets(page: Page, date: string, exercise: string, reps: string, weight: string): Promise<void> {
   await page.goto(`/today?date=${date}`);
   await selectOption(page.getByLabel('Exercise'), exercise);

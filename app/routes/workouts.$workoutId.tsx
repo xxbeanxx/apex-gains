@@ -184,7 +184,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const workoutId = params.workoutId;
   const workoutService = context.get(workoutServiceContext);
 
-  /** updateTarget and applySuggestion post the identical shape - a manual edit and applying a suggestion are the same write. */
+  /**
+   * updateTarget and applySuggestion post the identical shape - a manual edit and applying a suggestion are the same write.
+   */
   const saveTarget = async (input: UpdateTargetDto) =>
     settle(
       await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, {
@@ -262,7 +264,9 @@ function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; inde
   );
 }
 
-/** The `⋯` menu's one action: removing the entry. A plain navigation submit, same request cycle a literal form's own submit would make. */
+/**
+ * The `⋯` menu's one action: removing the entry. A plain navigation submit, same request cycle a literal form's own submit would make.
+ */
 function RowMenu({ entry }: { entry: WorkoutExerciseView }) {
   const submit = useSubmit();
 

@@ -103,7 +103,9 @@ export class Exercise {
     return this.details.exerciseType === 'cardio';
   }
 
-  /** A personal copy of a sample can be discarded to fall back on the original. */
+  /**
+   * A personal copy of a sample can be discarded to fall back on the original.
+   */
   get canRevert(): boolean {
     return !this.ownership.isSample && this.forkedFrom !== null;
   }

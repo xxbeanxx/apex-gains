@@ -15,11 +15,15 @@ export type SuggestionKind = 'increase-weight' | 'increase-reps' | 'increase-dur
 export type Suggestion = {
   readonly kind: SuggestionKind;
   readonly target: SetTarget;
-  /** Unit-free - "you hit 3 x 10 twice" - the caller formats the target itself. */
+  /**
+   * Unit-free - "you hit 3 x 10 twice" - the caller formats the target itself.
+   */
   readonly because: string;
 };
 
-/** One exercise's sets on one day it was trained. */
+/**
+ * One exercise's sets on one day it was trained.
+ */
 export type RecentSession = {
   readonly date: DateOnly;
   readonly sets: readonly LoggedSet[];
@@ -79,7 +83,9 @@ function hitsStrengthTarget(logged: readonly LoggedSet[], targetSets: number, ta
   return qualifying.length >= targetSets;
 }
 
-/** At least `targetSets` sets were logged at (or above) the target weight, regardless of reps. */
+/**
+ * At least `targetSets` sets were logged at (or above) the target weight, regardless of reps.
+ */
 function metSetCountAtWeight(logged: readonly LoggedSet[], targetSets: number, weight: Weight): boolean {
   const atWeight = logged.filter((set) => set.weight !== null && set.weight.inPounds >= weight.inPounds);
   return atWeight.length >= targetSets;

@@ -103,7 +103,9 @@ class ReanchorPlanDto {
   readonly anchorDate!: string;
 }
 
-/** A plan slot names either a workout by id, or the sentinel `'rest'` for a rest day. */
+/**
+ * A plan slot names either a workout by id, or the sentinel `'rest'` for a rest day.
+ */
 @ValidatorConstraint({ name: 'isWorkoutSlotId' })
 class IsWorkoutSlotIdConstraint implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
@@ -154,7 +156,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const planId = params.planId;
   const planService = context.get(planServiceContext);
 
-  /** Activating and deactivating differ only in which method they call. */
+  /**
+   * Activating and deactivating differ only in which method they call.
+   */
   const setActive = async (active: boolean) => {
     const outcome = active ? await planService.activate(athlete, planId) : await planService.deactivate(athlete, planId);
 
@@ -243,7 +247,9 @@ function MoveButtons({ slot, index, count }: { slot: PlanSlotView; index: number
   );
 }
 
-/** The `⋯` menu's one action: removing the day. A plain navigation submit, same request cycle a literal form's own submit would make. */
+/**
+ * The `⋯` menu's one action: removing the day. A plain navigation submit, same request cycle a literal form's own submit would make.
+ */
 function RowMenu({ slot, index }: { slot: PlanSlotView; index: number }) {
   const submit = useSubmit();
 

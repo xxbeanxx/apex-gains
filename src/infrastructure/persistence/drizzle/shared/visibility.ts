@@ -51,7 +51,9 @@ export function ownOrSampleWhere(columns: OwnedColumns, userId: string): SQL {
   return or(eq(columns.userId, userId), isNull(columns.userId))!;
 }
 
-/** One row, if this user may reach it at all. */
+/**
+ * One row, if this user may reach it at all.
+ */
 export function visibleRowWhere(columns: OwnedColumns, userId: string, rowId: string): SQL {
   return and(eq(columns.id, rowId), ownOrSampleWhere(columns, userId))!;
 }

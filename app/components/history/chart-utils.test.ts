@@ -49,7 +49,9 @@ describe('paddedAxis', () => {
     expect(ticks.length).toBeLessThanOrEqual(8);
   });
 
-  /** No measurement here goes negative, and an axis that dips below zero invites reading a bar as shorter than it is. */
+  /**
+   * No measurement here goes negative, and an axis that dips below zero invites reading a bar as shorter than it is.
+   */
   it('never dips below zero', () => {
     expect(paddedAxis(1, 3).domain[0]).toBeGreaterThanOrEqual(0);
     expect(paddedAxis(0, 5).domain[0]).toBe(0);

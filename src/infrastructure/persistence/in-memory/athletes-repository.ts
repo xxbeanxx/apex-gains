@@ -58,7 +58,9 @@ export class InMemoryAthletesRepository implements AthletesRepository {
     this.byId.set(snapshot.id, snapshot);
   }
 
-  /** Drops the athlete, everything the registered stores hold for them, and nulls out anything that only references them. */
+  /**
+   * Drops the athlete, everything the registered stores hold for them, and nulls out anything that only references them.
+   */
   async remove(athlete: Athlete): Promise<void> {
     this.byId.delete(athlete.id);
     for (const store of this.owned) store.removeAllFor(athlete.id);

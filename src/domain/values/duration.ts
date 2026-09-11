@@ -34,7 +34,9 @@ export class Duration {
     return this.totalSeconds;
   }
 
-  /** "30 min" - minutes are the only granularity the UI ever offered. */
+  /**
+   * "30 min" - minutes are the only granularity the UI ever offered.
+   */
   format(): string {
     return `${formatNumber(this.inMinutes)} min`;
   }

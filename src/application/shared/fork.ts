@@ -17,7 +17,9 @@ export type Forkable<A> = {
   editableCopyFor(userId: string, deps: DomainDeps): EditableCopy<A>;
 };
 
-/** The slice of a repository port fork-on-write needs. */
+/**
+ * The slice of a repository port fork-on-write needs.
+ */
 export type ForkableRepository<A> = {
   findVisible(userId: string, id: string): Promise<A | null>;
   findForkOf(userId: string, sampleId: string): Promise<A | null>;
@@ -92,7 +94,9 @@ export class ForkableEditor<A extends Forkable<A>> {
     private readonly childrenOf: (aggregate: A) => readonly Positioned[],
   ) {}
 
-  /** Load, resolve the copy, apply, save, report the fork. */
+  /**
+   * Load, resolve the copy, apply, save, report the fork.
+   */
   async mutate(
     userId: string,
     id: string,

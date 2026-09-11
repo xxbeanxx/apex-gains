@@ -25,9 +25,13 @@ export type ExerciseView = {
   description: string | null;
   isSample: boolean;
   canRevert: boolean;
-  /** Resolved names, because the library page searches and filters by them. */
+  /**
+   * Resolved names, because the library page searches and filters by them.
+   */
   equipment: EquipmentView[];
-  /** Which cardio measurements a target or log form should offer - see `cardioFieldsFor`. */
+  /**
+   * Which cardio measurements a target or log form should offer - see `cardioFieldsFor`.
+   */
   cardioFields: CardioFields;
 };
 
@@ -82,7 +86,9 @@ export class ExerciseLibraryService {
     this.editor = new ForkableEditor(this.exercises, this.unitOfWork, this.deps, () => []);
   }
 
-  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  /**
+   * Load, fork if needed, apply, save - see `shared/fork.server.ts`.
+   */
   private readonly editor: ForkableEditor<Exercise>;
 
   async library(athlete: Athlete): Promise<LibraryView> {
@@ -189,7 +195,9 @@ export class ExerciseLibraryService {
     });
   }
 
-  /** Silently ignores equipment the athlete doesn't own, samples included. */
+  /**
+   * Silently ignores equipment the athlete doesn't own, samples included.
+   */
   async removeEquipment(athlete: Athlete, equipmentId: string): Promise<void> {
     await this.unitOfWork.run(async () => {
       const item = await this.equipment.findById(equipmentId);
@@ -198,7 +206,9 @@ export class ExerciseLibraryService {
     });
   }
 
-  /** Silently ignores equipment the athlete doesn't own, samples included - see removeEquipment. */
+  /**
+   * Silently ignores equipment the athlete doesn't own, samples included - see removeEquipment.
+   */
   async setEquipmentCardioKind(athlete: Athlete, equipmentId: string, cardioKind: CardioKind | null): Promise<void> {
     await this.unitOfWork.run(async () => {
       const item = await this.equipment.findById(equipmentId);

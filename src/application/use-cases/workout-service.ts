@@ -27,7 +27,9 @@ export type WorkoutSummary = {
   id: string;
   name: string;
   isSample: boolean;
-  /** A personal copy of a sample - shown as "Customized" rather than "Sample". */
+  /**
+   * A personal copy of a sample - shown as "Customized" rather than "Sample".
+   */
   isCustomized: boolean;
   exerciseCount: number;
 };
@@ -38,7 +40,9 @@ export type WorkoutExerciseView = {
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
-  /** Already formatted in the athlete's units; null when nothing is targeted. */
+  /**
+   * Already formatted in the athlete's units; null when nothing is targeted.
+   */
   targetSummary: string | null;
   /**
    * The same target, broken into chips ("3 sets", "8 reps", "135 lb"); a
@@ -96,7 +100,9 @@ export type SuggestionView = {
  */
 const RECENT_SET_FETCH_LIMIT = 20;
 
-/** How many of an exercise's most recent sessions `suggestNextTarget` needs. */
+/**
+ * How many of an exercise's most recent sessions `suggestNextTarget` needs.
+ */
 const SESSIONS_NEEDED = 2;
 
 /**
@@ -118,7 +124,9 @@ function toSummary(workout: Workout): WorkoutSummary {
   };
 }
 
-/** Use cases for building the reusable workouts a plan schedules. */
+/**
+ * Use cases for building the reusable workouts a plan schedules.
+ */
 export class WorkoutService {
   constructor(
     private readonly workouts: WorkoutsRepository,
@@ -131,7 +139,9 @@ export class WorkoutService {
     this.editor = new ForkableLibrary(this.workouts, this.unitOfWork, this.deps, (workout) => workout.exercises);
   }
 
-  /** Load, fork if needed, apply, save - see `shared/fork.server.ts`. */
+  /**
+   * Load, fork if needed, apply, save - see `shared/fork.server.ts`.
+   */
   private readonly editor: ForkableLibrary<Workout>;
 
   async list(athlete: Athlete): Promise<WorkoutSummary[]> {
@@ -139,7 +149,9 @@ export class WorkoutService {
     return workouts.map(toSummary);
   }
 
-  /** Sorted by name - what the plan editor's workout picker offers. */
+  /**
+   * Sorted by name - what the plan editor's workout picker offers.
+   */
   async listForPicker(athlete: Athlete): Promise<WorkoutSummary[]> {
     return (await this.list(athlete)).sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -300,7 +312,9 @@ export class WorkoutService {
     });
   }
 
-  /** Replaces one entry's target in place - editing a sample forks it first, same as every other mutation here. */
+  /**
+   * Replaces one entry's target in place - editing a sample forks it first, same as every other mutation here.
+   */
   async updateExerciseTarget(
     athlete: Athlete,
     workoutId: string,
@@ -340,7 +354,9 @@ export class WorkoutService {
     return this.editor.remove(athlete.id, workoutId);
   }
 
-  /** See `ForkableLibrary.revert` - the caller redirects to the original. */
+  /**
+   * See `ForkableLibrary.revert` - the caller redirects to the original.
+   */
   async revert(
     athlete: Athlete,
     workoutId: string,
@@ -348,7 +364,9 @@ export class WorkoutService {
     return this.editor.revert(athlete.id, workoutId);
   }
 
-  /** Where the athlete's chosen units are converted to canonical storage. */
+  /**
+   * Where the athlete's chosen units are converted to canonical storage.
+   */
   private toTarget(athlete: Athlete, input: TargetInput): SetTarget {
     const { weightUnit, distanceUnit } = athlete.preferences;
     return SetTarget.of({

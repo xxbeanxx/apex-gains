@@ -68,7 +68,9 @@ export async function createExercise(
   await expect(page.getByRole('button', { name, exact: false })).toBeVisible();
 }
 
-/** Cardio kind decides which fields the log form offers for this equipment. */
+/**
+ * Cardio kind decides which fields the log form offers for this equipment.
+ */
 export type CardioKind = 'Speed & resistance' | 'Speed only' | 'Resistance only';
 
 export async function addEquipment(page: Page, name: string, cardioKind: CardioKind = 'Speed & resistance'): Promise<void> {
@@ -94,7 +96,9 @@ export async function openEquipmentDialog(page: Page): Promise<void> {
   await expect(equipmentDialog(page)).toBeVisible();
 }
 
-/** Opens an exercise's editor from its row in the library list. */
+/**
+ * Opens an exercise's editor from its row in the library list.
+ */
 export function exerciseDialog(page: Page, name: string): Locator {
   return page.getByRole('dialog').filter({ has: page.getByRole('heading', { name, exact: true }) });
 }
@@ -108,7 +112,9 @@ export async function openExercise(page: Page, name: string): Promise<Locator> {
   return dialog;
 }
 
-/** Ticks an equipment checkbox inside an open exercise editor. */
+/**
+ * Ticks an equipment checkbox inside an open exercise editor.
+ */
 export async function linkEquipment(page: Page, exerciseName: string, equipmentName: string): Promise<void> {
   await page.goto('/exercises');
   const dialog = await openExercise(page, exerciseName);
@@ -123,7 +129,9 @@ export async function closeDialog(page: Page): Promise<void> {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
-/** Creates a workout and lands on its detail page, returning its id. */
+/**
+ * Creates a workout and lands on its detail page, returning its id.
+ */
 export async function createWorkout(page: Page, name: string): Promise<string> {
   await page.goto('/workouts');
   // Two triggers carry this label once the list isn't empty - the header
@@ -136,7 +144,9 @@ export async function createWorkout(page: Page, name: string): Promise<string> {
   return page.url().split('/').pop()!;
 }
 
-/** Creates a plan and lands on its detail page, returning its id. */
+/**
+ * Creates a plan and lands on its detail page, returning its id.
+ */
 export async function createPlan(page: Page, name: string): Promise<string> {
   await page.goto('/plans');
   // Two triggers carry this label once the list isn't empty - the header
@@ -186,7 +196,9 @@ export async function submitForm(control: Locator): Promise<void> {
   ]);
 }
 
-/** Signs out through the top bar's account menu, present at every viewport. */
+/**
+ * Signs out through the top bar's account menu, present at every viewport.
+ */
 export async function signOut(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Account menu' }).click();
   await page.getByRole('menuitem', { name: 'Sign out' }).click();

@@ -12,20 +12,32 @@
  * wiring), and the adapter asks them rather than guessing.
  */
 
-/** Implemented by a store holding rows with an `on delete restrict` FK to an exercise. */
+/**
+ * Implemented by a store holding rows with an `on delete restrict` FK to an exercise.
+ */
 export interface ExerciseReferences {
-  /** Whether anything in this store still points at the exercise. */
+  /**
+   * Whether anything in this store still points at the exercise.
+   */
   referencesExercise(exerciseId: string): boolean;
 }
 
-/** Implemented by a store whose rows hang off `users` with `on delete cascade`. */
+/**
+ * Implemented by a store whose rows hang off `users` with `on delete cascade`.
+ */
 export interface AthleteOwned {
-  /** Drops everything this store holds for the athlete. */
+  /**
+   * Drops everything this store holds for the athlete.
+   */
   removeAllFor(userId: string): void;
 }
 
-/** Implemented by a store whose rows reference `users` with `on delete set null`. */
+/**
+ * Implemented by a store whose rows reference `users` with `on delete set null`.
+ */
 export interface AthleteReferenced {
-  /** Nulls out this store's references to the athlete; the rows themselves stay. */
+  /**
+   * Nulls out this store's references to the athlete; the rows themselves stay.
+   */
   clearAthlete(userId: string): void;
 }

@@ -13,7 +13,9 @@ import { type ContractSubject, type RepositorySet, exercise, ids, plan, seedAthl
  */
 type Library = {
   readonly label: string;
-  /** A row owned by `userId`, or a sample when `userId` is null. */
+  /**
+   * A row owned by `userId`, or a sample when `userId` is null.
+   */
   make(id: string, userId: string | null, forkedFromId?: string | null): unknown;
   save(repositories: RepositorySet, aggregate: unknown): Promise<void>;
   listFor(repositories: RepositorySet, userId: string, showSampleData: boolean): Promise<{ id: string }[]>;

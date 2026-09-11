@@ -11,7 +11,9 @@ import { createExercise, createPlan, createWorkout, orderedRows, signOut, submit
  * deliberately not scoped to a session, which is what makes that work.
  */
 
-/** Builds a plan of one workout day and one rest day, and returns its share link. */
+/**
+ * Builds a plan of one workout day and one rest day, and returns its share link.
+ */
 async function shareAPlan(page: Page, names: { exercise: string; workout: string; plan: string }): Promise<string> {
   await createExercise(page, { name: names.exercise, muscleGroup: 'chest' });
 

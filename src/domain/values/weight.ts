@@ -25,12 +25,16 @@ export class Weight {
     return new Weight(value / KG_PER_LB);
   }
 
-  /** Reads a number the athlete typed, in whichever unit they have selected. */
+  /**
+   * Reads a number the athlete typed, in whichever unit they have selected.
+   */
   static in(unit: WeightUnit, value: number): Weight {
     return unit === 'lb' ? Weight.lb(value) : Weight.kg(value);
   }
 
-  /** Parses a `numeric` column. Null, empty and unparseable all read as absent. */
+  /**
+   * Parses a `numeric` column. Null, empty and unparseable all read as absent.
+   */
   static fromStorage(value: string | null | undefined): Weight | null {
     if (value == null || value === '') return null;
     const parsed = Number(value);
@@ -49,12 +53,16 @@ export class Weight {
     return unit === 'lb' ? this.inPounds : this.inKilograms;
   }
 
-  /** `numeric(6, 2)` - two decimal places is the column's full precision. */
+  /**
+   * `numeric(6, 2)` - two decimal places is the column's full precision.
+   */
   toStorage(): string {
     return this.pounds.toFixed(2);
   }
 
-  /** "135 lb", "61.2 kg" - what the UI shows. */
+  /**
+   * "135 lb", "61.2 kg" - what the UI shows.
+   */
   format(unit: WeightUnit): string {
     return `${formatNumber(this.as(unit))} ${unit}`;
   }

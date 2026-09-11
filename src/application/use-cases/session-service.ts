@@ -15,7 +15,9 @@ import { Rpe } from '~domain/values/rpe';
 import { Speed } from '~domain/values/speed';
 import { Weight } from '~domain/values/weight';
 
-/** A set as the athlete entered it: their weight unit, their speed unit, minutes. */
+/**
+ * A set as the athlete entered it: their weight unit, their speed unit, minutes.
+ */
 export type SetInput = {
   reps?: number | null;
   weight?: number | null;
@@ -23,7 +25,9 @@ export type SetInput = {
   speed?: number | null;
   resistance?: number | null;
   notes?: string | null;
-  /** 1 to 10, in half-point steps. */
+  /**
+   * 1 to 10, in half-point steps.
+   */
   rpe?: number | null;
 };
 
@@ -32,15 +36,21 @@ export type LoggedSetView = SetInput & {
   exerciseId: string;
   exerciseName: string;
   setNumber: number;
-  /** Already formatted in the athlete's units, RPE included. */
+  /**
+   * Already formatted in the athlete's units, RPE included.
+   */
   summary: string;
   notes: string | null;
 };
 
 export type RecentSetView = {
-  /** `YYYY-MM-DD` the set was logged on. */
+  /**
+   * `YYYY-MM-DD` the set was logged on.
+   */
   date: string;
-  /** Already formatted in the athlete's units. */
+  /**
+   * Already formatted in the athlete's units.
+   */
   summary: string;
 };
 
@@ -51,13 +61,19 @@ export type RecentSetView = {
  * previous day, so they stay unset here even though `SetInput` allows them.
  */
 export type LastSetView = SetInput & {
-  /** `YYYY-MM-DD` the set was logged on. */
+  /**
+   * `YYYY-MM-DD` the set was logged on.
+   */
   date: string;
-  /** Already formatted in the athlete's units. */
+  /**
+   * Already formatted in the athlete's units.
+   */
   summary: string;
 };
 
-/** A logged set's measurements, converted into the athlete's own units - the shape a form field's `defaultValue` wants. */
+/**
+ * A logged set's measurements, converted into the athlete's own units - the shape a form field's `defaultValue` wants.
+ */
 function toSetInput(set: LoggedSet, preferences: AthletePreferences): SetInput {
   return {
     reps: set.reps,

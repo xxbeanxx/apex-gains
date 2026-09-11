@@ -1,7 +1,9 @@
 import { expect, test, uniqueName } from './fixtures';
 import { createExercise, selectOption } from './helpers';
 
-/** The dated session cards, as opposed to the Trends charts above them. */
+/**
+ * The dated session cards, as opposed to the Trends charts above them.
+ */
 function timeline(page: import('@playwright/test').Page) {
   return page.getByRole('region');
 }

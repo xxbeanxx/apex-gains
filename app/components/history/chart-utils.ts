@@ -35,7 +35,9 @@ export function paddedAxis(dataMin: number, dataMax: number, targetTicks = 4): {
   return { domain: [min, max], ticks };
 }
 
-/** A "nice" gridline step - 1, 2 or 5 times a power of ten. */
+/**
+ * A "nice" gridline step - 1, 2 or 5 times a power of ten.
+ */
 function niceStep(span: number, targetTicks: number): number {
   if (span <= 0) return 1;
   const rough = span / targetTicks;

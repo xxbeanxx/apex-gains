@@ -14,7 +14,9 @@ export const LENGTH_UNITS = ['cm', 'in'] as const;
 
 export type WeightUnit = (typeof WEIGHT_UNITS)[number];
 export type DistanceUnit = (typeof DISTANCE_UNITS)[number];
-/** Body measurements (waist, chest, ...) - not `DistanceUnit`, which is km/mi for treadmill speed and nonsense for a waist. */
+/**
+ * Body measurements (waist, chest, ...) - not `DistanceUnit`, which is km/mi for treadmill speed and nonsense for a waist.
+ */
 export type LengthUnit = (typeof LENGTH_UNITS)[number];
 
 /**

@@ -12,7 +12,9 @@
  * function when nothing was forked.
  */
 export type EditableCopy<A> = {
-  /** The aggregate to mutate: the original when already owned, else the fork. */
+  /**
+   * The aggregate to mutate: the original when already owned, else the fork.
+   */
   readonly editable: A;
   /**
    * The new aggregate's id when a fork happened, else null. Routes redirect

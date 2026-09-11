@@ -1,6 +1,8 @@
 import type { NewAthlete } from '~domain/athlete/athlete';
 
-/** What starting a login hands back: where to send the browser, and what the state cookie must carry through the round trip. */
+/**
+ * What starting a login hands back: where to send the browser, and what the state cookie must carry through the round trip.
+ */
 export type BeginGoogleLogin = {
   readonly authorizationUrl: URL;
   readonly codeVerifier: string;
@@ -8,7 +10,9 @@ export type BeginGoogleLogin = {
   readonly state: string;
 };
 
-/** The callback request's URL plus the state cookie's contents, matched back up. */
+/**
+ * The callback request's URL plus the state cookie's contents, matched back up.
+ */
 export type CompleteGoogleLoginParams = {
   readonly currentUrl: URL;
   readonly redirectUri: string;

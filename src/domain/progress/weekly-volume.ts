@@ -52,12 +52,16 @@ function weekly<T>(
   });
 }
 
-/** Sets logged per week - the simplest "am I still showing up" measure. */
+/**
+ * Sets logged per week - the simplest "am I still showing up" measure.
+ */
 export function weeklySetCount(history: TrainingHistory, weeks: number, today: DateOnly): WeeklyPoint<number>[] {
   return weekly(history, weeks, today, 0, (running, session) => running + session.setCount);
 }
 
-/** Weight moved per week. Sets without both a weight and a rep count add nothing. */
+/**
+ * Weight moved per week. Sets without both a weight and a rep count add nothing.
+ */
 export function weeklyTonnage(history: TrainingHistory, weeks: number, today: DateOnly): WeeklyPoint<Weight>[] {
   return weekly(history, weeks, today, Weight.lb(0), (running, session) => running.plus(session.tonnage));
 }

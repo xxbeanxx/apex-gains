@@ -125,7 +125,9 @@ export class Workout {
     return this.entries.size;
   }
 
-  /** Samples are shared library data - a user removes them from view instead. */
+  /**
+   * Samples are shared library data - a user removes them from view instead.
+   */
   get isDeletable(): boolean {
     return !this.ownership.isSample;
   }
@@ -175,14 +177,18 @@ export class Workout {
     return true;
   }
 
-  /** False when the entry isn't there - a stale form, not an error. */
+  /**
+   * False when the entry isn't there - a stale form, not an error.
+   */
   removeExercise(entryId: string, now: Date): boolean {
     const removed = this.entries.remove(entryId);
     if (removed) this.touch(now);
     return removed;
   }
 
-  /** False at either end of the list, or for an unknown entry. */
+  /**
+   * False at either end of the list, or for an unknown entry.
+   */
   moveExercise(entryId: string, direction: MoveDirection, now: Date): boolean {
     const moved = this.entries.move(entryId, direction);
     if (moved) this.touch(now);

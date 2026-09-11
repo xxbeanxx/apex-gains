@@ -29,7 +29,9 @@ export class TrainingHistory {
     return this.exercises.get(exerciseId);
   }
 
-  /** Every set in the span, paired with the session it belongs to. */
+  /**
+   * Every set in the span, paired with the session it belongs to.
+   */
   *entries(): Generator<{ session: Session; set: LoggedSet }> {
     for (const session of this.sessions) {
       for (const set of session.sets) {

@@ -11,7 +11,9 @@ function storageKey(exerciseId: string): string {
   return `rest-timer:${exerciseId}`;
 }
 
-/** `sessionStorage` can throw in private-browsing contexts; a lost timer is not worth failing the page over. */
+/**
+ * `sessionStorage` can throw in private-browsing contexts; a lost timer is not worth failing the page over.
+ */
 function readDeadline(key: string): number | null {
   try {
     const stored = sessionStorage.getItem(key);

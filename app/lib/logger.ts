@@ -5,7 +5,9 @@ import type { LoggerService } from '@nestjs/common';
 import { userContext } from '~/auth/user-context';
 import { nestLoggerContext } from '~/router/load-context';
 
-/** The Nest logger context label every request-lifecycle line is filed under. */
+/**
+ * The Nest logger context label every request-lifecycle line is filed under.
+ */
 const REQUEST = 'Request';
 
 /**
@@ -18,7 +20,9 @@ export function requestLogger(context: Readonly<RouterContextProvider>): LoggerS
   return context.get(nestLoggerContext);
 }
 
-/** "GET /today 200 in 12ms", plus the athlete once one is known. */
+/**
+ * "GET /today 200 in 12ms", plus the athlete once one is known.
+ */
 function describe(method: string, path: string, outcome: string, startedAt: number, userId: string | undefined): string {
   const durationMs = Math.round(performance.now() - startedAt);
   const who = userId ? ` for user ${userId}` : '';

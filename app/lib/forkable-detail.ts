@@ -17,7 +17,9 @@ import type { IntentResponse } from '~/lib/intent.server';
  * and adding an exercise to a workout have nothing in common.
  */
 export type ForkableDetail = {
-  /** A row the athlete cannot see is a 404, in a loader or mid-action. */
+  /**
+   * A row the athlete cannot see is a 404, in a loader or mid-action.
+   */
   notFound(): never;
 
   /**
@@ -49,11 +51,17 @@ export type ForkableDetail = {
 };
 
 export function forkableDetail(page: {
-  /** Capitalised, as a message says it: "Plan not found". */
+  /**
+   * Capitalised, as a message says it: "Plan not found".
+   */
   noun: string;
-  /** Where a deletion lands. */
+  /**
+   * Where a deletion lands.
+   */
   indexPath: string;
-  /** Where one row lives, for following a fork or a revert. */
+  /**
+   * Where one row lives, for following a fork or a revert.
+   */
   pathFor: (id: string) => string;
 }): ForkableDetail {
   function notFound(): never {

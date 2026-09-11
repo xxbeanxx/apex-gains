@@ -20,14 +20,18 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 export class DateOnly {
   private constructor(readonly value: string) {}
 
-  /** Throws on anything that isn't a real `YYYY-MM-DD` day - use for trusted input. */
+  /**
+   * Throws on anything that isn't a real `YYYY-MM-DD` day - use for trusted input.
+   */
   static parse(value: string): DateOnly {
     const parsed = DateOnly.tryParse(value);
     if (!parsed) throw new Error(`Invalid date string: ${value}`);
     return parsed;
   }
 
-  /** Returns null instead of throwing - use for anything off a request. */
+  /**
+   * Returns null instead of throwing - use for anything off a request.
+   */
   static tryParse(value: string | null | undefined): DateOnly | null {
     if (!value || !ISO_DATE.test(value)) return null;
 
@@ -72,17 +76,23 @@ export class DateOnly {
     return this.plusDays(-days);
   }
 
-  /** Whole days from this day to `other`; negative if `other` is earlier. */
+  /**
+   * Whole days from this day to `other`; negative if `other` is earlier.
+   */
   daysUntil(other: DateOnly): number {
     return Math.round((other.epochMs - this.epochMs) / MS_PER_DAY);
   }
 
-  /** A `length`-long run of consecutive days starting here. */
+  /**
+   * A `length`-long run of consecutive days starting here.
+   */
   range(length: number): DateOnly[] {
     return Array.from({ length }, (_, i) => this.plusDays(i));
   }
 
-  /** The Monday on or before this day - the week bucket history charts group into. */
+  /**
+   * The Monday on or before this day - the week bucket history charts group into.
+   */
   startOfWeek(): DateOnly {
     const dayOfWeek = new Date(this.epochMs).getUTCDay(); // 0 Sun - 6 Sat
     return this.plusDays(dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
@@ -104,7 +114,9 @@ export class DateOnly {
     return !this.isBefore(start) && !this.isAfter(endInclusive);
   }
 
-  /** Clamps a date forward-dated past `latest` back onto it. */
+  /**
+   * Clamps a date forward-dated past `latest` back onto it.
+   */
   atMost(latest: DateOnly): DateOnly {
     return this.isAfter(latest) ? latest : this;
   }

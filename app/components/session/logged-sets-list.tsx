@@ -5,7 +5,9 @@ import { XIcon } from 'lucide-react';
 import type { Intent } from '~/lib/intent';
 import type { LoggedSetView } from '~application/use-cases/session-service';
 
-/** One set's own remove form, so its fetcher hides only this row while its own delete is in flight. */
+/**
+ * One set's own remove form, so its fetcher hides only this row while its own delete is in flight.
+ */
 function LoggedSetRow({
   set,
   index,

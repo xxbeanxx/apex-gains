@@ -20,13 +20,17 @@ import type { ExerciseType } from '~domain/exercise/exercise-type';
 export class ExerciseDirectory {
   private constructor(private readonly byId: ReadonlyMap<string, Exercise>) {}
 
-  /** One lookup for every id named, in any order and with duplicates. */
+  /**
+   * One lookup for every id named, in any order and with duplicates.
+   */
   static async of(exerciseIds: Iterable<string>, exercises: ExercisesRepository): Promise<ExerciseDirectory> {
     const found = await exercises.findManyByIds([...new Set(exerciseIds)]);
     return new ExerciseDirectory(new Map(found.map((exercise) => [exercise.id, exercise])));
   }
 
-  /** Everything it resolved - what a domain calculation over history takes. */
+  /**
+   * Everything it resolved - what a domain calculation over history takes.
+   */
   get exercises(): Exercise[] {
     return [...this.byId.values()];
   }
@@ -42,17 +46,23 @@ export class ExerciseDirectory {
     return this.byId.get(exerciseId)?.name ?? 'Unknown';
   }
 
-  /** Decides which measurements a form offers; strength is the safe default. */
+  /**
+   * Decides which measurements a form offers; strength is the safe default.
+   */
   typeOf(exerciseId: string): ExerciseType {
     return this.byId.get(exerciseId)?.exerciseType ?? 'strength';
   }
 
-  /** The equipment an exercise links, for a caller that resolves those too. */
+  /**
+   * The equipment an exercise links, for a caller that resolves those too.
+   */
   equipmentIdsOf(exerciseId: string): readonly string[] {
     return this.byId.get(exerciseId)?.equipmentIds ?? [];
   }
 
-  /** Every equipment id any resolved exercise links, deduplicated. */
+  /**
+   * Every equipment id any resolved exercise links, deduplicated.
+   */
   get allEquipmentIds(): string[] {
     const ids = new Set<string>();
     for (const exercise of this.byId.values()) {

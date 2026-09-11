@@ -10,7 +10,9 @@ function Card({
   ...props
 }: ComponentProps<'div'> & {
   size?: 'default' | 'sm';
-  /** Adds a hover lift + border warm-up. Only for cards that are clickable. */
+  /**
+   * Adds a hover lift + border warm-up. Only for cards that are clickable.
+   */
   interactive?: boolean;
 }) {
   return (

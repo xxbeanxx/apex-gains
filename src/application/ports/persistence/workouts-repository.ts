@@ -7,7 +7,9 @@ import type { Workout } from '~domain/workout/workout';
 // `save` persists the whole aggregate - the workout row and its exercise
 // entries - as one unit, so an adapter has to work out which entries were
 // added, changed or dropped (see shared/diff-children.ts).
-/** Just enough of a workout to label a plan slot or fill a picker. */
+/**
+ * Just enough of a workout to label a plan slot or fill a picker.
+ */
 export type WorkoutName = {
   readonly id: string;
   readonly name: string;

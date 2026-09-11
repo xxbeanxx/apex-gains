@@ -13,7 +13,9 @@ const STEP = CELL + GAP;
 // without the card's overflow-hidden clipping it.
 const MARGIN = { top: 56, right: 4, bottom: 4, left: 28 };
 
-/** 0 (nothing logged) through 4 (a big day), for the fill-opacity ramp below. */
+/**
+ * 0 (nothing logged) through 4 (a big day), for the fill-opacity ramp below.
+ */
 function levelForSetCount(setCount: number): number {
   if (setCount <= 0) return 0;
   if (setCount <= 2) return 1;
@@ -24,7 +26,9 @@ function levelForSetCount(setCount: number): number {
 const LEVEL_OPACITY = [0, 0.28, 0.52, 0.76, 1];
 const WEEKDAY_LABELS: Record<number, string> = { 0: 'Mon', 2: 'Wed', 4: 'Fri' };
 
-/** "2026-09-02" -> "Sep", for the month markers along the top. */
+/**
+ * "2026-09-02" -> "Sep", for the month markers along the top.
+ */
 function shortMonthLabel(dateStr: string): string {
   const [year, month] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'short' });

@@ -14,7 +14,9 @@ export type NavItem = {
   to: string;
   label: string;
   icon: LucideIcon;
-  /** Bottom-tab slot; items without one live under "More". */
+  /**
+   * Bottom-tab slot; items without one live under "More".
+   */
   tab?: 1 | 2 | 3 | 4;
   group: 'primary' | 'training' | 'account';
   adminOnly?: boolean;

@@ -19,7 +19,9 @@ import { formatNumber, speedUnitLabel } from '~domain/values/units';
 import type { DistanceUnit, WeightUnit } from '~domain/values/units';
 import { formatMonthDay } from '~shared/format';
 
-/** 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side. */
+/**
+ * 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side.
+ */
 const RPE_OPTIONS = Array.from({ length: 19 }, (_, i) => 1 + i * 0.5);
 
 /**
@@ -51,9 +53,13 @@ function LogSetForm({
   todayStr: string;
   weightUnit: WeightUnit;
   distanceUnit: DistanceUnit;
-  /** Every set already logged this page's date - source of "same day" prefill. */
+  /**
+   * Every set already logged this page's date - source of "same day" prefill.
+   */
   loggedSets: LoggedSetView[];
-  /** The previous session's set per exercise - source of the "Last time" hint and its fallback prefill. */
+  /**
+   * The previous session's set per exercise - source of the "Last time" hint and its fallback prefill.
+   */
   lastSets: Record<string, LastSetView>;
 }) {
   const fetcher = useFetcher();

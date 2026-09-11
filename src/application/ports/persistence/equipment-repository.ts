@@ -12,7 +12,9 @@ export interface EquipmentRepository {
    * needed to render and search that exercise.
    */
   findManyByIds(equipmentIds: readonly string[]): Promise<Equipment[]>;
-  /** Equipment names are globally unique, not per user - hence no userId here. */
+  /**
+   * Equipment names are globally unique, not per user - hence no userId here.
+   */
   findByName(name: string): Promise<Equipment | null>;
   save(equipment: Equipment): Promise<void>;
   delete(equipmentId: string): Promise<void>;

@@ -11,7 +11,9 @@ import { type Result, err, ok } from '~domain/shared/result';
 import type { DateOnly } from '~domain/values/date-only';
 import type { Workout } from '~domain/workout/workout';
 
-/** One day of the shared cycle, as the confirmation page lists it. */
+/**
+ * One day of the shared cycle, as the confirmation page lists it.
+ */
 export type SharedSlotView = {
   position: number;
   workoutName: string | null;
@@ -27,16 +29,26 @@ export type SharedSlotView = {
  */
 export type SharedPlanPreview = {
   name: string;
-  /** The athlete who shared it, for a recipient deciding whether to trust the link. */
+  /**
+   * The athlete who shared it, for a recipient deciding whether to trust the link.
+   */
   sharedBy: string | null;
-  /** Pre-fills the importer's anchor-date field; they can move it before confirming. */
+  /**
+   * Pre-fills the importer's anchor-date field; they can move it before confirming.
+   */
   anchorDate: string;
   slots: SharedSlotView[];
-  /** How many workouts the import would add to their library. */
+  /**
+   * How many workouts the import would add to their library.
+   */
   newWorkouts: number;
-  /** How many exercises it would add - the rest already have a counterpart. */
+  /**
+   * How many exercises it would add - the rest already have a counterpart.
+   */
   newExercises: number;
-  /** Their own plan, reached through their own link: offer the plan, not an import. */
+  /**
+   * Their own plan, reached through their own link: offer the plan, not an import.
+   */
   ownPlanId: string | null;
 };
 
@@ -86,7 +98,9 @@ export class PlanImportService {
     private readonly deps: DomainDeps,
   ) {}
 
-  /** What the link holds and what taking it would cost, or null for a dead token. */
+  /**
+   * What the link holds and what taking it would cost, or null for a dead token.
+   */
   async preview(athlete: Athlete, shareToken: string): Promise<SharedPlanPreview | null> {
     const shared = await this.plans.findByShareToken(shareToken);
     if (!shared) return null;
@@ -137,7 +151,9 @@ export class PlanImportService {
     });
   }
 
-  /** The workouts the shared plan's slots name, by id - they are not the importer's to list. */
+  /**
+   * The workouts the shared plan's slots name, by id - they are not the importer's to list.
+   */
   private async sourceWorkouts(shared: Plan): Promise<Map<string, Workout>> {
     const ids = shared.slots.map((slot) => slot.workoutId).filter((id): id is string => id !== null);
     const found = await this.workouts.findManyByIds([...new Set(ids)]);

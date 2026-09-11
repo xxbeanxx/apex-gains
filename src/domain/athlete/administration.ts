@@ -10,10 +10,14 @@ import { type Result, err, ok } from '~domain/shared/result';
  * service rather than a method.
  */
 
-/** Why an administrator's action on an account was refused. */
+/**
+ * Why an administrator's action on an account was refused.
+ */
 export type AdminRefusal = 'self';
 
-/** Why an athlete could not close their own account. */
+/**
+ * Why an athlete could not close their own account.
+ */
 export type CloseAccountRefusal = 'last-administrator';
 
 /**
@@ -28,7 +32,9 @@ function actingOnSelf(actor: Athlete, target: Athlete): boolean {
   return actor.id === target.id;
 }
 
-/** Grants or withdraws `target`'s administrator access on `actor`'s behalf. */
+/**
+ * Grants or withdraws `target`'s administrator access on `actor`'s behalf.
+ */
 export function changeAdminAccess(actor: Athlete, target: Athlete, isAdmin: boolean, now: Date): Result<void, AdminRefusal> {
   if (actingOnSelf(actor, target)) return err('self');
 

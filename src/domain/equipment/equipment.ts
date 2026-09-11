@@ -81,7 +81,9 @@ export class Equipment {
     this.currentCardioKind = cardioKind;
   }
 
-  /** Sample equipment is shared library data, so only a user's own is removable. */
+  /**
+   * Sample equipment is shared library data, so only a user's own is removable.
+   */
   isRemovableBy(userId: string): boolean {
     return this.ownership.isOwnedBy(userId);
   }

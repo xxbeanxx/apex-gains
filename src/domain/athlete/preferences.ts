@@ -58,7 +58,9 @@ export class AthletePreferences {
     );
   }
 
-  /** `null` turns the rest timer off. */
+  /**
+   * `null` turns the rest timer off.
+   */
   withRestDuration(restDuration: Duration | null): AthletePreferences {
     return new AthletePreferences(
       this.weightUnit,
@@ -82,22 +84,30 @@ export class AthletePreferences {
     return length ? length.format(this.lengthUnit) : null;
   }
 
-  /** Duration carries no unit preference; here so every measurement formats one way. */
+  /**
+   * Duration carries no unit preference; here so every measurement formats one way.
+   */
   formatDuration(duration: Duration | null): string | null {
     return duration ? duration.format() : null;
   }
 
-  /** The bare number for a chart axis, without the unit suffix. */
+  /**
+   * The bare number for a chart axis, without the unit suffix.
+   */
   weightValue(weight: Weight): number {
     return round(weight.as(this.weightUnit));
   }
 
-  /** The bare number for an editable field, without the unit suffix. */
+  /**
+   * The bare number for an editable field, without the unit suffix.
+   */
   speedValue(speed: Speed): number {
     return round(speed.as(this.distanceUnit));
   }
 
-  /** The bare number for an editable field, without the unit suffix. */
+  /**
+   * The bare number for an editable field, without the unit suffix.
+   */
   lengthValue(length: Length): number {
     return round(length.as(this.lengthUnit));
   }

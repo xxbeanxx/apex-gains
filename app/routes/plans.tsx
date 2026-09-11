@@ -94,7 +94,9 @@ function PlanSummaryLine({ plan }: { plan: PlanSummary }) {
   );
 }
 
-/** The `⋯` menu every plan card ends in: duplicating it. */
+/**
+ * The `⋯` menu every plan card ends in: duplicating it.
+ */
 function PlanRowMenu({ plan }: { plan: PlanSummary }) {
   const submit = useSubmit();
 

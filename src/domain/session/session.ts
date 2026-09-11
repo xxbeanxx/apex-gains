@@ -83,7 +83,9 @@ export class Session {
     };
   }
 
-  /** In the order they were performed. */
+  /**
+   * In the order they were performed.
+   */
   get sets(): readonly LoggedSet[] {
     return this.loggedSets;
   }
@@ -118,7 +120,9 @@ export class Session {
     return this.loggedSets.filter((set) => set.exerciseId === exerciseId);
   }
 
-  /** Total weight moved: the sum over sets that recorded both a weight and reps. */
+  /**
+   * Total weight moved: the sum over sets that recorded both a weight and reps.
+   */
   get tonnage(): Weight {
     return this.loggedSets.reduce((total, set) => (set.tonnage ? total.plus(set.tonnage) : total), Weight.lb(0));
   }
