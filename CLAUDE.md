@@ -111,6 +111,8 @@ registry pull credentials are needed) via `az containerapp update`,
 authenticating to Azure with OIDC federated credentials (no stored
 client secret). Every push to `main` is a full deploy — see README.md
 "Hosting" and "Database migrations and deployment in CI" for details.
+`.github/workflows/cleanup-images.yaml` prunes the GHCR package
+nightly (or on demand), keeping only the 5 most recent image versions.
 For local dev without
 depending on Supabase, run local Postgres instead: `podman play kube
 deploy/postgres-pod.yaml` (down with `--down`; data persists in the

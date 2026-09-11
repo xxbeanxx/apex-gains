@@ -315,6 +315,12 @@ push to `main`:
 This is a straight rolling update - every push to `main` deploys.
 There's no separate staging slot or manual promotion step.
 
+`.github/workflows/cleanup-images.yaml` runs nightly (and on demand via
+`workflow_dispatch`) to delete all but the 5 most recent versions in
+the GHCR package, using `GITHUB_TOKEN` - the repo that publishes a
+container package is granted admin access to it by default, which is
+what GHCR's deletion API checks.
+
 ## Architecture notes
 
 - **The business rules live outside the frameworks.** `src/` is
