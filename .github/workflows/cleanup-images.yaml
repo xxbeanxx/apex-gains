@@ -1,0 +1,27 @@
+name: Cleanup Container Images
+
+on:
+  schedule:
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete old GHCR image versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete all but the 5 most recent image versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: apex-gains
+          package-type: container
+          min-versions-to-keep: 5
+          token: ${{ secrets.GHCR_DELETE_TOKEN }}
