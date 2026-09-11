@@ -1,7 +1,16 @@
 import type { Page } from '@playwright/test';
 
 import { expect, newAthlete, signIn, test, uniqueName, waitForHydration } from './fixtures';
-import { createExercise, createPlan, createWorkout, orderedRows, signOut, submitForm } from './helpers';
+import {
+  createExercise,
+  createPlan,
+  createWorkout,
+  orderedRows,
+  pickDate,
+  renameDisclosureSummary,
+  signOut,
+  submitForm,
+} from './helpers';
 
 /**
  * Sharing a plan, and taking one somebody shared.
@@ -117,11 +126,11 @@ test('another athlete imports the plan, its workouts and its exercises', async (
 test('the anchor date starts on the original and can be moved before importing', async ({ page, athlete }) => {
   const names = uniqueNames();
   await createPlan(page, names.plan);
-  await page.getByRole('button', { name: 'Anchor date' }).click();
-  await page.getByLabel('Anchor date').fill('2026-01-05');
+  await renameDisclosureSummary(page, 'Anchor date').click();
+  await pickDate(page.getByLabel('Anchor date'), '2026-01-05');
   await submitForm(page.getByRole('button', { name: 'Save', exact: true }));
-  await page.getByRole('button', { name: 'Anchor date' }).click();
-  await expect(page.getByLabel('Anchor date')).toHaveValue('2026-01-05');
+  await renameDisclosureSummary(page, 'Anchor date').click();
+  await expect(page.getByLabel('Anchor date')).toContainText('Jan 5, 2026');
 
   await submitForm(page.getByRole('button', { name: 'Share', exact: true }));
   const link = await page.getByRole('dialog').getByLabel('Share link').inputValue();
@@ -129,13 +138,13 @@ test('the anchor date starts on the original and can be moved before importing',
   await newAthlete(page);
   await page.goto(link);
 
-  await expect(page.getByLabel('Anchor date')).toHaveValue('2026-01-05');
-  await page.getByLabel('Anchor date').fill('2026-03-09');
+  await expect(page.getByLabel('Anchor date')).toContainText('Jan 5, 2026');
+  await pickDate(page.getByLabel('Anchor date'), '2026-03-09');
   await submitForm(page.getByRole('button', { name: 'Import', exact: true }));
 
   await page.waitForURL(/\/plans\/[0-9a-f-]+$/);
   await waitForHydration(page);
-  await expect(page.getByLabel('Anchor date')).toHaveValue('2026-03-09');
+  await expect(page.getByLabel('Anchor date')).toContainText('Mar 9, 2026');
 });
 
 test('reuses an exercise the importer already has under the same name', async ({ page, athlete }) => {

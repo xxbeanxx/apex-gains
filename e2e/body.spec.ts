@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { submitForm } from './helpers';
+import { pickDate, submitForm } from './helpers';
 
 test('starts with no weight entries', async ({ page, athlete }) => {
   await page.goto('/body');
@@ -10,7 +10,7 @@ test('starts with no weight entries', async ({ page, athlete }) => {
 test('logs a weight entry and lists it in history', async ({ page, athlete }) => {
   await page.goto('/body');
 
-  await page.getByLabel('Date').fill('2026-03-01');
+  await pickDate(page.getByLabel('Date'), '2026-03-01');
   await page.getByLabel(/^Weight \(/).fill('182.5');
   await page.getByRole('button', { name: 'Save' }).click();
 
@@ -23,7 +23,7 @@ test('keeps the most recent entry for a date rather than duplicating it', async 
   await page.goto('/body');
 
   for (const weight of ['180', '178.4']) {
-    await page.getByLabel('Date').fill('2026-03-02');
+    await pickDate(page.getByLabel('Date'), '2026-03-02');
     await page.getByLabel(/^Weight \(/).fill(weight);
     await submitForm(page.getByRole('button', { name: 'Save' }));
     await expect(page.getByText('Saved.')).toBeVisible();
@@ -37,7 +37,7 @@ test('keeps the most recent entry for a date rather than duplicating it', async 
 test('removes a weight entry', async ({ page, athlete }) => {
   await page.goto('/body');
 
-  await page.getByLabel('Date').fill('2026-03-03');
+  await pickDate(page.getByLabel('Date'), '2026-03-03');
   await page.getByLabel(/^Weight \(/).fill('175');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('row').filter({ hasText: 'March 3' })).toBeVisible();
@@ -57,7 +57,7 @@ test('renders weight entries in the athlete unit', async ({ page, athlete }) => 
   await page.goto('/body');
   await expect(page.getByLabel('Weight (kg)')).toBeVisible();
 
-  await page.getByLabel('Date').fill('2026-03-04');
+  await pickDate(page.getByLabel('Date'), '2026-03-04');
   await page.getByLabel('Weight (kg)').fill('80');
   await page.getByRole('button', { name: 'Save' }).click();
 
@@ -71,7 +71,7 @@ test('logs a body measurement on its own tab, independent of weight', async ({ p
   await expect(page).toHaveURL('/body?section=waist');
   await expect(page.getByText('No waist entries yet')).toBeVisible();
 
-  await page.getByLabel('Date').fill('2026-03-05');
+  await pickDate(page.getByLabel('Date'), '2026-03-05');
   await page.getByLabel(/^Waist \(/).fill('34');
   await page.getByRole('button', { name: 'Save' }).click();
 

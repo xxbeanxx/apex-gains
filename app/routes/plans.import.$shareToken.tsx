@@ -6,8 +6,7 @@ import { DownloadIcon, MoonIcon } from 'lucide-react';
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
+import { DateField } from '~/components/ui/date-field';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { requestLogger } from '~/lib/logger';
 import { IsDateOnly } from '~/lib/validate-form';
@@ -55,7 +54,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // almost certainly want is the plan they already have.
   if (shared.ownPlanId) throw redirect(`/plans/${shared.ownPlanId}`);
 
-  return { shared };
+  return { shared, todayStr: DateOnly.today(new Date(), athlete.preferences.timezone).value };
 }
 
 class ImportPlanDto {
@@ -90,7 +89,7 @@ function additionsSummary(newWorkouts: number, newExercises: number): string | n
 }
 
 export default function ImportSharedPlan({ loaderData, actionData }: Route.ComponentProps) {
-  const { shared } = loaderData;
+  const { shared, todayStr } = loaderData;
   const additions = additionsSummary(shared.newWorkouts, shared.newExercises);
 
   return (
@@ -149,8 +148,11 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
           </CardHeader>
           <CardContent>
             <Form method="post">
-              <Field
+              <DateField
+                name="anchorDate"
                 label="Anchor date"
+                today={todayStr}
+                defaultValue={shared.anchorDate}
                 description="Day 1 of the cycle falls on this date. It starts where the original does; move it to start today."
                 error={actionData?.error}
                 action={
@@ -159,9 +161,7 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
                     Import
                   </SubmitButton>
                 }
-              >
-                <Input name="anchorDate" type="date" defaultValue={shared.anchorDate} required />
-              </Field>
+              />
             </Form>
           </CardContent>
         </Card>

@@ -40,6 +40,7 @@ import { Page, PageHeader, Section } from '~/components/layout/page';
 import { SharePlanDialog } from '~/components/share-plan-dialog';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
+import { DateField } from '~/components/ui/date-field';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
@@ -85,6 +86,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     plan,
     workouts: await workoutService.listForPicker(athlete),
     share: shareUrl === null ? null : { url: shareUrl, qr: encodeQr(shareUrl) },
+    todayStr: DateOnly.today(new Date(), athlete.preferences.timezone).value,
   };
 }
 
@@ -363,7 +365,7 @@ function PlanPalette({ workoutList }: { workoutList: WorkoutSummary[] }) {
 }
 
 export default function PlanDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { plan, workouts: workoutList, share } = loaderData;
+  const { plan, workouts: workoutList, share, todayStr } = loaderData;
 
   const slotCount = plan.slots.length;
   const { isSample, isCustomized } = plan;
@@ -436,8 +438,12 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
             <RenameDisclosure label="Anchor date">
               <Form method="post">
                 <input {...intents.reanchor.field} />
-                <Field
+                <DateField
+                  key={plan.anchorDate}
+                  name="anchorDate"
                   label="Anchor date"
+                  today={todayStr}
+                  defaultValue={plan.anchorDate}
                   description={`Day 1 of the cycle falls on this date, and it repeats every ${slotCount || 'N'} days from there.`}
                   error={reanchorError}
                   action={
@@ -445,9 +451,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                       Save
                     </SubmitButton>
                   }
-                >
-                  <Input key={plan.anchorDate} name="anchorDate" type="date" defaultValue={plan.anchorDate} required />
-                </Field>
+                />
               </Form>
             </RenameDisclosure>
             <Form method="post">

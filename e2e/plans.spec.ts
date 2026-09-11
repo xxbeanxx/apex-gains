@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test, uniqueName } from './fixtures';
-import { createPlan, createWorkout, orderedRows, submitForm } from './helpers';
+import { createPlan, createWorkout, orderedRows, pickDate, renameDisclosureSummary, submitForm } from './helpers';
 
 /**
  * Adds one day-slot to the open plan detail page by clicking it in the palette.
@@ -67,12 +67,12 @@ test('renames a plan and re-anchors its cycle', async ({ page, athlete }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('heading', { name: renamed, exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Anchor date' }).click();
-  await page.getByLabel('Anchor date').fill('2026-01-05');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await renameDisclosureSummary(page, 'Anchor date').click();
+  await pickDate(page.getByLabel('Anchor date'), '2026-01-05');
+  await submitForm(page.getByRole('button', { name: 'Save', exact: true }));
 
-  await page.getByRole('button', { name: 'Anchor date' }).click();
-  await expect(page.getByLabel('Anchor date')).toHaveValue('2026-01-05');
+  await renameDisclosureSummary(page, 'Anchor date').click();
+  await expect(page.getByLabel('Anchor date')).toContainText('Jan 5, 2026');
 });
 
 test('activates a plan, and activating a second deactivates the first', async ({ page, athlete }) => {

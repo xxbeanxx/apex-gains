@@ -40,6 +40,45 @@ export async function chooseTimezone(trigger: Locator, zoneQuery: string): Promi
   await trigger.page().getByRole('option', { name: zoneQuery }).click();
 }
 
+/**
+ * A `RenameDisclosure`'s `<summary>`, by its label.
+ *
+ * Scoped to the tag rather than `getByRole('button', { name: label })`: a
+ * disclosure whose label matches the field inside it (`plans.$planId.tsx`'s
+ * "Anchor date" wraps a `DateField` labelled the same way) resolves that role
+ * query to two same-named buttons while it's open, and briefly still does
+ * even after a submit that closes it, since the close only lands once
+ * React's post-navigation render and effects flush - later than the
+ * response `submitForm` waits for.
+ */
+export function renameDisclosureSummary(page: Page, label: string): Locator {
+  return page.locator('summary').filter({ hasText: label });
+}
+
+/**
+ * Picks a date from the `Calendar` popover a `DateField`'s trigger button
+ * opens, navigating however many months separate the month it opens on from
+ * the one `dateStr` falls in.
+ */
+export async function pickDate(trigger: Locator, dateStr: string): Promise<void> {
+  const page = trigger.page();
+  await waitForHydration(page);
+  await trigger.click();
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const header = page.getByRole('button', { name: 'Next month' }).locator('..');
+  const monthLabel = header.getByText(/^[A-Za-z]+ \d{4}$/);
+
+  for (let guard = 0; guard < 60; guard++) {
+    const shown = new Date(`1 ${await monthLabel.textContent()}`);
+    const diff = (year - shown.getFullYear()) * 12 + (month - 1 - shown.getMonth());
+    if (diff === 0) break;
+    await page.getByRole('button', { name: diff > 0 ? 'Next month' : 'Previous month' }).click();
+  }
+
+  await page.getByRole('button', { name: String(day), exact: true }).click();
+}
+
 export type ExerciseType = 'Strength' | 'Cardio';
 
 export async function createExercise(

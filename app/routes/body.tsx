@@ -10,6 +10,7 @@ import { Page, PageHeader, Section } from '~/components/layout/page';
 import { type TabSection, TabShell } from '~/components/layout/tab-shell';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { DateField } from '~/components/ui/date-field';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
@@ -224,19 +225,7 @@ function BodySection({ loaderData, actionData }: Pick<Route.ComponentProps, 'loa
             <Form method="post" className="flex flex-wrap items-end gap-4">
               <input {...logIntent.field} />
               {measurement ? <input type="hidden" name="metric" value={section} /> : null}
-              <Field label="Date" className="w-40">
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    name="date"
-                    type="date"
-                    defaultValue={todayStr}
-                    max={todayStr}
-                    required
-                  />
-                )}
-              </Field>
+              <DateField name="date" label="Date" today={todayStr} defaultValue={todayStr} max={todayStr} className="w-40" />
               <Field label={`${label} (${unit})`} error={error} className="w-40">
                 <Input name={valueField} type="number" step="0.1" min="0" required />
               </Field>

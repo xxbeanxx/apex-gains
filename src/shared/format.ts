@@ -52,6 +52,18 @@ export function formatFullDate(dateStr: string): string {
 }
 
 /**
+ * "2 Sep 2026" - for a date picker's trigger button, where the date can be
+ * far enough from today that the year is needed to disambiguate it.
+ */
+export function formatShortDate(dateStr: string): string {
+  return toLocalDate(dateStr).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
  * "September 2026" - for the history timeline's month dividers.
  */
 export function formatMonthYear(dateStr: string): string {
