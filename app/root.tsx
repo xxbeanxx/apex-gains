@@ -10,6 +10,7 @@ import { NavProgress } from '~/components/nav-progress';
 import { AppShell } from '~/components/shell/app-shell';
 import { sidebarInitScript } from '~/components/shell/shell-init';
 import { themeInitScript } from '~/components/theme-toggle';
+import { VersionCheck } from '~/components/version-check';
 import { getBuildInfo } from '~/lib/build-info';
 import { requestLoggingMiddleware } from '~/lib/logger';
 
@@ -81,6 +82,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <AppShell user={user} buildInfo={loaderData?.buildInfo ?? 'unknown'}>
         <Outlet />
       </AppShell>
+      <VersionCheck initialBuildInfo={loaderData?.buildInfo ?? 'unknown'} />
     </>
   );
 }

@@ -1,6 +1,8 @@
 import { type RouteConfig, index, layout, route } from '@react-router/dev/routes';
 
 export default [
+  route('api/buildinfo', 'routes/api.buildinfo.tsx'),
+  //
   index('routes/home.tsx'),
   //
   route('auth/google', 'routes/auth.google.tsx'),
