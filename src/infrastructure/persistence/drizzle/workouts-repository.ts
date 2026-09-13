@@ -10,8 +10,7 @@ import {
   workouts,
 } from '~infrastructure/persistence/drizzle/schema';
 import { visibleRowWhere, visibleRowsWhere } from '~infrastructure/persistence/drizzle/shared/visibility';
-import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
-import { writePositions } from '~infrastructure/persistence/shared/write-positions';
+import { type OrderedChildColumns, saveOrderedChildren } from '~infrastructure/persistence/shared/save-ordered-children';
 
 /**
  * The columns `shared/visibility.ts` reads to build this table's clauses.
@@ -21,6 +20,17 @@ const visibility = {
   id: workouts.id,
   userId: workouts.userId,
   forkedFromId: workouts.forkedFromId,
+};
+
+/**
+ * The columns `shared/save-ordered-children.ts` needs for `workout_exercises`.
+ */
+const exerciseColumns: OrderedChildColumns = {
+  table: workoutExercises,
+  id: workoutExercises.id,
+  parentId: workoutExercises.workoutId,
+  parentIdKey: 'workoutId',
+  position: workoutExercises.position,
 };
 
 type RowWithExercises = WorkoutRow & {
@@ -50,12 +60,9 @@ function toWorkout(row: RowWithExercises): Workout {
   });
 }
 
-function toRow(workoutId: string, entry: WorkoutExerciseSnapshot) {
+function toRow(entry: WorkoutExerciseSnapshot) {
   return {
-    id: entry.id,
-    workoutId,
     exerciseId: entry.exerciseId,
-    position: entry.position,
     targetSets: entry.targetSets,
     targetReps: entry.targetReps,
     targetWeight: entry.targetWeight,
@@ -132,17 +139,8 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
   }
 
   /**
-   * Writes the workout and its exercise entries as one unit.
-   *
-   * The order matters, and it is the reason this reads as more than an
-   * upsert: removals free their positions first, then everything that moved
-   * is repositioned through negative scratch values (see
-   * shared/write-positions.ts), and only then are new entries inserted at
-   * their final positions. Any other order can transiently violate the
-   * `(workoutId, position)` unique constraint.
-   *
-   * Callers run this inside a UnitOfWork, so the intermediate states are
-   * never visible to anyone else.
+   * Writes the workout and its exercise entries as one unit - see
+   * `shared/save-ordered-children.ts` for the entry-ordering sequence.
    */
   async save(workout: Workout): Promise<void> {
     const snapshot = workout.toSnapshot();
@@ -162,38 +160,7 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
         set: { name: snapshot.name, updatedAt: snapshot.updatedAt },
       });
 
-    const existing = await dbScope.select().from(workoutExercises).where(eq(workoutExercises.workoutId, snapshot.id));
-
-    const diff = diffChildren(existing, snapshot.exercises);
-
-    if (diff.deletedIds.length > 0) {
-      await dbScope.delete(workoutExercises).where(inArray(workoutExercises.id, diff.deletedIds));
-    }
-
-    for (const entry of diff.updated) {
-      const row = toRow(snapshot.id, entry);
-      await dbScope
-        .update(workoutExercises)
-        .set({
-          exerciseId: row.exerciseId,
-          targetSets: row.targetSets,
-          targetReps: row.targetReps,
-          targetWeight: row.targetWeight,
-          targetDurationSeconds: row.targetDurationSeconds,
-          targetSpeed: row.targetSpeed,
-          targetResistance: row.targetResistance,
-          targetRestSeconds: row.targetRestSeconds,
-        })
-        .where(eq(workoutExercises.id, row.id));
-    }
-
-    await writePositions(new Map(existing.map((row) => [row.id, row.position])), diff.updated, (id, position) =>
-      dbScope.update(workoutExercises).set({ position }).where(eq(workoutExercises.id, id)),
-    );
-
-    if (diff.inserted.length > 0) {
-      await dbScope.insert(workoutExercises).values(diff.inserted.map((entry) => toRow(snapshot.id, entry)));
-    }
+    await saveOrderedChildren(exerciseColumns, snapshot.id, snapshot.exercises, toRow);
   }
 
   async delete(workoutId: string): Promise<void> {

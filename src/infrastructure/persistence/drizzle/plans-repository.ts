@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, asc, eq } from 'drizzle-orm';
 import type { PlanName, PlansRepository } from '~application/ports/persistence/plans-repository';
 import { Plan } from '~domain/plan/plan';
 import { LibraryVisibility } from '~domain/shared/ownership';
@@ -10,8 +10,7 @@ import {
   plans,
 } from '~infrastructure/persistence/drizzle/schema';
 import { visibleRowWhere, visibleRowsWhere } from '~infrastructure/persistence/drizzle/shared/visibility';
-import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
-import { writePositions } from '~infrastructure/persistence/shared/write-positions';
+import { type OrderedChildColumns, saveOrderedChildren } from '~infrastructure/persistence/shared/save-ordered-children';
 
 /**
  * The columns `shared/visibility.ts` reads to build this table's clauses.
@@ -21,6 +20,17 @@ const visibility = {
   id: plans.id,
   userId: plans.userId,
   forkedFromId: plans.forkedFromId,
+};
+
+/**
+ * The columns `shared/save-ordered-children.ts` needs for `plan_slots`.
+ */
+const slotColumns: OrderedChildColumns = {
+  table: planSlots,
+  id: planSlots.id,
+  parentId: planSlots.planId,
+  parentIdKey: 'planId',
+  position: planSlots.position,
 };
 
 type RowWithSlots = PlanRow & { slots: PlanSlotRow[] };
@@ -98,9 +108,8 @@ export class DrizzlePlansRepository implements PlansRepository {
   }
 
   /**
-   * Writes the plan and its slots as one unit. Same ordering constraint
-   * as workouts - delete, then reposition through scratch values, then
-   * insert - see DrizzleWorkoutsRepository.save for why.
+   * Writes the plan and its slots as one unit - see
+   * `shared/save-ordered-children.ts` for the slot-ordering sequence.
    */
   async save(plan: Plan): Promise<void> {
     const snapshot = plan.toSnapshot();
@@ -129,32 +138,9 @@ export class DrizzlePlansRepository implements PlansRepository {
         },
       });
 
-    const existing = await dbScope.select().from(planSlots).where(eq(planSlots.planId, snapshot.id));
-
-    const diff = diffChildren(existing, snapshot.slots);
-
-    if (diff.deletedIds.length > 0) {
-      await dbScope.delete(planSlots).where(inArray(planSlots.id, diff.deletedIds));
-    }
-
-    for (const slot of diff.updated) {
-      await dbScope.update(planSlots).set({ workoutId: slot.workoutId }).where(eq(planSlots.id, slot.id));
-    }
-
-    await writePositions(new Map(existing.map((row) => [row.id, row.position])), diff.updated, (id, position) =>
-      dbScope.update(planSlots).set({ position }).where(eq(planSlots.id, id)),
-    );
-
-    if (diff.inserted.length > 0) {
-      await dbScope.insert(planSlots).values(
-        diff.inserted.map((slot) => ({
-          id: slot.id,
-          planId: snapshot.id,
-          position: slot.position,
-          workoutId: slot.workoutId,
-        })),
-      );
-    }
+    await saveOrderedChildren(slotColumns, snapshot.id, snapshot.slots, (slot) => ({
+      workoutId: slot.workoutId,
+    }));
   }
 
   async delete(planId: string): Promise<void> {

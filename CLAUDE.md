@@ -453,10 +453,17 @@ Drizzle schema (Postgres), and `drizzle.config.ts` points `db:generate`
 at it. Adapters map
 snapshots to rows and hold no rules. `save` receives the whole aggregate
 rather than a change list, so it reconstructs the delta with
-`persistence/shared/diff-children.ts`, and writes reordered children through
-`persistence/shared/write-positions.ts` — a two-pass negative-scratch write, because
-Postgres checks the `(parentId, position)` unique constraint per
-statement and any permutation would otherwise collide mid-update.
+`persistence/shared/diff-children.ts`. A plan's slots and a workout's
+exercises are both ordered children with a `(parentId, position)` unique
+constraint, so both repositories write them through the same
+`persistence/shared/save-ordered-children.ts`, which sequences the diff
+against `persistence/shared/write-positions.ts` — a two-pass
+negative-scratch write, because Postgres checks that constraint per
+statement and any permutation would otherwise collide mid-update. A
+repository names only its table and the columns beyond `id`/parent
+id/`position`; exercise equipment links carry no position or identity of
+their own, so `exercises-repository.ts` replaces them wholesale instead
+of going through this module.
 Transactions are ambient: `UnitOfWork.run` publishes one via
 `AsyncLocalStorage` (`persistence/drizzle/transaction.ts`) and adapters query
 through `dbScope`, never `db`, so writes stay inside it.
