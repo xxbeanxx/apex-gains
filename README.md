@@ -159,6 +159,11 @@ at a throwaway and never at `DATABASE_URL`; the pod above is deliberately on
 its own port with no volume so the two can't be confused. The suite applies
 `drizzle/` migrations itself before it starts.
 
+`.github/workflows/build.yaml`'s `test` job runs `drizzle.test.ts` too, against
+a Postgres service container it starts for the job - the adapter that ships
+to production is checked on every push and pull request, not only when
+someone remembers to run `test:contract` locally.
+
 What only the Postgres run can catch: `on delete restrict` (deleting an
 exercise a workout still points at), `on delete cascade` (closing an
 account), the per-statement `(parentId, position)` uniqueness that

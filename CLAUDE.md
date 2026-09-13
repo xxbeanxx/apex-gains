@@ -57,8 +57,8 @@ reconfigures carries a comment saying why; a genuine exception in code
 gets an `oxlint-disable` directive with its reason beside it, and an
 unused directive is itself an error. A promise deliberately left
 unawaited - `navigate()`, `fetcher.load()` - is marked with `void`.
-`format:check`, `lint`, `typecheck`, `check:architecture`, `test` and
-`test:e2e` are the automated checks. Unit tests
+`format:check`, `lint`, `typecheck`, `check:architecture`, `test`,
+`test:contract` and `test:e2e` are the automated checks. Unit tests
 (vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
@@ -83,8 +83,10 @@ constraints, `onConflictDoNothing` - is imitated in-memory by naming the
 referencing stores to each adapter
 (`src/infrastructure/persistence/in-memory/references.ts`), which
 `inMemoryRepositories()` does for the Nest module, the contract suite and
-every service test alike. See README.md
-"Persistence contract tests". Tests that touch
+every service test alike. `.github/workflows/build.yaml`'s `test` job runs
+the Drizzle pass too, against a Postgres service container scoped to that
+job, so both adapter families are checked on every push and pull request. See
+README.md "Persistence contract tests". Tests that touch
 `~infrastructure/persistence/drizzle/index` rely on `vite.config.ts`'s
 `test` block seeding a dummy `DATABASE_URL` - the postgres-js client is
 lazy, so nothing dials out. That same block excludes `e2e/**`, since
