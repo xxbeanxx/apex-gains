@@ -93,6 +93,7 @@ export default defineConfig(({ command }) => ({
             '**/app/**/*.test.(ts|tsx)', //
             '**/server/**/*.test.(ts|tsx)',
             '**/src/**/*.test.(ts|tsx)',
+            '**/test/**/*.test.(ts|tsx)',
           ],
           exclude: [
             '**/app/**/components/*.test.(ts|tsx)', //
