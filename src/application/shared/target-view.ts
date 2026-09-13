@@ -1,3 +1,4 @@
+import { type MeasurementValues, toValues } from '~application/shared/measurement-values';
 import type { AthletePreferences } from '~domain/athlete/preferences';
 import type { SetTarget } from '~domain/workout/set-target';
 
@@ -10,20 +11,19 @@ export type TargetView = {
   sets: number | null;
   reps: number | null;
   weight: string | null;
-  weightValue: number | null;
   duration: string | null;
-  durationMinutesValue: number | null;
   speed: string | null;
-  speedValue: number | null;
   resistance: number | null;
   /**
    * Formatted in minutes, same as `duration` - "1.5 min".
    */
   rest: string | null;
   /**
-   * Raw seconds - what the rest timer counts down from.
+   * The same target as bare numbers in the athlete's units, keyed as the
+   * target form's fields are - an edit form's defaults, an Apply's hidden
+   * inputs, and `restSeconds` for the rest timer to count down from.
    */
-  restSeconds: number | null;
+  values: MeasurementValues;
 };
 
 export function toTargetView(target: SetTarget, preferences: AthletePreferences): TargetView | null {
@@ -32,13 +32,10 @@ export function toTargetView(target: SetTarget, preferences: AthletePreferences)
     sets: target.sets,
     reps: target.reps,
     weight: preferences.formatWeight(target.weight),
-    weightValue: target.weight ? preferences.weightValue(target.weight) : null,
     duration: preferences.formatDuration(target.duration),
-    durationMinutesValue: target.duration?.inMinutes ?? null,
     speed: preferences.formatSpeed(target.speed),
-    speedValue: target.speed ? preferences.speedValue(target.speed) : null,
     resistance: target.resistance,
     rest: preferences.formatDuration(target.rest),
-    restSeconds: target.rest?.inSeconds ?? null,
+    values: toValues(target, preferences),
   };
 }

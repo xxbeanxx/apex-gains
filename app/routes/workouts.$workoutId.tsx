@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 
 import { Form } from 'react-router';
 
-import { Expose, Transform } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { Expose } from 'class-transformer';
+import { IsIn, IsUUID } from 'class-validator';
 import { ChevronRightIcon, ListPlusIcon, PlusIcon, TrendingUpIcon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
@@ -17,6 +17,7 @@ import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
 import { CustomizedNote, ForkableActions, OwnershipBadge } from '~/components/forkable-header';
 import { Page, PageHeader } from '~/components/layout/page';
+import { MeasurementHiddenFields } from '~/components/measurement-field';
 import { TargetChips } from '~/components/target-chips';
 import { Button } from '~/components/ui/button';
 import { EmptyState } from '~/components/ui/empty-state';
@@ -27,7 +28,7 @@ import { forkableHandlers } from '~/lib/forkable-detail.server';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
-import { toOptionalNumber } from '~/lib/validate-form';
+import { TargetFieldsDto } from '~/lib/measurement-fields';
 import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
@@ -81,55 +82,10 @@ class MoveExerciseDto extends WorkoutExerciseIdDto {
   readonly direction!: 'up' | 'down';
 }
 
-class UpdateTargetDto extends WorkoutExerciseIdDto {
+class UpdateTargetDto extends TargetFieldsDto {
   @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly targetSets?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly targetReps?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly targetWeight?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly targetDurationMinutes?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly targetSpeed?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly targetResistance?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly targetRestSeconds?: number;
+  @IsUUID()
+  readonly workoutExerciseId!: string;
 }
 
 // Annotated so `notFound()`'s `never` narrows at the call site: TypeScript
@@ -162,17 +118,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
    * updateTarget and applySuggestion post the identical shape - a manual edit and applying a suggestion are the same write.
    */
   const saveTarget = async (input: UpdateTargetDto) =>
-    settle(
-      await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, {
-        sets: input.targetSets,
-        reps: input.targetReps,
-        weight: input.targetWeight,
-        durationMinutes: input.targetDurationMinutes,
-        speed: input.targetSpeed,
-        resistance: input.targetResistance,
-        restSeconds: input.targetRestSeconds,
-      }),
-    );
+    settle(await workoutService.updateExerciseTarget(athlete, workoutId, input.workoutExerciseId, input));
 
   return dispatch(request, [
     ...forkableHandlers(page, workoutService, {
@@ -241,15 +187,7 @@ function EditTargetDetail({
           cardioFields={cardioFields}
           weightUnit={weightUnit}
           distanceUnit={distanceUnit}
-          defaultValues={{
-            sets: entry.target?.sets ?? null,
-            reps: entry.target?.reps ?? null,
-            weight: entry.target?.weightValue ?? null,
-            durationMinutes: entry.target?.durationMinutesValue ?? null,
-            speed: entry.target?.speedValue ?? null,
-            resistance: entry.target?.resistance ?? null,
-            restSeconds: entry.target?.restSeconds ?? null,
-          }}
+          defaultValues={entry.target?.values}
         />
         {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
         <SubmitButton size="sm" match={intents.updateTarget.match} pendingLabel="Saving" className="self-start">
@@ -277,13 +215,7 @@ function TargetSuggestion({ suggestion }: { suggestion: SuggestionView }) {
       <Form method="post">
         <input {...intents.applySuggestion.field} />
         <input type="hidden" name="workoutExerciseId" value={suggestion.workoutExerciseId} />
-        <input type="hidden" name="targetSets" value={target.sets ?? ''} />
-        <input type="hidden" name="targetReps" value={target.reps ?? ''} />
-        <input type="hidden" name="targetWeight" value={target.weightValue ?? ''} />
-        <input type="hidden" name="targetDurationMinutes" value={target.durationMinutesValue ?? ''} />
-        <input type="hidden" name="targetSpeed" value={target.speedValue ?? ''} />
-        <input type="hidden" name="targetResistance" value={target.resistance ?? ''} />
-        <input type="hidden" name="targetRestSeconds" value={target.restSeconds ?? ''} />
+        <MeasurementHiddenFields values={target.values} />
         <SubmitButton size="sm" variant="outline" match={intents.applySuggestion.match} pendingLabel="Applying">
           Apply
         </SubmitButton>

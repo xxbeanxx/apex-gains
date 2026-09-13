@@ -4,6 +4,7 @@ import type { SessionsRepository } from '~application/ports/persistence/sessions
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
+import { type MeasurementInput, toCanonical } from '~application/shared/measurement-values';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { type TargetView, toTargetView } from '~application/shared/target-view';
 import type { Athlete } from '~domain/athlete/athlete';
@@ -14,8 +15,6 @@ import type { LoggedSet } from '~domain/session/logged-set';
 import type { MoveDirection } from '~domain/shared/ordered';
 import { type Result, err, ok } from '~domain/shared/result';
 import type { DateOnly } from '~domain/values/date-only';
-import { Duration } from '~domain/values/duration';
-import { Speed } from '~domain/values/speed';
 import type { WeightUnit } from '~domain/values/units';
 import { Weight } from '~domain/values/weight';
 import { SetTarget } from '~domain/workout/set-target';
@@ -67,19 +66,11 @@ export type WorkoutDetail = WorkoutSummary & {
 };
 
 /**
- * Targets as the athlete typed them: weight in their weight unit, speed in
- * their distance unit, duration in minutes. Converting to the canonical
- * storage units is this service's job, not the form's.
+ * Targets as the athlete typed them - see `MeasurementValues` for the units.
+ * Converting to the canonical storage units is this service's job, not the
+ * form's.
  */
-export type TargetInput = {
-  sets?: number | null;
-  reps?: number | null;
-  weight?: number | null;
-  durationMinutes?: number | null;
-  speed?: number | null;
-  resistance?: number | null;
-  restSeconds?: number | null;
-};
+export type TargetInput = MeasurementInput;
 
 export type WorkoutMutation = ForkMutation;
 
@@ -348,15 +339,6 @@ export class WorkoutService {
    * Where the athlete's chosen units are converted to canonical storage.
    */
   private toTarget(athlete: Athlete, input: TargetInput): SetTarget {
-    const { weightUnit, distanceUnit } = athlete.preferences;
-    return SetTarget.of({
-      sets: input.sets,
-      reps: input.reps,
-      weight: input.weight != null ? Weight.in(weightUnit, input.weight) : null,
-      duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
-      speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
-      resistance: input.resistance,
-      rest: input.restSeconds != null ? Duration.seconds(input.restSeconds) : null,
-    });
+    return SetTarget.of(toCanonical(input, athlete.preferences));
   }
 }

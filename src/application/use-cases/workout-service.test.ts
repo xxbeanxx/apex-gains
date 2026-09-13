@@ -132,14 +132,11 @@ describe('detail', () => {
           sets: 3,
           reps: 10,
           weight: null,
-          weightValue: null,
           duration: null,
-          durationMinutesValue: null,
           speed: null,
-          speedValue: null,
           resistance: null,
           rest: null,
-          restSeconds: null,
+          values: { sets: 3, reps: 10, weight: null, durationMinutes: null, speed: null, resistance: null, restSeconds: null },
         },
       },
     ]);
@@ -420,7 +417,7 @@ describe('suggestions', () => {
       kind: 'increase-weight',
       because: 'you hit 3 x 10 twice',
     });
-    expect(suggestion?.target.weightValue).toBe(140);
+    expect(suggestion?.target.values.weight).toBe(140);
     expect(suggestion?.summary).toBe('3 x 10, 140 lb');
   });
 
@@ -465,7 +462,7 @@ describe('suggestions', () => {
 
     const suggestion = (await service.suggestions(kgAthlete, 'own-1')).get('entry-0');
 
-    expect(suggestion?.target.weightValue).toBeCloseTo(62.5, 1);
+    expect(suggestion?.target.values.weight).toBeCloseTo(62.5, 1);
   });
 
   it('suggests raising the speed for a cardio entry once its equipment reports speed', async () => {
@@ -498,7 +495,7 @@ describe('suggestions', () => {
     const suggestion = (await service.suggestions(athlete, 'own-1')).get('entry-0');
 
     expect(suggestion?.kind).toBe('increase-speed');
-    expect(suggestion?.target.speedValue).toBe(8.5);
+    expect(suggestion?.target.values.speed).toBe(8.5);
   });
 });
 

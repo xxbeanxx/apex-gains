@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { Expose, Transform } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
+import { MeasurementFieldsDto } from '~/lib/measurement-fields';
 import { cn } from '~/lib/utils';
 import { IsDateOnly, IsRpe, optionalTrim, toOptionalNumber } from '~/lib/validate-form';
 import {
@@ -78,7 +79,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   };
 }
 
-class LogSetDto {
+class LogSetDto extends MeasurementFieldsDto {
   @Expose()
   @IsUUID()
   readonly exerciseId!: string;
@@ -86,41 +87,6 @@ class LogSetDto {
   @Expose()
   @IsDateOnly()
   readonly date!: string;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly reps?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly weight?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly durationMinutes?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  readonly speed?: number;
-
-  @Expose()
-  @Transform(toOptionalNumber())
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  readonly resistance?: number;
 
   @Expose()
   @Transform(optionalTrim())
@@ -160,15 +126,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       // Measurements are in the athlete's own units, and the date may be
       // later than their today; the service converts the one and clamps the
       // other.
-      const outcome = await logService.logSet(athlete, DateOnly.parse(input.date), input.exerciseId, {
-        reps: input.reps,
-        weight: input.weight,
-        durationMinutes: input.durationMinutes,
-        speed: input.speed,
-        resistance: input.resistance,
-        notes: input.notes,
-        rpe: input.rpe,
-      });
+      const outcome = await logService.logSet(athlete, DateOnly.parse(input.date), input.exerciseId, input);
 
       if (!outcome.ok) {
         return intents.logSet.reject('Invalid set');
@@ -356,7 +314,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                     />
                     <RestTimer
                       exerciseId={item.exerciseId}
-                      restSeconds={item.target?.restSeconds ?? defaultRestSeconds}
+                      restSeconds={item.target?.values.restSeconds ?? defaultRestSeconds}
                       signal={done}
                     />
                     {complete ? (

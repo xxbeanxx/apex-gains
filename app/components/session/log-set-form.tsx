@@ -4,9 +4,9 @@ import { useFetcher } from 'react-router';
 
 import { ChevronRightIcon, PlusIcon } from 'lucide-react';
 
+import { MeasurementField } from '~/components/measurement-field';
 import { ExerciseHistoryButton } from '~/components/session/exercise-history-button';
 import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { Textarea } from '~/components/ui/textarea';
@@ -15,7 +15,7 @@ import { cn } from '~/lib/utils';
 import type { LastSetView, LoggedSetView } from '~application/use-cases/session-service';
 import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
-import { formatNumber, speedUnitLabel } from '~domain/values/units';
+import { formatNumber } from '~domain/values/units';
 import type { DistanceUnit, WeightUnit } from '~domain/values/units';
 import { formatMonthDay } from '~shared/format';
 
@@ -68,6 +68,7 @@ function LogSetForm({
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
   const { showSpeed, showResistance } = active?.cardioFields ?? { showSpeed: true, showResistance: true };
+  const units = { weightUnit, distanceUnit };
 
   const lastSet = active ? lastSets[active.id] : undefined;
   // The most recent set logged for this exercise today outranks "last time"
@@ -119,27 +120,8 @@ function LogSetForm({
 
       {active?.exerciseType === 'strength' ? (
         <div key={fieldsKey} className="grid grid-cols-2 gap-3 sm:max-w-md sm:grid-cols-3">
-          <Field label="Reps">
-            <Input
-              name="reps"
-              type="number"
-              min={1}
-              inputMode="numeric"
-              placeholder="reps"
-              defaultValue={prefill?.reps ?? undefined}
-            />
-          </Field>
-          <Field label={`Weight (${weightUnit})`}>
-            <Input
-              name="weight"
-              type="number"
-              min={0}
-              step="0.5"
-              inputMode="decimal"
-              placeholder={weightUnit}
-              defaultValue={prefill?.weight ?? undefined}
-            />
-          </Field>
+          <MeasurementField name="reps" defaultValue={prefill?.reps} {...units} />
+          <MeasurementField name="weight" defaultValue={prefill?.weight} {...units} />
           <Field label="RPE">
             {({ id }) => (
               <Select name="rpe">
@@ -167,41 +149,9 @@ function LogSetForm({
             showSpeed && showResistance ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
           )}
         >
-          <Field label="Minutes">
-            <Input
-              name="durationMinutes"
-              type="number"
-              min={1}
-              inputMode="numeric"
-              placeholder="min"
-              defaultValue={prefill?.durationMinutes ?? undefined}
-            />
-          </Field>
-          {showSpeed ? (
-            <Field label={`Speed (${speedUnitLabel(distanceUnit)})`}>
-              <Input
-                name="speed"
-                type="number"
-                min={0}
-                step="0.1"
-                inputMode="decimal"
-                placeholder={speedUnitLabel(distanceUnit)}
-                defaultValue={prefill?.speed ?? undefined}
-              />
-            </Field>
-          ) : null}
-          {showResistance ? (
-            <Field label="Resistance">
-              <Input
-                name="resistance"
-                type="number"
-                min={1}
-                inputMode="numeric"
-                placeholder="level"
-                defaultValue={prefill?.resistance ?? undefined}
-              />
-            </Field>
-          ) : null}
+          <MeasurementField name="durationMinutes" defaultValue={prefill?.durationMinutes} {...units} />
+          {showSpeed ? <MeasurementField name="speed" defaultValue={prefill?.speed} {...units} /> : null}
+          {showResistance ? <MeasurementField name="resistance" defaultValue={prefill?.resistance} {...units} /> : null}
         </div>
       ) : null}
 

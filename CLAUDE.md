@@ -779,6 +779,18 @@ weight string or append a unit by hand. An athlete's `weightUnit` /
 `distanceUnit` from /settings is the only thing that decides how a
 number is rendered.
 
+A target's or a set's measurements, as numbers in the athlete's units,
+are `MeasurementValues` (`src/application/shared/measurement-values.ts`),
+and its keys are the one list of names for them everywhere: the form
+field, the DTO property (`MeasurementFieldsDto` / `TargetFieldsDto` in
+`app/lib/measurement-fields.ts`, which a form's DTO extends), and the use
+case's input - so a route hands its validated DTO straight to the
+service. `toCanonical` is the only conversion from those numbers to
+`Weight`/`Speed`/`Duration`, and `toValues` the inverse a form's defaults
+come from (`TargetView.values`). `MeasurementField`
+(`app/components/measurement-field.tsx`) is how each one is typed in, so
+both forms label and bound a measurement the same way.
+
 **UI.** shadcn/ui primitives (Radix + `class-variance-authority`) live
 in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
 `Section`) is in `app/components/layout/page.tsx`. Design tokens

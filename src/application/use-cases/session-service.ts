@@ -4,6 +4,7 @@ import type { SessionsRepository } from '~application/ports/persistence/sessions
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { type DaySchedule, sessionPlanOf } from '~application/shared/day-schedule';
+import { type MeasurementInput, toCanonical, toValues } from '~application/shared/measurement-values';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { AthletePreferences } from '~domain/athlete/preferences';
@@ -11,20 +12,13 @@ import type { LoggedSet } from '~domain/session/logged-set';
 import { Session } from '~domain/session/session';
 import { type Result, err, ok } from '~domain/shared/result';
 import { DateOnly } from '~domain/values/date-only';
-import { Duration } from '~domain/values/duration';
 import { Rpe } from '~domain/values/rpe';
-import { Speed } from '~domain/values/speed';
-import { Weight } from '~domain/values/weight';
 
 /**
- * A set as the athlete entered it: their weight unit, their speed unit, minutes.
+ * A set as the athlete entered it - see `MeasurementValues` for the units. A
+ * set has no count of sets or rest of its own; those are a target's.
  */
-export type SetInput = {
-  reps?: number | null;
-  weight?: number | null;
-  durationMinutes?: number | null;
-  speed?: number | null;
-  resistance?: number | null;
+export type SetInput = Omit<MeasurementInput, 'sets' | 'restSeconds'> & {
   notes?: string | null;
   /**
    * 1 to 10, in half-point steps.
@@ -76,13 +70,11 @@ export type LastSetView = SetInput & {
  * A logged set's measurements, converted into the athlete's own units - the shape a form field's `defaultValue` wants.
  */
 function toSetInput(set: LoggedSet, preferences: AthletePreferences): SetInput {
-  return {
-    reps: set.reps,
-    weight: set.weight ? preferences.weightValue(set.weight) : null,
-    durationMinutes: set.duration ? set.duration.inMinutes : null,
-    speed: set.speed ? preferences.speedValue(set.speed) : null,
-    resistance: set.resistanceLevel,
-  };
+  const { reps, weight, durationMinutes, speed, resistance } = toValues(
+    { reps: set.reps, weight: set.weight, duration: set.duration, speed: set.speed, resistance: set.resistanceLevel },
+    preferences,
+  );
+  return { reps, weight, durationMinutes, speed, resistance };
 }
 
 export class SessionService {
@@ -179,18 +171,10 @@ export class SessionService {
           Session.open(athlete.id, date, sessionPlanOf(await this.schedule.on(athlete, date)), this.deps),
         ));
 
-      const { weightUnit, distanceUnit } = athlete.preferences;
+      const { reps, weight, duration, speed, resistance } = toCanonical(input, athlete.preferences);
       session.logSet(
         exerciseId,
-        {
-          reps: input.reps,
-          weight: input.weight != null ? Weight.in(weightUnit, input.weight) : null,
-          duration: input.durationMinutes != null ? Duration.minutes(input.durationMinutes) : null,
-          speed: input.speed != null ? Speed.in(distanceUnit, input.speed) : null,
-          resistance: input.resistance,
-          notes: input.notes,
-          rpe: input.rpe != null ? Rpe.of(input.rpe) : null,
-        },
+        { reps, weight, duration, speed, resistance, notes: input.notes, rpe: input.rpe != null ? Rpe.of(input.rpe) : null },
         this.deps,
       );
 
