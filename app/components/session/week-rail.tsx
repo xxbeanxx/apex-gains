@@ -1,5 +1,4 @@
 import { CheckIcon } from 'lucide-react';
-import type * as React from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';

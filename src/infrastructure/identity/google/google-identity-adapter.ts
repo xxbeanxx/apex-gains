@@ -50,7 +50,7 @@ export class GoogleIdentityAdapter implements GoogleIdentityProvider {
     const nonce = client.randomNonce();
     const state = client.randomState();
 
-    const authorizationUrl = await client.buildAuthorizationUrl(config, {
+    const authorizationUrl = client.buildAuthorizationUrl(config, {
       redirect_uri: redirectUri,
       scope: 'openid email profile',
       code_challenge: codeChallenge,

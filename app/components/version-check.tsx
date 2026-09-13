@@ -22,7 +22,7 @@ function VersionCheck({ initialBuildInfo }: { initialBuildInfo: string }) {
   useEffect(() => {
     function check() {
       if (fetcherRef.current.state === 'idle') {
-        fetcherRef.current.load('/api/buildinfo');
+        void fetcherRef.current.load('/api/buildinfo');
       }
     }
 

@@ -46,7 +46,7 @@ export function WeeklyBarChart({
           cursor={{ fill: 'var(--muted)', fillOpacity: 0.5 }}
           content={
             <ChartTooltipContent
-              labelFormatter={(label) => `Week of ${label}`}
+              labelFormatter={(label) => <>Week of {label}</>}
               formatter={(value) => (
                 <div className="flex flex-1 items-center justify-between gap-4 leading-none">
                   <span className="text-muted-foreground">{seriesLabel}</span>

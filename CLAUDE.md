@@ -33,6 +33,8 @@ npm run db:studio    # open Drizzle Studio against the local database
 npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
 npm run format:check # check formatting without writing
 npm run format:write # format the repo with oxfmt
+npm run lint         # lint with oxlint (type-aware)
+npm run lint:fix     # apply oxlint's safe fixes
 npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
@@ -43,11 +45,19 @@ npm run test:watch   # vitest in watch mode
 npm run typecheck    # react-router typegen, then tsc
 ```
 
-Run `npm run format:write` on any file you edit before finishing a
-task - there is no lint tooling, and CI runs `format:check`, so an
-unformatted file fails the build. Formatting is oxfmt, configured in
-`.oxfmtrc.json`; it also sorts imports, using its built-in default
-groups. `format:check`, `typecheck`, `check:architecture`, `test` and
+Run `npm run format:write` and `npm run lint` on any file you edit
+before finishing a task - CI runs `format:check` and `lint`, so an
+unformatted file or a lint error fails the build. Formatting is oxfmt,
+configured in `.oxfmtrc.json`; it also sorts imports, using its built-in
+default groups. Linting is oxlint, configured in `.oxlintrc.json`: the
+`correctness` category as errors, with type-aware rules
+(`no-floating-promises`, `await-thenable`, ...) run through
+`oxlint-tsgolint` against `tsconfig.json`. Every rule it turns off or
+reconfigures carries a comment saying why; a genuine exception in code
+gets an `oxlint-disable` directive with its reason beside it, and an
+unused directive is itself an error. A promise deliberately left
+unawaited - `navigate()`, `fetcher.load()` - is marked with `void`.
+`format:check`, `lint`, `typecheck`, `check:architecture`, `test` and
 `test:e2e` are the automated checks. Unit tests
 (vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without

@@ -22,7 +22,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import compression from 'compression';
 import { static as serveStatic } from 'express';
-import type { Express, NextFunction, Request, Response } from 'express';
+import type { Express } from 'express';
 import 'reflect-metadata';
 import { AppModule } from '~server/app.module';
 import { coreConfig } from '~server/config/core.config';

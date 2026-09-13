@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import type * as React from 'react';
 
 /**
  * One canvas row: a position badge, a title, an optional chip summary, the

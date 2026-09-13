@@ -44,7 +44,7 @@ function ExerciseHistoryButton({
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (next && fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(`/exercises/${exerciseId}/history`);
+      void fetcher.load(`/exercises/${exerciseId}/history`);
     }
   }
 

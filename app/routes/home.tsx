@@ -12,7 +12,7 @@ import { athleteCalendarContext, progressServiceContext, trainingPlanServiceCont
 
 import type { Route } from './+types/home';
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [{ title: 'Apex Gains' }, { name: 'description', content: 'Track your workout journey.' }];
 }
 

@@ -4,7 +4,7 @@ import { createReadableStreamFromReadable } from '@react-router/node';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
 import { renderToPipeableStream } from 'react-dom/server';
-import type { ActionFunctionArgs, EntryContext, LoaderFunctionArgs, RouterContextProvider } from 'react-router';
+import type { EntryContext, HandleErrorFunction, RouterContextProvider } from 'react-router';
 import { ServerRouter, isRouteErrorResponse } from 'react-router';
 
 import { requestLogger } from '~/lib/logger';
@@ -80,12 +80,6 @@ export default function handleRequest(
   });
 }
 
-type HandleErrorArgs = {
-  request: LoaderFunctionArgs['request'] | ActionFunctionArgs['request'];
-  context: LoaderFunctionArgs['context'] | ActionFunctionArgs['context'];
-  params: LoaderFunctionArgs['params'] | ActionFunctionArgs['params'];
-};
-
 /**
  * Called by React Router for any loader/action/render error that isn't
  * purely control flow. A thrown `redirect()` or bare `data(..., { status })`
@@ -93,7 +87,7 @@ type HandleErrorArgs = {
  * which includes the 404 for an unmatched URL - so this splits client faults
  * (4xx, logged as a warning) from ours (everything else, logged as an error).
  */
-export function handleError(error: unknown, { request, context }: HandleErrorArgs) {
+export function handleError(error: unknown, { request, context }: Parameters<HandleErrorFunction>[1]) {
   if (request.signal.aborted) {
     return;
   }

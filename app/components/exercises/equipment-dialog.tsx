@@ -36,7 +36,7 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
             value={cardioKind}
             onValueChange={(value) => {
               setCardioKind(value);
-              cardioKindFetcher.submit(
+              void cardioKindFetcher.submit(
                 { intent: intents.setEquipmentCardioKind.name, equipmentId: equipment.id, cardioKind: value },
                 { method: 'post' },
               );

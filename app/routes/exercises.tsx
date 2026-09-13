@@ -18,7 +18,7 @@ import { Button } from '~/components/ui/button';
 import { EmptyState } from '~/components/ui/empty-state';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
 import { Input } from '~/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';

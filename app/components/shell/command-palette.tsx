@@ -36,7 +36,7 @@ function CommandPalette({ user }: { user: NavUser }) {
 
   function go(to: string) {
     setOpen(false);
-    navigate(to);
+    void navigate(to);
   }
 
   return (

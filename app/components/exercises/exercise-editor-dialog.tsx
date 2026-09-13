@@ -32,7 +32,7 @@ function EquipmentCheckboxRow({
         onCheckedChange={(value) => {
           const isChecked = value === true;
           setChecked(isChecked);
-          fetcher.submit(
+          void fetcher.submit(
             {
               intent: intents.toggleExerciseEquipment.name,
               exerciseId,

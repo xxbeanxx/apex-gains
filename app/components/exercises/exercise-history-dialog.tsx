@@ -31,13 +31,15 @@ function ExerciseHistoryDialog({
 }) {
   const fetcher = useFetcher<{ sets: RecentSetView[] }>();
 
+  // fetcher itself is deliberately not a dependency - it gets a new
+  // identity every render, and its own guards keep this idempotent.
+  /* oxlint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (open && fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(`/exercises/${exerciseId}/history`);
+      void fetcher.load(`/exercises/${exerciseId}/history`);
     }
-    // fetcher itself is deliberately not a dependency - it gets a new
-    // identity every render, and its own guards keep this idempotent.
   }, [open, exerciseId]);
+  /* oxlint-enable react-hooks/exhaustive-deps */
 
   const groups = fetcher.data ? groupSetsByDate(fetcher.data.sets) : [];
 

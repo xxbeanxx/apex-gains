@@ -183,7 +183,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
 
   function goToDate(dateStr: string) {
     setCalendarOpen(false);
-    navigate(dateStr === todayStr ? '/today' : `/today?date=${dateStr}`);
+    void navigate(dateStr === todayStr ? '/today' : `/today?date=${dateStr}`);
   }
 
   const setsByExercise = new Map<string, typeof loggedSets>();

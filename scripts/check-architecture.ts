@@ -31,7 +31,7 @@ const rules: BoundaryRule[] = [
 async function files(directory: string): Promise<string[]> {
   const entries = await readdir(join(root, directory), { withFileTypes: true });
   const nested = await Promise.all(
-    entries.map((entry) => (entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)])),
+    entries.map(async (entry) => (entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)])),
   );
   return nested.flat().filter((file) => /\.[cm]?[jt]sx?$/.test(file));
 }

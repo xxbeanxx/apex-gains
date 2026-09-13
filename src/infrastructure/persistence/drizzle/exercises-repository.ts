@@ -1,4 +1,4 @@
-import { type SQL, and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { DeleteExerciseOutcome, ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import { Exercise } from '~domain/exercise/exercise';
 import { LibraryVisibility } from '~domain/shared/ownership';
