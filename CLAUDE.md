@@ -571,9 +571,16 @@ the browser.
 positions and workout ids, so an import is a deep copy — plan, then
 workouts, then exercises — and the interesting part is how much to
 _skip_: a sample, the importer's own fork of that sample, or an exercise
-of theirs under the same name all stand in for the shared row. That last
-one is not a nicety: `exercises_user_name_unique` means copying over a
-name they already hold is a constraint violation. The copies come from
+of theirs under the same name all stand in for the shared row. Finding
+the first two is `existingStandInFor` in `fork.ts` — shared with
+`resolveEditableCopy` because both ask "does this athlete already have a
+row that stands in for this one," though they differ on what to do when
+the answer is no: editing mints a fork on the spot, importing an
+unforked sample just reuses the sample's own id, since referencing it
+forks nothing. The name match is import-only, layered on top by
+`reusableExercise` — and it is not a nicety: `exercises_user_name_unique`
+means copying over a name they already hold is a constraint violation.
+The copies come from
 `copyForImport` on each aggregate, which is **not** `editableCopyFor` —
 `forkedFromId` means "my personal copy of a sample", and pointing it at
 another athlete's row would offer a revert that lands on a 404. Only

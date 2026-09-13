@@ -4,6 +4,7 @@ import type { ExercisesRepository } from '~application/ports/persistence/exercis
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import { existingStandInFor } from '~application/shared/fork';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { Exercise } from '~domain/exercise/exercise';
 import { Plan } from '~domain/plan/plan';
@@ -202,18 +203,8 @@ export class PlanImportService {
    * Reusing the fork is not just tidiness; copying instead would leave two
    * rows forked from one sample, and `findForkOf` answers with one.
    */
-  private async reusableWorkout(athlete: Athlete, source: Workout): Promise<string | null> {
-    if (source.ownership.isOwnedBy(athlete.id)) return source.id;
-
-    if (source.ownership.isSample) {
-      const fork = await this.workouts.findForkOf(athlete.id, source.id);
-      return fork?.id ?? source.id;
-    }
-
-    if (source.forkedFromId === null) return null;
-
-    const fork = await this.workouts.findForkOf(athlete.id, source.forkedFromId);
-    return fork?.id ?? null;
+  private reusableWorkout(athlete: Athlete, source: Workout): Promise<string | null> {
+    return existingStandInFor(athlete.id, source, (sampleId) => this.workouts.findForkOf(athlete.id, sampleId));
   }
 
   /**
@@ -259,17 +250,10 @@ export class PlanImportService {
    * importing the same link twice reuse the first import's exercises.
    */
   private async reusableExercise(athlete: Athlete, source: Exercise): Promise<string | null> {
-    if (source.ownership.isOwnedBy(athlete.id)) return source.id;
-
-    if (source.ownership.isSample) {
-      const fork = await this.exercises.findForkOf(athlete.id, source.id);
-      return fork?.id ?? source.id;
-    }
-
-    if (source.forkedFromId !== null) {
-      const fork = await this.exercises.findForkOf(athlete.id, source.forkedFromId);
-      if (fork) return fork.id;
-    }
+    const existing = await existingStandInFor(athlete.id, source, (sampleId) =>
+      this.exercises.findForkOf(athlete.id, sampleId),
+    );
+    if (existing) return existing;
 
     const byName = await this.exercises.findOwnByName(athlete.id, source.name);
     return byName?.id ?? null;

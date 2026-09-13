@@ -78,6 +78,36 @@ export async function resolveEditableCopy<A extends Forkable<A>>(
 }
 
 /**
+ * The row that already stands in for `source` in `userId`'s library, if
+ * any: their own copy of it, or the fork that already stands in for a
+ * sample. Answers null when nothing does - meaning a caller has to copy it
+ * fresh, or, as `PlanImportService`'s exercise import does, fall back to a
+ * name match first.
+ *
+ * Unlike `resolveEditableCopy`, this never mints anything: an unforked
+ * sample answers with the sample's own id rather than a freshly-minted
+ * fork, because an import that merely references a sample has no reason to
+ * fork it - only editing does.
+ */
+export async function existingStandInFor<A extends Forkable<A>>(
+  userId: string,
+  source: A,
+  findForkOf: (sampleId: string) => Promise<A | null>,
+): Promise<string | null> {
+  if (source.ownership.isOwnedBy(userId)) return source.id;
+
+  if (source.ownership.isSample) {
+    const fork = await findForkOf(source.id);
+    return fork?.id ?? source.id;
+  }
+
+  if (source.forkedFromId === null) return null;
+
+  const fork = await findForkOf(source.forkedFromId);
+  return fork?.id ?? null;
+}
+
+/**
  * Editing one kind of forkable aggregate.
  *
  * The sequence a mutation goes through is the same for exercises, workouts
