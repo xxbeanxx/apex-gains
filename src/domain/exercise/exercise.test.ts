@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { AdminService } from '~application/use-cases/admin-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Session } from '~domain/session/session';

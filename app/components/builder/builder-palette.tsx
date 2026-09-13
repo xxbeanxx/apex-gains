@@ -1,7 +1,6 @@
+import { SearchIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type * as React from 'react';
-
-import { SearchIcon } from 'lucide-react';
 
 import { Input } from '~/components/ui/input';
 

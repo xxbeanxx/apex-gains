@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { AthletePreferences } from '~domain/athlete/preferences';
 import { LoggedSet, type LoggedSetOptions } from '~domain/session/logged-set';
 import { Duration } from '~domain/values/duration';

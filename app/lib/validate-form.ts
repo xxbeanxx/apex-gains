@@ -5,7 +5,6 @@ import {
   type ValidatorConstraintInterface,
   registerDecorator,
 } from 'class-validator';
-
 import { DateOnly } from '~domain/values/date-only';
 import { Rpe } from '~domain/values/rpe';
 

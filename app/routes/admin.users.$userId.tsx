@@ -1,8 +1,8 @@
-import { Form, Link, data, redirect } from 'react-router';
-
 import { Expose } from 'class-transformer';
 import { IsIn, IsString } from 'class-validator';
 import { ArrowLeftIcon, ShieldCheckIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
+import { Form, Link, data, redirect } from 'react-router';
+import { formatCount, formatFullDate } from '~shared/format';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -19,7 +19,6 @@ import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { adminServiceContext } from '~/router/load-context';
-import { formatCount, formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/admin.users.$userId';
 

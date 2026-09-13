@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type * as React from 'react';
-
 import { Link } from 'react-router';
 
 import { cn } from '~/lib/utils';

@@ -1,10 +1,10 @@
-import { useState } from 'react';
-
-import { Link, useNavigate } from 'react-router';
-
 import { Expose, Transform } from 'class-transformer';
 import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader, Section } from '~/components/layout/page';
@@ -33,8 +33,6 @@ import {
   sessionServiceContext,
   trainingPlanServiceContext,
 } from '~/router/load-context';
-import { DateOnly } from '~domain/values/date-only';
-import { formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/today';
 

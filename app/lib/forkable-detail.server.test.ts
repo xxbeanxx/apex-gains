@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { Athlete } from '~domain/athlete/athlete';
+import { err, ok } from '~domain/shared/result';
 
 import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
 import { type ForkableUseCases, forkableHandlers } from '~/lib/forkable-detail.server';
 import { dispatch } from '~/lib/intent.server';
-import type { Athlete } from '~domain/athlete/athlete';
-import { err, ok } from '~domain/shared/result';
 
 import { mock } from '../../test/mock';
 

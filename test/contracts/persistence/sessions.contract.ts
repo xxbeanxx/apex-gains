@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { Session } from '~domain/session/session';
 import type { Clock } from '~domain/shared/clock';
 import { Rpe } from '~domain/values/rpe';

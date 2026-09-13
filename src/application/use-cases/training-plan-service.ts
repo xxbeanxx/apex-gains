@@ -44,7 +44,9 @@ export type DayPlan =
     };
 
 export type WeekPlanDay =
-  { date: string; type: 'none' } | { date: string; type: 'rest' } | { date: string; type: 'workout'; workoutName: string };
+  | { date: string; type: 'none' }
+  | { date: string; type: 'rest' }
+  | { date: string; type: 'workout'; workoutName: string };
 
 export type WeekHistoryDay = {
   date: string;

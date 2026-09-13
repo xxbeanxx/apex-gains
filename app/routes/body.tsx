@@ -1,8 +1,10 @@
-import { Form, useFetcher } from 'react-router';
-
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsNumber, IsPositive, IsUUID } from 'class-validator';
 import { CheckCircle2Icon, RulerIcon, ScaleIcon, XIcon } from 'lucide-react';
+import { Form, useFetcher } from 'react-router';
+import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
+import { DateOnly } from '~domain/values/date-only';
+import { formatFullDate } from '~shared/format';
 
 import { requireAthlete } from '~/auth/user-context';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
@@ -25,9 +27,6 @@ import {
   bodyWeightServiceContext,
   progressServiceContext,
 } from '~/router/load-context';
-import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
-import { DateOnly } from '~domain/values/date-only';
-import { formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/body';
 

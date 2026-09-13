@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { Duration } from '~domain/values/duration';
 import { SetTarget } from '~domain/workout/set-target';
 

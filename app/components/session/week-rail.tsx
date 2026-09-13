@@ -1,15 +1,13 @@
+import { CheckIcon } from 'lucide-react';
 import type * as React from 'react';
 import type { ReactNode } from 'react';
-
 import { Link } from 'react-router';
-
-import { CheckIcon } from 'lucide-react';
+import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';
+import { formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
 
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
-import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';
-import { formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
 
 /**
  * One day in a week rail. Shared by the upcoming plan and the past summary.

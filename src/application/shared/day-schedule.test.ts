@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { DaySchedule, type ScheduledDay, sessionPlanOf } from '~application/shared/day-schedule';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { Athlete } from '~domain/athlete/athlete';

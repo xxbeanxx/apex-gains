@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { formatNumber, speedUnitLabel } from '~domain/values/units';
 
 describe('speedUnitLabel', () => {

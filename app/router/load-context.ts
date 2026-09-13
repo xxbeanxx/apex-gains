@@ -1,8 +1,6 @@
+import type { ConfigType } from '@nestjs/config';
 import type { Cookie, RouterContext } from 'react-router';
 import { RouterContextProvider, createContext } from 'react-router';
-
-import type { ConfigType } from '@nestjs/config';
-
 import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { AdminService } from '~application/use-cases/admin-service';
 import type { AthleteService } from '~application/use-cases/athlete-service';

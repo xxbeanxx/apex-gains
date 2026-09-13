@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { OTHER_MUSCLE_GROUP, muscleGroupBalance } from '~domain/progress/muscle-balance';
 import { estimatedOneRepMax, personalRecords, progressSeries } from '~domain/progress/personal-records';

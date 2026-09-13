@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { fixedClock } from '~domain/shared/clock';

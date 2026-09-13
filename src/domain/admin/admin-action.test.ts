@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { AdminAction } from '~domain/admin/admin-action';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';

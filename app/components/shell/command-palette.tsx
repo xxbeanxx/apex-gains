@@ -1,9 +1,7 @@
+import { CalendarCheckIcon, ClipboardListIcon, DumbbellIcon, MoonIcon, RepeatIcon, SearchIcon } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-
 import { useNavigate } from 'react-router';
-
-import { CalendarCheckIcon, ClipboardListIcon, DumbbellIcon, MoonIcon, RepeatIcon, SearchIcon } from 'lucide-react';
 
 import { type NavUser, navItemsFor } from '~/components/shell/nav-items';
 import { toggleTheme } from '~/components/theme-toggle';

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { ExportService } from '~application/use-cases/export-service';
 import { Athlete } from '~domain/athlete/athlete';

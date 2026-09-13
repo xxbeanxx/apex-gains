@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { BodyMeasurement } from '~domain/body/body-measurement';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';

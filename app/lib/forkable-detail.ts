@@ -1,7 +1,6 @@
-import { data, redirect } from 'react-router';
-
 import { Expose, Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
+import { data, redirect } from 'react-router';
 
 import { type Intent, intent } from '~/lib/intent';
 import { trim } from '~/lib/validate-form';

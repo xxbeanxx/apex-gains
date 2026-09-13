@@ -1,5 +1,4 @@
 import { describe } from 'vitest';
-
 import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 
 import { describeRepositoryContract } from './index';

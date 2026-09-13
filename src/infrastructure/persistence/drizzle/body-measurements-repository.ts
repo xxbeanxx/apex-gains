@@ -1,5 +1,4 @@
 import { and, desc, eq } from 'drizzle-orm';
-
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
 import type { DateOnly } from '~domain/values/date-only';

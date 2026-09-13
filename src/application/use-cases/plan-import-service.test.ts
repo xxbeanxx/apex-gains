@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { PlanImportService } from '~application/use-cases/plan-import-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 import { Exercise } from '~domain/exercise/exercise';

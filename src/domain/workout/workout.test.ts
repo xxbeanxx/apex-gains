@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { AthletePreferences } from '~domain/athlete/preferences';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';

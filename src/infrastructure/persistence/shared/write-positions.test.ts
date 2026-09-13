@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { writePositions } from '~infrastructure/persistence/shared/write-positions';
 
 /**

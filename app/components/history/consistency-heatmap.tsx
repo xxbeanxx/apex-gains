@@ -1,8 +1,8 @@
 import { type ReactNode, useState } from 'react';
-
-import { cn } from '~/lib/utils';
 import type { HeatmapDayView } from '~application/use-cases/progress-view';
 import { formatFullDate } from '~shared/format';
+
+import { cn } from '~/lib/utils';
 
 const CELL = 12;
 const GAP = 3;

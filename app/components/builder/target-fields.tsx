@@ -1,9 +1,10 @@
-import { MeasurementField } from '~/components/measurement-field';
-import { cn } from '~/lib/utils';
 import type { MeasurementValues } from '~application/shared/measurement-values';
 import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
 import type { DistanceUnit, WeightUnit } from '~domain/values/units';
+
+import { MeasurementField } from '~/components/measurement-field';
+import { cn } from '~/lib/utils';
 
 /**
  * The target inputs a strength or cardio exercise takes, posting under the

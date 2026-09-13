@@ -1,6 +1,5 @@
-import { Link, useSubmit } from 'react-router';
-
 import { DumbbellIcon, LogOutIcon } from 'lucide-react';
+import { Link, useSubmit } from 'react-router';
 
 import { Breadcrumbs } from '~/components/shell/breadcrumbs';
 import { CommandPalette } from '~/components/shell/command-palette';

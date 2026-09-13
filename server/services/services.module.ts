@@ -1,5 +1,4 @@
 import { Module, type Provider } from '@nestjs/common';
-
 import { productionDeps } from '~application/ports/domain-deps';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { DaySchedule } from '~application/shared/day-schedule';

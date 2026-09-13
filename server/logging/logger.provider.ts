@@ -1,7 +1,6 @@
 import { ConsoleLogger, LOG_LEVELS, type LogLevel } from '@nestjs/common';
 import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-
 import { coreConfig } from '~server/config/core.config';
 import { LOGGER } from '~server/logging/tokens';
 

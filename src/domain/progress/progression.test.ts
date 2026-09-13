@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { type RecentSession, suggestNextTarget } from '~domain/progress/progression';
 import { LoggedSet } from '~domain/session/logged-set';
 import { DateOnly } from '~domain/values/date-only';

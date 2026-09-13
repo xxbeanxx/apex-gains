@@ -1,6 +1,5 @@
-import { Link } from 'react-router';
-
 import { CalendarCheckIcon, CalendarPlusIcon, DumbbellIcon, LineChartIcon, MoonIcon, RepeatIcon } from 'lucide-react';
+import { Link } from 'react-router';
 
 import { userContext } from '~/auth/user-context';
 import { SessionRow } from '~/components/history/session-row';

@@ -1,5 +1,4 @@
 import { asc, eq } from 'drizzle-orm';
-
 import type { AthletesRepository } from '~application/ports/persistence/athletes-repository';
 import { Athlete } from '~domain/athlete/athlete';
 import { dbScope } from '~infrastructure/persistence/drizzle/index';

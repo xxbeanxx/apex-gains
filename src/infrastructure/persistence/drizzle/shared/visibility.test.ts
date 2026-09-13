@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { LibraryVisibility } from '~domain/shared/ownership';
 import { db } from '~infrastructure/persistence/drizzle/index';
 import { equipment, exercises, plans, workouts } from '~infrastructure/persistence/drizzle/schema';

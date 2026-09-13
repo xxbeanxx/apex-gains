@@ -1,7 +1,6 @@
+import { CheckIcon, ClockIcon, MapPinIcon } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-
-import { CheckIcon, ClockIcon, MapPinIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '~/components/ui/command';

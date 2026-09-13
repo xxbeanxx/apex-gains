@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { Duration } from '~domain/values/duration';
 import { Length } from '~domain/values/length';
 import { Rpe } from '~domain/values/rpe';

@@ -1,7 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { Expose } from 'class-transformer';
 import { IsString, MinLength } from 'class-validator';
-
 import { validateConfigSlice } from '~server/config/validate';
 
 /**

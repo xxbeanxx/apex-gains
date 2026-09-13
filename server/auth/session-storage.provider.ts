@@ -1,8 +1,6 @@
-import { type SessionStorage, createCookieSessionStorage } from 'react-router';
-
 import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-
+import { type SessionStorage, createCookieSessionStorage } from 'react-router';
 import { SESSION_STORAGE } from '~server/auth/tokens';
 import { coreConfig } from '~server/config/core.config';
 import { sessionConfig } from '~server/config/session.config';

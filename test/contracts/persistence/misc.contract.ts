@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { Athlete } from '~domain/athlete/athlete';
 import { Duration } from '~domain/values/duration';
 

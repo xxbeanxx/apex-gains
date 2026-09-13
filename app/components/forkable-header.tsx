@@ -1,8 +1,6 @@
-import { type ReactNode, useId } from 'react';
-
-import { Form } from 'react-router';
-
 import { CopyIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
+import { type ReactNode, useId } from 'react';
+import { Form } from 'react-router';
 
 import { RenameDisclosure } from '~/components/builder/rename-disclosure';
 import { Badge } from '~/components/ui/badge';

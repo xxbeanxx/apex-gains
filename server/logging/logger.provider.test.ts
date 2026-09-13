@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { enabledLogLevels } from '~server/logging/logger.provider';
 
 describe('enabledLogLevels', () => {

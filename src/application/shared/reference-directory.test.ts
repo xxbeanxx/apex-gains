@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { Equipment } from '~domain/equipment/equipment';
 import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';

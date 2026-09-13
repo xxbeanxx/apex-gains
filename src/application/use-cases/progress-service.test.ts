@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { ProgressService } from '~application/use-cases/progress-service';

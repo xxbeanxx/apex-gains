@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { activatePlan } from '~domain/plan/activation';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 

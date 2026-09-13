@@ -1,8 +1,8 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsPositive } from 'class-validator';
+import type { MeasurementInput } from '~application/shared/measurement-values';
 
 import { toOptionalNumber } from '~/lib/validate-form';
-import type { MeasurementInput } from '~application/shared/measurement-values';
 
 /**
  * The measurement fields a logged set's form posts, validated - blank is

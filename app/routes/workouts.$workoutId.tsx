@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from 'react';
-
-import { Form } from 'react-router';
-
 import { Expose } from 'class-transformer';
 import { IsIn, IsUUID } from 'class-validator';
 import { ChevronRightIcon, ListPlusIcon, PlusIcon, TrendingUpIcon } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { Form } from 'react-router';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
+import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import { requireAthlete } from '~/auth/user-context';
 import { BuilderFrame } from '~/components/builder/builder-frame';
@@ -30,10 +32,6 @@ import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { TargetFieldsDto } from '~/lib/measurement-fields';
 import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
-import type { ExerciseView } from '~application/use-cases/exercise-library-service';
-import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
-import type { CardioFields } from '~domain/equipment/cardio-fields';
-import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import type { Route } from './+types/workouts.$workoutId';
 

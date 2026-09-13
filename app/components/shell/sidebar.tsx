@@ -1,9 +1,7 @@
+import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-
 import { Link, NavLink } from 'react-router';
-
-import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
 
 import type { NavItem } from '~/components/shell/nav-items';
 import { setSidebarCollapsed } from '~/components/shell/shell-init';

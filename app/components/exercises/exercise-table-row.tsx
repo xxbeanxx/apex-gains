@@ -1,9 +1,10 @@
+import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
+
 import { ExerciseRowMenu } from '~/components/exercises/exercise-row-menu';
 import { SourceBadge, sourceOf } from '~/components/exercises/exercise-source';
 import { Badge } from '~/components/ui/badge';
 import { TableCell, TableRow } from '~/components/ui/table';
 import { typeLabels } from '~/routes/exercises';
-import type { EquipmentView, ExerciseView } from '~application/use-cases/exercise-library-service';
 
 function ExerciseTableRow({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
   return (

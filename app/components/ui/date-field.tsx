@@ -1,14 +1,13 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
-
 import { CalendarIcon } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
+import { formatShortDate } from '~shared/format';
 
 import { Button } from '~/components/ui/button';
 import { Calendar } from '~/components/ui/calendar';
 import { Field } from '~/components/ui/field';
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
-import { formatShortDate } from '~shared/format';
 
 /**
  * A `Field`-wrapped date picker over the `Calendar` grid, for a plain form

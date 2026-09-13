@@ -1,8 +1,6 @@
-import type { ReactNode } from 'react';
-
-import { NavLink, useSubmit } from 'react-router';
-
 import { LogOutIcon, MoreHorizontalIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { NavLink, useSubmit } from 'react-router';
 
 import type { NavItem, NavUser } from '~/components/shell/nav-items';
 import { Avatar } from '~/components/ui/avatar';

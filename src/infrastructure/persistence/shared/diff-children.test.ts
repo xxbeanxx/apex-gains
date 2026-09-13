@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { diffChildren } from '~infrastructure/persistence/shared/diff-children';
 
 describe('diffChildren', () => {

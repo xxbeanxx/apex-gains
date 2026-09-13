@@ -1,7 +1,8 @@
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
 import type { MeasurementName, MeasurementValues } from '~application/shared/measurement-values';
 import { type DistanceUnit, type WeightUnit, speedUnitLabel } from '~domain/values/units';
+
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
 
 type Units = { weightUnit: WeightUnit; distanceUnit: DistanceUnit };
 

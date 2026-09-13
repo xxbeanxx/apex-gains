@@ -1,6 +1,5 @@
 import { Module, type Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-
 import { DrizzleAdminActionsRepository } from '~infrastructure/persistence/drizzle/admin-actions-repository';
 import { DrizzleAthletesRepository } from '~infrastructure/persistence/drizzle/athletes-repository';
 import { DrizzleBodyMeasurementsRepository } from '~infrastructure/persistence/drizzle/body-measurements-repository';

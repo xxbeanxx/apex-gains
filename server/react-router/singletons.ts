@@ -1,6 +1,4 @@
 import type { INestApplication, Type } from '@nestjs/common';
-
-import type { NestSingletons } from '~/router/load-context';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { AdminService } from '~application/use-cases/admin-service';
 import { AthleteService } from '~application/use-cases/athlete-service';
@@ -18,6 +16,8 @@ import { WorkoutService } from '~application/use-cases/workout-service';
 import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '~server/auth/tokens';
 import { testLoginConfig } from '~server/config/test-login.config';
 import { LOGGER } from '~server/logging/tokens';
+
+import type { NestSingletons } from '~/router/load-context';
 
 /**
  * Where in the DI container each load-context value lives, keyed as

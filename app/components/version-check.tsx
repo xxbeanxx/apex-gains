@@ -1,8 +1,6 @@
-import { useEffect, useRef } from 'react';
-
-import { useFetcher } from 'react-router';
-
 import { RefreshCwIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { useFetcher } from 'react-router';
 
 import { Button } from '~/components/ui/button';
 import type { BuildDetails } from '~/lib/build-info';

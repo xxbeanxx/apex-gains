@@ -1,7 +1,6 @@
+import { PencilIcon } from 'lucide-react';
 import * as React from 'react';
 import { type ReactNode, useRef } from 'react';
-
-import { PencilIcon } from 'lucide-react';
 
 import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { buttonVariants } from '~/components/ui/button';

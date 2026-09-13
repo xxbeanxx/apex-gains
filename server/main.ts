@@ -24,12 +24,12 @@ import compression from 'compression';
 import { static as serveStatic } from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
 import 'reflect-metadata';
-
-import type { NestSingletons } from '~/router/load-context';
 import { AppModule } from '~server/app.module';
 import { coreConfig } from '~server/config/core.config';
 import { LOGGER } from '~server/logging/tokens';
 import { collectNestSingletons } from '~server/react-router/singletons';
+
+import type { NestSingletons } from '~/router/load-context';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

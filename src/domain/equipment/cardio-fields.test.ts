@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { cardioFieldsFor } from '~domain/equipment/cardio-fields';
 
 const BOTH = { showSpeed: true, showResistance: true };

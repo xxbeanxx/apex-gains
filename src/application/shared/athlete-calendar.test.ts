@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { Athlete } from '~domain/athlete/athlete';
 import { fixedClock } from '~domain/shared/clock';

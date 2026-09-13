@@ -1,5 +1,4 @@
 import { type RouterContextProvider, createContext } from 'react-router';
-
 import type { Athlete } from '~domain/athlete/athlete';
 
 /**

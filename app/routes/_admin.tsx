@@ -1,6 +1,5 @@
-import { NavLink, Outlet } from 'react-router';
-
 import { GaugeIcon, UsersIcon } from 'lucide-react';
+import { NavLink, Outlet } from 'react-router';
 
 import { requireAdminMiddleware } from '~/auth/require-admin';
 import { cn } from '~/lib/utils';

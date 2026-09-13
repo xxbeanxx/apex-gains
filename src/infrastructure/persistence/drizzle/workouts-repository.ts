@@ -1,5 +1,4 @@
 import { type SQL, and, asc, desc, eq, inArray } from 'drizzle-orm';
-
 import type { WorkoutName, WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { LibraryVisibility } from '~domain/shared/ownership';
 import { Workout, type WorkoutExerciseSnapshot } from '~domain/workout/workout';

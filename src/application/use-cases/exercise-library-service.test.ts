@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { ExerciseLibraryService } from '~application/use-cases/exercise-library-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Equipment, type EquipmentSnapshot } from '~domain/equipment/equipment';

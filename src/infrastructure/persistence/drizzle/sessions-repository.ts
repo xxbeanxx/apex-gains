@@ -1,5 +1,4 @@
 import { and, asc, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
-
 import type { SessionsRepository, TrainingTotals } from '~application/ports/persistence/sessions-repository';
 import { LoggedSet } from '~domain/session/logged-set';
 import { Session } from '~domain/session/session';

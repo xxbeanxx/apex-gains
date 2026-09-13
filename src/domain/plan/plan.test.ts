@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';

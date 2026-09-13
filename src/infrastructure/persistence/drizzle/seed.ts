@@ -1,5 +1,4 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-
 import { db } from '~infrastructure/persistence/drizzle/index';
 import {
   equipment,

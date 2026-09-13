@@ -1,5 +1,4 @@
 import { type SQL, and, asc, desc, eq, inArray } from 'drizzle-orm';
-
 import type { PlanName, PlansRepository } from '~application/ports/persistence/plans-repository';
 import { Plan } from '~domain/plan/plan';
 import { LibraryVisibility } from '~domain/shared/ownership';

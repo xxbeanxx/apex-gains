@@ -1,5 +1,4 @@
 import { asc, eq, inArray } from 'drizzle-orm';
-
 import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 import { Equipment } from '~domain/equipment/equipment';
 import { dbScope } from '~infrastructure/persistence/drizzle/index';

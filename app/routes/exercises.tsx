@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
-
-import { data } from 'react-router';
-
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { DumbbellIcon, PlusIcon, SearchIcon, Settings2Icon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { data } from 'react-router';
+import type { ExerciseView } from '~application/use-cases/exercise-library-service';
+import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
+import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import { requireAthlete } from '~/auth/user-context';
 import { EquipmentDialog } from '~/components/exercises/equipment-dialog';
@@ -22,9 +23,6 @@ import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { optionalTrim, trim } from '~/lib/validate-form';
 import { exerciseLibraryServiceContext } from '~/router/load-context';
-import type { ExerciseView } from '~application/use-cases/exercise-library-service';
-import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
-import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
 
 import type { Route } from './+types/exercises';
 

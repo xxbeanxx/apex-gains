@@ -1,8 +1,12 @@
-import { useState } from 'react';
-
-import { useFetcher } from 'react-router';
-
 import { ChevronRightIcon, PlusIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useFetcher } from 'react-router';
+import type { LastSetView, LoggedSetView } from '~application/use-cases/session-service';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import { formatNumber } from '~domain/values/units';
+import type { DistanceUnit, WeightUnit } from '~domain/values/units';
+import { formatMonthDay } from '~shared/format';
 
 import { MeasurementField } from '~/components/measurement-field';
 import { ExerciseHistoryButton } from '~/components/session/exercise-history-button';
@@ -12,12 +16,6 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { Textarea } from '~/components/ui/textarea';
 import type { Intent } from '~/lib/intent';
 import { cn } from '~/lib/utils';
-import type { LastSetView, LoggedSetView } from '~application/use-cases/session-service';
-import type { CardioFields } from '~domain/equipment/cardio-fields';
-import type { ExerciseType } from '~domain/exercise/exercise-type';
-import { formatNumber } from '~domain/values/units';
-import type { DistanceUnit, WeightUnit } from '~domain/values/units';
-import { formatMonthDay } from '~shared/format';
 
 /**
  * 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side.

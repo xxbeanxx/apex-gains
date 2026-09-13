@@ -1,6 +1,12 @@
-import { useState } from 'react';
-
 import { ScaleIcon, TrendingUpIcon, TrophyIcon } from 'lucide-react';
+import { useState } from 'react';
+import type {
+  HeatmapDayView,
+  MuscleBalanceView,
+  PersonalRecordView,
+  ProgressSeriesView,
+  WeeklyPointView,
+} from '~application/use-cases/progress-view';
 
 import { ConsistencyHeatmap } from '~/components/history/consistency-heatmap';
 import { ExerciseProgressChart } from '~/components/history/exercise-progress-chart';
@@ -10,13 +16,6 @@ import { WeeklyBarChart } from '~/components/history/weekly-bar-chart';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import type {
-  HeatmapDayView,
-  MuscleBalanceView,
-  PersonalRecordView,
-  ProgressSeriesView,
-  WeeklyPointView,
-} from '~application/use-cases/progress-view';
 
 export function HistoryCharts({
   heatmap,

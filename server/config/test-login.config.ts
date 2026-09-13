@@ -1,7 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { Expose, Transform } from 'class-transformer';
 import { IsBoolean } from 'class-validator';
-
 import { toBoolean, validateConfigSlice } from '~server/config/validate';
 
 /**

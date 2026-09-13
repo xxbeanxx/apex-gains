@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-
 import { SetTarget } from '~domain/workout/set-target';
 
 import { type ContractSubject, type RepositorySet, deps, equipmentItem, exercise, ids, seedAthletes, workout } from './harness';

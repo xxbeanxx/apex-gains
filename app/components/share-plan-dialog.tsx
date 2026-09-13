@@ -1,8 +1,6 @@
-import { useState } from 'react';
-
-import { Form } from 'react-router';
-
 import { CheckIcon, CopyIcon, Share2Icon } from 'lucide-react';
+import { useState } from 'react';
+import { Form } from 'react-router';
 
 import { QrCodeImage } from '~/components/qr-code';
 import { Button } from '~/components/ui/button';

@@ -2,7 +2,6 @@ import { LOG_LEVELS, type LogLevel } from '@nestjs/common';
 import { registerAs } from '@nestjs/config';
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-
 import { toNumber, validateConfigSlice } from '~server/config/validate';
 
 /**

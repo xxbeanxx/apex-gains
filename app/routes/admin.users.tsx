@@ -1,8 +1,8 @@
-import { Form, Link, data } from 'react-router';
-
 import { Expose } from 'class-transformer';
 import { IsIn, IsUUID } from 'class-validator';
 import { ShieldCheckIcon, ShieldOffIcon, UsersIcon } from 'lucide-react';
+import { Form, Link, data } from 'react-router';
+import { formatCount, formatFullDate } from '~shared/format';
 
 import { requireAthlete } from '~/auth/user-context';
 import { AccountIdentity } from '~/components/admin/account-identity';
@@ -16,7 +16,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~
 import { requestLogger } from '~/lib/logger';
 import { validateForm } from '~/lib/validate-form.server';
 import { adminServiceContext } from '~/router/load-context';
-import { formatCount, formatFullDate } from '~shared/format';
 
 import type { Route } from './+types/admin.users';
 

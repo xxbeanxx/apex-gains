@@ -1,7 +1,6 @@
+import { PlusIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import type * as React from 'react';
-
-import { PlusIcon } from 'lucide-react';
 
 import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { Button } from '~/components/ui/button';

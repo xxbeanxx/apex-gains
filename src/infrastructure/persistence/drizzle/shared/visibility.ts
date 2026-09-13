@@ -1,6 +1,5 @@
 import { type SQL, and, eq, isNotNull, isNull, notInArray, or } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
-
 import type { LibraryVisibility } from '~domain/shared/ownership';
 import { db } from '~infrastructure/persistence/drizzle/index';
 

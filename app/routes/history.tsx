@@ -1,4 +1,5 @@
 import { HistoryIcon } from 'lucide-react';
+import { formatMonthYear } from '~shared/format';
 
 import { requireAthlete } from '~/auth/user-context';
 import { HistoryCharts } from '~/components/history/history-charts';
@@ -6,7 +7,6 @@ import { SessionRow } from '~/components/history/session-row';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { EmptyState } from '~/components/ui/empty-state';
 import { progressServiceContext } from '~/router/load-context';
-import { formatMonthYear } from '~shared/format';
 
 import type { Route } from './+types/history';
 

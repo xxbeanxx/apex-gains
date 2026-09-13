@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { toCanonical, toValues } from '~application/shared/measurement-values';
 import { AthletePreferences } from '~domain/athlete/preferences';
 import { SetTarget } from '~domain/workout/set-target';

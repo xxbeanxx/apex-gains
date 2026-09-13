@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 
 describe('Ownership.sample', () => {

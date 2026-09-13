@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { DateOnly } from '~domain/values/date-only';
 
 describe('DateOnly.tryParse', () => {

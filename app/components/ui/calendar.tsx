@@ -1,9 +1,8 @@
 'use client';
 
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import * as React from 'react';
 import { useState } from 'react';
-
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';

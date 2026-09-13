@@ -1,5 +1,4 @@
 import * as client from 'openid-client';
-
 import type {
   BeginGoogleLogin,
   CompleteGoogleLoginParams,

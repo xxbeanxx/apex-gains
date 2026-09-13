@@ -1,9 +1,9 @@
 import { redirect } from 'react-router';
+import type { Athlete } from '~domain/athlete/athlete';
+import type { Result } from '~domain/shared/result';
 
 import type { ForkableDetail } from '~/lib/forkable-detail';
 import { handled } from '~/lib/intent.server';
-import type { Athlete } from '~domain/athlete/athlete';
-import type { Result } from '~domain/shared/result';
 
 /**
  * The use-case methods behind a forkable page's four shared intents -

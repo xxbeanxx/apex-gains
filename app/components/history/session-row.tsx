@@ -1,7 +1,5 @@
-import { Link } from 'react-router';
-
 import { MoonIcon } from 'lucide-react';
-
+import { Link } from 'react-router';
 import type { TimelineDay } from '~application/use-cases/progress-service';
 import { formatFullDate, formatMonthDay } from '~shared/format';
 

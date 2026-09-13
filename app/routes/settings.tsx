@@ -1,10 +1,17 @@
-import { useId } from 'react';
-
-import { Form, data, redirect } from 'react-router';
-
 import { Expose, Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsPositive, IsString } from 'class-validator';
 import { CheckCircle2Icon, DownloadIcon, Trash2Icon } from 'lucide-react';
+import { useId } from 'react';
+import { Form, data, redirect } from 'react-router';
+import { TIMEZONES } from '~domain/values/timezone';
+import {
+  DISTANCE_UNITS,
+  type DistanceUnit,
+  LENGTH_UNITS,
+  type LengthUnit,
+  WEIGHT_UNITS,
+  type WeightUnit,
+} from '~domain/values/units';
 
 import { requireAthlete } from '~/auth/user-context';
 import { Page, PageHeader } from '~/components/layout/page';
@@ -23,15 +30,6 @@ import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { toOptionalNumber } from '~/lib/validate-form';
 import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
-import { TIMEZONES } from '~domain/values/timezone';
-import {
-  DISTANCE_UNITS,
-  type DistanceUnit,
-  LENGTH_UNITS,
-  type LengthUnit,
-  WEIGHT_UNITS,
-  type WeightUnit,
-} from '~domain/values/units';
 
 import type { Route } from './+types/settings';
 

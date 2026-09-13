@@ -1,6 +1,5 @@
 import type { Provider } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-
 import type { GoogleIdentityProvider } from '~application/ports/identity/google-identity-provider';
 import { GoogleIdentityAdapter } from '~infrastructure/identity/google/google-identity-adapter';
 import { googleOAuthConfig } from '~server/config/google-oauth.config';

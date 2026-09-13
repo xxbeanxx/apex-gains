@@ -1,5 +1,4 @@
 import { desc } from 'drizzle-orm';
-
 import type { AdminActionsRepository } from '~application/ports/persistence/admin-actions-repository';
 import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
 import { dbScope } from '~infrastructure/persistence/drizzle/index';
