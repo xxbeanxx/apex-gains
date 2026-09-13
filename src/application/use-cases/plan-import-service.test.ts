@@ -14,7 +14,7 @@ import { Workout } from '~domain/workout/workout';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
@@ -88,16 +88,16 @@ async function seedSharedPlan(options: { exerciseForkedFrom?: string | null } = 
 }
 
 beforeEach(async () => {
-  athletes = new InMemoryAthletesRepository();
-  plans = new InMemoryPlansRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  exercises = new InMemoryExercisesRepository();
-  exercises.referencedBy(workouts);
+  const stores = inMemoryRepositories();
+  athletes = stores.athletes;
+  plans = stores.plans;
+  workouts = stores.workouts;
+  exercises = stores.exercises;
 
   await athletes.save(importer);
   await athletes.save(sharer);
 
-  service = new PlanImportService(plans, workouts, exercises, athletes, new InMemoryUnitOfWork(), deps('imported'));
+  service = new PlanImportService(plans, workouts, exercises, athletes, stores.unitOfWork, deps('imported'));
 });
 
 describe('previewing a share link', () => {

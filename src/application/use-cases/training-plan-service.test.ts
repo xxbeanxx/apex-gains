@@ -16,6 +16,7 @@ import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
@@ -118,11 +119,12 @@ let sessions: InMemorySessionsRepository;
 let service: TrainingPlanService;
 
 beforeEach(() => {
-  plans = new InMemoryPlansRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  exercises = new InMemoryExercisesRepository();
-  equipmentRepo = new InMemoryEquipmentRepository();
-  sessions = new InMemorySessionsRepository();
+  const stores = inMemoryRepositories();
+  plans = stores.plans;
+  workouts = stores.workouts;
+  exercises = stores.exercises;
+  equipmentRepo = stores.equipment;
+  sessions = stores.sessions;
   const references = new ReferenceDirectory(exercises, workouts, equipmentRepo);
   service = new TrainingPlanService(new DaySchedule(plans, references), references, sessions);
 });

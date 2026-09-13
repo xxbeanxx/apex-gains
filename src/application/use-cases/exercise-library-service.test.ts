@@ -7,9 +7,11 @@ import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
+import { Workout } from '~domain/workout/workout';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
+import type { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 
@@ -58,12 +60,15 @@ function sampleEquipment(overrides: Partial<EquipmentSnapshot> = {}): Equipment 
 
 let exercises: InMemoryExercisesRepository;
 let equipment: InMemoryEquipmentRepository;
+let workouts: InMemoryWorkoutsRepository;
 let service: ExerciseLibraryService;
 
 beforeEach(() => {
-  exercises = new InMemoryExercisesRepository();
-  equipment = new InMemoryEquipmentRepository();
-  service = new ExerciseLibraryService(exercises, equipment, new InMemoryUnitOfWork(), {
+  const stores = inMemoryRepositories();
+  exercises = stores.exercises;
+  equipment = stores.equipment;
+  workouts = stores.workouts;
+  service = new ExerciseLibraryService(exercises, equipment, stores.unitOfWork, {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
     secrets: sequentialSecrets('token'),
@@ -219,6 +224,50 @@ describe('revertExercise', () => {
 
     expect(outcome).toEqual({ ok: true, value: undefined });
     expect(await exercises.findVisible(athlete.id, forkedId!)).toBeNull();
+  });
+
+  /**
+   * `on delete restrict`: the athlete's workout still names their copy, and
+   * reverting would leave it pointing at nothing.
+   */
+  it('refuses to revert a fork a workout still names, and keeps it', async () => {
+    await exercises.save(sampleExercise());
+    const renamed = await service.updateExercise(athlete, 'sample-1', {
+      name: 'Mine',
+      exerciseType: 'strength',
+      muscleGroup: null,
+      description: null,
+    });
+    const forkedId = renamed.ok ? renamed.value.forkedId! : '';
+    await workouts.save(
+      Workout.fromSnapshot({
+        id: 'workout-1',
+        userId: 'user-1',
+        forkedFromId: null,
+        name: 'Push Day',
+        createdAt: NOW,
+        updatedAt: NOW,
+        exercises: [
+          {
+            id: 'entry-0',
+            exerciseId: forkedId,
+            position: 0,
+            targetSets: null,
+            targetReps: null,
+            targetWeight: null,
+            targetDurationSeconds: null,
+            targetSpeed: null,
+            targetResistance: null,
+            targetRestSeconds: null,
+          },
+        ],
+      }),
+    );
+
+    const outcome = await service.revertExercise(athlete, forkedId);
+
+    expect(outcome).toEqual({ ok: false, error: 'in-use' });
+    expect(await exercises.findVisible(athlete.id, forkedId)).not.toBeNull();
   });
 
   it('refuses to revert an exercise that was never forked', async () => {

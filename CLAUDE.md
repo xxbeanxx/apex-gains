@@ -48,7 +48,10 @@ automated checks. Unit tests
 `as any`/`as Type` casts scattered through test bodies. Most tests need
 neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
-repository adapters rather than mocking a database - by constructing the
+repository adapters rather than mocking a database - taking the whole
+family from one `inMemoryRepositories()` call
+(`src/infrastructure/persistence/in-memory/repositories.ts`), never a
+store constructed on its own, and constructing the
 service class directly (`new PlanService(...)`), not through Nest's
 DI container, which tests never boot - nothing under `src/` is
 Nest-aware, so there is no container to boot (see Server runtime,
@@ -62,8 +65,9 @@ be both the code under test and its own oracle; the behaviour only
 Postgres can show - `on delete restrict`/`cascade`, per-statement unique
 constraints, `onConflictDoNothing` - is imitated in-memory by naming the
 referencing stores to each adapter
-(`src/infrastructure/persistence/in-memory/references.ts`),
-wired in `server/repositories/repositories.module.ts`. See README.md
+(`src/infrastructure/persistence/in-memory/references.ts`), which
+`inMemoryRepositories()` does for the Nest module, the contract suite and
+every service test alike. See README.md
 "Persistence contract tests". Tests that touch
 `~infrastructure/persistence/drizzle/index` rely on `vite.config.ts`'s
 `test` block seeding a dummy `DATABASE_URL` - the postgres-js client is

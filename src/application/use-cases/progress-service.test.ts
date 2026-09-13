@@ -19,9 +19,9 @@ import { Weight } from '~domain/values/weight';
 import { Workout } from '~domain/workout/workout';
 import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
 import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
-import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
@@ -71,13 +71,14 @@ let bodyMeasurements: InMemoryBodyMeasurementsRepository;
 let service: ProgressService;
 
 beforeEach(() => {
-  sessions = new InMemorySessionsRepository();
-  exercises = new InMemoryExercisesRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  plans = new InMemoryPlansRepository();
-  bodyWeight = new InMemoryBodyWeightRepository();
-  bodyMeasurements = new InMemoryBodyMeasurementsRepository();
-  const references = new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository());
+  const stores = inMemoryRepositories();
+  sessions = stores.sessions;
+  exercises = stores.exercises;
+  workouts = stores.workouts;
+  plans = stores.plans;
+  bodyWeight = stores.bodyWeight;
+  bodyMeasurements = stores.bodyMeasurements;
+  const references = new ReferenceDirectory(exercises, workouts, stores.equipment);
   service = new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements, new AthleteCalendar(deps.clock));
 });
 

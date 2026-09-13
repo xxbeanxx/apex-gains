@@ -9,8 +9,8 @@ import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
 import { InMemoryAdminActionsRepository } from '~infrastructure/persistence/in-memory/admin-actions-repository';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 const TODAY = DateOnly.parse('2026-09-04');
@@ -48,11 +48,11 @@ async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestD
 }
 
 beforeEach(() => {
-  athletes = new InMemoryAthletesRepository();
-  sessions = new InMemorySessionsRepository();
-  adminActions = new InMemoryAdminActionsRepository();
-  athletes.referencedBy(adminActions);
-  service = new AdminService(athletes, sessions, adminActions, new InMemoryUnitOfWork(), deps);
+  const stores = inMemoryRepositories();
+  athletes = stores.athletes;
+  sessions = stores.sessions;
+  adminActions = stores.adminActions;
+  service = new AdminService(athletes, sessions, adminActions, stores.unitOfWork, deps);
 });
 
 describe('accounts', () => {

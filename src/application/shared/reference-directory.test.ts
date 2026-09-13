@@ -6,6 +6,7 @@ import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
@@ -42,9 +43,10 @@ let equipment: InMemoryEquipmentRepository;
 let directory: ReferenceDirectory;
 
 beforeEach(async () => {
-  exercises = new InMemoryExercisesRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  equipment = new InMemoryEquipmentRepository();
+  const stores = inMemoryRepositories();
+  exercises = stores.exercises;
+  workouts = stores.workouts;
+  equipment = stores.equipment;
   directory = new ReferenceDirectory(exercises, workouts, equipment);
 
   // A sample exercise and workout, each forked by user-1 and by user-2.

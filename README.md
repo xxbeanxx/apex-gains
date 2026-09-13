@@ -163,7 +163,9 @@ account), the per-statement `(parentId, position)` uniqueness that
 `persistence/shared/write-positions.ts` exists to work around, and the
 `onConflictDoNothing` resolution behind opening a day twice. The in-memory
 adapters imitate the first two by being told which stores reference them -
-see `src/infrastructure/persistence/in-memory/references.ts`.
+see `src/infrastructure/persistence/in-memory/references.ts` - and
+`inMemoryRepositories()` in `in-memory/repositories.ts` is the one place that
+tells them, for the app, the contract suite and the service tests alike.
 
 ## End-to-end tests
 

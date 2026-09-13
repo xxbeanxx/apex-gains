@@ -12,11 +12,10 @@ import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
 import { SetTarget } from '~domain/workout/set-target';
 import { Workout } from '~domain/workout/workout';
-import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
@@ -50,20 +49,14 @@ let workouts: InMemoryWorkoutsRepository;
 let service: SessionService;
 
 beforeEach(async () => {
-  sessions = new InMemorySessionsRepository();
-  exercises = new InMemoryExercisesRepository();
-  plans = new InMemoryPlansRepository();
-  workouts = new InMemoryWorkoutsRepository();
+  const stores = inMemoryRepositories();
+  sessions = stores.sessions;
+  exercises = stores.exercises;
+  plans = stores.plans;
+  workouts = stores.workouts;
 
-  const references = new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository());
-  service = new SessionService(
-    sessions,
-    exercises,
-    references,
-    new DaySchedule(plans, references),
-    new InMemoryUnitOfWork(),
-    deps,
-  );
+  const references = new ReferenceDirectory(exercises, workouts, stores.equipment);
+  service = new SessionService(sessions, exercises, references, new DaySchedule(plans, references), stores.unitOfWork, deps);
 
   await exercises.save(
     Exercise.create(

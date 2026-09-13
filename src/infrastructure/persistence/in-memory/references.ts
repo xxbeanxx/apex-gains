@@ -7,9 +7,9 @@
  * invisible until the day a service test passes against the in-memory store
  * and the same code fails against Postgres.
  *
- * So the stores that reference another are named to it at construction
- * (`server/repositories/repositories.module.ts` and the contract's own
- * wiring), and the adapter asks them rather than guessing.
+ * So the stores that reference another are named to it, once, by
+ * `inMemoryRepositories()` in `./repositories.ts`, and the adapter asks them
+ * rather than guessing.
  */
 
 /**

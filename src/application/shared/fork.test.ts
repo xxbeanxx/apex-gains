@@ -7,7 +7,7 @@ import { sequentialIds } from '~domain/shared/ids';
 import { err, ok } from '~domain/shared/result';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 
 /**
  * `Plan` stands in for every forkable aggregate here: the editor is
@@ -38,8 +38,9 @@ describe('ForkableLibrary', () => {
   let editor: ForkableLibrary<Plan>;
 
   beforeEach(() => {
-    plans = new InMemoryPlansRepository();
-    editor = new ForkableLibrary(plans, new InMemoryUnitOfWork(), deps, (loaded) => loaded.slots);
+    const stores = inMemoryRepositories();
+    plans = stores.plans;
+    editor = new ForkableLibrary(plans, stores.unitOfWork, deps, (loaded) => loaded.slots);
   });
 
   describe('mutate', () => {

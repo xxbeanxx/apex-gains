@@ -5,7 +5,7 @@ import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 
 const NOW = new Date('2026-09-04T12:00:00Z');
 
@@ -20,8 +20,9 @@ let athletes: InMemoryAthletesRepository;
 let service: AthleteService;
 
 beforeEach(() => {
-  athletes = new InMemoryAthletesRepository();
-  service = new AthleteService(athletes, new InMemoryUnitOfWork(), {
+  const stores = inMemoryRepositories();
+  athletes = stores.athletes;
+  service = new AthleteService(athletes, stores.unitOfWork, {
     ids: sequentialIds('athlete'),
     clock: fixedClock(NOW),
     secrets: sequentialSecrets('token'),

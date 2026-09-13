@@ -12,16 +12,7 @@ import { DrizzlePlansRepository } from '~infrastructure/persistence/drizzle/plan
 import { DrizzleSessionsRepository } from '~infrastructure/persistence/drizzle/sessions-repository';
 import { DrizzleUnitOfWork } from '~infrastructure/persistence/drizzle/unit-of-work';
 import { DrizzleWorkoutsRepository } from '~infrastructure/persistence/drizzle/workouts-repository';
-import { InMemoryAdminActionsRepository } from '~infrastructure/persistence/in-memory/admin-actions-repository';
-import { InMemoryAthletesRepository } from '~infrastructure/persistence/in-memory/athletes-repository';
-import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
-import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
-import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
-import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
-import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
-import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
-import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
+import { type InMemoryRepositories, inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { databaseConfig } from '~server/config/database.config';
 import {
   ADMIN_ACTIONS_REPOSITORY,
@@ -63,51 +54,15 @@ function repositoryProvider<T>(token: symbol, create: (dbConfig: DatabaseConfig)
   };
 }
 
-/**
- * The in-memory family, built as one set.
- *
- * Separate `Map`s carry no foreign keys, so the two things Postgres does for
- * the adapters - refusing to delete an exercise something still points at,
- * and cascading an account's rows away with it - have to be wired by hand
- * (see `repositories/in-memory/references.ts`). Building them together is
- * the only place that can be done, which is why they are constructed here in
- * one go rather than one per provider.
- */
-function buildInMemory() {
-  const adminActions = new InMemoryAdminActionsRepository();
-  const athletes = new InMemoryAthletesRepository();
-  const bodyMeasurements = new InMemoryBodyMeasurementsRepository();
-  const bodyWeight = new InMemoryBodyWeightRepository();
-  const equipment = new InMemoryEquipmentRepository();
-  const exercises = new InMemoryExercisesRepository();
-  const plans = new InMemoryPlansRepository();
-  const sessions = new InMemorySessionsRepository();
-  const workouts = new InMemoryWorkoutsRepository();
-
-  exercises.referencedBy(workouts, sessions);
-  athletes.ownedBy(exercises, workouts, plans, sessions, bodyWeight, bodyMeasurements);
-  athletes.referencedBy(adminActions);
-
-  return {
-    adminActions: adminActions,
-    athletes: athletes,
-    bodyMeasurements: bodyMeasurements,
-    bodyWeight: bodyWeight,
-    equipment: equipment,
-    exercises: exercises,
-    plans: plans,
-    sessions: sessions,
-    workouts: workouts,
-  };
-}
-
-let inMemoryFamily: ReturnType<typeof buildInMemory> | undefined;
+let inMemoryFamily: InMemoryRepositories | undefined;
 
 /**
- * Built on first use, so a configured database constructs no stores at all.
+ * One in-memory family for the whole process, built on first use - so a
+ * configured database constructs no stores at all, and every port that does
+ * fall back shares the one set whose stores are wired to each other.
  */
-function inMemory(): ReturnType<typeof buildInMemory> {
-  inMemoryFamily ??= buildInMemory();
+function inMemory(): InMemoryRepositories {
+  inMemoryFamily ??= inMemoryRepositories();
   return inMemoryFamily;
 }
 
@@ -140,7 +95,7 @@ const providers: Provider[] = [
     return dbConfig.databaseUrl ? new DrizzleSessionsRepository() : inMemory().sessions;
   }),
   repositoryProvider(UNIT_OF_WORK, (dbConfig) => {
-    return dbConfig.databaseUrl ? new DrizzleUnitOfWork() : new InMemoryUnitOfWork();
+    return dbConfig.databaseUrl ? new DrizzleUnitOfWork() : inMemory().unitOfWork;
   }),
 ];
 

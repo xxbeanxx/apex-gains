@@ -16,8 +16,8 @@ import { Weight } from '~domain/values/weight';
 import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
@@ -92,13 +92,14 @@ let deps: {
 };
 
 beforeEach(() => {
-  workouts = new InMemoryWorkoutsRepository();
-  exercises = new InMemoryExercisesRepository();
-  equipment = new InMemoryEquipmentRepository();
-  sessions = new InMemorySessionsRepository();
+  const stores = inMemoryRepositories();
+  workouts = stores.workouts;
+  exercises = stores.exercises;
+  equipment = stores.equipment;
+  sessions = stores.sessions;
   deps = { ids: sequentialIds('new'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
   const references = new ReferenceDirectory(exercises, workouts, equipment);
-  service = new WorkoutService(workouts, exercises, references, sessions, new InMemoryUnitOfWork(), deps);
+  service = new WorkoutService(workouts, exercises, references, sessions, stores.unitOfWork, deps);
 });
 
 describe('create', () => {

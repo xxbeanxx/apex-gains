@@ -7,7 +7,7 @@ import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
 import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
-import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
 
@@ -35,8 +35,9 @@ let entries: InMemoryBodyWeightRepository;
 let service: BodyWeightService;
 
 beforeEach(() => {
-  entries = new InMemoryBodyWeightRepository();
-  service = new BodyWeightService(entries, new InMemoryUnitOfWork(), {
+  const stores = inMemoryRepositories();
+  entries = stores.bodyWeight;
+  service = new BodyWeightService(entries, stores.unitOfWork, {
     ids: sequentialIds('entry'),
     clock: fixedClock(NOW),
     secrets: sequentialSecrets('token'),

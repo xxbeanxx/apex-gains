@@ -17,9 +17,9 @@ import { Weight } from '~domain/values/weight';
 import { SetTarget } from '~domain/workout/set-target';
 import { Workout } from '~domain/workout/workout';
 import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
-import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
@@ -51,15 +51,16 @@ let bodyWeight: InMemoryBodyWeightRepository;
 let service: ExportService;
 
 beforeEach(() => {
-  exercises = new InMemoryExercisesRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  plans = new InMemoryPlansRepository();
-  sessions = new InMemorySessionsRepository();
-  bodyWeight = new InMemoryBodyWeightRepository();
+  const stores = inMemoryRepositories();
+  exercises = stores.exercises;
+  workouts = stores.workouts;
+  plans = stores.plans;
+  sessions = stores.sessions;
+  bodyWeight = stores.bodyWeight;
   service = new ExportService(
     exercises,
     workouts,
-    new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository()),
+    new ReferenceDirectory(exercises, workouts, stores.equipment),
     plans,
     sessions,
     bodyWeight,

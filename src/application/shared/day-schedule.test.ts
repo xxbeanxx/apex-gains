@@ -6,9 +6,8 @@ import { Athlete } from '~domain/athlete/athlete';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 import { DateOnly } from '~domain/values/date-only';
 import { Workout } from '~domain/workout/workout';
-import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
-import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
+import { inMemoryRepositories } from '~infrastructure/persistence/in-memory/repositories';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-01T12:00:00Z');
@@ -68,12 +67,10 @@ let workouts: InMemoryWorkoutsRepository;
 let schedule: DaySchedule;
 
 beforeEach(() => {
-  plans = new InMemoryPlansRepository();
-  workouts = new InMemoryWorkoutsRepository();
-  schedule = new DaySchedule(
-    plans,
-    new ReferenceDirectory(new InMemoryExercisesRepository(), workouts, new InMemoryEquipmentRepository()),
-  );
+  const stores = inMemoryRepositories();
+  plans = stores.plans;
+  workouts = stores.workouts;
+  schedule = new DaySchedule(plans, new ReferenceDirectory(stores.exercises, workouts, stores.equipment));
 });
 
 describe('on and across', () => {
