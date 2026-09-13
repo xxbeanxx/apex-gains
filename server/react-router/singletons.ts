@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common';
+import type { INestApplication, Type } from '@nestjs/common';
 
 import type { NestSingletons } from '~/router/load-context';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
@@ -20,32 +20,46 @@ import { testLoginConfig } from '~server/config/test-login.config';
 import { LOGGER } from '~server/logging/tokens';
 
 /**
+ * Where in the DI container each load-context value lives, keyed as
+ * `NestSingletons` is.
+ *
+ * Typed off `NestSingletons`, so adding a context in
+ * `app/router/load-context.ts` without a line here - or a line naming a
+ * class of the wrong type - fails to compile. A symbol or string token
+ * carries no type, so for the logger, the cookie, the session storage and
+ * the test-login config only the key is checked.
+ */
+const singletonTokens: { readonly [K in keyof NestSingletons]: Type<NestSingletons[K]> | symbol | string } = {
+  logger: LOGGER,
+  athleteCalendar: AthleteCalendar,
+  //
+  adminService: AdminService,
+  athleteService: AthleteService,
+  bodyMeasurementsService: BodyMeasurementsService,
+  bodyWeightService: BodyWeightService,
+  exerciseLibraryService: ExerciseLibraryService,
+  exportService: ExportService,
+  identityService: IdentityService,
+  planImportService: PlanImportService,
+  planService: PlanService,
+  progressService: ProgressService,
+  sessionService: SessionService,
+  trainingPlanService: TrainingPlanService,
+  workoutService: WorkoutService,
+  //
+  oidcStateCookie: OIDC_STATE_COOKIE,
+  sessionStorage: SESSION_STORAGE,
+  //
+  testLoginConfig: testLoginConfig.KEY,
+};
+
+/**
  * Pulls every singleton the React Router app reads through load context out
  * of the DI container. Called once at bootstrap, so an unregistered provider
  * fails the server start rather than a request.
  */
 export function collectNestSingletons(app: INestApplication): NestSingletons {
-  return {
-    logger: app.get(LOGGER),
-    athleteCalendar: app.get(AthleteCalendar),
-    //
-    adminService: app.get(AdminService),
-    athleteService: app.get(AthleteService),
-    bodyMeasurementsService: app.get(BodyMeasurementsService),
-    bodyWeightService: app.get(BodyWeightService),
-    exerciseLibraryService: app.get(ExerciseLibraryService),
-    exportService: app.get(ExportService),
-    identityService: app.get(IdentityService),
-    planImportService: app.get(PlanImportService),
-    planService: app.get(PlanService),
-    progressService: app.get(ProgressService),
-    sessionService: app.get(SessionService),
-    trainingPlanService: app.get(TrainingPlanService),
-    workoutService: app.get(WorkoutService),
-    //
-    oidcStateCookie: app.get(OIDC_STATE_COOKIE),
-    sessionStorage: app.get(SESSION_STORAGE),
-    //
-    testLoginConfig: app.get(testLoginConfig.KEY),
-  };
+  // `Object.entries` forgets which token goes with which key; the map's own
+  // type above is what actually pairs them.
+  return Object.fromEntries(Object.entries(singletonTokens).map(([key, token]) => [key, app.get(token)])) as NestSingletons;
 }

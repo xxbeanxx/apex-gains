@@ -43,10 +43,11 @@ import type { AppLogger } from '~server/logging/logger.provider';
  * derived from this object, so a value Nest forgets to supply is a type
  * error rather than an `undefined` at request time.
  *
- * The name itself is still written in three more places - the destructured
- * exports below, `server/services/services.module.ts`'s provider list, and
- * `server/react-router/singletons.ts` - but only the first of those can be
- * got wrong silently, and the compiler catches the other two.
+ * The name is written in three more places: the export alias below, the
+ * provider in `server/services/services.module.ts`, and its token in
+ * `server/react-router/singletons.ts`'s map. The compiler holds the last to
+ * this object, and a misnamed or swapped alias fails wherever a route calls
+ * the service it expected.
  */
 const contexts = {
   logger: createContext<AppLogger>(),
