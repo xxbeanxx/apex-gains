@@ -3,8 +3,8 @@ import { Exercise, type ExerciseSnapshot } from '~domain/exercise/exercise';
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 import type { AthleteOwned, ExerciseReferences } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see exercises-repository.server.ts for when it's
-// selected, and athletes-repository.in-memory.server.ts for why it stores
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
 // snapshots rather than aggregates.
 export class InMemoryExercisesRepository implements ExercisesRepository, AthleteOwned {
   private readonly byId = new Map<string, ExerciseSnapshot>();

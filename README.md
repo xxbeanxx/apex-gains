@@ -361,6 +361,9 @@ what GHCR's deletion API checks.
   Drizzle one and an in-memory one. Which is used is decided at
   startup, in one file, on whether `DATABASE_URL` is set; that is what
   lets the whole app (and the e2e suite) run with no database at all.
+  The in-memory family is always built whole, by `inMemoryRepositories()`,
+  so its stores imitate the schema's foreign keys wherever it is used -
+  the app, the contract suite and every use-case test.
   See **Persistence contract tests** above for how the two are held to
   the same promises.
 
@@ -380,7 +383,12 @@ what GHCR's deletion API checks.
   plans with a null `userId` are shared seed data available to every
   account. Editing a sample creates a user-owned copy with
   `forkedFromId` pointing back at the original, hiding the sample so the
-  same logical item does not appear twice.
+  same logical item does not appear twice. A plan slot or workout entry
+  that names a sample the athlete has since customized trains their copy,
+  while history keeps pointing at what was actually logged - `CONTEXT.md`
+  calls these forward-looking and historical references, and
+  `ReferenceDirectory` (`src/application/shared/`) is the one place that
+  resolves either kind.
 
 - **Plans are cycles, not weekdays.** A plan is an ordered list
   of day-slots (each a workout or an explicit rest day). "Today's
@@ -388,7 +396,14 @@ what GHCR's deletion API checks.
   `Plan.slotOn` in `src/domain/plan/plan.ts`. This is strict
   calendar-day math: it does not pause for missed days, and a
   plan's anchor date can be set independently of when it was
-  activated.
+  activated. `DaySchedule` (`src/application/shared/`) is the one reading
+  of that cycle, shared by the Today page, the week ahead and the session
+  a logged set opens.
+
+- **"Today" is the athlete's.** It is read off the injected clock in the
+  athlete's own timezone by `AthleteCalendar`, never from the server's
+  wall clock, and nothing is logged against or shown for a later day -
+  the logging use cases enforce that themselves, whatever the form sent.
 
 - **A plan can be shared by link or QR code.** Sharing mints a
   revocable token on the plan (`plans.share_token`); the link it

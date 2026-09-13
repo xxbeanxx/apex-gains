@@ -3,8 +3,8 @@ import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 import { Workout, type WorkoutSnapshot } from '~domain/workout/workout';
 import type { AthleteOwned, ExerciseReferences } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see workouts-repository.server.ts for when it's
-// selected, and athletes-repository.in-memory.server.ts for why it stores
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
 // snapshots rather than aggregates.
 //
 // The whole aggregate, exercise entries included, is one snapshot, so

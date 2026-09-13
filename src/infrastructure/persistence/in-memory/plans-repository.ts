@@ -3,8 +3,8 @@ import { Plan, type PlanSnapshot } from '~domain/plan/plan';
 import { LibraryVisibility, Ownership } from '~domain/shared/ownership';
 import type { AthleteOwned } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see plans-repository.server.ts for when it's
-// selected, and athletes-repository.in-memory.server.ts for why it stores
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
 // snapshots rather than aggregates.
 //
 // It needs no handle on the workouts repository: a `Plan` holds its

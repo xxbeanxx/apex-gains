@@ -69,7 +69,7 @@ export type ForkableRecord = {
  * tell whether it has been forked. `selectFrom` answers it for a set held in
  * memory; SQL cannot call a predicate, so the Drizzle adapters translate
  * this rule into a `where` clause instead (see
- * `repositories/drizzle/shared/visibility.ts`), and the two readings have to
+ * `infrastructure/persistence/drizzle/shared/visibility.ts`), and the two readings have to
  * be kept in step by the repository contract suite rather than by the
  * compiler.
  */

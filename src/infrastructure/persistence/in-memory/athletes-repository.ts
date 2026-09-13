@@ -4,7 +4,7 @@ import type { AthleteOwned, AthleteReferenced } from '~infrastructure/persistenc
 
 /**
  * Dev-convenience adapter for running the app without a database configured
- * (see athletes-repository.server.ts for the selection rule). Data lives
+ * (see `server/repositories/repositories.module.ts` for the selection rule). Data lives
  * only for the life of the process.
  *
  * Like every in-memory adapter here, it stores aggregate *snapshots* and

@@ -14,6 +14,11 @@ Stack: React Router v8 (Framework Mode), NestJS (server runtime/DI),
 TypeScript, PostgreSQL (hosted on Supabase), Drizzle ORM, Tailwind v4 +
 shadcn/ui, Podman.
 
+`CONTEXT.md` is the domain glossary - Sample, Fork, Library, Today,
+Scheduled day, and the historical vs forward-looking readings of a
+reference. Use its terms, and add to it when a new domain term settles;
+it holds definitions only, never implementation detail.
+
 ## Commands
 
 ```bash
@@ -318,11 +323,14 @@ the `NestSingletons` type, and `nestLoadContext(singletons)`, which
 builds a populated `RouterContextProvider`; a value Nest forgets to
 supply is a type error rather than an `undefined` at request time.
 Adding a service means naming it in four places — that map, the
-destructured exports beside it, `server/services/services.module.ts`,
-and `server/react-router/singletons.ts` — but the compiler catches
-every omission except the export.
-`server/react-router/singletons.ts` pulls those values out of the DI
-container at bootstrap (`collectNestSingletons(app)`).
+destructured export beside it, its provider in
+`server/services/services.module.ts`, and its DI token in
+`server/react-router/singletons.ts`'s `singletonTokens` map. That map is
+typed off `NestSingletons`, so a missing entry or a class of the wrong
+type is a compile error; a misnamed or swapped export alias fails
+wherever a route calls the service it expected.
+`collectNestSingletons(app)` loops over that map to pull the values out of
+the DI container at bootstrap.
 `server/react-router/handler.ts` joins them: it is the React Router
 build's own entry point, so it calls `nestLoadContext` from inside
 `getLoadContext`.
@@ -613,9 +621,9 @@ five places: `intent.field` is the hidden input, `intent.match` is what
 back in the component. `dispatch` reads the submission once, validates
 the named intent's DTO, and hands the handler its data already parsed;
 a handler still answers a redirect or a 404 by throwing. An intent the
-page never declared is a 400, not a silent success. Single-form routes
-(`plans.tsx`, `workouts.tsx`, `admin.users.tsx`) post no `intent`
-at all and call `validateForm` directly — there is nothing to dispatch
+page never declared is a 400, not a silent success. A single-form route
+(`admin.users.tsx`) posts no `intent`
+at all and calls `validateForm` directly — there is nothing to dispatch
 between. Each intent names a local
 `class-validator` DTO class, checked through `validateForm`
 (`app/lib/validate-form.server.ts`) — the same
@@ -736,9 +744,11 @@ rather than building its own, and the cookie itself is a Nest provider
 signup) — a `users` row is created on first login.
 
 Authorization has two levels and no role table. For an athlete's own
-data it is "does this row's `userId` match the current user" (see
-the `loadOwned*` loaders that scope every query by `userId`
-before returning 404), plus the sample-data fork rule above. Above
+data it is "does this row's `userId` match the current user" (each
+repository's `findVisible` answers null for a row that is neither the
+athlete's own nor a sample, and the route turns that null into a 404;
+`ReferenceDirectory` alone skips the check, for ids read off the
+athlete's own aggregates), plus the sample-data fork rule above. Above
 that sits a single `users.is_admin` flag, read as `Athlete.isAdmin`:
 an administrator reaches `/admin` and, through it, every account.
 `requireAdminMiddleware` is the only gate — the two queries that

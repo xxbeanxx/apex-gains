@@ -2,9 +2,9 @@ import type { AdminActionsRepository } from '~application/ports/persistence/admi
 import { AdminAction, type AdminActionSnapshot } from '~domain/admin/admin-action';
 import type { AthleteReferenced } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see admin-actions-repository.server.ts for when
-// it's selected, and athletes-repository.in-memory.server.ts for why it
-// stores snapshots rather than aggregates.
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
+// snapshots rather than aggregates.
 export class InMemoryAdminActionsRepository implements AdminActionsRepository, AthleteReferenced {
   private readonly byId = new Map<string, AdminActionSnapshot>();
 

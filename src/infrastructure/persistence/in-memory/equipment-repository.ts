@@ -2,8 +2,8 @@ import type { EquipmentRepository } from '~application/ports/persistence/equipme
 import { Equipment, type EquipmentSnapshot } from '~domain/equipment/equipment';
 import { Ownership } from '~domain/shared/ownership';
 
-// Dev-convenience adapter - see equipment-repository.server.ts for when it's
-// selected, and athletes-repository.in-memory.server.ts for why it stores
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
 // snapshots rather than aggregates.
 export class InMemoryEquipmentRepository implements EquipmentRepository {
   private readonly byId = new Map<string, EquipmentSnapshot>();

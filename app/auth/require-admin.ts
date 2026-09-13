@@ -9,8 +9,9 @@ import { userContext } from '~/auth/user-context';
  * `requireUserMiddleware` and whoever reaches here is a known athlete.
  *
  * A signed-in athlete without the flag gets a 404 rather than a 403: the
- * rest of the app answers "not yours" the same way (see the `loadOwned*`
- * loaders), and an administered instance has no reason to confirm to an
+ * rest of the app answers "not yours" the same way (a use case's
+ * `findVisible` lookup comes back null for a row that isn't the athlete's,
+ * and the route turns that into a 404), and an administered instance has no reason to confirm to an
  * ordinary account which URLs it is missing.
  */
 export const requireAdminMiddleware: MiddlewareFunction<void | Response> = ({ context }) => {

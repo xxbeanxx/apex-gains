@@ -4,9 +4,9 @@ import { Session, type SessionSnapshot } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 import type { AthleteOwned, ExerciseReferences } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see sessions-repository.server.ts for
-// when it's selected, and athletes-repository.in-memory.server.ts for why it
-// stores snapshots rather than aggregates.
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
+// snapshots rather than aggregates.
 export class InMemorySessionsRepository implements SessionsRepository, ExerciseReferences, AthleteOwned {
   private readonly byId = new Map<string, SessionSnapshot>();
 

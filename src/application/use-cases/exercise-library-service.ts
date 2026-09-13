@@ -87,7 +87,7 @@ export class ExerciseLibraryService {
   }
 
   /**
-   * Load, fork if needed, apply, save - see `shared/fork.server.ts`.
+   * Load, fork if needed, apply, save - see `shared/fork.ts`.
    */
   private readonly editor: ForkableEditor<Exercise>;
 

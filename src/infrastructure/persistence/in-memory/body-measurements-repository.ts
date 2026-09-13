@@ -3,9 +3,9 @@ import { BodyMeasurement, type BodyMeasurementMetric, type BodyMeasurementSnapsh
 import type { DateOnly } from '~domain/values/date-only';
 import type { AthleteOwned } from '~infrastructure/persistence/in-memory/references';
 
-// Dev-convenience adapter - see body-measurements-repository.server.ts for
-// when it's selected, and athletes-repository.in-memory.server.ts for why it
-// stores snapshots rather than aggregates.
+// Dev-convenience adapter - see `server/repositories/repositories.module.ts`
+// for when it's selected, and `./athletes-repository.ts` for why it stores
+// snapshots rather than aggregates.
 export class InMemoryBodyMeasurementsRepository implements BodyMeasurementsRepository, AthleteOwned {
   private readonly byId = new Map<string, BodyMeasurementSnapshot>();
 
