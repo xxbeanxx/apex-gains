@@ -70,8 +70,8 @@ App is at `http://localhost:3000/`.
 | `npm run db:seed`            | Seed/refresh the exercise library                                       |
 | `npm run db:studio`          | Open Drizzle Studio against the local database                          |
 | `npm run dev`                | Dev server with HMR at `http://localhost:3000` (Nest + Vite middleware) |
-| `npm run format:check`       | Check code formatting with Prettier                                     |
-| `npm run format:write`       | Format the repository with Prettier                                     |
+| `npm run format:check`       | Check code formatting with oxfmt                                        |
+| `npm run format:write`       | Format the repository with oxfmt                                        |
 | `npm run preview`            | Build, then serve it - what the e2e suite runs against                  |
 | `npm run start`              | Serve a production build via `build/server/main.js`                     |
 | `npm run test:watch`         | Run Vitest in watch mode                                                |

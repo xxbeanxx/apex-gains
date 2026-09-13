@@ -32,7 +32,7 @@ npm run db:seed      # seed/refresh the exercise library (idempotent)
 npm run db:studio    # open Drizzle Studio against the local database
 npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
 npm run format:check # check formatting without writing
-npm run format:write # format the repo with prettier
+npm run format:write # format the repo with oxfmt
 npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
 npm run test         # run the vitest unit test suite once
@@ -44,10 +44,11 @@ npm run typecheck    # react-router typegen, then tsc
 ```
 
 Run `npm run format:write` on any file you edit before finishing a
-task - there is no lint tooling and no CI formatting check, so
-`format:write` is the only thing keeping the tree consistent.
-`typecheck`, `check:architecture`, `test` and `test:e2e` are the
-automated checks. Unit tests
+task - there is no lint tooling, and CI runs `format:check`, so an
+unformatted file fails the build. Formatting is oxfmt, configured in
+`.oxfmtrc.json`; it also sorts imports, using its built-in default
+groups. `format:check`, `typecheck`, `check:architecture`, `test` and
+`test:e2e` are the automated checks. Unit tests
 (vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without
 `as any`/`as Type` casts scattered through test bodies. Most tests need
