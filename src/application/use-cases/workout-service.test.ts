@@ -619,17 +619,6 @@ describe('duplicate', () => {
     expect(sample).not.toBeNull();
   });
 
-  it('numbers a second duplicate past the first', async () => {
-    await workouts.save(sampleWorkout({ id: 'own-1', userId: 'user-1', name: 'Push Day' }));
-    await service.duplicate(athlete, 'own-1');
-
-    const second = await service.duplicate(athlete, 'own-1');
-
-    const copyId = second.ok ? second.value.id : null;
-    const copy = await workouts.findVisible(athlete.id, copyId!);
-    expect(copy?.name).toBe('Push Day (copy 2)');
-  });
-
   it("reports a workout that isn't visible as not found", async () => {
     expect(await service.duplicate(athlete, 'nope')).toEqual({ ok: false, error: 'not-found' });
   });

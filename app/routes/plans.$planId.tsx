@@ -1,59 +1,33 @@
 import { useMemo, useState } from 'react';
 
-import { Form, Link, data, redirect, useSearchParams, useSubmit } from 'react-router';
+import { Form, Link, redirect, useSearchParams } from 'react-router';
 
-import { Expose, Transform } from 'class-transformer';
-import {
-  IsIn,
-  IsString,
-  IsUUID,
-  MaxLength,
-  MinLength,
-  Validate,
-  ValidatorConstraint,
-  type ValidatorConstraintInterface,
-  isUUID,
-} from 'class-validator';
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CalendarPlusIcon,
-  CopyIcon,
-  EllipsisIcon,
-  MoonIcon,
-  PlusIcon,
-  PowerIcon,
-  Share2Icon,
-  XIcon,
-} from 'lucide-react';
+import { Expose } from 'class-transformer';
+import { IsIn, IsUUID, Validate, ValidatorConstraint, type ValidatorConstraintInterface, isUUID } from 'class-validator';
+import { CalendarPlusIcon, MoonIcon, PlusIcon, PowerIcon, Share2Icon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
-import { BuilderCanvas } from '~/components/builder/builder-canvas';
-import { BuilderLayout } from '~/components/builder/builder-layout';
+import { BuilderFrame } from '~/components/builder/builder-frame';
 import { BuilderOutline, BuilderOutlineItem } from '~/components/builder/builder-outline';
 import { BuilderPalette, BuilderPaletteSearch } from '~/components/builder/builder-palette';
 import { BuilderRow } from '~/components/builder/builder-row';
 import { RenameDisclosure } from '~/components/builder/rename-disclosure';
-import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
-import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
+import { RowMoveButtons, RowRemoveMenu } from '~/components/builder/row-controls';
+import { CustomizedNote, ForkableActions, OwnershipBadge } from '~/components/forkable-header';
 import { Page, PageHeader, Section } from '~/components/layout/page';
 import { SharePlanDialog } from '~/components/share-plan-dialog';
 import { Badge } from '~/components/ui/badge';
-import { Button } from '~/components/ui/button';
 import { DateField } from '~/components/ui/date-field';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
+import { forkableHandlers } from '~/lib/forkable-detail.server';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { encodeQr } from '~/lib/qr.server';
 import { shareUrlFor } from '~/lib/share-link';
-import { IsDateOnly, trim } from '~/lib/validate-form';
+import { IsDateOnly } from '~/lib/validate-form';
 import { athleteCalendarContext, planServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { PlanSlotView } from '~application/use-cases/plan-service';
 import type { WorkoutSummary } from '~application/use-cases/workout-service';
@@ -88,15 +62,6 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     share: shareUrl === null ? null : { url: shareUrl, qr: encodeQr(shareUrl) },
     todayStr: context.get(athleteCalendarContext).today(athlete).value,
   };
-}
-
-class RenamePlanDto {
-  @Expose()
-  @Transform(trim())
-  @IsString()
-  @MinLength(1)
-  @MaxLength(100)
-  readonly name!: string;
 }
 
 class ReanchorPlanDto {
@@ -139,10 +104,7 @@ const page: ForkableDetail = forkableDetail({ noun: 'Plan', indexPath: '/plans',
 const { settle } = page;
 
 const intents = {
-  delete: intent('delete'),
-  revert: intent('revert'),
-  duplicate: intent('duplicate'),
-  rename: intent('rename', RenamePlanDto, { invalidMessage: 'Invalid name' }),
+  ...page.intents,
   reanchor: intent('reanchor', ReanchorPlanDto, { invalidMessage: 'Invalid date' }),
   activate: intent('activate'),
   deactivate: intent('deactivate'),
@@ -171,23 +133,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   };
 
   return dispatch(request, [
-    handled(intents.delete, async () =>
-      page.deleted(intents.delete, await planService.remove(athlete, planId), () =>
-        requestLogger(context).log(`deleted plan ${planId} for user ${athlete.id}`, 'Plans'),
-      ),
-    ),
-
-    handled(intents.revert, async () => page.reverted(intents.revert, await planService.revert(athlete, planId))),
-
-    handled(intents.duplicate, async () => {
-      const outcome = await planService.duplicate(athlete, planId);
-      if (!outcome.ok) page.notFound();
-
-      requestLogger(context).log(`duplicated plan ${planId} into ${outcome.value.id} for user ${athlete.id}`, 'Plans');
-      throw redirect(`/plans/${outcome.value.id}`);
+    ...forkableHandlers(page, planService, {
+      athlete,
+      id: planId,
+      log: (message) => requestLogger(context).log(message, 'Plans'),
     }),
-
-    handled(intents.rename, async ({ name }) => settle(await planService.rename(athlete, planId, name))),
     handled(intents.reanchor, async ({ anchorDate }) =>
       settle(await planService.reanchor(athlete, planId, DateOnly.parse(anchorDate))),
     ),
@@ -224,57 +174,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   ]);
 }
 
-function MoveButtons({ slot, index, count }: { slot: PlanSlotView; index: number; count: number }) {
-  return (
-    <>
-      <Form method="post">
-        <input {...intents.move.field} />
-        <input type="hidden" name="slotId" value={slot.id} />
-        <input type="hidden" name="direction" value="up" />
-        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
-          <ArrowUpIcon aria-hidden="true" />
-          <span className="sr-only">Move day {index + 1} up</span>
-        </Button>
-      </Form>
-      <Form method="post">
-        <input {...intents.move.field} />
-        <input type="hidden" name="slotId" value={slot.id} />
-        <input type="hidden" name="direction" value="down" />
-        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === count - 1}>
-          <ArrowDownIcon aria-hidden="true" />
-          <span className="sr-only">Move day {index + 1} down</span>
-        </Button>
-      </Form>
-    </>
-  );
-}
-
-/**
- * The `⋯` menu's one action: removing the day. A plain navigation submit, same request cycle a literal form's own submit would make.
- */
-function RowMenu({ slot, index }: { slot: PlanSlotView; index: number }) {
-  const submit = useSubmit();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`Actions for day ${index + 1}`}>
-          <EllipsisIcon aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={() => submit({ intent: intents.removeSlot.name, slotId: slot.id }, { method: 'post' })}
-        >
-          <XIcon aria-hidden="true" />
-          Remove
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 function DayRow({
   slot,
   index,
@@ -308,8 +207,17 @@ function DayRow({
           </Badge>
         ) : undefined
       }
-      controls={<MoveButtons slot={slot} index={index} count={count} />}
-      menu={<RowMenu slot={slot} index={index} />}
+      controls={
+        <RowMoveButtons
+          move={intents.move}
+          id={slot.id}
+          idField="slotId"
+          label={`day ${index + 1}`}
+          index={index}
+          count={count}
+        />
+      }
+      menu={<RowRemoveMenu remove={intents.removeSlot} id={slot.id} idField="slotId" label={`day ${index + 1}`} />}
     />
   );
 }
@@ -389,10 +297,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
     );
   };
 
-  const renameError = intents.rename.errorIn(actionData);
   const reanchorError = intents.reanchor.errorIn(actionData);
-  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
-  useCloseOnSubmit(() => setMobilePaletteOpen(false));
 
   const palette = <PlanPalette workoutList={workoutList} />;
 
@@ -418,23 +323,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
             : 'An empty cycle. Add days from the palette to give it a shape.'
         }
         actions={
-          <div className="flex flex-wrap items-center gap-1.5">
-            <RenameDisclosure>
-              <Form method="post">
-                <input {...intents.rename.field} />
-                <Field
-                  label="Name"
-                  error={renameError}
-                  action={
-                    <SubmitButton size="sm" match={intents.rename.match} pendingLabel="Saving">
-                      Save
-                    </SubmitButton>
-                  }
-                >
-                  <Input key={plan.name} name="name" defaultValue={plan.name} required />
-                </Field>
-              </Form>
-            </RenameDisclosure>
+          <ForkableActions page={page} name={plan.name} isSample={isSample} isCustomized={isCustomized} actionData={actionData}>
             <RenameDisclosure label="Anchor date">
               <Form method="post">
                 <input {...intents.reanchor.field} />
@@ -473,48 +362,16 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                 {share ? 'Show link' : 'Share'}
               </SubmitButton>
             </Form>
-            <Form method="post">
-              <input {...intents.duplicate.field} />
-              <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
-                <CopyIcon aria-hidden="true" />
-                Duplicate
-              </SubmitButton>
-            </Form>
-            <RevertOrDeleteForm
-              noun="plan"
-              isSample={isSample}
-              isCustomized={isCustomized}
-              revert={intents.revert}
-              remove={intents.delete}
-              actionData={actionData}
-            />
-          </div>
+          </ForkableActions>
         }
       />
 
-      {isCustomized ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          This is your customized copy of a sample plan. The original sample is unaffected.
-        </p>
-      ) : null}
+      <CustomizedNote page={page} isCustomized={isCustomized} />
 
       <Section title="Days" description="Each day is one of your workouts or a rest day, in cycle order.">
-        <Dialog open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="mb-4 w-full md:hidden">
-              <PlusIcon aria-hidden="true" />
-              Add day
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="p-0 sm:max-w-sm">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Add a day</DialogTitle>
-            </DialogHeader>
-            <div className="p-4">{palette}</div>
-          </DialogContent>
-        </Dialog>
-
-        <BuilderLayout
+        <BuilderFrame
+          addLabel="Add day"
+          addTitle="Add a day"
           palette={palette}
           outline={
             slotCount > 0 && todayDate ? (
@@ -531,21 +388,11 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
               </BuilderOutline>
             ) : null
           }
-          canvas={
-            slotCount === 0 ? (
-              <EmptyState
-                icon={CalendarPlusIcon}
-                title="No days yet"
-                description="Add the first day from the palette."
-                compact
-              />
-            ) : (
-              <BuilderCanvas>
-                {plan.slots.map((slot, index) => (
-                  <DayRow key={slot.id} slot={slot} index={index} count={slotCount} workoutById={workoutById} />
-                ))}
-              </BuilderCanvas>
-            )
+          rows={plan.slots.map((slot, index) => (
+            <DayRow key={slot.id} slot={slot} index={index} count={slotCount} workoutById={workoutById} />
+          ))}
+          empty={
+            <EmptyState icon={CalendarPlusIcon} title="No days yet" description="Add the first day from the palette." compact />
           }
         />
 

@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
-import { intent } from '~/lib/intent';
+import { type ForkableUseCases, forkableHandlers } from '~/lib/forkable-detail.server';
+import { dispatch } from '~/lib/intent.server';
+import type { Athlete } from '~domain/athlete/athlete';
+import { err, ok } from '~domain/shared/result';
+
+import { mock } from '../../test/mock';
 
 const page: ForkableDetail = forkableDetail({
   noun: 'Plan',
@@ -9,40 +14,72 @@ const page: ForkableDetail = forkableDetail({
   pathFor: (id) => `/plans/${id}`,
 });
 
-const remove = intent('delete');
-const revert = intent('revert');
+const athlete = mock<Athlete>({ id: 'user-1' });
 
 /**
- * Runs `work` and returns whatever it threw, which is how a route answers a redirect.
+ * Every use case succeeding in place, for a test to override the one it is about.
  */
-function thrownBy(work: () => unknown): unknown {
-  try {
-    work();
-  } catch (thrown) {
-    return thrown;
-  }
-  throw new Error('expected the call to throw');
+function useCases(overrides: Partial<ForkableUseCases> = {}): ForkableUseCases {
+  return {
+    remove: async () => ok(),
+    revert: async () => ok({ forkedFromId: 'sample-1' }),
+    duplicate: async () => ok({ id: 'copy-1' }),
+    rename: async () => ok({ forkedId: null }),
+    ...overrides,
+  };
 }
 
 /**
- * A thrown redirect is a `Response`; a thrown `data()` is React Router's own
- * wrapper carrying the init it will be turned into.
+ * Submits `fields` through `dispatch` exactly as the route's action does, and
+ * returns whatever it answered with - returned or thrown, since a redirect
+ * or a 404 is thrown.
  */
-function statusOf(thrown: unknown): number | undefined {
-  if (thrown instanceof Response) return thrown.status;
-  if (typeof thrown === 'object' && thrown !== null && 'init' in thrown) {
-    return (thrown.init as ResponseInit | undefined)?.status;
+async function submit(
+  fields: Record<string, string>,
+  cases: ForkableUseCases = useCases(),
+  log: (message: string) => void = () => {},
+  on: ForkableDetail = page,
+): Promise<unknown> {
+  const body = new FormData();
+  for (const [key, value] of Object.entries(fields)) body.append(key, value);
+  const request = new Request('http://localhost/plans/plan-1', { method: 'POST', body });
+
+  try {
+    return await dispatch(request, forkableHandlers(on, cases, { athlete, id: 'plan-1', log }));
+  } catch (thrown) {
+    return thrown;
+  }
+}
+
+/**
+ * A redirect is a `Response`; `data()` is React Router's own wrapper carrying
+ * the init it will be turned into.
+ */
+function statusOf(answer: unknown): number | undefined {
+  if (answer instanceof Response) return answer.status;
+  if (typeof answer === 'object' && answer !== null && 'init' in answer) {
+    return (answer.init as ResponseInit | undefined)?.status;
   }
   return undefined;
 }
 
-function locationOf(thrown: unknown): string | null | undefined {
-  return thrown instanceof Response ? thrown.headers.get('Location') : undefined;
+function locationOf(answer: unknown): string | null | undefined {
+  return answer instanceof Response ? answer.headers.get('Location') : undefined;
+}
+
+function dataOf(answer: unknown): unknown {
+  return typeof answer === 'object' && answer !== null && 'data' in answer ? answer.data : undefined;
 }
 
 describe('notFound', () => {
   it('is a 404 naming the thing that is missing', () => {
-    expect(statusOf(thrownBy(() => page.notFound()))).toBe(404);
+    let thrown: unknown;
+    try {
+      page.notFound();
+    } catch (caught) {
+      thrown = caught;
+    }
+    expect(statusOf(thrown)).toBe(404);
   });
 });
 
@@ -56,69 +93,124 @@ describe('settle', () => {
    * the untouched sample and look to the athlete like the edit was lost.
    */
   it('redirects to the fork the edit landed on', () => {
-    const thrown = thrownBy(() => page.settle({ ok: true, value: { forkedId: 'fork-1' } }));
-
+    let thrown: unknown;
+    try {
+      page.settle({ ok: true, value: { forkedId: 'fork-1' } });
+    } catch (caught) {
+      thrown = caught;
+    }
     expect(statusOf(thrown)).toBe(302);
     expect(locationOf(thrown)).toBe('/plans/fork-1');
   });
-
-  it('is a 404 when the row was not there', () => {
-    expect(statusOf(thrownBy(() => page.settle({ ok: false })))).toBe(404);
-  });
 });
 
-describe('deleted', () => {
-  it('redirects to the index, after letting the caller log it', () => {
+describe('delete', () => {
+  it('redirects to the index, and logs it', async () => {
     const log = vi.fn();
 
-    const thrown = thrownBy(() => page.deleted(remove, { ok: true }, log));
+    const answer = await submit({ intent: 'delete' }, useCases(), log);
 
-    expect(locationOf(thrown)).toBe('/plans');
-    expect(log).toHaveBeenCalledOnce();
+    expect(locationOf(answer)).toBe('/plans');
+    expect(log).toHaveBeenCalledWith('deleted plan plan-1 for user user-1');
   });
 
-  it('refuses a shared sample, tagged on the intent that asked', () => {
-    const rejection = page.deleted(remove, { ok: false, error: 'sample' });
+  it('refuses a shared sample, tagged on the delete intent', async () => {
+    const answer = await submit({ intent: 'delete' }, useCases({ remove: async () => err('sample' as const) }));
 
-    expect(rejection.data).toEqual({ error: "Sample plans can't be deleted.", intent: 'delete' });
-    expect(rejection.init?.status).toBe(400);
+    expect(dataOf(answer)).toEqual({ error: "Sample plans can't be deleted.", intent: 'delete' });
+    expect(statusOf(answer)).toBe(400);
   });
 
-  it('is a 404 when the row was not there, and does not log', () => {
+  it('is a 404 when the row was not there, and logs nothing', async () => {
     const log = vi.fn();
 
-    expect(statusOf(thrownBy(() => page.deleted(remove, { ok: false, error: 'not-found' }, log)))).toBe(404);
+    const answer = await submit({ intent: 'delete' }, useCases({ remove: async () => err('not-found' as const) }), log);
+
+    expect(statusOf(answer)).toBe(404);
     expect(log).not.toHaveBeenCalled();
   });
 });
 
-describe('reverted', () => {
-  it('redirects to the sample, which reappears now that nothing forks from it', () => {
-    const thrown = thrownBy(() => page.reverted(revert, { ok: true, value: { forkedFromId: 'sample-1' } }));
-
-    expect(locationOf(thrown)).toBe('/plans/sample-1');
+describe('revert', () => {
+  it('redirects to the sample, which reappears now that nothing forks from it', async () => {
+    expect(locationOf(await submit({ intent: 'revert' }))).toBe('/plans/sample-1');
   });
 
-  it('refuses a row that was never a copy of anything', () => {
-    const rejection = page.reverted(revert, { ok: false, error: 'nothing-to-revert' });
+  it('refuses a row that was never a copy of anything', async () => {
+    const answer = await submit({ intent: 'revert' }, useCases({ revert: async () => err('nothing-to-revert' as const) }));
 
-    expect(rejection.data).toEqual({ error: 'Nothing to revert', intent: 'revert' });
+    expect(dataOf(answer)).toEqual({ error: 'Nothing to revert', intent: 'revert' });
   });
 
-  it('is a 404 when the row was not there', () => {
-    expect(statusOf(thrownBy(() => page.reverted(revert, { ok: false, error: 'not-found' })))).toBe(404);
+  it('is a 404 when the row was not there', async () => {
+    const answer = await submit({ intent: 'revert' }, useCases({ revert: async () => err('not-found' as const) }));
+
+    expect(statusOf(answer)).toBe(404);
+  });
+});
+
+describe('duplicate', () => {
+  it('redirects to the copy, and logs it', async () => {
+    const log = vi.fn();
+
+    const answer = await submit({ intent: 'duplicate' }, useCases(), log);
+
+    expect(locationOf(answer)).toBe('/plans/copy-1');
+    expect(log).toHaveBeenCalledWith('duplicated plan plan-1 into copy-1 for user user-1');
+  });
+
+  it('is a 404 when the row was not there', async () => {
+    const answer = await submit({ intent: 'duplicate' }, useCases({ duplicate: async () => err('not-found' as const) }));
+
+    expect(statusOf(answer)).toBe(404);
+  });
+});
+
+describe('rename', () => {
+  it('renames to the trimmed name, in place', async () => {
+    const rename = vi.fn(async () => ok({ forkedId: null }));
+
+    const answer = await submit({ intent: 'rename', name: '  Push pull  ' }, useCases({ rename }));
+
+    expect(answer).toEqual({ ok: true });
+    expect(rename).toHaveBeenCalledWith(athlete, 'plan-1', 'Push pull');
+  });
+
+  it('follows the fork renaming a sample made', async () => {
+    const answer = await submit(
+      { intent: 'rename', name: 'Mine' },
+      useCases({ rename: async () => ok({ forkedId: 'fork-1' }) }),
+    );
+
+    expect(locationOf(answer)).toBe('/plans/fork-1');
+  });
+
+  it('refuses a blank name without calling the use case', async () => {
+    const rename = vi.fn(async () => ok({ forkedId: null }));
+
+    const answer = await submit({ intent: 'rename', name: '   ' }, useCases({ rename }));
+
+    expect(dataOf(answer)).toEqual({ error: 'Invalid name', intent: 'rename' });
+    expect(rename).not.toHaveBeenCalled();
   });
 });
 
 describe('another page', () => {
-  it('says its own noun and lands on its own index', () => {
+  it('says its own noun, and lands on its own paths', async () => {
     const workouts: ForkableDetail = forkableDetail({
       noun: 'Workout',
       indexPath: '/workouts',
       pathFor: (id) => `/workouts/${id}`,
     });
+    const log = vi.fn();
 
-    expect(workouts.deleted(remove, { ok: false, error: 'sample' }).data.error).toBe("Sample workouts can't be deleted.");
-    expect(locationOf(thrownBy(() => workouts.deleted(remove, { ok: true })))).toBe('/workouts');
+    const refused = await submit({ intent: 'delete' }, useCases({ remove: async () => err('sample' as const) }), log, workouts);
+    const deleted = await submit({ intent: 'delete' }, useCases(), log, workouts);
+    const duplicated = await submit({ intent: 'duplicate' }, useCases(), log, workouts);
+
+    expect(dataOf(refused)).toEqual({ error: "Sample workouts can't be deleted.", intent: 'delete' });
+    expect(locationOf(deleted)).toBe('/workouts');
+    expect(locationOf(duplicated)).toBe('/workouts/copy-1');
+    expect(log).toHaveBeenCalledWith('deleted workout plan-1 for user user-1');
   });
 });

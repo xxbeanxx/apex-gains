@@ -343,17 +343,6 @@ describe('duplicate', () => {
     expect(sample).not.toBeNull();
   });
 
-  it('numbers a second duplicate past the first', async () => {
-    await plans.save(samplePlan({ id: 'own-1', userId: 'user-1', name: 'PPL', slots: [] }));
-    await service.duplicate(athlete, 'own-1');
-
-    const second = await service.duplicate(athlete, 'own-1');
-
-    const copyId = second.ok ? second.value.id : null;
-    const copy = await plans.findVisible(athlete.id, copyId!);
-    expect(copy?.name).toBe('PPL (copy 2)');
-  });
-
   it("reports a plan that isn't visible as not found", async () => {
     expect(await service.duplicate(athlete, 'nope')).toEqual({ ok: false, error: 'not-found' });
   });

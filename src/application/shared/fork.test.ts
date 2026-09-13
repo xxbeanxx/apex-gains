@@ -192,4 +192,36 @@ describe('ForkableLibrary', () => {
       expect(await editor.revert('user-1', 'sample-1')).toEqual({ ok: false, error: 'nothing-to-revert' });
     });
   });
+
+  describe('duplicate', () => {
+    const copyOf = (source: Plan) => source.copyForImport('user-1', source.anchorDate, (workoutId) => workoutId, deps);
+
+    it('copies a sample into a plain personal row named "<name> (copy)", not a fork of it', async () => {
+      await plans.save(plan({ id: 'sample-1', userId: null }));
+
+      const outcome = await editor.duplicate('user-1', true, 'sample-1', copyOf);
+
+      const copy = await plans.findVisible('user-1', outcome.ok ? outcome.value.id : '');
+      expect(copy).toMatchObject({ name: 'PPL (copy)', forkedFromId: null });
+      expect(copy?.ownership.isSample).toBe(false);
+      // Not a fork, so the sample still shows alongside the copy.
+      expect((await plans.listFor('user-1', true)).map((found) => found.name).sort()).toEqual(['PPL', 'PPL (copy)']);
+    });
+
+    it('numbers each further copy past the names already in the library', async () => {
+      await plans.save(plan({ id: 'own-1', userId: 'user-1' }));
+
+      await editor.duplicate('user-1', true, 'own-1', copyOf);
+      const second = await editor.duplicate('user-1', true, 'own-1', copyOf);
+
+      expect((await plans.findVisible('user-1', second.ok ? second.value.id : ''))?.name).toBe('PPL (copy 2)');
+    });
+
+    it("is not-found for someone else's row, and copies nothing", async () => {
+      await plans.save(plan({ id: 'theirs-1', userId: 'user-2' }));
+
+      expect(await editor.duplicate('user-1', true, 'theirs-1', copyOf)).toEqual({ ok: false, error: 'not-found' });
+      expect(await plans.listFor('user-1', false)).toEqual([]);
+    });
+  });
 });

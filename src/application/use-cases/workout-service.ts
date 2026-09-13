@@ -3,7 +3,6 @@ import type { ExercisesRepository } from '~application/ports/persistence/exercis
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import { nextCopyName } from '~application/shared/duplicate-name';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { type TargetView, toTargetView } from '~application/shared/target-view';
@@ -264,31 +263,12 @@ export class WorkoutService {
   }
 
   /**
-   * A personal, editable copy of any workout the athlete can see - their
-   * own, or a sample. Built on `copyForImport`, the same deep copy a shared
-   * link's import uses, with the source's own exercise ids passed straight
-   * through rather than resolved through another athlete's library.
-   *
-   * Deliberately not a fork: duplicating a sample gives a plain row with
-   * `forkedFromId` null - no revert, and no effect on whether the sample
-   * still appears in the athlete's list. That is a different action from
-   * *editing* a sample, which forks it; the two sit side by side in the
-   * list's row menu.
+   * A plain personal copy named "<name> (copy)" - see `ForkableLibrary.duplicate`.
    */
   async duplicate(athlete: Athlete, workoutId: string): Promise<Result<{ id: string }, 'not-found'>> {
-    return this.unitOfWork.run(async () => {
-      const source = await this.workouts.findVisible(athlete.id, workoutId);
-      if (!source) return err('not-found' as const);
-
-      const names = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
-      const name = nextCopyName(source.name, new Set(names.map((found) => found.name)));
-
-      const copy = source.copyForImport(athlete.id, (exerciseId) => exerciseId, this.deps);
-      copy.rename(name, this.deps.clock.now());
-
-      await this.workouts.save(copy);
-      return ok({ id: copy.id });
-    });
+    return this.editor.duplicate(athlete.id, athlete.preferences.showSampleData, workoutId, (source) =>
+      source.copyForImport(athlete.id, (exerciseId) => exerciseId, this.deps),
+    );
   }
 
   async rename(athlete: Athlete, workoutId: string, name: string): Promise<WorkoutMutation> {

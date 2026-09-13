@@ -505,7 +505,8 @@ that sits `ForkableEditor` in the same file, which owns the whole
 sequence a mutation goes through — open a transaction, load what the
 athlete can see, resolve the copy, apply, save, report `forkedId` — so
 the three use cases construct one rather than restating it.
-`ForkableLibrary` adds `remove` and `revert` for the two libraries whose
+`ForkableLibrary` adds `remove`, `revert` and `duplicate` (a plain,
+unforked copy named "<name> (copy)") for the two libraries whose
 rows can simply be deleted; exercises keep their own `revert`, because
 `on delete restrict` means theirs can refuse. Which
 rows a list shows — own rows plus not-yet-forked samples — is
@@ -621,14 +622,18 @@ mechanism for the whole app rather than a second one only for forms.
 message }` instead of throwing, since a bad submission is a 400, not a
 boot failure. Both fork-on-write detail routes build a
 `forkableDetail(...)` (`app/lib/forkable-detail.ts`) naming their
-noun and paths, and read the four shared HTTP mappings off it:
-`notFound`, `settle` (not-found is a 404, and a non-null `forkedId` is a
-redirect to the fork's own URL, since the edit would be invisible at the
-sample's), `deleted` and `reverted`. Their shared header chrome — the
-Sample/Customized badge and the revert-or-delete form that follows from
-it — is `app/components/forkable-header.tsx`. What is left in each route
-is what the two pages genuinely do differently: re-anchoring and
-activating a plan, adding a targeted exercise to a workout. Every mutating
+noun and paths. It declares the four intents every such page shares
+(`delete`, `revert`, `duplicate`, `rename`), which a route spreads into
+its own `intents`, plus `notFound` and `settle` (not-found is a 404, and
+a non-null `forkedId` is a redirect to the fork's own URL, since the edit
+would be invisible at the sample's) for its own handlers. The handlers
+for the four are `forkableHandlers` in `forkable-detail.server.ts`, spread
+into the route's `dispatch`; the header that submits them - rename, the
+page's own actions as children, duplicate, and the revert-or-delete form
+that follows from the Sample/Customized badge - is `ForkableActions` in
+`app/components/forkable-header.tsx`. What is left in each route
+is what the two pages genuinely do differently: re-anchoring,
+activating and sharing a plan, adding a targeted exercise to a workout. Every mutating
 form is a `<Form method="post">` (react-router's, never a fetcher), which
 still navigates and triggers a full loader revalidation — just without a
 document reload; `~/components/ui/submit-button.tsx` (`SubmitButton`)
@@ -667,7 +672,7 @@ an exercise off a workout) stay unconfirmed on purpose — those are
 one-click by design and trivially redone. Because the dialog's content
 portals to `document.body`, its confirm button usually can't sit inside
 the form it submits; it targets the form by HTML's `form="<id>"`
-attribute instead; `RevertOrDeleteForm` (`app/components/forkable-header.tsx`)
+attribute instead; `ForkableActions`' revert-or-delete form (`app/components/forkable-header.tsx`)
 and `EquipmentRow` (`app/components/exercises/equipment-dialog.tsx`) both
 give the target form an id via `useId()` for this. That is also why
 `SubmitButton` fixes `type="submit"` as the _last_ prop rather than the
@@ -791,8 +796,10 @@ state and the theme are read from storage by a blocking inline script in
 paint, which is why `<html>` carries `suppressHydrationWarning` — the
 markup React hydrates has already been mutated on purpose.
 `app/components/builder/` holds the shared editor for the two ordered
-lists (a plan's slots, a workout's exercises): a palette to add from, an
-outline, and a canvas of rows.
+lists (a plan's slots, a workout's exercises): `BuilderFrame` lays out a
+palette to add from (behind an "Add ..." dialog on mobile), an outline,
+and a canvas of `BuilderRow`s, whose up/down and remove controls are
+`row-controls.tsx`.
 
 **Charts.** Recharts, through shadcn's `app/components/ui/chart.tsx`
 wrapper (`ChartContainer` + `ChartTooltipContent`) — a chart declares a

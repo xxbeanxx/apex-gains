@@ -1,22 +1,62 @@
 import { data, redirect } from 'react-router';
 
-import type { Intent } from '~/lib/intent';
-import type { IntentResponse } from '~/lib/intent.server';
+import { Expose, Transform } from 'class-transformer';
+import { IsString, MaxLength, MinLength } from 'class-validator';
+
+import { type Intent, intent } from '~/lib/intent';
+import { trim } from '~/lib/validate-form';
+
+class RenameDto {
+  @Expose()
+  @Transform(trim())
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  readonly name!: string;
+}
 
 /**
- * What a fork-on-write detail page - a plan's, a workout's - answers
- * with.
+ * The four intents every fork-on-write detail page offers, under the same
+ * names on each: a page spreads them into its own `intents` beside what it
+ * alone does.
+ */
+export type ForkableIntents = {
+  readonly delete: Intent<void>;
+  readonly revert: Intent<void>;
+  readonly duplicate: Intent<void>;
+  readonly rename: Intent<RenameDto>;
+};
+
+/**
+ * A fork-on-write detail page - a plan's, a workout's - declared once.
  *
- * Both pages map the same four outcomes onto HTTP, and the mapping is the
- * part that is easy to get subtly wrong: a fork that isn't redirected to
- * looks to the athlete like their edit was lost, because they are left
- * staring at the untouched sample. Stating it once is what keeps a third
- * such page from having to rediscover that.
+ * Both pages offer the same four actions and map the same outcomes onto
+ * HTTP, and the mapping is the part that is easy to get subtly wrong: a fork
+ * that isn't redirected to looks to the athlete like their edit was lost,
+ * because they are left staring at the untouched sample. The handlers for
+ * `intents` are `forkableHandlers` in `./forkable-detail.server.ts`, and the
+ * header that submits them is `ForkableActions`; what a page's *own* intents
+ * do - reanchoring a plan, targeting a workout's exercise - is not in here.
  *
- * What the page's *own* intents do is not in here - reanchoring a plan
- * and adding an exercise to a workout have nothing in common.
+ * Client-safe on purpose, like `./intent.ts`: a route declares its page at
+ * module scope, so the browser bundle reaches this file too.
  */
 export type ForkableDetail = {
+  /**
+   * Capitalised, as a message says it: "Plan not found".
+   */
+  readonly noun: string;
+  /**
+   * Where a deletion lands.
+   */
+  readonly indexPath: string;
+  /**
+   * Where one row lives, for following a fork, a revert or a duplicate.
+   */
+  pathFor(id: string): string;
+
+  readonly intents: ForkableIntents;
+
   /**
    * A row the athlete cannot see is a 404, in a loader or mid-action.
    */
@@ -28,70 +68,31 @@ export type ForkableDetail = {
    * the browser needs to follow.
    */
   settle(outcome: { ok: true; value: { forkedId: string | null } } | { ok: false }): { ok: true };
-
-  /**
-   * Deleting: gone means back to the index; a sample refuses, because it is
-   * shared with everyone and hiding it is what the sample-data preference is
-   * for.
-   */
-  deleted(
-    intent: Intent<void>,
-    outcome: { ok: true } | { ok: false; error: 'not-found' | 'sample' },
-    onDeleted?: () => void,
-  ): IntentResponse;
-
-  /**
-   * Reverting: the copy is discarded and the browser follows the sample,
-   * which reappears in the athlete's list now that nothing forks from it.
-   */
-  reverted(
-    intent: Intent<void>,
-    outcome: { ok: true; value: { forkedFromId: string } } | { ok: false; error: 'not-found' | 'nothing-to-revert' },
-  ): IntentResponse;
 };
 
-export function forkableDetail(page: {
-  /**
-   * Capitalised, as a message says it: "Plan not found".
-   */
-  noun: string;
-  /**
-   * Where a deletion lands.
-   */
-  indexPath: string;
-  /**
-   * Where one row lives, for following a fork or a revert.
-   */
-  pathFor: (id: string) => string;
-}): ForkableDetail {
+export function forkableDetail(page: { noun: string; indexPath: string; pathFor: (id: string) => string }): ForkableDetail {
   function notFound(): never {
     throw data(`${page.noun} not found`, { status: 404 });
   }
 
   return {
+    noun: page.noun,
+    indexPath: page.indexPath,
+    pathFor: page.pathFor,
+
+    intents: {
+      delete: intent('delete'),
+      revert: intent('revert'),
+      duplicate: intent('duplicate'),
+      rename: intent('rename', RenameDto, { invalidMessage: 'Invalid name' }),
+    },
+
     notFound,
 
     settle(outcome) {
       if (!outcome.ok) notFound();
       if (outcome.value.forkedId) throw redirect(page.pathFor(outcome.value.forkedId));
       return { ok: true };
-    },
-
-    deleted(intent, outcome, onDeleted) {
-      if (!outcome.ok) {
-        if (outcome.error === 'not-found') notFound();
-        return intent.reject(`Sample ${page.noun.toLowerCase()}s can't be deleted.`);
-      }
-      onDeleted?.();
-      throw redirect(page.indexPath);
-    },
-
-    reverted(intent, outcome) {
-      if (!outcome.ok) {
-        if (outcome.error === 'not-found') notFound();
-        return intent.reject('Nothing to revert');
-      }
-      throw redirect(page.pathFor(outcome.value.forkedFromId));
     },
   };
 }

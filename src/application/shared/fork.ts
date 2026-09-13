@@ -1,5 +1,6 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { nextCopyName } from '~application/shared/duplicate-name';
 import { type EditableCopy, alreadyEditable, forkedFrom } from '~domain/shared/forking';
 import type { Positioned } from '~domain/shared/ordered';
 import type { Ownership } from '~domain/shared/ownership';
@@ -15,6 +16,14 @@ export type Forkable<A> = {
   readonly canRevert: boolean;
   readonly forkedFromId: string | null;
   editableCopyFor(userId: string, deps: DomainDeps): EditableCopy<A>;
+};
+
+/**
+ * What a library row needs to be copied under a new name.
+ */
+export type Renameable = {
+  readonly name: string;
+  rename(name: string, now: Date): void;
 };
 
 /**
@@ -85,7 +94,7 @@ export class ForkableEditor<A extends Forkable<A>> {
   constructor(
     protected readonly repository: ForkableRepository<A>,
     protected readonly unitOfWork: UnitOfWork,
-    private readonly deps: DomainDeps,
+    protected readonly deps: DomainDeps,
     /**
      * The aggregate's ordered children, for translating a child id that
      * arrived on a form. An aggregate whose children carry no position
@@ -142,22 +151,62 @@ export class ForkableEditor<A extends Forkable<A>> {
 }
 
 /**
- * A forkable library whose rows can simply be deleted: workouts and
- * plans.
+ * What a library needs on top of `ForkableRepository` to delete a row and to
+ * name a duplicate.
+ */
+export type ForkableLibraryRepository<A> = ForkableRepository<A> & {
+  delete(id: string): Promise<void>;
+  listNamesFor(userId: string, showSampleData: boolean): Promise<readonly { name: string }[]>;
+};
+
+/**
+ * A forkable library whose rows can simply be deleted, and copied: workouts
+ * and plans.
  *
  * Exercises are deliberately not one of these. `on delete restrict` means an
  * exercise still named by a workout or a logged set refuses to go, and what
  * to tell the athlete about that is a decision only `ExerciseLibraryService`
  * can make - so it keeps its own `revert`.
  */
-export class ForkableLibrary<A extends Forkable<A>> extends ForkableEditor<A> {
+export class ForkableLibrary<A extends Forkable<A> & Renameable> extends ForkableEditor<A> {
   constructor(
-    repository: ForkableRepository<A> & { delete(id: string): Promise<void> },
+    private readonly library: ForkableLibraryRepository<A>,
     unitOfWork: UnitOfWork,
     deps: DomainDeps,
     childrenOf: (aggregate: A) => readonly Positioned[],
   ) {
-    super(repository, unitOfWork, deps, childrenOf);
+    super(library, unitOfWork, deps, childrenOf);
+  }
+
+  /**
+   * Copies a row the athlete can see into a new row of their own, named
+   * "<name> (copy)" - or "(copy 2)" and on, past any name already in the
+   * library they see.
+   *
+   * Deliberately not a fork: the copy's `forkedFromId` is null even when the
+   * source is a sample, so it offers no revert and has no effect on whether
+   * the sample still appears in their list. That is a different action from
+   * *editing* a sample, which forks it; the two sit side by side in a list's
+   * row menu. `copyOf` is the aggregate's own copy, which is all that differs
+   * between libraries.
+   */
+  async duplicate(
+    userId: string,
+    showSampleData: boolean,
+    id: string,
+    copyOf: (source: A) => A,
+  ): Promise<Result<{ id: string }, 'not-found'>> {
+    return this.unitOfWork.run(async () => {
+      const source = await this.library.findVisible(userId, id);
+      if (!source) return err('not-found' as const);
+
+      const names = await this.library.listNamesFor(userId, showSampleData);
+      const copy = copyOf(source);
+      copy.rename(nextCopyName(source.name, new Set(names.map((found) => found.name))), this.deps.clock.now());
+
+      await this.library.save(copy);
+      return ok({ id: copy.id });
+    });
   }
 
   /**
@@ -171,7 +220,7 @@ export class ForkableLibrary<A extends Forkable<A>> extends ForkableEditor<A> {
       if (!aggregate) return err('not-found' as const);
       if (aggregate.ownership.isSample) return err('sample' as const);
 
-      await this.deletable().delete(aggregate.id);
+      await this.library.delete(aggregate.id);
       return ok();
     });
   }
@@ -190,12 +239,8 @@ export class ForkableLibrary<A extends Forkable<A>> extends ForkableEditor<A> {
       }
 
       const forkedFromId = aggregate.forkedFromId;
-      await this.deletable().delete(aggregate.id);
+      await this.library.delete(aggregate.id);
       return ok({ forkedFromId });
     });
-  }
-
-  private deletable(): { delete(id: string): Promise<void> } {
-    return this.repository as ForkableRepository<A> & { delete(id: string): Promise<void> };
   }
 }

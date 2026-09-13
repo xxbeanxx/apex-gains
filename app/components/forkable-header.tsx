@@ -1,13 +1,17 @@
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 
 import { Form } from 'react-router';
 
-import { RotateCcwIcon, Trash2Icon } from 'lucide-react';
+import { CopyIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
 
+import { RenameDisclosure } from '~/components/builder/rename-disclosure';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { ConfirmDialog } from '~/components/ui/confirm-dialog';
+import { Field } from '~/components/ui/field';
+import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
+import type { ForkableDetail } from '~/lib/forkable-detail';
 import type { Intent } from '~/lib/intent';
 
 /**
@@ -41,11 +45,85 @@ export function OwnershipBadge({ isSample, isCustomized }: Ownership) {
 }
 
 /**
+ * The header's actions, for `page.intents`: rename, then whatever the page
+ * alone offers (`children`), then duplicate, then revert-or-delete.
+ */
+export function ForkableActions({
+  page,
+  name,
+  isSample,
+  isCustomized,
+  actionData,
+  children,
+}: Ownership & {
+  page: ForkableDetail;
+  /**
+   * The row's current name, which the rename field starts from.
+   */
+  name: string;
+  actionData: unknown;
+  children?: ReactNode;
+}) {
+  const { intents } = page;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <RenameDisclosure>
+        <Form method="post">
+          <input {...intents.rename.field} />
+          <Field
+            label="Name"
+            error={intents.rename.errorIn(actionData)}
+            action={
+              <SubmitButton size="sm" match={intents.rename.match} pendingLabel="Saving">
+                Save
+              </SubmitButton>
+            }
+          >
+            <Input key={name} name="name" defaultValue={name} required />
+          </Field>
+        </Form>
+      </RenameDisclosure>
+      {children}
+      <Form method="post">
+        <input {...intents.duplicate.field} />
+        <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
+          <CopyIcon aria-hidden="true" />
+          Duplicate
+        </SubmitButton>
+      </Form>
+      <RevertOrDeleteForm
+        noun={page.noun.toLowerCase()}
+        isSample={isSample}
+        isCustomized={isCustomized}
+        revert={intents.revert}
+        remove={intents.delete}
+        actionData={actionData}
+      />
+    </div>
+  );
+}
+
+/**
+ * The line under the header of a customized copy, and nothing otherwise.
+ */
+export function CustomizedNote({ page, isCustomized }: { page: ForkableDetail; isCustomized: boolean }) {
+  if (!isCustomized) return null;
+
+  const noun = page.noun.toLowerCase();
+  return (
+    <p className="mt-4 text-sm text-muted-foreground">
+      This is your customized copy of a sample {noun}. The original sample is unaffected.
+    </p>
+  );
+}
+
+/**
  * A sample offers neither: it belongs to everyone, so there is nothing to
  * revert and nothing this athlete may delete. A personal copy of one reverts
  * back to the sample; anything else deletes outright.
  */
-export function RevertOrDeleteForm({
+function RevertOrDeleteForm({
   noun,
   isSample,
   isCustomized,

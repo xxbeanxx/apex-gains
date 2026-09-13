@@ -1,47 +1,33 @@
 import { useMemo, useRef, useState } from 'react';
 
-import { Form, redirect, useSubmit } from 'react-router';
+import { Form } from 'react-router';
 
 import { Expose, Transform } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  EllipsisIcon,
-  ListPlusIcon,
-  PlusIcon,
-  TrendingUpIcon,
-  XIcon,
-} from 'lucide-react';
+import { IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { ChevronRightIcon, ListPlusIcon, PlusIcon, TrendingUpIcon } from 'lucide-react';
 
 import { requireAthlete } from '~/auth/user-context';
-import { BuilderCanvas } from '~/components/builder/builder-canvas';
-import { BuilderLayout } from '~/components/builder/builder-layout';
+import { BuilderFrame } from '~/components/builder/builder-frame';
 import { BuilderOutline, BuilderOutlineItem } from '~/components/builder/builder-outline';
 import { BuilderPalette, BuilderPaletteSearch } from '~/components/builder/builder-palette';
 import { BuilderRow } from '~/components/builder/builder-row';
-import { RenameDisclosure } from '~/components/builder/rename-disclosure';
+import { RowMoveButtons, RowRemoveMenu } from '~/components/builder/row-controls';
 import { TargetFields } from '~/components/builder/target-fields';
 import { useCloseOnSubmit } from '~/components/builder/use-close-on-submit';
 import { NewExerciseDialog } from '~/components/exercises/new-exercise-dialog';
-import { OwnershipBadge, RevertOrDeleteForm } from '~/components/forkable-header';
+import { CustomizedNote, ForkableActions, OwnershipBadge } from '~/components/forkable-header';
 import { Page, PageHeader } from '~/components/layout/page';
 import { TargetChips } from '~/components/target-chips';
 import { Button } from '~/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu';
 import { EmptyState } from '~/components/ui/empty-state';
 import { FacetFilter, type FacetOption } from '~/components/ui/facet-filter';
-import { Field } from '~/components/ui/field';
-import { Input } from '~/components/ui/input';
 import { SubmitButton } from '~/components/ui/submit-button';
 import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
+import { forkableHandlers } from '~/lib/forkable-detail.server';
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
-import { toOptionalNumber, trim } from '~/lib/validate-form';
+import { toOptionalNumber } from '~/lib/validate-form';
 import { exerciseLibraryServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 import type { SuggestionView, WorkoutExerciseView } from '~application/use-cases/workout-service';
@@ -75,15 +61,6 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     weightUnit: athlete.preferences.weightUnit,
     distanceUnit: athlete.preferences.distanceUnit,
   };
-}
-
-class RenameWorkoutDto {
-  @Expose()
-  @Transform(trim())
-  @IsString()
-  @MinLength(1)
-  @MaxLength(100)
-  readonly name!: string;
 }
 
 class AddExerciseDto {
@@ -165,10 +142,7 @@ const page: ForkableDetail = forkableDetail({
 const { settle } = page;
 
 const intents = {
-  delete: intent('delete'),
-  revert: intent('revert'),
-  duplicate: intent('duplicate'),
-  rename: intent('rename', RenameWorkoutDto, { invalidMessage: 'Invalid name' }),
+  ...page.intents,
   addExercise: intent('addExercise', AddExerciseDto, { invalidMessage: 'Invalid exercise' }),
   removeExercise: intent('removeExercise', WorkoutExerciseIdDto),
   move: intent('move', MoveExerciseDto),
@@ -201,23 +175,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     );
 
   return dispatch(request, [
-    handled(intents.delete, async () =>
-      page.deleted(intents.delete, await workoutService.remove(athlete, workoutId), () =>
-        requestLogger(context).log(`deleted workout ${workoutId} for user ${athlete.id}`, 'Workouts'),
-      ),
-    ),
-
-    handled(intents.revert, async () => page.reverted(intents.revert, await workoutService.revert(athlete, workoutId))),
-
-    handled(intents.duplicate, async () => {
-      const outcome = await workoutService.duplicate(athlete, workoutId);
-      if (!outcome.ok) page.notFound();
-
-      requestLogger(context).log(`duplicated workout ${workoutId} into ${outcome.value.id} for user ${athlete.id}`, 'Workouts');
-      throw redirect(`/workouts/${outcome.value.id}`);
+    ...forkableHandlers(page, workoutService, {
+      athlete,
+      id: workoutId,
+      log: (message) => requestLogger(context).log(message, 'Workouts'),
     }),
-
-    handled(intents.rename, async ({ name }) => settle(await workoutService.rename(athlete, workoutId, name))),
 
     handled(intents.addExercise, async ({ exerciseId }) => {
       const outcome = await workoutService.addExercise(athlete, workoutId, exerciseId, {});
@@ -237,57 +199,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     handled(intents.updateTarget, saveTarget),
     handled(intents.applySuggestion, saveTarget),
   ]);
-}
-
-function MoveButtons({ entry, index, count }: { entry: WorkoutExerciseView; index: number; count: number }) {
-  return (
-    <>
-      <Form method="post">
-        <input {...intents.move.field} />
-        <input type="hidden" name="workoutExerciseId" value={entry.id} />
-        <input type="hidden" name="direction" value="up" />
-        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === 0}>
-          <ArrowUpIcon aria-hidden="true" />
-          <span className="sr-only">Move {entry.exerciseName} up</span>
-        </Button>
-      </Form>
-      <Form method="post">
-        <input {...intents.move.field} />
-        <input type="hidden" name="workoutExerciseId" value={entry.id} />
-        <input type="hidden" name="direction" value="down" />
-        <Button type="submit" variant="ghost" size="icon-sm" disabled={index === count - 1}>
-          <ArrowDownIcon aria-hidden="true" />
-          <span className="sr-only">Move {entry.exerciseName} down</span>
-        </Button>
-      </Form>
-    </>
-  );
-}
-
-/**
- * The `⋯` menu's one action: removing the entry. A plain navigation submit, same request cycle a literal form's own submit would make.
- */
-function RowMenu({ entry }: { entry: WorkoutExerciseView }) {
-  const submit = useSubmit();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${entry.exerciseName}`}>
-          <EllipsisIcon aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={() => submit({ intent: intents.removeExercise.name, workoutExerciseId: entry.id }, { method: 'post' })}
-        >
-          <XIcon aria-hidden="true" />
-          Remove
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 function EditTargetDetail({
@@ -479,10 +390,7 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
   const usedExerciseIds = new Set(workout.exercises.map((entry) => entry.exerciseId));
   const suggestionByEntryId = new Map(suggestions.map((suggestion) => [suggestion.workoutExerciseId, suggestion]));
 
-  const renameError = intents.rename.errorIn(actionData);
   const updateTargetError = intents.updateTarget.errorIn(actionData);
-  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
-  useCloseOnSubmit(() => setMobilePaletteOpen(false));
 
   const palette = <ExercisePalette exerciseList={exerciseList} usedExerciseIds={usedExerciseIds} />;
 
@@ -493,65 +401,22 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
         badge={<OwnershipBadge isSample={isSample} isCustomized={isCustomized} />}
         description={`${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'} in this workout.`}
         actions={
-          <div className="flex items-center gap-1.5">
-            <RenameDisclosure>
-              <Form method="post">
-                <input {...intents.rename.field} />
-                <Field
-                  label="Name"
-                  error={renameError}
-                  action={
-                    <SubmitButton size="sm" match={intents.rename.match} pendingLabel="Saving">
-                      Save
-                    </SubmitButton>
-                  }
-                >
-                  <Input key={workout.name} name="name" defaultValue={workout.name} required />
-                </Field>
-              </Form>
-            </RenameDisclosure>
-            <Form method="post">
-              <input {...intents.duplicate.field} />
-              <SubmitButton variant="outline" size="sm" match={intents.duplicate.match} pendingLabel="Duplicating">
-                <CopyIcon aria-hidden="true" />
-                Duplicate
-              </SubmitButton>
-            </Form>
-            <RevertOrDeleteForm
-              noun="workout"
-              isSample={isSample}
-              isCustomized={isCustomized}
-              revert={intents.revert}
-              remove={intents.delete}
-              actionData={actionData}
-            />
-          </div>
+          <ForkableActions
+            page={page}
+            name={workout.name}
+            isSample={isSample}
+            isCustomized={isCustomized}
+            actionData={actionData}
+          />
         }
       />
 
-      {isCustomized ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          This is your customized copy of a sample workout. The original sample is unaffected.
-        </p>
-      ) : null}
+      <CustomizedNote page={page} isCustomized={isCustomized} />
 
       <div className="mt-(--section-gap)">
-        <Dialog open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="mb-4 w-full md:hidden">
-              <PlusIcon aria-hidden="true" />
-              Add exercise
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="p-0 sm:max-w-sm">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Add an exercise</DialogTitle>
-            </DialogHeader>
-            <div className="p-4">{palette}</div>
-          </DialogContent>
-        </Dialog>
-
-        <BuilderLayout
+        <BuilderFrame
+          addLabel="Add exercise"
+          addTitle="Add an exercise"
           palette={palette}
           outline={
             exerciseCount > 0 ? (
@@ -562,42 +427,38 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
               </BuilderOutline>
             ) : null
           }
-          canvas={
-            exerciseCount === 0 ? (
-              <EmptyState
-                icon={ListPlusIcon}
-                title="No exercises yet"
-                description="Add the first movement from the palette."
-                compact
+          rows={workout.exercises.map((entry, index) => {
+            const suggestion = suggestionByEntryId.get(entry.id);
+            const row = { id: entry.id, idField: 'workoutExerciseId', label: entry.exerciseName };
+            return (
+              <BuilderRow
+                key={entry.id}
+                position={index + 1}
+                title={entry.exerciseName}
+                chips={<TargetChips target={entry.target} />}
+                note={suggestion ? <TargetSuggestion suggestion={suggestion} /> : undefined}
+                controls={<RowMoveButtons move={intents.move} {...row} index={index} count={exerciseCount} />}
+                menu={<RowRemoveMenu remove={intents.removeExercise} {...row} />}
+                detail={
+                  <EditTargetDetail
+                    entry={entry}
+                    exerciseType={entry.exerciseType}
+                    cardioFields={entry.cardioFields}
+                    weightUnit={weightUnit}
+                    distanceUnit={distanceUnit}
+                    error={updateTargetError}
+                  />
+                }
               />
-            ) : (
-              <BuilderCanvas>
-                {workout.exercises.map((entry, index) => {
-                  const suggestion = suggestionByEntryId.get(entry.id);
-                  return (
-                    <BuilderRow
-                      key={entry.id}
-                      position={index + 1}
-                      title={entry.exerciseName}
-                      chips={<TargetChips target={entry.target} />}
-                      note={suggestion ? <TargetSuggestion suggestion={suggestion} /> : undefined}
-                      controls={<MoveButtons entry={entry} index={index} count={exerciseCount} />}
-                      menu={<RowMenu entry={entry} />}
-                      detail={
-                        <EditTargetDetail
-                          entry={entry}
-                          exerciseType={entry.exerciseType}
-                          cardioFields={entry.cardioFields}
-                          weightUnit={weightUnit}
-                          distanceUnit={distanceUnit}
-                          error={updateTargetError}
-                        />
-                      }
-                    />
-                  );
-                })}
-              </BuilderCanvas>
-            )
+            );
+          })}
+          empty={
+            <EmptyState
+              icon={ListPlusIcon}
+              title="No exercises yet"
+              description="Add the first movement from the palette."
+              compact
+            />
           }
         />
       </div>
