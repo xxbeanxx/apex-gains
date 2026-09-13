@@ -11,7 +11,7 @@ import { SubmitButton } from '~/components/ui/submit-button';
 import { requestLogger } from '~/lib/logger';
 import { IsDateOnly } from '~/lib/validate-form';
 import { validateForm } from '~/lib/validate-form.server';
-import { planImportServiceContext } from '~/router/load-context';
+import { athleteCalendarContext, planImportServiceContext } from '~/router/load-context';
 import { DateOnly } from '~domain/values/date-only';
 
 import type { Route } from './+types/plans.import.$shareToken';
@@ -54,7 +54,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // almost certainly want is the plan they already have.
   if (shared.ownPlanId) throw redirect(`/plans/${shared.ownPlanId}`);
 
-  return { shared, todayStr: DateOnly.today(new Date(), athlete.preferences.timezone).value };
+  return { shared, todayStr: context.get(athleteCalendarContext).today(athlete).value };
 }
 
 class ImportPlanDto {

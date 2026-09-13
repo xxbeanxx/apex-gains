@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { ProgressService } from '~application/use-cases/progress-service';
 import { Athlete } from '~domain/athlete/athlete';
@@ -25,7 +26,6 @@ import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memor
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
 
 const NOW = new Date('2026-09-03T12:00:00Z');
-const TODAY = DateOnly.parse('2026-09-03');
 const deps = { ids: sequentialIds('id'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
 
 function athlete(overrides: { weightUnit?: 'lb' | 'kg'; lengthUnit?: 'cm' | 'in' } = {}): Athlete {
@@ -78,7 +78,7 @@ beforeEach(() => {
   bodyWeight = new InMemoryBodyWeightRepository();
   bodyMeasurements = new InMemoryBodyMeasurementsRepository();
   const references = new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository());
-  service = new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements);
+  service = new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements, new AthleteCalendar(deps.clock));
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
@@ -117,7 +117,7 @@ describe('dashboard', () => {
     );
     await plans.save(plan());
 
-    // 2026-09-03 (NOW/TODAY) is a Thursday; its week runs Mon 2026-08-31
+    // 2026-09-03 (NOW) is a Thursday; its week runs Mon 2026-08-31
     // through Sun 2026-09-06.
     const inWeek = Session.open(
       'user-1',
@@ -146,7 +146,7 @@ describe('dashboard', () => {
     lastWeek.logSet('bench', { reps: 5, weight: Weight.lb(200) }, deps);
     await sessions.save(lastWeek);
 
-    const view = await service.dashboard(athlete(), TODAY);
+    const view = await service.dashboard(athlete());
 
     expect(view.sessionsThisWeek).toBe(2);
     expect(view.setsThisWeek).toBe(1);
@@ -157,7 +157,7 @@ describe('dashboard', () => {
   });
 
   it('reports no active plan when none is set', async () => {
-    const view = await service.dashboard(athlete(), TODAY);
+    const view = await service.dashboard(athlete());
 
     expect(view.activePlanName).toBeNull();
     expect(view.sessionsThisWeek).toBe(0);
@@ -177,7 +177,7 @@ describe('history', () => {
 
     await openSession('2026-09-02', true); // rest day, no sets
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.totalSets).toBe(1);
     expect(view.workoutCount).toBe(1);
@@ -189,7 +189,7 @@ describe('history', () => {
     opened.logSet('bench', { reps: 8, weight: Weight.lb(135) }, deps);
     await sessions.save(opened);
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.timeline[0]).toMatchObject({
       date: '2026-09-01',
@@ -221,7 +221,7 @@ describe('history', () => {
     opened.logSet('bench', { reps: 6, weight: Weight.lb(145) }, deps);
     await sessions.save(opened);
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.timeline[0]).toMatchObject({ workoutName: 'Push Day', tonnage: '1950 lb' });
   });
@@ -244,7 +244,7 @@ describe('history', () => {
     );
 
     const hidingSamples = Athlete.fromSnapshot({ ...athlete().toSnapshot(), showSampleData: false });
-    const view = await service.history(hidingSamples, TODAY);
+    const view = await service.history(hidingSamples);
 
     expect(view.timeline.map((day) => day.workoutName)).toEqual(['Pull Day', 'Push Day']);
   });
@@ -252,7 +252,7 @@ describe('history', () => {
   it('reports no workout name and no tonnage for a rest day with nothing logged', async () => {
     await openSession('2026-09-01', true);
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.timeline[0]).toMatchObject({ workoutName: null, tonnage: null });
   });
@@ -263,7 +263,7 @@ describe('history', () => {
     opened.logSet('bench', { reps: 10, weight: Weight.lb(100) }, deps);
     await sessions.save(opened);
 
-    const view = await service.history(athlete({ weightUnit: 'kg' }), TODAY);
+    const view = await service.history(athlete({ weightUnit: 'kg' }));
 
     expect(view.tonnageUnit).toBe('kg');
     const currentWeek = view.weeklyTonnage.find((point) => point.isCurrentWeek);
@@ -284,7 +284,7 @@ describe('history', () => {
     day2.logSet('bench', { reps: 10, weight: Weight.lb(180) }, deps); // Epley: 180 * 4/3 = 240 lb
     await sessions.save(day2);
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.exerciseProgress).toEqual([
       {
@@ -309,7 +309,7 @@ describe('history', () => {
     day2.logSet('row', { duration: Duration.minutes(25) }, deps);
     await sessions.save(day2);
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.exerciseProgress).toEqual([
       {
@@ -326,7 +326,7 @@ describe('history', () => {
   });
 
   it('is null for body weight when fewer than two entries exist', async () => {
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
     expect(view.bodyWeight).toBeNull();
   });
 
@@ -334,7 +334,7 @@ describe('history', () => {
     await bodyWeight.save(BodyWeightEntry.record('user-1', DateOnly.parse('2026-08-01'), Weight.lb(180), deps));
     await bodyWeight.save(BodyWeightEntry.record('user-1', DateOnly.parse('2026-08-15'), Weight.lb(178), deps));
 
-    const view = await service.history(athlete(), TODAY);
+    const view = await service.history(athlete());
 
     expect(view.bodyWeight?.points.map((p) => p.date)).toEqual(['2026-08-01', '2026-08-15']);
     expect(view.bodyWeight?.points.map((p) => p.value)).toEqual([180, 178]);

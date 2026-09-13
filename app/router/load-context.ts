@@ -3,6 +3,7 @@ import { RouterContextProvider, createContext } from 'react-router';
 
 import type { ConfigType } from '@nestjs/config';
 
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { AdminService } from '~application/use-cases/admin-service';
 import type { AthleteService } from '~application/use-cases/athlete-service';
 import type { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
@@ -49,6 +50,7 @@ import type { AppLogger } from '~server/logging/logger.provider';
  */
 const contexts = {
   logger: createContext<AppLogger>(),
+  athleteCalendar: createContext<AthleteCalendar>(),
   // services
   adminService: createContext<AdminService>(),
   athleteService: createContext<AthleteService>(),
@@ -72,6 +74,7 @@ const contexts = {
 
 export const {
   logger: nestLoggerContext,
+  athleteCalendar: athleteCalendarContext,
   //
   adminService: adminServiceContext,
   athleteService: athleteServiceContext,

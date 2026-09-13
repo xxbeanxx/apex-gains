@@ -52,12 +52,13 @@ export class DateOnly {
   }
 
   /**
-   * The calendar day `now` falls on in `timeZone`. Defaults to UTC, which is
-   * the right choice only where no single athlete is in view (an
-   * instance-wide cutoff, say) - a per-athlete call site should always pass
-   * `athlete.preferences.timezone`.
+   * The calendar day `now` falls on in `timeZone`. `now` has no default, so
+   * nothing reads the wall clock without a `Clock` showing at the call site.
+   * The zone defaults to UTC, which is the right choice only where no single
+   * athlete is in view (an instance-wide cutoff, say) - an athlete's today
+   * is `AthleteCalendar.today`.
    */
-  static today(now: Date = new Date(), timeZone: string = DEFAULT_TIMEZONE): DateOnly {
+  static today(now: Date, timeZone: string = DEFAULT_TIMEZONE): DateOnly {
     return new DateOnly(
       new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now),
     );

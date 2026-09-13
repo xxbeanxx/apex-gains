@@ -2,6 +2,7 @@ import type { BodyMeasurementsRepository } from '~application/ports/persistence/
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { ReferenceDirectory, ResolvedReferences } from '~application/shared/reference-directory';
 import type {
   HeatmapDayView,
@@ -19,7 +20,6 @@ import { type ProgressMetricKind, personalRecords, progressSeries } from '~domai
 import { TrainingHistory } from '~domain/progress/training-history';
 import { consistencyCalendar, weeklySetCount, weeklyTonnage } from '~domain/progress/weekly-volume';
 import type { Session } from '~domain/session/session';
-import { DateOnly } from '~domain/values/date-only';
 import { Duration } from '~domain/values/duration';
 import { round } from '~domain/values/units';
 import { Weight } from '~domain/values/weight';
@@ -172,6 +172,7 @@ export class ProgressService {
     private readonly plans: PlansRepository,
     private readonly bodyWeight: BodyWeightRepository,
     private readonly bodyMeasurements: BodyMeasurementsRepository,
+    private readonly calendar: AthleteCalendar,
   ) {}
 
   /**
@@ -180,8 +181,8 @@ export class ProgressService {
    * show first - one call rather than the page reaching into plans,
    * workouts and sessions separately.
    */
-  async dashboard(athlete: Athlete, asOf?: DateOnly): Promise<DashboardView> {
-    const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);
+  async dashboard(athlete: Athlete): Promise<DashboardView> {
+    const today = this.calendar.today(athlete);
     const weekStart = today.startOfWeek();
     const weekEnd = weekStart.plusDays(6);
 
@@ -200,8 +201,8 @@ export class ProgressService {
     };
   }
 
-  async history(athlete: Athlete, asOf?: DateOnly): Promise<HistoryView> {
-    const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);
+  async history(athlete: Athlete): Promise<HistoryView> {
+    const today = this.calendar.today(athlete);
     const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
 
     // One lookup serves both the domain calculations and the timeline's

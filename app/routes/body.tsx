@@ -19,7 +19,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~
 import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { IsDateOnly, toNumber } from '~/lib/validate-form';
-import { bodyMeasurementsServiceContext, bodyWeightServiceContext, progressServiceContext } from '~/router/load-context';
+import {
+  athleteCalendarContext,
+  bodyMeasurementsServiceContext,
+  bodyWeightServiceContext,
+  progressServiceContext,
+} from '~/router/load-context';
 import { BODY_MEASUREMENT_METRICS, type BodyMeasurementMetric } from '~domain/body/body-measurement';
 import { DateOnly } from '~domain/values/date-only';
 import { formatFullDate } from '~shared/format';
@@ -63,7 +68,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const section = sectionFrom(request);
   const progressService = context.get(progressServiceContext);
-  const todayStr = DateOnly.today(new Date(), athlete.preferences.timezone).value;
+  const todayStr = context.get(athleteCalendarContext).today(athlete).value;
 
   if (isMeasurement(section)) {
     const log = await progressService.bodyMeasurementLog(athlete, section);
@@ -141,17 +146,15 @@ const intents = {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
   const bodyWeightService = context.get(bodyWeightServiceContext);
   const bodyMeasurementsService = context.get(bodyMeasurementsServiceContext);
 
   return dispatch(request, [
     handled(intents.logWeight, async ({ date, weight }) => {
-      // Clamp instead of rejecting: a stale form (left open since yesterday)
-      // should still log against today rather than fail outright. The
-      // number is in whatever unit the athlete has chosen; the service
-      // converts it to canonical storage.
-      await bodyWeightService.record(athlete, DateOnly.parse(date).atMost(today), weight);
+      // The number is in whatever unit the athlete has chosen, and the date
+      // may be later than their today; the service converts the one and
+      // clamps the other.
+      await bodyWeightService.record(athlete, DateOnly.parse(date), weight);
       return { ok: true, intent: intents.logWeight.name } as const;
     }),
 
@@ -161,7 +164,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     }),
 
     handled(intents.logMeasurement, async ({ date, metric, value }) => {
-      await bodyMeasurementsService.record(athlete, DateOnly.parse(date).atMost(today), metric, value);
+      await bodyMeasurementsService.record(athlete, DateOnly.parse(date), metric, value);
       return { ok: true, intent: intents.logMeasurement.name } as const;
     }),
 

@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 
 import type { NestSingletons } from '~/router/load-context';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { AdminService } from '~application/use-cases/admin-service';
 import { AthleteService } from '~application/use-cases/athlete-service';
 import { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
@@ -26,6 +27,7 @@ import { LOGGER } from '~server/logging/tokens';
 export function collectNestSingletons(app: INestApplication): NestSingletons {
   return {
     logger: app.get(LOGGER),
+    athleteCalendar: app.get(AthleteCalendar),
     //
     adminService: app.get(AdminService),
     athleteService: app.get(AthleteService),

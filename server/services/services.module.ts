@@ -1,6 +1,7 @@
 import { Module, type Provider } from '@nestjs/common';
 
 import { productionDeps } from '~application/ports/domain-deps';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { AdminService } from '~application/use-cases/admin-service';
 import { AthleteService } from '~application/use-cases/athlete-service';
@@ -44,6 +45,11 @@ const referenceDirectory: Provider = {
 
 const services: Provider[] = [
   {
+    provide: AthleteCalendar,
+    inject: [DOMAIN_DEPS],
+    useFactory: (deps) => new AthleteCalendar(deps.clock),
+  },
+  {
     provide: AthleteService,
     inject: [ATHLETES_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
     useFactory: (athletes, unitOfWork, deps) => new AthleteService(athletes, unitOfWork, deps),
@@ -77,9 +83,10 @@ const services: Provider[] = [
       PLANS_REPOSITORY,
       SESSIONS_REPOSITORY,
       BODY_WEIGHT_REPOSITORY,
+      DOMAIN_DEPS,
     ],
-    useFactory: (exercises, workouts, references, plans, sessions, bodyWeight) =>
-      new ExportService(exercises, workouts, references, plans, sessions, bodyWeight),
+    useFactory: (exercises, workouts, references, plans, sessions, bodyWeight, deps) =>
+      new ExportService(exercises, workouts, references, plans, sessions, bodyWeight, deps.clock),
   },
   {
     provide: PlanImportService,
@@ -94,9 +101,16 @@ const services: Provider[] = [
   },
   {
     provide: ProgressService,
-    inject: [SESSIONS_REPOSITORY, ReferenceDirectory, PLANS_REPOSITORY, BODY_WEIGHT_REPOSITORY, BODY_MEASUREMENTS_REPOSITORY],
-    useFactory: (sessions, references, plans, bodyWeight, bodyMeasurements) =>
-      new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements),
+    inject: [
+      SESSIONS_REPOSITORY,
+      ReferenceDirectory,
+      PLANS_REPOSITORY,
+      BODY_WEIGHT_REPOSITORY,
+      BODY_MEASUREMENTS_REPOSITORY,
+      AthleteCalendar,
+    ],
+    useFactory: (sessions, references, plans, bodyWeight, bodyMeasurements, calendar) =>
+      new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements, calendar),
   },
   {
     provide: TrainingPlanService,

@@ -63,6 +63,7 @@ beforeEach(() => {
     plans,
     sessions,
     bodyWeight,
+    deps.clock,
   );
 });
 
@@ -101,9 +102,10 @@ async function seedTraining(): Promise<{ exercise: Exercise }> {
 }
 
 describe('snapshot', () => {
-  it('carries the athlete, in canonical units with the display preference recorded separately', async () => {
+  it('carries the athlete and when it was taken, in canonical units with the display preference recorded separately', async () => {
     const snapshot = await service.snapshot(athlete);
 
+    expect(snapshot.exportedAt).toBe(NOW.toISOString());
     expect(snapshot.athlete).toEqual({
       id: 'user-1',
       name: 'Athlete',

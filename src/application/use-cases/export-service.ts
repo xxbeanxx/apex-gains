@@ -6,6 +6,7 @@ import type { WorkoutsRepository } from '~application/ports/persistence/workouts
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { Exercise } from '~domain/exercise/exercise';
+import type { Clock } from '~domain/shared/clock';
 import type { SetTarget } from '~domain/workout/set-target';
 import type { Workout } from '~domain/workout/workout';
 
@@ -137,6 +138,7 @@ export class ExportService {
     private readonly plans: PlansRepository,
     private readonly sessions: SessionsRepository,
     private readonly bodyWeight: BodyWeightRepository,
+    private readonly clock: Clock,
   ) {}
 
   async snapshot(athlete: Athlete): Promise<ExportSnapshot> {
@@ -168,7 +170,7 @@ export class ExportService {
     );
 
     return {
-      exportedAt: new Date().toISOString(),
+      exportedAt: this.clock.now().toISOString(),
       athlete: {
         id: athlete.id,
         name: athlete.name,

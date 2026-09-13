@@ -54,7 +54,7 @@ import { requestLogger } from '~/lib/logger';
 import { encodeQr } from '~/lib/qr.server';
 import { shareUrlFor } from '~/lib/share-link';
 import { IsDateOnly, trim } from '~/lib/validate-form';
-import { planServiceContext, workoutServiceContext } from '~/router/load-context';
+import { athleteCalendarContext, planServiceContext, workoutServiceContext } from '~/router/load-context';
 import type { PlanSlotView } from '~application/use-cases/plan-service';
 import type { WorkoutSummary } from '~application/use-cases/workout-service';
 import { DateOnly } from '~domain/values/date-only';
@@ -86,7 +86,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     plan,
     workouts: await workoutService.listForPicker(athlete),
     share: shareUrl === null ? null : { url: shareUrl, qr: encodeQr(shareUrl) },
-    todayStr: DateOnly.today(new Date(), athlete.preferences.timezone).value,
+    todayStr: context.get(athleteCalendarContext).today(athlete).value,
   };
 }
 

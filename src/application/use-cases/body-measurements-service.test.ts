@@ -77,6 +77,13 @@ describe('record', () => {
 
     expect(second!.id).toBe(first!.id);
   });
+
+  it("logs a day later than the athlete's today against today", async () => {
+    await service.record(athlete('cm'), DateOnly.parse('2026-09-04'), 'waist', 86);
+
+    expect(await entries.findForDate('user-1', DateOnly.parse('2026-09-04'), 'waist')).toBeNull();
+    expect((await entries.findForDate('user-1', DateOnly.parse('2026-09-03'), 'waist'))?.value.inCentimetres).toBe(86);
+  });
 });
 
 describe('remove', () => {

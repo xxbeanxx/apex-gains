@@ -26,7 +26,12 @@ import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { cn } from '~/lib/utils';
 import { IsDateOnly, IsRpe, optionalTrim, toOptionalNumber } from '~/lib/validate-form';
-import { exerciseLibraryServiceContext, sessionServiceContext, trainingPlanServiceContext } from '~/router/load-context';
+import {
+  athleteCalendarContext,
+  exerciseLibraryServiceContext,
+  sessionServiceContext,
+  trainingPlanServiceContext,
+} from '~/router/load-context';
 import { DateOnly } from '~domain/values/date-only';
 import { formatFullDate } from '~shared/format';
 
@@ -40,12 +45,9 @@ export const handle = { crumb: () => ({ label: 'Today' }) };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
-
-  // An unparseable or future ?date falls back to today rather than erroring -
-  // there is nothing to log against a day that hasn't happened.
-  const requested = DateOnly.tryParse(new URL(request.url).searchParams.get('date'));
-  const date = requested?.isOnOrBefore(today) ? requested : today;
+  const calendar = context.get(athleteCalendarContext);
+  const today = calendar.today(athlete);
+  const date = calendar.viewingDay(athlete, new URL(request.url).searchParams.get('date'));
 
   const planService = context.get(trainingPlanServiceContext);
   const logService = context.get(sessionServiceContext);
@@ -151,17 +153,14 @@ const intents = {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
-  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
   const logService = context.get(sessionServiceContext);
 
   return dispatch(request, [
     handled(intents.logSet, async (input) => {
-      // Clamp instead of rejecting: a stale form (left open since yesterday)
-      // should still log against today rather than fail outright.
-      const date = DateOnly.parse(input.date).atMost(today);
-
-      // Measurements are in the athlete's own units; the service converts them.
-      const outcome = await logService.logSet(athlete, date, input.exerciseId, {
+      // Measurements are in the athlete's own units, and the date may be
+      // later than their today; the service converts the one and clamps the
+      // other.
+      const outcome = await logService.logSet(athlete, DateOnly.parse(input.date), input.exerciseId, {
         reps: input.reps,
         weight: input.weight,
         durationMinutes: input.durationMinutes,
@@ -175,7 +174,7 @@ export async function action({ request, context }: Route.ActionArgs) {
         return intents.logSet.reject('Invalid set');
       }
       if (outcome.value.sessionOpened) {
-        requestLogger(context).log(`opened session on ${date.value} for user ${athlete.id}`, 'Today');
+        requestLogger(context).log(`opened session on ${outcome.value.date.value} for user ${athlete.id}`, 'Today');
       }
       return { ok: true };
     }),

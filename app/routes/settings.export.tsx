@@ -1,6 +1,5 @@
 import { requireAthlete } from '~/auth/user-context';
-import { exportServiceContext } from '~/router/load-context';
-import { DateOnly } from '~domain/values/date-only';
+import { athleteCalendarContext, exportServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/settings.export';
 
@@ -14,7 +13,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const exportService = context.get(exportServiceContext);
 
   const format = new URL(request.url).searchParams.get('format') === 'csv' ? 'csv' : 'json';
-  const stamp = DateOnly.today(new Date(), athlete.preferences.timezone).value;
+  const stamp = context.get(athleteCalendarContext).today(athlete).value;
 
   if (format === 'csv') {
     const csv = await exportService.toCsv(athlete);

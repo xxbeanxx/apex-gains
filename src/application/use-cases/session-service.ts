@@ -2,6 +2,7 @@ import type { DomainDeps } from '~application/ports/domain-deps';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import type { Athlete } from '~domain/athlete/athlete';
@@ -92,7 +93,11 @@ export class SessionService {
     private readonly plans: TrainingPlanService,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    this.calendar = new AthleteCalendar(deps.clock);
+  }
+
+  private readonly calendar: AthleteCalendar;
 
   async loggedSetsFor(athlete: Athlete, date: DateOnly): Promise<LoggedSetView[]> {
     const session = await this.sessions.findForDate(athlete.id, date);
@@ -142,24 +147,28 @@ export class SessionService {
   }
 
   /**
-   * Records a set against `date`, opening that day's session if this is the
-   * first thing logged on it.
+   * Records a set against `submitted` - or against today, if that is later
+   * (see `AthleteCalendar.loggingDay`) - opening that day's session if this
+   * is the first thing logged on it.
    *
    * The session snapshots what the plan said the day was at the moment it
    * opens, which is why the plan is read here rather than derived later - a
    * plan edited next week must not rewrite what today claimed to be.
    *
-   * Reports whether it had to open the session so the caller can log that;
-   * the service itself stays free of request-scoped logging.
+   * Reports the day it logged against and whether it had to open that day's
+   * session, so the caller can log that; the service itself stays free of
+   * request-scoped logging.
    */
   async logSet(
     athlete: Athlete,
-    date: DateOnly,
+    submitted: DateOnly,
     exerciseId: string,
     input: SetInput,
-  ): Promise<Result<{ sessionOpened: boolean }, 'exercise-not-found'>> {
+  ): Promise<Result<{ date: DateOnly; sessionOpened: boolean }, 'exercise-not-found'>> {
     const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
     if (!exercise) return err('exercise-not-found' as const);
+
+    const date = this.calendar.loggingDay(athlete, submitted);
 
     const plan = await this.plans.planFor(athlete, date);
 
@@ -185,7 +194,7 @@ export class SessionService {
       );
 
       await this.sessions.save(session);
-      return ok({ sessionOpened: existing === null });
+      return ok({ date, sessionOpened: existing === null });
     });
   }
 

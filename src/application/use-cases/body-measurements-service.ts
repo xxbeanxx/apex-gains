@@ -1,6 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { Athlete } from '~domain/athlete/athlete';
 import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
 import { type Result, ok } from '~domain/shared/result';
@@ -17,7 +18,11 @@ export class BodyMeasurementsService {
     private readonly entries: BodyMeasurementsRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    this.calendar = new AthleteCalendar(deps.clock);
+  }
+
+  private readonly calendar: AthleteCalendar;
 
   /**
    * Logs (or corrects) a metric for a day. There is one entry per
@@ -25,10 +30,12 @@ export class BodyMeasurementsService {
    * shouldn't produce two truths about the same day.
    *
    * `value` arrives in the athlete's chosen length unit and is converted to
-   * canonical centimetres here.
+   * canonical centimetres here. A day later than the athlete's today is
+   * logged against today - see `AthleteCalendar.loggingDay`.
    */
-  async record(athlete: Athlete, date: DateOnly, metric: BodyMeasurementMetric, value: number): Promise<void> {
+  async record(athlete: Athlete, submitted: DateOnly, metric: BodyMeasurementMetric, value: number): Promise<void> {
     const measured = Length.of(athlete.preferences.lengthUnit, value);
+    const date = this.calendar.loggingDay(athlete, submitted);
 
     await this.unitOfWork.run(async () => {
       const existing = await this.entries.findForDate(athlete.id, date, metric);

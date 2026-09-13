@@ -92,8 +92,27 @@ describe('logging a set', () => {
       weight: 135,
     });
 
-    expect(outcome).toEqual({ ok: true, value: { sessionOpened: true } });
+    expect(outcome).toEqual({ ok: true, value: { date: TODAY, sessionOpened: true } });
     expect((await sessions.findForDate('user-1', TODAY))?.setCount).toBe(1);
+  });
+
+  it("logs a day later than the athlete's today against today, and says so", async () => {
+    const outcome = await service.logSet(athleteWith(), TODAY.plusDays(1), await benchId(), { reps: 10 });
+
+    expect(outcome).toEqual({ ok: true, value: { date: TODAY, sessionOpened: true } });
+    expect(await sessions.findForDate('user-1', TODAY.plusDays(1))).toBeNull();
+    expect((await sessions.findForDate('user-1', TODAY))?.setCount).toBe(1);
+  });
+
+  /**
+   * NOW is 12:00 UTC on the 3rd, which is already the 4th in Kiritimati.
+   */
+  it("reads today in the athlete's timezone, not the server's", async () => {
+    const outcome = await service.logSet(athleteWith({ timezone: 'Pacific/Kiritimati' }), TODAY.plusDays(1), await benchId(), {
+      reps: 10,
+    });
+
+    expect(outcome.ok && outcome.value.date.value).toBe('2026-09-04');
   });
 
   it("reuses the day's session for later sets", async () => {
@@ -103,7 +122,7 @@ describe('logging a set', () => {
     await service.logSet(athlete, TODAY, bench, { reps: 10 });
     const second = await service.logSet(athlete, TODAY, bench, { reps: 8 });
 
-    expect(second).toEqual({ ok: true, value: { sessionOpened: false } });
+    expect(second).toEqual({ ok: true, value: { date: TODAY, sessionOpened: false } });
     expect((await sessions.findForDate('user-1', TODAY))?.setCount).toBe(2);
   });
 

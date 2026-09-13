@@ -1,6 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { Athlete } from '~domain/athlete/athlete';
 import { BodyWeightEntry } from '~domain/body/body-weight-entry';
 import { type Result, ok } from '~domain/shared/result';
@@ -16,7 +17,11 @@ export class BodyWeightService {
     private readonly entries: BodyWeightRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {}
+  ) {
+    this.calendar = new AthleteCalendar(deps.clock);
+  }
+
+  private readonly calendar: AthleteCalendar;
 
   /**
    * Logs (or corrects) a day's weight. There is one entry per day, so
@@ -24,10 +29,12 @@ export class BodyWeightService {
    * twice shouldn't produce two truths about the same morning.
    *
    * `weight` arrives in the athlete's chosen unit and is converted to
-   * canonical pounds here.
+   * canonical pounds here. A day later than the athlete's today is logged
+   * against today - see `AthleteCalendar.loggingDay`.
    */
-  async record(athlete: Athlete, date: DateOnly, weight: number): Promise<void> {
+  async record(athlete: Athlete, submitted: DateOnly, weight: number): Promise<void> {
     const measured = Weight.in(athlete.preferences.weightUnit, weight);
+    const date = this.calendar.loggingDay(athlete, submitted);
 
     await this.unitOfWork.run(async () => {
       const existing = await this.entries.findForDate(athlete.id, date);

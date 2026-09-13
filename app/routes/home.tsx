@@ -9,8 +9,7 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { EmptyState } from '~/components/ui/empty-state';
 import { Stat } from '~/components/ui/stat';
-import { progressServiceContext, trainingPlanServiceContext } from '~/router/load-context';
-import { DateOnly } from '~domain/values/date-only';
+import { athleteCalendarContext, progressServiceContext, trainingPlanServiceContext } from '~/router/load-context';
 
 import type { Route } from './+types/home';
 
@@ -22,7 +21,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext);
   if (!athlete) return null;
 
-  const today = DateOnly.today(new Date(), athlete.preferences.timezone);
+  const today = context.get(athleteCalendarContext).today(athlete);
   const [dashboard, plan] = await Promise.all([
     context.get(progressServiceContext).dashboard(athlete),
     context.get(trainingPlanServiceContext).planFor(athlete, today),

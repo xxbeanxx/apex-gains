@@ -20,9 +20,8 @@ import { intent } from '~/lib/intent';
 import { dispatch, handled } from '~/lib/intent.server';
 import { requestLogger } from '~/lib/logger';
 import { trim } from '~/lib/validate-form';
-import { planServiceContext } from '~/router/load-context';
+import { athleteCalendarContext, planServiceContext } from '~/router/load-context';
 import type { PlanSummary } from '~application/use-cases/plan-service';
-import { DateOnly } from '~domain/values/date-only';
 import { formatMonthDay, formatWeekday } from '~shared/format';
 
 import type { Route } from './+types/plans';
@@ -67,7 +66,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     handled(intents.create, async ({ name }) => {
       // A new plan is anchored to today, so its first slot is today's - the
       // athlete can re-anchor it afterwards.
-      const plan = await planService.create(user, name, DateOnly.today(new Date(), user.preferences.timezone));
+      const plan = await planService.create(user, name, context.get(athleteCalendarContext).today(user));
       requestLogger(context).log(`created plan ${plan.id} for user ${user.id}`, 'Plans');
       throw redirect(`/plans/${plan.id}`);
     }),

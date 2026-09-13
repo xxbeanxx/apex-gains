@@ -18,6 +18,12 @@ _Avoid_: clone, customized copy (the UI labels a fork "Customized")
 The exercises, workouts or plans an athlete sees listed: their own rows, plus the samples they have not forked when they show sample data.
 _Avoid_: catalogue, collection
 
+### Time
+
+**Today**:
+The calendar day it currently is in the athlete's own timezone. Nothing is logged against, or shown for, a later day.
+_Avoid_: current date, now, local day
+
 ### References
 
 **Historical reference**:

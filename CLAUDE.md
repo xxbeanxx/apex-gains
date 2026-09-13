@@ -460,6 +460,15 @@ where the `'Unknown'` fallback is stated. It ignores ownership: the ids
 handed to it must come off the athlete's own aggregates, while an id taken
 from a form still goes through `findVisible`. It is provided to the use
 cases by `server/services/services.module.ts` but never reaches a route.
+`shared/athlete-calendar.ts` (`AthleteCalendar`) is the one place that
+reads "today" for an athlete - off the injected `Clock`, in their own
+timezone - along with the rule that hangs off it: nothing is logged
+against, or shown for, a later day. The logging use cases clamp a
+submitted date through it, so the rule holds without the route; routes
+reach the same instance through `athleteCalendarContext` for a date
+picker's bounds or the day `/today` shows, and never call
+`DateOnly.today` themselves. `DateOnly.today` takes `now` with no
+default for the same reason.
 `shared/target-view.ts` does the same job for a `SetTarget`:
 `toTargetView` formats one into the athlete's units once, so no read
 model re-derives "3 x 10, 135 lb" or the discrete chips beside it.

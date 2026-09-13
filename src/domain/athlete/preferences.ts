@@ -14,9 +14,9 @@ import type { Weight } from '~domain/values/weight';
  * what makes the /settings choice actually take effect: a service rendering
  * a measurement has to come through here, so there is no plausible way to
  * hardcode a unit by accident. `timezone` is an IANA zone name (see
- * `../values/timezone.ts`) and is what every per-athlete `DateOnly.today()`
- * call should be passed - it decides when "today" rolls over for this
- * athlete, independent of where the server itself runs.
+ * `../values/timezone.ts`) and is what `AthleteCalendar` reads today in - it
+ * decides when "today" rolls over for this athlete, independent of where
+ * the server itself runs.
  */
 export class AthletePreferences {
   constructor(

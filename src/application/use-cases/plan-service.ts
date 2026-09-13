@@ -1,6 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { nextCopyName } from '~application/shared/duplicate-name';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
@@ -82,7 +83,10 @@ export class PlanService {
     private readonly deps: DomainDeps,
   ) {
     this.editor = new ForkableLibrary(this.plans, this.unitOfWork, this.deps, (plan) => plan.slots);
+    this.calendar = new AthleteCalendar(deps.clock);
   }
+
+  private readonly calendar: AthleteCalendar;
 
   /**
    * Load, fork if needed, apply, save - see `shared/fork.server.ts`.
@@ -108,7 +112,7 @@ export class PlanService {
     const workouts = await this.references.forwardLooking(athlete.id, {
       workoutIds: plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : [])),
     });
-    const today = DateOnly.today(this.deps.clock.now(), athlete.preferences.timezone);
+    const today = this.calendar.today(athlete);
 
     return {
       ...toSummary(plan),
