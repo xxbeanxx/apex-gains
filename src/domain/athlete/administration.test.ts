@@ -64,27 +64,61 @@ describe('changeAdminAccess', () => {
 });
 
 describe('removeAccount', () => {
-  it('allows deleting another athlete', () => {
-    expect(removeAccount(athlete(true), athlete()).ok).toBe(true);
+  it('allows deleting another athlete, confirmed by their email', () => {
+    const target = athlete();
+
+    expect(removeAccount(athlete(true), target, target.email).ok).toBe(true);
   });
 
   it('refuses to delete the actor’s own account', () => {
     const actor = athlete(true);
 
-    expect(removeAccount(actor, actor)).toEqual({ ok: false, error: 'self' });
+    expect(removeAccount(actor, actor, actor.email)).toEqual({ ok: false, error: 'self' });
+  });
+
+  it("refuses when the confirmation isn't the target's email - the actor's own included", () => {
+    const actor = athlete(true);
+    const target = athlete();
+
+    expect(removeAccount(actor, target, actor.email)).toEqual({ ok: false, error: 'confirmation-mismatch' });
+    expect(removeAccount(actor, target, '')).toEqual({ ok: false, error: 'confirmation-mismatch' });
   });
 });
 
 describe('closeOwnAccount', () => {
   it('allows an ordinary athlete to close their own account', () => {
-    expect(closeOwnAccount(athlete(), 1).ok).toBe(true);
+    const closing = athlete();
+
+    expect(closeOwnAccount(closing, 1, closing.email).ok).toBe(true);
   });
 
   it('allows an administrator to close their own account when another administrator remains', () => {
-    expect(closeOwnAccount(athlete(true), 2).ok).toBe(true);
+    const closing = athlete(true);
+
+    expect(closeOwnAccount(closing, 2, closing.email).ok).toBe(true);
   });
 
   it('refuses when the athlete is the sole administrator', () => {
-    expect(closeOwnAccount(athlete(true), 1)).toEqual({ ok: false, error: 'last-administrator' });
+    const closing = athlete(true);
+
+    expect(closeOwnAccount(closing, 1, closing.email)).toEqual({ ok: false, error: 'last-administrator' });
+  });
+
+  it("refuses when the confirmation isn't their email, before anything else", () => {
+    const closing = athlete(true);
+
+    expect(closeOwnAccount(closing, 1, 'someone@example.com')).toEqual({ ok: false, error: 'confirmation-mismatch' });
+  });
+});
+
+describe('confirming a deletion', () => {
+  /**
+   * The confirmation is about deliberateness, not spelling.
+   */
+  it('ignores case and surrounding whitespace in the typed email', () => {
+    const closing = athlete();
+
+    expect(closeOwnAccount(closing, 1, `  ${closing.email.toUpperCase()} `).ok).toBe(true);
+    expect(removeAccount(athlete(true), closing, `\t${closing.email.toUpperCase()}\n`).ok).toBe(true);
   });
 });

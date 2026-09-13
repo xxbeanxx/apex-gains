@@ -98,14 +98,18 @@ export class AthleteService {
    * `closeOwnAccount` is a different rule from `removeAccount`, checked
    * against the whole set of administrators rather than a pair of athletes.
    */
-  async closeOwnAccount(athlete: Athlete): Promise<Result<void, CloseAccountRefusal>> {
-    const administratorCount = (await this.athletes.listAll()).filter((one) => one.isAdmin).length;
+  async closeOwnAccount(athlete: Athlete, confirmation: string): Promise<Result<void, CloseAccountRefusal>> {
+    // Counted in the same transaction as the delete, so two administrators
+    // closing their accounts at once can't each see the other still there.
+    return this.unitOfWork.run(async () => {
+      const administratorCount = (await this.athletes.listAll()).filter((one) => one.isAdmin).length;
 
-    const outcome = closeOwnAccount(athlete, administratorCount);
-    if (!outcome.ok) return outcome;
+      const outcome = closeOwnAccount(athlete, administratorCount, confirmation);
+      if (!outcome.ok) return outcome;
 
-    await this.athletes.remove(athlete);
-    return ok();
+      await this.athletes.remove(athlete);
+      return ok();
+    });
   }
 
   private async register(

@@ -149,7 +149,7 @@ describe('closeOwnAccount', () => {
   it('allows an ordinary athlete to close their own account', async () => {
     const { athlete } = await service.signInWithGoogle(googleIdentity);
 
-    const outcome = await service.closeOwnAccount(athlete);
+    const outcome = await service.closeOwnAccount(athlete, athlete.email);
 
     expect(outcome.ok).toBe(true);
     await expect(athletes.findById(athlete.id)).resolves.toBeNull();
@@ -168,7 +168,7 @@ describe('closeOwnAccount', () => {
     second.changeAdminAccess(true, NOW);
     await athletes.save(second);
 
-    const outcome = await service.closeOwnAccount(first);
+    const outcome = await service.closeOwnAccount(first, first.email);
 
     expect(outcome.ok).toBe(true);
     await expect(athletes.findById(first.id)).resolves.toBeNull();
@@ -181,9 +181,17 @@ describe('closeOwnAccount', () => {
     athlete.changeAdminAccess(true, NOW);
     await athletes.save(athlete);
 
-    const outcome = await service.closeOwnAccount(athlete);
+    const outcome = await service.closeOwnAccount(athlete, athlete.email);
 
     expect(outcome).toEqual({ ok: false, error: 'last-administrator' });
+    await expect(athletes.findById(athlete.id)).resolves.not.toBeNull();
+  });
+  it("keeps the account when the typed email isn't theirs", async () => {
+    const { athlete } = await service.signInWithGoogle(googleIdentity);
+
+    const outcome = await service.closeOwnAccount(athlete, 'not-me@example.com');
+
+    expect(outcome).toEqual({ ok: false, error: 'confirmation-mismatch' });
     await expect(athletes.findById(athlete.id)).resolves.not.toBeNull();
   });
 });

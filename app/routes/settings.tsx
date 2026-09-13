@@ -150,17 +150,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     }),
 
     handled(intents.deleteAccount, async ({ confirmEmail }) => {
-      // The typed email is the confirmation step: this deletes the whole of
-      // an athlete's own training history along with the account, and there
-      // is no undo.
-      if (confirmEmail.trim().toLowerCase() !== athlete.email.toLowerCase()) {
-        return intents.deleteAccount.reject("That doesn't match your account's email address.");
-      }
-
-      const outcome = await athleteService.closeOwnAccount(athlete);
+      const outcome = await athleteService.closeOwnAccount(athlete, confirmEmail);
       if (!outcome.ok) {
         return intents.deleteAccount.reject(
-          "You're the only administrator, so you can't close this account. Grant admin access to someone else first.",
+          outcome.error === 'confirmation-mismatch'
+            ? "That doesn't match your account's email address."
+            : "You're the only administrator, so you can't close this account. Grant admin access to someone else first.",
         );
       }
 

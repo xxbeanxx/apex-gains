@@ -16,9 +16,25 @@ import { type Result, err, ok } from '~domain/shared/result';
 export type AdminRefusal = 'self';
 
 /**
+ * Why an administrator could not delete an account.
+ */
+export type RemoveAccountRefusal = AdminRefusal | 'confirmation-mismatch';
+
+/**
  * Why an athlete could not close their own account.
  */
-export type CloseAccountRefusal = 'last-administrator';
+export type CloseAccountRefusal = 'confirmation-mismatch' | 'last-administrator';
+
+/**
+ * Deleting an account takes the athlete's whole training history with it and
+ * cannot be undone, so whoever deletes one - its owner or an administrator -
+ * confirms it by typing that account's email. Case and surrounding
+ * whitespace don't count against them: the confirmation is about
+ * deliberateness, not about spelling.
+ */
+function confirmsDeletionOf(target: Athlete, confirmation: string): boolean {
+  return confirmation.trim().toLowerCase() === target.email.toLowerCase();
+}
 
 /**
  * An administrator may act on any account but their own.
@@ -43,18 +59,21 @@ export function changeAdminAccess(actor: Athlete, target: Athlete, isAdmin: bool
 }
 
 /**
- * Whether `actor` may delete `target`'s account outright. There is nothing
- * to mutate - the caller deletes the athlete and everything hanging off it -
- * so this is only the rule.
+ * Whether `actor` may delete `target`'s account outright, having typed
+ * `confirmation` to confirm it. There is nothing to mutate - the caller
+ * deletes the athlete and everything hanging off it - so this is only the
+ * rule.
  */
-export function removeAccount(actor: Athlete, target: Athlete): Result<void, AdminRefusal> {
+export function removeAccount(actor: Athlete, target: Athlete, confirmation: string): Result<void, RemoveAccountRefusal> {
+  if (!confirmsDeletionOf(target, confirmation)) return err('confirmation-mismatch');
   if (actingOnSelf(actor, target)) return err('self');
 
   return ok();
 }
 
 /**
- * Whether `athlete` may close their own account.
+ * Whether `athlete` may close their own account, having typed
+ * `confirmation` to confirm it.
  *
  * `removeAccount` above gets its "an administrator survives" guarantee
  * structurally, by restricting *whom* an administrator may act on - never
@@ -65,7 +84,12 @@ export function removeAccount(actor: Athlete, target: Athlete): Result<void, Adm
  * can know - is down to them alone. Anyone else may always close their own
  * account.
  */
-export function closeOwnAccount(athlete: Athlete, administratorCount: number): Result<void, CloseAccountRefusal> {
+export function closeOwnAccount(
+  athlete: Athlete,
+  administratorCount: number,
+  confirmation: string,
+): Result<void, CloseAccountRefusal> {
+  if (!confirmsDeletionOf(athlete, confirmation)) return err('confirmation-mismatch');
   if (athlete.isAdmin && administratorCount <= 1) return err('last-administrator');
   return ok();
 }

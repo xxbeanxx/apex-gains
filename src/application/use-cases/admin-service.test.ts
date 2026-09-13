@@ -277,7 +277,7 @@ describe('removeAccount', () => {
     const admin = await register('Admin', { isAdmin: true });
     const other = await register('Other');
 
-    const outcome = await service.removeAccount(admin, other.id);
+    const outcome = await service.removeAccount(admin, other.id, other.email);
 
     expect(outcome).toEqual({ ok: true, value: { name: 'Other' } });
     await expect(athletes.findById(other.id)).resolves.toBeNull();
@@ -286,7 +286,7 @@ describe('removeAccount', () => {
   it('refuses to delete the administrator’s own account', async () => {
     const admin = await register('Admin', { isAdmin: true });
 
-    const outcome = await service.removeAccount(admin, admin.id);
+    const outcome = await service.removeAccount(admin, admin.id, admin.email);
 
     expect(outcome).toEqual({ ok: false, error: 'self' });
     await expect(athletes.findById(admin.id)).resolves.not.toBeNull();
@@ -295,23 +295,37 @@ describe('removeAccount', () => {
   it('reports an unknown account as not found', async () => {
     const admin = await register('Admin', { isAdmin: true });
 
-    await expect(service.removeAccount(admin, 'nobody')).resolves.toEqual({ ok: false, error: 'not-found' });
+    await expect(service.removeAccount(admin, 'nobody', 'nobody@example.com')).resolves.toEqual({
+      ok: false,
+      error: 'not-found',
+    });
   });
 
   it('records the deletion, surviving the deleted account it names', async () => {
     const admin = await register('Admin', { isAdmin: true });
     const other = await register('Other');
 
-    await service.removeAccount(admin, other.id);
+    await service.removeAccount(admin, other.id, other.email);
 
     const [entry] = await adminActions.listRecent(10);
     expect(entry).toMatchObject({ action: 'remove-account', actorId: admin.id, targetId: null, targetEmail: other.email });
   });
 
+  it("keeps the account, and records nothing, when the typed email isn't that account's", async () => {
+    const admin = await register('Admin', { isAdmin: true });
+    const other = await register('Other');
+
+    const outcome = await service.removeAccount(admin, other.id, admin.email);
+
+    expect(outcome).toEqual({ ok: false, error: 'confirmation-mismatch' });
+    await expect(athletes.findById(other.id)).resolves.not.toBeNull();
+    expect(await adminActions.listRecent(10)).toEqual([]);
+  });
+
   it('records nothing when the mutation is refused', async () => {
     const admin = await register('Admin', { isAdmin: true });
 
-    await service.removeAccount(admin, admin.id);
+    await service.removeAccount(admin, admin.id, admin.email);
 
     expect(await adminActions.listRecent(10)).toEqual([]);
   });

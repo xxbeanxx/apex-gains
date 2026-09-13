@@ -4,7 +4,7 @@ import type { AthletesRepository } from '~application/ports/persistence/athletes
 import type { SessionsRepository, TrainingTotals } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import { AdminAction, type AdminActionKind } from '~domain/admin/admin-action';
-import { type AdminRefusal, changeAdminAccess, removeAccount } from '~domain/athlete/administration';
+import { type AdminRefusal, type RemoveAccountRefusal, changeAdminAccess, removeAccount } from '~domain/athlete/administration';
 import type { Athlete } from '~domain/athlete/athlete';
 import { type Result, err, ok } from '~domain/shared/result';
 import { DateOnly } from '~domain/values/date-only';
@@ -173,14 +173,23 @@ export class AdminService {
     });
   }
 
-  async removeAccount(actor: Athlete, userId: string): Promise<AdminMutation> {
-    const target = await this.athletes.findById(userId);
-    if (!target) return err('not-found');
-
-    const outcome = removeAccount(actor, target);
-    if (!outcome.ok) return outcome;
-
+  /**
+   * Deletes `userId`'s account, confirmed by `confirmation` - the email the
+   * administrator typed. Found, checked and deleted in one transaction, so
+   * what was confirmed is the account that goes.
+   */
+  async removeAccount(
+    actor: Athlete,
+    userId: string,
+    confirmation: string,
+  ): Promise<Result<{ name: string }, 'not-found' | RemoveAccountRefusal>> {
     return this.unitOfWork.run(async () => {
+      const target = await this.athletes.findById(userId);
+      if (!target) return err('not-found' as const);
+
+      const outcome = removeAccount(actor, target, confirmation);
+      if (!outcome.ok) return outcome;
+
       // Recorded before the delete, not after: the FK is `on delete set
       // null`, so writing the entry first and then removing the row still
       // leaves a complete audit trail once the transaction commits, and

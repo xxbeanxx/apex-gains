@@ -91,21 +91,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }),
 
     handled(intents.deleteAccount, async ({ confirmEmail }) => {
-      const account = await adminService.account(administrator, params.userId);
-      if (!account) {
-        throw data('User not found', { status: 404 });
-      }
-
-      // The typed email is the confirmation step: this deletes an athlete's
-      // entire training history along with the account, and there is no undo.
-      if (confirmEmail.trim().toLowerCase() !== account.email.toLowerCase()) {
-        return intents.deleteAccount.reject("That doesn't match this account's email address.");
-      }
-
-      const outcome = await adminService.removeAccount(administrator, params.userId);
+      const outcome = await adminService.removeAccount(administrator, params.userId, confirmEmail);
       if (!outcome.ok) {
         if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
-        return intents.deleteAccount.reject('You cannot delete your own account.');
+        return intents.deleteAccount.reject(
+          outcome.error === 'confirmation-mismatch'
+            ? "That doesn't match this account's email address."
+            : 'You cannot delete your own account.',
+        );
       }
 
       requestLogger(context).log(`deleted user ${params.userId} by ${administrator.id}`, 'Admin');
