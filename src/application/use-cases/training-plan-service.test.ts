@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Equipment, type EquipmentSnapshot } from '~domain/equipment/equipment';
@@ -121,7 +122,7 @@ beforeEach(() => {
   exercises = new InMemoryExercisesRepository();
   equipmentRepo = new InMemoryEquipmentRepository();
   sessions = new InMemorySessionsRepository();
-  service = new TrainingPlanService(plans, workouts, exercises, equipmentRepo, sessions);
+  service = new TrainingPlanService(plans, new ReferenceDirectory(exercises, workouts, equipmentRepo), sessions);
 });
 
 describe('planFor', () => {
@@ -174,13 +175,58 @@ describe('planFor', () => {
     });
   });
 
-  it('degrades a slot pointing at an invisible workout to a rest day', async () => {
+  it('degrades a slot whose workout resolves to nothing to a rest day', async () => {
     await plans.save(plan());
-    // Workout deliberately not saved - simulates a deleted/hidden workout.
+    // Workout deliberately not saved - the schema nulls a deleted workout's
+    // slots, so only broken data reaches this.
 
     const result = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
 
     expect(result).toEqual({ type: 'rest', planId: 'plan-1' });
+  });
+
+  /**
+   * A plan activated from a sample keeps naming the sample's workouts, so a
+   * workout the athlete customizes afterwards is only reached through the
+   * fork.
+   */
+  it("trains the athlete's fork of a sample workout the slot names, and of each sample exercise", async () => {
+    await plans.save(plan());
+    await workouts.save(workout({ userId: null }));
+    await workouts.save(
+      workout({
+        id: 'my-workout',
+        forkedFromId: 'workout-1',
+        name: 'My Push Day',
+        exercises: [
+          {
+            id: 'my-entry-0',
+            exerciseId: 'exercise-1',
+            position: 0,
+            targetSets: 5,
+            targetReps: 5,
+            targetWeight: null,
+            targetDurationSeconds: null,
+            targetSpeed: null,
+            targetResistance: null,
+            targetRestSeconds: null,
+          },
+        ],
+      }),
+    );
+    await exercises.save(exercise({ userId: null }));
+    await exercises.save(exercise({ id: 'my-exercise', forkedFromId: 'exercise-1', name: 'My Bench Press' }));
+
+    const result = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
+
+    expect(result).toMatchObject({ type: 'workout', workoutId: 'my-workout', workoutName: 'My Push Day' });
+    expect(result.type === 'workout' && result.items).toEqual([
+      expect.objectContaining({
+        exerciseId: 'my-exercise',
+        exerciseName: 'My Bench Press',
+        target: expect.objectContaining({ sets: 5 }),
+      }),
+    ]);
   });
 
   it('reports "none" for a plan with no slots', async () => {
@@ -236,6 +282,30 @@ describe('upcomingWeek', () => {
 
     expect(week[0]).toEqual({ date: '2026-09-01', type: 'workout', workoutName: 'Push Day' });
     expect(week[1]).toEqual({ date: '2026-09-02', type: 'rest' });
+  });
+
+  it("names the athlete's fork of a sample workout, the same workout Today trains", async () => {
+    await plans.save(plan());
+    await workouts.save(workout({ userId: null }));
+    await workouts.save(workout({ id: 'my-workout', forkedFromId: 'workout-1', name: 'My Push Day' }));
+
+    const week = await service.upcomingWeek(athlete, DateOnly.parse('2026-09-01'));
+    const today = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
+
+    expect(week[0]).toEqual({ date: '2026-09-01', type: 'workout', workoutName: 'My Push Day' });
+    expect(today).toMatchObject({ workoutName: 'My Push Day' });
+  });
+
+  it('names a sample workout the athlete hides sample data from', async () => {
+    await plans.save(plan());
+    await workouts.save(workout({ userId: null }));
+
+    const week = await service.upcomingWeek(
+      Athlete.fromSnapshot({ ...athlete.toSnapshot(), showSampleData: false }),
+      DateOnly.parse('2026-09-01'),
+    );
+
+    expect(week[0]).toEqual({ date: '2026-09-01', type: 'workout', workoutName: 'Push Day' });
   });
 });
 

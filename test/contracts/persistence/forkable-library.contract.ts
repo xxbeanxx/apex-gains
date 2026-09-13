@@ -21,6 +21,11 @@ type Library = {
   listFor(repositories: RepositorySet, userId: string, showSampleData: boolean): Promise<{ id: string }[]>;
   findVisible(repositories: RepositorySet, userId: string, id: string): Promise<{ id: string } | null>;
   findForkOf(repositories: RepositorySet, userId: string, sampleId: string): Promise<{ id: string } | null>;
+  /**
+   * Only the libraries a forward-looking reference can name - a plan is
+   * never referenced by another aggregate.
+   */
+  findForksOf?(repositories: RepositorySet, userId: string, sampleIds: string[]): Promise<{ id: string }[]>;
 };
 
 const libraries: Library[] = [
@@ -31,6 +36,7 @@ const libraries: Library[] = [
     listFor: (r, userId, show) => r.exercises.listFor(userId, show),
     findVisible: (r, userId, id) => r.exercises.findVisible(userId, id),
     findForkOf: (r, userId, sampleId) => r.exercises.findForkOf(userId, sampleId),
+    findForksOf: (r, userId, sampleIds) => r.exercises.findForksOf(userId, sampleIds),
   },
   {
     label: 'workouts',
@@ -39,6 +45,7 @@ const libraries: Library[] = [
     listFor: (r, userId, show) => r.workouts.listFor(userId, show),
     findVisible: (r, userId, id) => r.workouts.findVisible(userId, id),
     findForkOf: (r, userId, sampleId) => r.workouts.findForkOf(userId, sampleId),
+    findForksOf: (r, userId, sampleIds) => r.workouts.findForksOf(userId, sampleIds),
   },
   {
     label: 'plans',
@@ -170,6 +177,43 @@ export function describeForkableLibraryContract(subject: ContractSubject): void 
       await seed([[ids.sample, null]]);
 
       expect(await library.findForkOf(repositories, ids.athlete, ids.sample)).toBeNull();
+    });
+
+    describe.skipIf(!library.findForksOf)('many forks at once', () => {
+      async function forkIds(sampleIds: string[]): Promise<string[]> {
+        const rows = await library.findForksOf!(repositories, ids.athlete, sampleIds);
+        return rows.map((row) => row.id).sort();
+      }
+
+      it("finds the athlete's forks of each sample named, and nothing for the rest", async () => {
+        await seed([
+          [ids.sample, null],
+          [ids.otherSample, null],
+          [ids.extra, null],
+          [ids.fork, ids.athlete, ids.sample],
+          [ids.own, ids.athlete, ids.otherSample],
+        ]);
+
+        expect(await forkIds([ids.sample, ids.otherSample, ids.extra])).toEqual([ids.fork, ids.own].sort());
+      });
+
+      it("ignores another athlete's forks and forks of samples not named", async () => {
+        await seed([
+          [ids.sample, null],
+          [ids.otherSample, null],
+          [ids.theirs, ids.otherAthlete, ids.sample],
+          [ids.fork, ids.athlete, ids.otherSample],
+        ]);
+
+        expect(await forkIds([ids.sample])).toEqual([]);
+      });
+
+      it('finds nothing for an own row, or for no ids', async () => {
+        await seed([[ids.own, ids.athlete]]);
+
+        expect(await forkIds([ids.own])).toEqual([]);
+        expect(await forkIds([])).toEqual([]);
+      });
     });
   });
 }

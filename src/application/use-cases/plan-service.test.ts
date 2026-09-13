@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { PlanService } from '~application/use-cases/plan-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Plan, type PlanSnapshot } from '~domain/plan/plan';
@@ -7,6 +8,9 @@ import { fixedClock } from '~domain/shared/clock';
 import { sequentialIds } from '~domain/shared/ids';
 import { sequentialSecrets } from '~domain/shared/secrets';
 import { DateOnly } from '~domain/values/date-only';
+import { Workout } from '~domain/workout/workout';
+import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
+import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemoryUnitOfWork } from '~infrastructure/persistence/in-memory/unit-of-work';
 import { InMemoryWorkoutsRepository } from '~infrastructure/persistence/in-memory/workouts-repository';
@@ -50,11 +54,14 @@ function samplePlan(overrides: Partial<PlanSnapshot> = {}): Plan {
 }
 
 let plans: InMemoryPlansRepository;
+let workouts: InMemoryWorkoutsRepository;
 let service: PlanService;
 
 beforeEach(() => {
   plans = new InMemoryPlansRepository();
-  service = new PlanService(plans, new InMemoryWorkoutsRepository(), new InMemoryUnitOfWork(), {
+  workouts = new InMemoryWorkoutsRepository();
+  const references = new ReferenceDirectory(new InMemoryExercisesRepository(), workouts, new InMemoryEquipmentRepository());
+  service = new PlanService(plans, references, new InMemoryUnitOfWork(), {
     ids: sequentialIds('new'),
     clock: fixedClock(NOW),
     secrets: sequentialSecrets('token'),
@@ -129,6 +136,38 @@ describe('editing a sample plan', () => {
   it("reports a plan that isn't visible as not found", async () => {
     const outcome = await service.rename(athlete, 'nope', 'Whatever');
     expect(outcome).toEqual({ ok: false, error: 'not-found' });
+  });
+});
+
+describe('detail', () => {
+  function sampleWorkout(id: string, name: string, userId: string | null = null, forkedFromId: string | null = null) {
+    return Workout.fromSnapshot({ id, userId, forkedFromId, name, createdAt: NOW, updatedAt: NOW, exercises: [] });
+  }
+
+  it('names the workout each slot trains, and leaves a rest day unnamed', async () => {
+    await plans.save(samplePlan());
+    await workouts.save(sampleWorkout('workout-push', 'Push'));
+
+    const detail = await service.detail(athlete, 'sample-1');
+
+    expect(detail?.slots.map(({ workoutId, workoutName, isRestDay }) => ({ workoutId, workoutName, isRestDay }))).toEqual([
+      { workoutId: 'workout-push', workoutName: 'Push', isRestDay: false },
+      { workoutId: null, workoutName: null, isRestDay: true },
+    ]);
+  });
+
+  /**
+   * The athlete's library hides a sample once they fork it, so a name
+   * looked up there came back "Unknown" for exactly this plan.
+   */
+  it("names and links the athlete's fork of a sample workout the slot names", async () => {
+    await plans.save(samplePlan());
+    await workouts.save(sampleWorkout('workout-push', 'Push'));
+    await workouts.save(sampleWorkout('my-push', 'My Push', 'user-1', 'workout-push'));
+
+    const detail = await service.detail(athlete, 'sample-1');
+
+    expect(detail?.slots[0]).toMatchObject({ workoutId: 'my-push', workoutName: 'My Push' });
   });
 });
 

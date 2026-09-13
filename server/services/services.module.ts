@@ -1,6 +1,7 @@
 import { Module, type Provider } from '@nestjs/common';
 
 import { productionDeps } from '~application/ports/domain-deps';
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { AdminService } from '~application/use-cases/admin-service';
 import { AthleteService } from '~application/use-cases/athlete-service';
 import { BodyMeasurementsService } from '~application/use-cases/body-measurements-service';
@@ -31,6 +32,16 @@ import {
 } from '~server/providers/persistence.tokens';
 import { RepositoriesModule } from '~server/repositories/repositories.module';
 
+/**
+ * Shared by the use cases that render a referenced exercise or workout, and
+ * never handed to a route - so it is provided here but not exported.
+ */
+const referenceDirectory: Provider = {
+  provide: ReferenceDirectory,
+  inject: [EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, EQUIPMENT_REPOSITORY],
+  useFactory: (exercises, workouts, equipment) => new ReferenceDirectory(exercises, workouts, equipment),
+};
+
 const services: Provider[] = [
   {
     provide: AthleteService,
@@ -59,9 +70,16 @@ const services: Provider[] = [
   },
   {
     provide: ExportService,
-    inject: [EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, PLANS_REPOSITORY, SESSIONS_REPOSITORY, BODY_WEIGHT_REPOSITORY],
-    useFactory: (exercises, workouts, plans, sessions, bodyWeight) =>
-      new ExportService(exercises, workouts, plans, sessions, bodyWeight),
+    inject: [
+      EXERCISES_REPOSITORY,
+      WORKOUTS_REPOSITORY,
+      ReferenceDirectory,
+      PLANS_REPOSITORY,
+      SESSIONS_REPOSITORY,
+      BODY_WEIGHT_REPOSITORY,
+    ],
+    useFactory: (exercises, workouts, references, plans, sessions, bodyWeight) =>
+      new ExportService(exercises, workouts, references, plans, sessions, bodyWeight),
   },
   {
     provide: PlanImportService,
@@ -71,39 +89,31 @@ const services: Provider[] = [
   },
   {
     provide: PlanService,
-    inject: [PLANS_REPOSITORY, WORKOUTS_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (plans, workouts, unitOfWork, deps) => new PlanService(plans, workouts, unitOfWork, deps),
+    inject: [PLANS_REPOSITORY, ReferenceDirectory, UNIT_OF_WORK, DOMAIN_DEPS],
+    useFactory: (plans, references, unitOfWork, deps) => new PlanService(plans, references, unitOfWork, deps),
   },
   {
     provide: ProgressService,
-    inject: [
-      SESSIONS_REPOSITORY,
-      EXERCISES_REPOSITORY,
-      WORKOUTS_REPOSITORY,
-      PLANS_REPOSITORY,
-      BODY_WEIGHT_REPOSITORY,
-      BODY_MEASUREMENTS_REPOSITORY,
-    ],
-    useFactory: (sessions, exercises, workouts, plans, bodyWeight, bodyMeasurements) =>
-      new ProgressService(sessions, exercises, workouts, plans, bodyWeight, bodyMeasurements),
+    inject: [SESSIONS_REPOSITORY, ReferenceDirectory, PLANS_REPOSITORY, BODY_WEIGHT_REPOSITORY, BODY_MEASUREMENTS_REPOSITORY],
+    useFactory: (sessions, references, plans, bodyWeight, bodyMeasurements) =>
+      new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements),
   },
   {
     provide: TrainingPlanService,
-    inject: [PLANS_REPOSITORY, WORKOUTS_REPOSITORY, EXERCISES_REPOSITORY, EQUIPMENT_REPOSITORY, SESSIONS_REPOSITORY],
-    useFactory: (plans, workouts, exercises, equipment, sessions) =>
-      new TrainingPlanService(plans, workouts, exercises, equipment, sessions),
+    inject: [PLANS_REPOSITORY, ReferenceDirectory, SESSIONS_REPOSITORY],
+    useFactory: (plans, references, sessions) => new TrainingPlanService(plans, references, sessions),
   },
   {
     provide: SessionService,
-    inject: [SESSIONS_REPOSITORY, EXERCISES_REPOSITORY, TrainingPlanService, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (sessions, exercises, plans, unitOfWork, deps) =>
-      new SessionService(sessions, exercises, plans, unitOfWork, deps),
+    inject: [SESSIONS_REPOSITORY, EXERCISES_REPOSITORY, ReferenceDirectory, TrainingPlanService, UNIT_OF_WORK, DOMAIN_DEPS],
+    useFactory: (sessions, exercises, references, plans, unitOfWork, deps) =>
+      new SessionService(sessions, exercises, references, plans, unitOfWork, deps),
   },
   {
     provide: WorkoutService,
-    inject: [WORKOUTS_REPOSITORY, EXERCISES_REPOSITORY, EQUIPMENT_REPOSITORY, SESSIONS_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (workouts, exercises, equipment, sessions, unitOfWork, deps) =>
-      new WorkoutService(workouts, exercises, equipment, sessions, unitOfWork, deps),
+    inject: [WORKOUTS_REPOSITORY, EXERCISES_REPOSITORY, ReferenceDirectory, SESSIONS_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
+    useFactory: (workouts, exercises, references, sessions, unitOfWork, deps) =>
+      new WorkoutService(workouts, exercises, references, sessions, unitOfWork, deps),
   },
   {
     provide: AdminService,
@@ -115,7 +125,7 @@ const services: Provider[] = [
 
 @Module({
   imports: [AuthModule, RepositoriesModule],
-  providers: [{ provide: DOMAIN_DEPS, useValue: productionDeps }, ...services],
+  providers: [{ provide: DOMAIN_DEPS, useValue: productionDeps }, referenceDirectory, ...services],
   exports: services,
 })
 export class ServicesModule {}

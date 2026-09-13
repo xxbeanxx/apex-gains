@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { WorkoutService } from '~application/use-cases/workout-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { Equipment } from '~domain/equipment/equipment';
@@ -96,7 +97,8 @@ beforeEach(() => {
   equipment = new InMemoryEquipmentRepository();
   sessions = new InMemorySessionsRepository();
   deps = { ids: sequentialIds('new'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') };
-  service = new WorkoutService(workouts, exercises, equipment, sessions, new InMemoryUnitOfWork(), deps);
+  const references = new ReferenceDirectory(exercises, workouts, equipment);
+  service = new WorkoutService(workouts, exercises, references, sessions, new InMemoryUnitOfWork(), deps);
 });
 
 describe('create', () => {
@@ -123,6 +125,7 @@ describe('detail', () => {
         exerciseId: 'exercise-1',
         exerciseName: 'Bench Press',
         exerciseType: 'strength',
+        cardioFields: { showSpeed: true, showResistance: true },
         targetSummary: '3 x 10',
         target: {
           sets: 3,
@@ -168,14 +171,31 @@ describe('detail', () => {
     expect(detail?.exercises[0].targetSummary).toBeNull();
   });
 
-  it('falls back to "Unknown" for an entry whose exercise cannot be resolved', async () => {
+  it("shows the athlete's fork of a sample exercise the entry names, with its own cardio fields", async () => {
     await workouts.save(sampleWorkout());
-    // Exercise deliberately not saved.
+    await exercises.save(exercise());
+    await exercises.save(
+      exercise({
+        id: 'my-exercise',
+        userId: 'user-1',
+        forkedFromId: 'exercise-1',
+        name: 'My Rowing',
+        exerciseType: 'cardio',
+        equipmentIds: ['rower'],
+      }),
+    );
+    await equipment.save(
+      Equipment.fromSnapshot({ id: 'rower', userId: null, name: 'Rower', cardioKind: 'resistance', createdAt: NOW }),
+    );
 
     const detail = await service.detail(athlete, 'sample-1');
 
-    expect(detail?.exercises[0].exerciseName).toBe('Unknown');
-    expect(detail?.exercises[0].exerciseType).toBe('strength');
+    expect(detail?.exercises[0]).toMatchObject({
+      exerciseId: 'my-exercise',
+      exerciseName: 'My Rowing',
+      exerciseType: 'cardio',
+      cardioFields: { showSpeed: false, showResistance: true },
+    });
   });
 
   it('returns null for a workout that is not visible', async () => {
@@ -253,6 +273,28 @@ describe('updateExerciseTarget', () => {
 
   it('drops a cardio field the exercise’s equipment cannot report', async () => {
     await exercises.save(exercise({ equipmentIds: ['rower'] }));
+    await equipment.save(
+      Equipment.fromSnapshot({ id: 'rower', userId: null, name: 'Rower', cardioKind: 'resistance', createdAt: NOW }),
+    );
+
+    const outcome = await service.updateExerciseTarget(athlete, 'sample-1', 'sample-entry-0', {
+      durationMinutes: 20,
+      speed: 8,
+      resistance: 5,
+    });
+
+    expect(outcome.ok).toBe(true);
+    const forkedId = outcome.ok ? outcome.value.forkedId : null;
+    const fork = await workouts.findVisible(athlete.id, forkedId!);
+    expect(fork?.exercises[0].target.speed).toBeNull();
+    expect(fork?.exercises[0].target.resistance).toBe(5);
+  });
+
+  it("enforces the cardio fields of the athlete's fork, the same ones the form offered", async () => {
+    // The sample links nothing, so on its own it would allow both fields.
+    await exercises.save(
+      exercise({ id: 'my-exercise', userId: 'user-1', forkedFromId: 'exercise-1', equipmentIds: ['rower'] }),
+    );
     await equipment.save(
       Equipment.fromSnapshot({ id: 'rower', userId: null, name: 'Rower', cardioKind: 'resistance', createdAt: NOW }),
     );

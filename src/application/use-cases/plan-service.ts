@@ -1,9 +1,9 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { nextCopyName } from '~application/shared/duplicate-name';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
+import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import type { Athlete } from '~domain/athlete/athlete';
 import { activatePlan } from '~domain/plan/activation';
 import { Plan } from '~domain/plan/plan';
@@ -31,6 +31,10 @@ export type PlanSummary = {
 export type PlanSlotView = {
   id: string;
   position: number;
+  /**
+   * The workout the slot trains - the athlete's fork, when it names a sample
+   * they have customized.
+   */
   workoutId: string | null;
   workoutName: string | null;
   isRestDay: boolean;
@@ -73,7 +77,7 @@ function toSummary(plan: Plan): PlanSummary {
 export class PlanService {
   constructor(
     private readonly plans: PlansRepository,
-    private readonly workouts: WorkoutsRepository,
+    private readonly references: ReferenceDirectory,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
   ) {
@@ -101,7 +105,9 @@ export class PlanService {
     const plan = await this.plans.findVisible(athlete.id, planId);
     if (!plan) return null;
 
-    const names = await this.workoutNames(athlete);
+    const workouts = await this.references.forwardLooking(athlete.id, {
+      workoutIds: plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : [])),
+    });
     const today = DateOnly.today(this.deps.clock.now(), athlete.preferences.timezone);
 
     return {
@@ -111,8 +117,8 @@ export class PlanService {
       slots: plan.slots.map((slot) => ({
         id: slot.id,
         position: slot.position,
-        workoutId: slot.workoutId,
-        workoutName: slot.workoutId ? (names.get(slot.workoutId) ?? 'Unknown') : null,
+        workoutId: slot.workoutId ? (workouts.workout(slot.workoutId)?.id ?? slot.workoutId) : null,
+        workoutName: slot.workoutId ? workouts.workoutName(slot.workoutId) : null,
         isRestDay: slot.isRestDay,
         nextDate: plan.nextDateFor(slot, today).value,
       })),
@@ -236,10 +242,5 @@ export class PlanService {
    */
   async revert(athlete: Athlete, planId: string): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
     return this.editor.revert(athlete.id, planId);
-  }
-
-  private async workoutNames(athlete: Athlete): Promise<Map<string, string>> {
-    const workouts = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
-    return new Map(workouts.map((workout) => [workout.id, workout.name]));
   }
 }

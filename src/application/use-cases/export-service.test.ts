@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { ExportService } from '~application/use-cases/export-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { BodyWeightEntry } from '~domain/body/body-weight-entry';
@@ -16,6 +17,7 @@ import { Weight } from '~domain/values/weight';
 import { SetTarget } from '~domain/workout/set-target';
 import { Workout } from '~domain/workout/workout';
 import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
+import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
@@ -54,7 +56,14 @@ beforeEach(() => {
   plans = new InMemoryPlansRepository();
   sessions = new InMemorySessionsRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
-  service = new ExportService(exercises, workouts, plans, sessions, bodyWeight);
+  service = new ExportService(
+    exercises,
+    workouts,
+    new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository()),
+    plans,
+    sessions,
+    bodyWeight,
+  );
 });
 
 async function seedTraining(): Promise<{ exercise: Exercise }> {
@@ -110,7 +119,14 @@ describe('snapshot', () => {
     const snapshot = await service.snapshot(athlete);
 
     expect(snapshot.exercises).toEqual([
-      { id: exercise.id, name: 'Bench Press', exerciseType: 'strength', muscleGroup: 'chest', description: null },
+      {
+        id: exercise.id,
+        isSample: false,
+        name: 'Bench Press',
+        exerciseType: 'strength',
+        muscleGroup: 'chest',
+        description: null,
+      },
     ]);
     expect(snapshot.workouts).toHaveLength(1);
     expect(snapshot.workouts[0]!.exercises).toEqual([
@@ -160,6 +176,53 @@ describe('snapshot', () => {
     expect(snapshot.bodyWeight).toEqual([]);
   });
 
+  it('carries each sample exercise and workout their data names, marked as samples, so every id resolves', async () => {
+    const sampleExercise = (id: string, name: string) =>
+      Exercise.fromSnapshot({
+        id,
+        userId: null,
+        forkedFromId: null,
+        name,
+        exerciseType: 'strength',
+        muscleGroup: null,
+        description: null,
+        createdAt: NOW,
+        equipmentIds: [],
+      });
+    await exercises.save(sampleExercise('sample-bench', 'Bench Press'));
+    await exercises.save(sampleExercise('sample-row', 'Row'));
+    await exercises.save(sampleExercise('sample-unused', 'Unused'));
+
+    const sampleWorkout = Workout.fromSnapshot({
+      id: 'sample-push',
+      userId: null,
+      forkedFromId: null,
+      name: 'Push Day',
+      createdAt: NOW,
+      updatedAt: NOW,
+      exercises: [],
+    });
+    sampleWorkout.addExercise('sample-bench', SetTarget.none(), deps);
+    await workouts.save(sampleWorkout);
+
+    const plan = Plan.create('user-1', 'PPL', DateOnly.parse('2026-09-01'), deps);
+    plan.addSlot('sample-push', deps);
+    await plans.save(plan);
+
+    const day = Session.open('user-1', DateOnly.parse('2026-09-03'), { planId: null, workoutId: null, isRestDay: false }, deps);
+    day.logSet('sample-row', { reps: 10 }, deps);
+    day.logSet('sample-bench', { reps: 5 }, deps);
+    await sessions.save(day);
+
+    const snapshot = await service.snapshot(athlete);
+
+    expect(snapshot.workouts.map(({ id, isSample }) => ({ id, isSample }))).toEqual([{ id: 'sample-push', isSample: true }]);
+    expect(snapshot.exercises.map(({ id, isSample }) => ({ id, isSample })).sort((a, b) => a.id.localeCompare(b.id))).toEqual([
+      { id: 'sample-bench', isSample: true },
+      { id: 'sample-row', isSample: true },
+    ]);
+  });
+
   it("never includes another athlete's rows", async () => {
     const theirs = Exercise.create(
       'user-2',
@@ -184,6 +247,29 @@ describe('toCsv', () => {
     expect(lines[0]).toBe('date,exercise_name,set_number,reps,weight_lb,duration_seconds,speed_kmh,resistance_level,rpe,notes');
     expect(lines[1]).toBe('2026-09-03,Bench Press,1,8,135,,,,8,felt good');
     expect(lines).toHaveLength(2);
+  });
+
+  it('names a set logged against a sample exercise', async () => {
+    await exercises.save(
+      Exercise.fromSnapshot({
+        id: 'sample-row',
+        userId: null,
+        forkedFromId: null,
+        name: 'Row',
+        exerciseType: 'strength',
+        muscleGroup: null,
+        description: null,
+        createdAt: NOW,
+        equipmentIds: [],
+      }),
+    );
+    const day = Session.open('user-1', DateOnly.parse('2026-09-03'), { planId: null, workoutId: null, isRestDay: false }, deps);
+    day.logSet('sample-row', { reps: 10 }, deps);
+    await sessions.save(day);
+
+    const csv = await service.toCsv(athlete);
+
+    expect(csv.split('\n')[1]).toBe('2026-09-03,Row,1,10,,,,,,');
   });
 
   it('quotes a note containing a comma', async () => {

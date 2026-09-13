@@ -477,9 +477,7 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
   const exerciseCount = workout.exercises.length;
   const { isSample, isCustomized } = workout;
   const usedExerciseIds = new Set(workout.exercises.map((entry) => entry.exerciseId));
-  const exerciseById = new Map(exerciseList.map((exercise) => [exercise.id, exercise]));
   const suggestionByEntryId = new Map(suggestions.map((suggestion) => [suggestion.workoutExerciseId, suggestion]));
-  const defaultCardioFields: CardioFields = { showSpeed: true, showResistance: true };
 
   const renameError = intents.rename.errorIn(actionData);
   const updateTargetError = intents.updateTarget.errorIn(actionData);
@@ -575,7 +573,6 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
             ) : (
               <BuilderCanvas>
                 {workout.exercises.map((entry, index) => {
-                  const exercise = exerciseById.get(entry.exerciseId);
                   const suggestion = suggestionByEntryId.get(entry.id);
                   return (
                     <BuilderRow
@@ -590,7 +587,7 @@ export default function WorkoutDetail({ loaderData, actionData }: Route.Componen
                         <EditTargetDetail
                           entry={entry}
                           exerciseType={entry.exerciseType}
-                          cardioFields={exercise?.cardioFields ?? defaultCardioFields}
+                          cardioFields={entry.cardioFields}
                           weightUnit={weightUnit}
                           distanceUnit={distanceUnit}
                           error={updateTargetError}

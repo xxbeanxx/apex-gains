@@ -51,6 +51,13 @@ export class InMemoryExercisesRepository implements ExercisesRepository, Athlete
     return this.findBy((snapshot) => snapshot.userId === userId && snapshot.forkedFromId === sampleId);
   }
 
+  async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Exercise[]> {
+    const wanted = new Set(sampleIds);
+    return [...this.byId.values()]
+      .filter((snapshot) => snapshot.userId === userId && snapshot.forkedFromId !== null && wanted.has(snapshot.forkedFromId))
+      .map(Exercise.fromSnapshot);
+  }
+
   async save(exercise: Exercise): Promise<void> {
     const snapshot = exercise.toSnapshot();
     this.byId.set(snapshot.id, snapshot);

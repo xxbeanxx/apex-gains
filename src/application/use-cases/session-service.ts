@@ -2,7 +2,7 @@ import type { DomainDeps } from '~application/ports/domain-deps';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
+import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { AthletePreferences } from '~domain/athlete/preferences';
@@ -88,6 +88,7 @@ export class SessionService {
   constructor(
     private readonly sessions: SessionsRepository,
     private readonly exercises: ExercisesRepository,
+    private readonly references: ReferenceDirectory,
     private readonly plans: TrainingPlanService,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
@@ -97,15 +98,12 @@ export class SessionService {
     const session = await this.sessions.findForDate(athlete.id, date);
     if (!session) return [];
 
-    const directory = await ExerciseDirectory.of(
-      session.sets.map((set) => set.exerciseId),
-      this.exercises,
-    );
+    const references = await this.references.historical({ exerciseIds: session.sets.map((set) => set.exerciseId) });
 
     return session.sets.map((set) => ({
       id: set.id,
       exerciseId: set.exerciseId,
-      exerciseName: directory.nameOf(set.exerciseId),
+      exerciseName: references.exercise(set.exerciseId).name,
       setNumber: set.setNumber,
       summary: set.format(athlete.preferences),
       notes: set.notes,

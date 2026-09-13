@@ -444,12 +444,22 @@ through `dbScope`, never `db`, so writes stay inside it.
 `AthleteService`, `BodyWeightService`, `BodyMeasurementsService`,
 `AdminService`, `ExportService`, `PlanImportService`. They orchestrate
 (load → hand off to the aggregate → save) and own no rules themselves.
-`shared/exercise-directory.ts` is the read-side counterpart to
-`shared/fork.ts`: a logged set, a workout entry and a plan
-slot all hold an exercise _id_ rather than an exercise, so every read
-model that renders one joins the name back in through
-`ExerciseDirectory` — which is also where the missing-exercise fallback
-(`'Unknown'`, because history outlives the library) is stated.
+`shared/reference-directory.ts` is the read-side counterpart to
+`shared/fork.ts`: a logged set, a session, a workout entry and a plan
+slot all hold an exercise or workout _id_ rather than the thing itself, so
+every read model that renders one resolves it through `ReferenceDirectory`
+— by id, never through the athlete's library, which hides a sample once
+it is forked. It offers the two readings `CONTEXT.md` defines, chosen
+once per lookup: `historical` resolves to exactly the row recorded (what a
+set was logged against, what a session trained), `forwardLooking`
+follows the athlete's fork of it (what a slot schedules, what an entry
+targets - which is also why a session opened from Today records the
+fork's id). It fetches the equipment behind each exercise itself, so a
+read model gets `cardioFields` without seeing an equipment id, and it is
+where the `'Unknown'` fallback is stated. It ignores ownership: the ids
+handed to it must come off the athlete's own aggregates, while an id taken
+from a form still goes through `findVisible`. It is provided to the use
+cases by `server/services/services.module.ts` but never reaches a route.
 `shared/target-view.ts` does the same job for a `SetTarget`:
 `toTargetView` formats one into the athlete's units once, so no read
 model re-derives "3 x 10, 135 lb" or the discrete chips beside it.
@@ -554,7 +564,7 @@ by equipment (treadmill: duration + speed; rowing: duration +
 resistance — no distance/pace, since neither is reliably derivable
 from what's tracked). Which of the two a form offers is
 `cardioFieldsFor` in `domain/equipment/cardio-fields.ts`, decided once
-there: read models (`PlanItem`, `ExerciseView`) carry the resulting
+there: read models (`PlanItem`, `ExerciseView`, `WorkoutExerciseView`) carry the resulting
 `cardioFields` rather than the raw list of `cardioKind`s, so no route
 re-derives it.
 

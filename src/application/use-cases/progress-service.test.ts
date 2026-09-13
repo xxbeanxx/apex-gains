@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { ProgressService } from '~application/use-cases/progress-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { BodyMeasurement } from '~domain/body/body-measurement';
@@ -17,6 +18,7 @@ import { Weight } from '~domain/values/weight';
 import { Workout } from '~domain/workout/workout';
 import { InMemoryBodyMeasurementsRepository } from '~infrastructure/persistence/in-memory/body-measurements-repository';
 import { InMemoryBodyWeightRepository } from '~infrastructure/persistence/in-memory/body-weight-repository';
+import { InMemoryEquipmentRepository } from '~infrastructure/persistence/in-memory/equipment-repository';
 import { InMemoryExercisesRepository } from '~infrastructure/persistence/in-memory/exercises-repository';
 import { InMemoryPlansRepository } from '~infrastructure/persistence/in-memory/plans-repository';
 import { InMemorySessionsRepository } from '~infrastructure/persistence/in-memory/sessions-repository';
@@ -75,7 +77,8 @@ beforeEach(() => {
   plans = new InMemoryPlansRepository();
   bodyWeight = new InMemoryBodyWeightRepository();
   bodyMeasurements = new InMemoryBodyMeasurementsRepository();
-  service = new ProgressService(sessions, exercises, workouts, plans, bodyWeight, bodyMeasurements);
+  const references = new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository());
+  service = new ProgressService(sessions, references, plans, bodyWeight, bodyMeasurements);
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
@@ -223,23 +226,35 @@ describe('history', () => {
     expect(view.timeline[0]).toMatchObject({ workoutName: 'Push Day', tonnage: '1950 lb' });
   });
 
+  /**
+   * Both of these were hidden from the athlete's library, and so named
+   * "Unknown", while the session still recorded them.
+   */
+  it('names the workout a session recorded, even a sample the athlete has since forked', async () => {
+    const workout = (id: string, name: string, userId: string | null, forkedFromId: string | null) =>
+      Workout.fromSnapshot({ id, userId, forkedFromId, name, createdAt: NOW, updatedAt: NOW, exercises: [] });
+    await workouts.save(workout('sample-push', 'Push Day', null, null));
+    await workouts.save(workout('my-push', 'My Push Day', 'user-1', 'sample-push'));
+    await workouts.save(workout('sample-pull', 'Pull Day', null, null));
+    await sessions.add(
+      Session.open('user-1', DateOnly.parse('2026-09-01'), { planId: null, workoutId: 'sample-push', isRestDay: false }, deps),
+    );
+    await sessions.add(
+      Session.open('user-1', DateOnly.parse('2026-09-02'), { planId: null, workoutId: 'sample-pull', isRestDay: false }, deps),
+    );
+
+    const hidingSamples = Athlete.fromSnapshot({ ...athlete().toSnapshot(), showSampleData: false });
+    const view = await service.history(hidingSamples, TODAY);
+
+    expect(view.timeline.map((day) => day.workoutName)).toEqual(['Pull Day', 'Push Day']);
+  });
+
   it('reports no workout name and no tonnage for a rest day with nothing logged', async () => {
     await openSession('2026-09-01', true);
 
     const view = await service.history(athlete(), TODAY);
 
     expect(view.timeline[0]).toMatchObject({ workoutName: null, tonnage: null });
-  });
-
-  it('falls back to "Unknown" in the timeline for a set whose exercise is gone', async () => {
-    // Exercise deliberately not saved.
-    const opened = await openSession('2026-09-01');
-    opened.logSet('bench', { reps: 8, weight: Weight.lb(135) }, deps);
-    await sessions.save(opened);
-
-    const view = await service.history(athlete(), TODAY);
-
-    expect(view.timeline[0].sets[0].exerciseName).toBe('Unknown');
   });
 
   it('converts weekly tonnage into the athlete weight unit and rounds it', async () => {

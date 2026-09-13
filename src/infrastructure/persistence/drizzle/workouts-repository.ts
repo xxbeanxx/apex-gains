@@ -120,6 +120,18 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
     return row ? toWorkout(row) : null;
   }
 
+  async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Workout[]> {
+    if (sampleIds.length === 0) return [];
+
+    const rows = await dbScope.query.workouts.findMany({
+      where: and(eq(workouts.userId, userId), inArray(workouts.forkedFromId, [...sampleIds])),
+      with: {
+        workoutExercises: { orderBy: asc(workoutExercises.position) },
+      },
+    });
+    return rows.map(toWorkout);
+  }
+
   /**
    * Writes the workout and its exercise entries as one unit.
    *

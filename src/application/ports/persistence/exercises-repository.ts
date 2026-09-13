@@ -44,6 +44,15 @@ export interface ExercisesRepository {
    * on this side of the boundary.
    */
   findForkOf(userId: string, sampleId: string): Promise<Exercise | null>;
+  /**
+   * The user's forks of any of these samples, in no particular order - at
+   * most one per sample. An id with no fork, or naming a row that isn't a
+   * sample at all, simply contributes nothing.
+   *
+   * What a forward-looking reference resolves through: a plan's workout or
+   * a workout's entry names the sample, but the athlete trains their fork.
+   */
+  findForksOf(userId: string, sampleIds: readonly string[]): Promise<Exercise[]>;
   save(exercise: Exercise): Promise<void>;
   delete(exerciseId: string): Promise<DeleteExerciseOutcome>;
 }

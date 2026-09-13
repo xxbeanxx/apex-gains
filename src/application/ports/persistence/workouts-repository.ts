@@ -8,7 +8,7 @@ import type { Workout } from '~domain/workout/workout';
 // entries - as one unit, so an adapter has to work out which entries were
 // added, changed or dropped (see shared/diff-children.ts).
 /**
- * Just enough of a workout to label a plan slot or fill a picker.
+ * Just enough of a workout to check a new name for a collision.
  */
 export type WorkoutName = {
   readonly id: string;
@@ -18,12 +18,14 @@ export type WorkoutName = {
 export interface WorkoutsRepository {
   listFor(userId: string, showSampleData: boolean): Promise<Workout[]>;
   /**
-   * The same set as `listFor`, but names only.
+   * The same set as `listFor`, but names only - a duplicate's name is
+   * checked against the whole library, and hydrating every workout's entries
+   * for that is the kind of cost that only shows up once the library is
+   * large.
    *
-   * Resolving a plan slot's `workoutId` to something displayable does not
-   * need the workout's exercise entries, and hydrating a whole aggregate per
-   * slot to read one string is the kind of cost that only shows up once the
-   * library is large. Callers that render a name go through this.
+   * Not for labelling a referenced workout: the library hides a sample the
+   * athlete has forked, and a reference can still name one. That goes
+   * through `ReferenceDirectory`, by id.
    */
   listNamesFor(userId: string, showSampleData: boolean): Promise<WorkoutName[]>;
   findVisible(userId: string, workoutId: string): Promise<Workout | null>;
@@ -37,6 +39,11 @@ export interface WorkoutsRepository {
    */
   findManyByIds(workoutIds: readonly string[]): Promise<Workout[]>;
   findForkOf(userId: string, sampleId: string): Promise<Workout | null>;
+  /**
+   * The user's forks of any of these samples - the counterpart to
+   * `ExercisesRepository.findForksOf`.
+   */
+  findForksOf(userId: string, sampleIds: readonly string[]): Promise<Workout[]>;
   save(workout: Workout): Promise<void>;
   delete(workoutId: string): Promise<void>;
 }

@@ -1,10 +1,8 @@
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
-import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
+import type { ReferenceDirectory, ResolvedReferences } from '~application/shared/reference-directory';
 import type {
   HeatmapDayView,
   MuscleBalanceView,
@@ -170,8 +168,7 @@ function describeMetric(
 export class ProgressService {
   constructor(
     private readonly sessions: SessionsRepository,
-    private readonly exercises: ExercisesRepository,
-    private readonly workouts: WorkoutsRepository,
+    private readonly references: ReferenceDirectory,
     private readonly plans: PlansRepository,
     private readonly bodyWeight: BodyWeightRepository,
     private readonly bodyMeasurements: BodyMeasurementsRepository,
@@ -189,10 +186,7 @@ export class ProgressService {
     const weekEnd = weekStart.plusDays(6);
 
     const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
-    const directory = await ExerciseDirectory.of(referencedExerciseIds(sessions), this.exercises);
-
-    const workoutNames = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
-    const workoutNameById = new Map(workoutNames.map((workout) => [workout.id, workout.name]));
+    const references = await this.references.historical(referencedIds(sessions));
 
     const activePlan = await this.plans.findActive(athlete.id);
     const thisWeek = sessions.filter((session) => session.date.isBetween(weekStart, weekEnd));
@@ -202,7 +196,7 @@ export class ProgressService {
       setsThisWeek: thisWeek.reduce((sum, session) => sum + session.setCount, 0),
       workoutsLogged: sessions.filter((session) => session.setCount > 0).length,
       activePlanName: activePlan?.name ?? null,
-      recentSessions: this.timeline(athlete, sessions.slice(0, DASHBOARD_RECENT_LIMIT), directory, workoutNameById),
+      recentSessions: this.timeline(athlete, sessions.slice(0, DASHBOARD_RECENT_LIMIT), references),
     };
   }
 
@@ -210,20 +204,17 @@ export class ProgressService {
     const today = asOf ?? DateOnly.today(new Date(), athlete.preferences.timezone);
     const sessions = await this.sessions.listRecent(athlete.id, CHART_HISTORY_LIMIT);
 
-    // One directory serves both the domain calculations and the timeline's
+    // One lookup serves both the domain calculations and the timeline's
     // labels; resolving the exercises twice over the same ids would be two
     // round trips for one page.
-    const directory = await ExerciseDirectory.of(referencedExerciseIds(sessions), this.exercises);
-    const history = TrainingHistory.of(sessions, directory.exercises);
+    const references = await this.references.historical(referencedIds(sessions));
+    const history = TrainingHistory.of(sessions, references.exercises);
     const preferences = athlete.preferences;
-
-    const workoutNames = await this.workouts.listNamesFor(athlete.id, preferences.showSampleData);
-    const workoutNameById = new Map(workoutNames.map((workout) => [workout.id, workout.name]));
 
     const bodyWeight = await this.bodyWeightSeries(athlete);
 
     return {
-      timeline: this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT), directory, workoutNameById),
+      timeline: this.timeline(athlete, sessions.slice(0, TIMELINE_LIMIT), references),
       totalSets: sessions.reduce((sum, s) => sum + s.setCount, 0),
       workoutCount: sessions.filter((s) => s.setCount > 0).length,
 
@@ -362,28 +353,30 @@ export class ProgressService {
     };
   }
 
-  private timeline(
-    athlete: Athlete,
-    sessions: readonly Session[],
-    directory: ExerciseDirectory,
-    workoutNameById: Map<string, string>,
-  ): TimelineDay[] {
+  private timeline(athlete: Athlete, sessions: readonly Session[], references: ResolvedReferences): TimelineDay[] {
     return sessions.map((session) => ({
       id: session.id,
       date: session.date.value,
       isRestDay: session.isRestDay,
-      workoutName: session.plan.workoutId ? (workoutNameById.get(session.plan.workoutId) ?? 'Unknown') : null,
+      workoutName: session.plan.workoutId ? references.workoutName(session.plan.workoutId) : null,
       tonnage: session.tonnage.inPounds > 0 ? athlete.preferences.formatWeight(session.tonnage) : null,
       sets: session.sets.map((set) => ({
         id: set.id,
         exerciseId: set.exerciseId,
-        exerciseName: directory.nameOf(set.exerciseId),
+        exerciseName: references.exercise(set.exerciseId).name,
         summary: set.format(athlete.preferences),
       })),
     }));
   }
 }
 
-function referencedExerciseIds(sessions: readonly Session[]): string[] {
-  return sessions.flatMap((session) => session.sets.map((set) => set.exerciseId));
+/**
+ * Every exercise and workout the sessions recorded - historical references,
+ * so each resolves to exactly what was trained.
+ */
+function referencedIds(sessions: readonly Session[]): { exerciseIds: string[]; workoutIds: string[] } {
+  return {
+    exerciseIds: sessions.flatMap((session) => session.sets.map((set) => set.exerciseId)),
+    workoutIds: sessions.flatMap((session) => (session.plan.workoutId ? [session.plan.workoutId] : [])),
+  };
 }

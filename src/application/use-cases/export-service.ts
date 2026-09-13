@@ -3,11 +3,19 @@ import type { ExercisesRepository } from '~application/ports/persistence/exercis
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
+import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import type { Athlete } from '~domain/athlete/athlete';
+import type { Exercise } from '~domain/exercise/exercise';
 import type { SetTarget } from '~domain/workout/set-target';
+import type { Workout } from '~domain/workout/workout';
 
 /**
  * Everything an athlete owns, in one snapshot - the complete JSON export.
+ *
+ * Every id in it resolves inside the file: alongside their own exercises
+ * and workouts it carries each sample one their data names (marked
+ * `isSample`), since a set logged against a sample or a plan built from
+ * one would otherwise point at nothing the reader has.
  *
  * Every measurement is canonical (pounds, km/h, seconds), never the
  * athlete's display unit: an export is data, not a rendering, and
@@ -34,6 +42,7 @@ export type ExportSnapshot = {
 
 export type ExportExercise = {
   id: string;
+  isSample: boolean;
   name: string;
   exerciseType: string;
   muscleGroup: string | null;
@@ -52,6 +61,7 @@ export type ExportTarget = {
 
 export type ExportWorkout = {
   id: string;
+  isSample: boolean;
   name: string;
   exercises: (ExportTarget & { exerciseId: string; position: number })[];
 };
@@ -123,19 +133,39 @@ export class ExportService {
   constructor(
     private readonly exercises: ExercisesRepository,
     private readonly workouts: WorkoutsRepository,
+    private readonly references: ReferenceDirectory,
     private readonly plans: PlansRepository,
     private readonly sessions: SessionsRepository,
     private readonly bodyWeight: BodyWeightRepository,
   ) {}
 
   async snapshot(athlete: Athlete): Promise<ExportSnapshot> {
-    const [exercises, workouts, plans, sessions, bodyWeight] = await Promise.all([
+    const [ownExercises, ownWorkouts, plans, sessions, bodyWeight] = await Promise.all([
       this.exercises.listFor(athlete.id, false),
       this.workouts.listFor(athlete.id, false),
       this.plans.listFor(athlete.id, false),
       this.sessions.listAll(athlete.id),
       this.bodyWeight.listAll(athlete.id),
     ]);
+
+    // Workouts first: a sample workout a plan names brings its own entries'
+    // exercises with it.
+    const workouts = await this.withReferenced(
+      ownWorkouts,
+      plans.flatMap((plan) => plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : []))),
+      async (ids) => {
+        const resolved = await this.references.historical({ workoutIds: ids });
+        return ids.flatMap((id) => resolved.workout(id) ?? []);
+      },
+    );
+    const exercises = await this.withReferenced(
+      ownExercises,
+      [
+        ...workouts.flatMap((workout) => workout.exercises.map((entry) => entry.exerciseId)),
+        ...sessions.flatMap((session) => session.sets.map((set) => set.exerciseId)),
+      ],
+      async (ids) => (await this.references.historical({ exerciseIds: ids })).exercises,
+    );
 
     return {
       exportedAt: new Date().toISOString(),
@@ -148,6 +178,7 @@ export class ExportService {
       },
       exercises: exercises.map((exercise) => ({
         id: exercise.id,
+        isSample: exercise.ownership.isSample,
         name: exercise.name,
         exerciseType: exercise.exerciseType,
         muscleGroup: exercise.muscleGroup,
@@ -155,6 +186,7 @@ export class ExportService {
       })),
       workouts: workouts.map((workout) => ({
         id: workout.id,
+        isSample: workout.ownership.isSample,
         name: workout.name,
         exercises: workout.exercises.map((entry) => ({
           exerciseId: entry.exerciseId,
@@ -194,11 +226,10 @@ export class ExportService {
    * reading a CSV wants, not an id they'd have to cross-reference.
    */
   async toCsv(athlete: Athlete): Promise<string> {
-    const [exercises, sessions] = await Promise.all([
-      this.exercises.listFor(athlete.id, false),
-      this.sessions.listAll(athlete.id),
-    ]);
-    const nameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
+    const sessions = await this.sessions.listAll(athlete.id);
+    const references = await this.references.historical({
+      exerciseIds: sessions.flatMap((session) => session.sets.map((set) => set.exerciseId)),
+    });
 
     const rows: string[] = [CSV_COLUMNS.join(',')];
     for (const session of sessions) {
@@ -206,7 +237,7 @@ export class ExportService {
         rows.push(
           [
             session.date.value,
-            nameById.get(set.exerciseId) ?? 'Unknown',
+            references.exercise(set.exerciseId).name,
             set.setNumber,
             set.reps,
             set.weight?.inPounds ?? null,
@@ -223,6 +254,21 @@ export class ExportService {
     }
 
     return rows.join('\n');
+  }
+
+  /**
+   * `own` followed by whatever `referencedIds` names that `own` doesn't hold
+   * - which, since an athlete's data only ever names their own rows or
+   * samples, is the samples.
+   */
+  private async withReferenced<T extends Exercise | Workout>(
+    own: T[],
+    referencedIds: string[],
+    resolve: (ids: string[]) => Promise<T[]>,
+  ): Promise<T[]> {
+    const ownIds = new Set(own.map((row) => row.id));
+    const missing = [...new Set(referencedIds)].filter((id) => !ownIds.has(id));
+    return missing.length === 0 ? own : [...own, ...(await resolve(missing))];
   }
 }
 

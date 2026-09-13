@@ -1,15 +1,14 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
-import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
 import { nextCopyName } from '~application/shared/duplicate-name';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
+import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { type TargetView, toTargetView } from '~application/shared/target-view';
 import type { Athlete } from '~domain/athlete/athlete';
-import { cardioFieldsFor } from '~domain/equipment/cardio-fields';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
 import { type RecentSession, type SuggestionKind, suggestNextTarget } from '~domain/progress/progression';
 import type { LoggedSet } from '~domain/session/logged-set';
@@ -37,9 +36,17 @@ export type WorkoutSummary = {
 export type WorkoutExerciseView = {
   id: string;
   position: number;
+  /**
+   * The exercise the entry trains - the athlete's fork, when it names a
+   * sample they have customized.
+   */
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
+  /**
+   * Which cardio measurements the target form should offer - see `cardioFieldsFor`.
+   */
+  cardioFields: CardioFields;
   /**
    * Already formatted in the athlete's units; null when nothing is targeted.
    */
@@ -131,7 +138,7 @@ export class WorkoutService {
   constructor(
     private readonly workouts: WorkoutsRepository,
     private readonly exercises: ExercisesRepository,
-    private readonly equipment: EquipmentRepository,
+    private readonly references: ReferenceDirectory,
     private readonly sessions: SessionsRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
@@ -160,26 +167,27 @@ export class WorkoutService {
     const workout = await this.workouts.findVisible(athlete.id, workoutId);
     if (!workout) return null;
 
-    // By id rather than by the athlete's library: an entry can point at a
-    // sample they have since forked away from, which their library hides.
-    const directory = await ExerciseDirectory.of(
-      workout.exercises.map((entry) => entry.exerciseId),
-      this.exercises,
-    );
+    const exercises = await this.references.forwardLooking(athlete.id, {
+      exerciseIds: workout.exercises.map((entry) => entry.exerciseId),
+    });
 
     return {
       ...toSummary(workout),
       canRevert: workout.canRevert,
       isDeletable: workout.isDeletable,
-      exercises: workout.exercises.map((entry) => ({
-        id: entry.id,
-        position: entry.position,
-        exerciseId: entry.exerciseId,
-        exerciseName: directory.nameOf(entry.exerciseId),
-        exerciseType: directory.typeOf(entry.exerciseId),
-        targetSummary: entry.target.format(athlete.preferences),
-        target: toTargetView(entry.target, athlete.preferences),
-      })),
+      exercises: workout.exercises.map((entry) => {
+        const exercise = exercises.exercise(entry.exerciseId);
+        return {
+          id: entry.id,
+          position: entry.position,
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          exerciseType: exercise.exerciseType,
+          cardioFields: exercise.cardioFields,
+          targetSummary: entry.target.format(athlete.preferences),
+          target: toTargetView(entry.target, athlete.preferences),
+        };
+      }),
     };
   }
 
@@ -197,27 +205,18 @@ export class WorkoutService {
     const targeted = workout.exercises.filter((entry) => !entry.target.isEmpty);
     if (targeted.length === 0) return result;
 
-    const directory = await ExerciseDirectory.of(
-      targeted.map((entry) => entry.exerciseId),
-      this.exercises,
-    );
-    const equipmentList = await this.equipment.findManyByIds(directory.allEquipmentIds);
-    const equipmentById = new Map(equipmentList.map((item) => [item.id, item]));
+    const exercises = await this.references.forwardLooking(athlete.id, {
+      exerciseIds: targeted.map((entry) => entry.exerciseId),
+    });
     const weightIncrement = weightIncrementFor(athlete.preferences.weightUnit);
 
     for (const entry of targeted) {
-      const cardioFields = cardioFieldsFor(
-        directory.equipmentIdsOf(entry.exerciseId).map((id) => equipmentById.get(id)?.cardioKind ?? null),
-      );
-      const recent = await this.recentSessionsFor(athlete.id, entry.exerciseId);
+      const exercise = exercises.exercise(entry.exerciseId);
+      // The resolved id, so the history read is the one Today now logs
+      // against; sets from before a sample was forked stay on the sample.
+      const recent = await this.recentSessionsFor(athlete.id, exercise.id);
 
-      const suggestion = suggestNextTarget(
-        entry.target,
-        recent,
-        directory.typeOf(entry.exerciseId),
-        cardioFields,
-        weightIncrement,
-      );
+      const suggestion = suggestNextTarget(entry.target, recent, exercise.exerciseType, exercise.cardioFields, weightIncrement);
       if (!suggestion || suggestion.kind === 'hold') continue;
 
       result.set(entry.id, {
@@ -328,9 +327,10 @@ export class WorkoutService {
       // removeExercise/moveExercise - not an error worth surfacing.
       if (!entry) return ok();
 
-      const exercise = await this.exercises.findVisible(athlete.id, entry.exerciseId);
-      const equipment = await this.equipment.findManyByIds(exercise?.equipmentIds ?? []);
-      const cardioFields = cardioFieldsFor(equipment.map((item) => item.cardioKind));
+      // The same reading `detail` renders the form from, so the fields the
+      // athlete was offered are the fields enforced.
+      const exercises = await this.references.forwardLooking(athlete.id, { exerciseIds: [entry.exerciseId] });
+      const { cardioFields } = exercises.exercise(entry.exerciseId);
 
       copy.editable.updateTarget(translatedId, this.toTarget(athlete, input), cardioFields, this.deps.clock.now());
       await this.workouts.save(copy.editable);

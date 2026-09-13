@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { SessionService } from '~application/use-cases/session-service';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
@@ -54,10 +55,12 @@ beforeEach(async () => {
   plans = new InMemoryPlansRepository();
   workouts = new InMemoryWorkoutsRepository();
 
+  const references = new ReferenceDirectory(exercises, workouts, new InMemoryEquipmentRepository());
   service = new SessionService(
     sessions,
     exercises,
-    new TrainingPlanService(plans, workouts, exercises, new InMemoryEquipmentRepository(), sessions),
+    references,
+    new TrainingPlanService(plans, references, sessions),
     new InMemoryUnitOfWork(),
     deps,
   );
@@ -187,6 +190,32 @@ describe('logging a set', () => {
       workoutId: workout.id,
       isRestDay: false,
     });
+  });
+
+  it("records the athlete's fork when the plan names a sample workout they customized", async () => {
+    await workouts.save(
+      Workout.fromSnapshot({
+        id: 'sample-push',
+        userId: null,
+        forkedFromId: null,
+        name: 'Push',
+        createdAt: NOW,
+        updatedAt: NOW,
+        exercises: [],
+      }),
+    );
+    const { editable: fork } = (await workouts.findVisible('user-1', 'sample-push'))!.editableCopyFor('user-1', deps);
+    await workouts.save(fork);
+
+    const plan = Plan.create('user-1', 'PPL', TODAY, deps);
+    plan.addSlot('sample-push', deps);
+    plan.activate(NOW);
+    await plans.save(plan);
+
+    await service.logSet(athleteWith(), TODAY, await benchId(), { reps: 10 });
+
+    const session = (await sessions.findForDate('user-1', TODAY))!;
+    expect(session.plan.workoutId).toBe(fork.id);
   });
 });
 

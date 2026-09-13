@@ -1,17 +1,18 @@
-import type { EquipmentRepository } from '~application/ports/persistence/equipment-repository';
-import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
-import type { WorkoutsRepository } from '~application/ports/persistence/workouts-repository';
-import { ExerciseDirectory } from '~application/shared/exercise-directory';
+import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { type TargetView, toTargetView } from '~application/shared/target-view';
 import type { Athlete } from '~domain/athlete/athlete';
-import { type CardioFields, cardioFieldsFor } from '~domain/equipment/cardio-fields';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
 import type { SessionPlan } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 
 export type PlanItem = {
+  /**
+   * The exercise the athlete trains - their fork, when the workout names a
+   * sample they have customized - so it is also the id a logged set records.
+   */
   exerciseId: string;
   exerciseName: string;
   exerciseType: ExerciseType;
@@ -37,6 +38,10 @@ export type DayPlan =
   | {
       type: 'workout';
       planId: string;
+      /**
+       * The workout the athlete trains - their fork, when the slot names a
+       * sample they have customized.
+       */
       workoutId: string;
       workoutName: string;
       items: PlanItem[];
@@ -65,9 +70,7 @@ const WEEK = 7;
 export class TrainingPlanService {
   constructor(
     private readonly plans: PlansRepository,
-    private readonly workouts: WorkoutsRepository,
-    private readonly exercises: ExercisesRepository,
-    private readonly equipment: EquipmentRepository,
+    private readonly references: ReferenceDirectory,
     private readonly sessions: SessionsRepository,
   ) {}
 
@@ -81,31 +84,32 @@ export class TrainingPlanService {
       return { type: 'rest', planId: plan.id };
     }
 
-    const workout = await this.workouts.findVisible(athlete.id, slot.workoutId);
-    // The slot points at a workout the athlete can no longer see (deleted,
-    // or hidden with sample data). Nothing to train, so the day reads as
-    // rest rather than as an error.
+    const workouts = await this.references.forwardLooking(athlete.id, { workoutIds: [slot.workoutId] });
+    const workout = workouts.workout(slot.workoutId);
+    // Deleting a workout nulls the slots that named it, which already reads
+    // as rest, so a slot's workout can only be missing if the data is
+    // broken. Nothing to train either way.
     if (!workout) return { type: 'rest', planId: plan.id };
 
-    const directory = await ExerciseDirectory.of(
-      workout.exercises.map((entry) => entry.exerciseId),
-      this.exercises,
-    );
-    const equipment = await this.equipment.findManyByIds(directory.allEquipmentIds);
-    const cardioKindById = new Map(equipment.map((item) => [item.id, item.cardioKind]));
+    const exercises = await this.references.forwardLooking(athlete.id, {
+      exerciseIds: workout.exercises.map((entry) => entry.exerciseId),
+    });
 
     return {
       type: 'workout',
       planId: plan.id,
       workoutId: workout.id,
       workoutName: workout.name,
-      items: workout.exercises.map((entry) => ({
-        exerciseId: entry.exerciseId,
-        exerciseName: directory.nameOf(entry.exerciseId),
-        exerciseType: directory.typeOf(entry.exerciseId),
-        cardioFields: cardioFieldsFor(directory.equipmentIdsOf(entry.exerciseId).map((id) => cardioKindById.get(id) ?? null)),
-        target: toTargetView(entry.target, athlete.preferences),
-      })),
+      items: workout.exercises.map((entry) => {
+        const exercise = exercises.exercise(entry.exerciseId);
+        return {
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          exerciseType: exercise.exerciseType,
+          cardioFields: exercise.cardioFields,
+          target: toTargetView(entry.target, athlete.preferences),
+        };
+      }),
     };
   }
 
@@ -130,8 +134,9 @@ export class TrainingPlanService {
       return dates.map((date) => ({ date: date.value, type: 'none' }));
     }
 
-    const workouts = await this.workouts.listNamesFor(athlete.id, athlete.preferences.showSampleData);
-    const names = new Map(workouts.map((t) => [t.id, t.name]));
+    const workouts = await this.references.forwardLooking(athlete.id, {
+      workoutIds: plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : [])),
+    });
 
     return dates.map((date) => {
       const slot = plan.slotOn(date);
@@ -141,7 +146,7 @@ export class TrainingPlanService {
       return {
         date: date.value,
         type: 'workout' as const,
-        workoutName: names.get(slot.workoutId) ?? 'Unknown',
+        workoutName: workouts.workoutName(slot.workoutId),
       };
     });
   }

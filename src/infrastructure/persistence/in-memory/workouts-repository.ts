@@ -43,6 +43,13 @@ export class InMemoryWorkoutsRepository implements WorkoutsRepository, ExerciseR
     return snapshot ? Workout.fromSnapshot(snapshot) : null;
   }
 
+  async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Workout[]> {
+    const wanted = new Set(sampleIds);
+    return [...this.byId.values()]
+      .filter((snapshot) => snapshot.userId === userId && snapshot.forkedFromId !== null && wanted.has(snapshot.forkedFromId))
+      .map(Workout.fromSnapshot);
+  }
+
   async save(workout: Workout): Promise<void> {
     const snapshot = workout.toSnapshot();
     this.byId.set(snapshot.id, snapshot);

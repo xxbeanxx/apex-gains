@@ -106,6 +106,16 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
     return row ? toExercise(row) : null;
   }
 
+  async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Exercise[]> {
+    if (sampleIds.length === 0) return [];
+
+    const rows = await dbScope.query.exercises.findMany({
+      where: and(eq(exercises.userId, userId), inArray(exercises.forkedFromId, [...sampleIds])),
+      with: { equipmentLinks: true },
+    });
+    return rows.map(toExercise);
+  }
+
   async save(exercise: Exercise): Promise<void> {
     const snapshot = exercise.toSnapshot();
 
