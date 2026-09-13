@@ -1,11 +1,10 @@
-import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
+import type { DaySchedule } from '~application/shared/day-schedule';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import { type TargetView, toTargetView } from '~application/shared/target-view';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { CardioFields } from '~domain/equipment/cardio-fields';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
-import type { SessionPlan } from '~domain/session/session';
 import { DateOnly } from '~domain/values/date-only';
 
 export type PlanItem = {
@@ -27,10 +26,7 @@ export type PlanItem = {
 };
 
 /**
- * What the active plan says a given day is.
- *
- * "none" covers both having no active plan and having one with no slots -
- * from the athlete's point of view the app has nothing to suggest either way.
+ * A scheduled day (see `ScheduledDay`) as a page renders it.
  */
 export type DayPlan =
   | { type: 'none' }
@@ -64,40 +60,28 @@ const WEEK = 7;
  * happened.
  *
  * Purely a read model - it composes plans, workouts and sessions into
- * the shapes the pages render, and mutates nothing. The rule it leans on,
- * "which slot does this date fall on", belongs to `Plan.slotOn`.
+ * the shapes the pages render, and mutates nothing. What a date *is* comes
+ * from `DaySchedule`; this only dresses it for display.
  */
 export class TrainingPlanService {
   constructor(
-    private readonly plans: PlansRepository,
+    private readonly schedule: DaySchedule,
     private readonly references: ReferenceDirectory,
     private readonly sessions: SessionsRepository,
   ) {}
 
   async planFor(athlete: Athlete, date: DateOnly): Promise<DayPlan> {
-    const plan = await this.plans.findActive(athlete.id);
-    if (!plan) return { type: 'none' };
+    const day = await this.schedule.on(athlete, date);
+    if (day.type !== 'workout') return day;
 
-    const slot = plan.slotOn(date);
-    if (!slot) return { type: 'none' };
-    if (slot.isRestDay || !slot.workoutId) {
-      return { type: 'rest', planId: plan.id };
-    }
-
-    const workouts = await this.references.forwardLooking(athlete.id, { workoutIds: [slot.workoutId] });
-    const workout = workouts.workout(slot.workoutId);
-    // Deleting a workout nulls the slots that named it, which already reads
-    // as rest, so a slot's workout can only be missing if the data is
-    // broken. Nothing to train either way.
-    if (!workout) return { type: 'rest', planId: plan.id };
-
+    const { workout } = day;
     const exercises = await this.references.forwardLooking(athlete.id, {
       exerciseIds: workout.exercises.map((entry) => entry.exerciseId),
     });
 
     return {
       type: 'workout',
-      planId: plan.id,
+      planId: day.planId,
       workoutId: workout.id,
       workoutName: workout.name,
       items: workout.exercises.map((entry) => {
@@ -114,40 +98,15 @@ export class TrainingPlanService {
   }
 
   /**
-   * What a session opened on `date` should record about the day's plan.
-   */
-  static sessionPlanFrom(plan: DayPlan): SessionPlan {
-    return {
-      planId: plan.type === 'none' ? null : plan.planId,
-      workoutId: plan.type === 'workout' ? plan.workoutId : null,
-      isRestDay: plan.type === 'rest',
-    };
-  }
-
-  /**
    * The next seven days according to the active plan's cycle.
    */
   async upcomingWeek(athlete: Athlete, from: DateOnly): Promise<WeekPlanDay[]> {
     const dates = from.range(WEEK);
-    const plan = await this.plans.findActive(athlete.id);
-    if (!plan || plan.cycleLength === 0) {
-      return dates.map((date) => ({ date: date.value, type: 'none' }));
-    }
+    const days = await this.schedule.across(athlete, dates);
 
-    const workouts = await this.references.forwardLooking(athlete.id, {
-      workoutIds: plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : [])),
-    });
-
-    return dates.map((date) => {
-      const slot = plan.slotOn(date);
-      if (!slot || slot.isRestDay || !slot.workoutId) {
-        return { date: date.value, type: 'rest' as const };
-      }
-      return {
-        date: date.value,
-        type: 'workout' as const,
-        workoutName: workouts.workoutName(slot.workoutId),
-      };
+    return days.map((day, i): WeekPlanDay => {
+      const date = dates[i]!.value;
+      return day.type === 'workout' ? { date, type: 'workout', workoutName: day.workout.name } : { date, type: day.type };
     });
   }
 

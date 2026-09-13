@@ -588,8 +588,13 @@ plans, so it lives in `domain/plan/activation.ts`
 (`activatePlan`) rather than on the aggregate, with the schema's
 `plans_one_active_per_user` partial unique index as the backstop — the
 two plans it changes must be saved in one transaction.
-`TrainingPlanService.planFor` is the canonical read path from "active
-plan" to "today's exercises."
+`DaySchedule` (`src/application/shared/day-schedule.ts`) is the one
+reading of that cycle - what the active plan says a date is (a scheduled
+day, in `CONTEXT.md`), with the slot's workout resolved forward to the
+athlete's fork and a workout that resolves to nothing read as rest.
+`TrainingPlanService.planFor` and `upcomingWeek` dress it for display, and
+`SessionService.logSet` snapshots it into a session inside the same
+transaction; neither use case depends on the other.
 
 **Route module action pattern.** Routes with multiple mutations
 declare their intents once with `intent()` (`app/lib/intent.ts`) and run

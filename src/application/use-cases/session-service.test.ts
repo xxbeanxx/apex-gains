@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { DaySchedule } from '~application/shared/day-schedule';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { SessionService } from '~application/use-cases/session-service';
-import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete, type AthleteSnapshot } from '~domain/athlete/athlete';
 import { Exercise } from '~domain/exercise/exercise';
 import { Plan } from '~domain/plan/plan';
@@ -60,7 +60,7 @@ beforeEach(async () => {
     sessions,
     exercises,
     references,
-    new TrainingPlanService(plans, references, sessions),
+    new DaySchedule(plans, references),
     new InMemoryUnitOfWork(),
     deps,
   );

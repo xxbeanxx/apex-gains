@@ -3,8 +3,8 @@ import type { ExercisesRepository } from '~application/ports/persistence/exercis
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import { type DaySchedule, sessionPlanOf } from '~application/shared/day-schedule';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
-import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { AthletePreferences } from '~domain/athlete/preferences';
 import type { LoggedSet } from '~domain/session/logged-set';
@@ -90,7 +90,7 @@ export class SessionService {
     private readonly sessions: SessionsRepository,
     private readonly exercises: ExercisesRepository,
     private readonly references: ReferenceDirectory,
-    private readonly plans: TrainingPlanService,
+    private readonly schedule: DaySchedule,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
   ) {
@@ -152,8 +152,9 @@ export class SessionService {
    * is the first thing logged on it.
    *
    * The session snapshots what the plan said the day was at the moment it
-   * opens, which is why the plan is read here rather than derived later - a
-   * plan edited next week must not rewrite what today claimed to be.
+   * opens, which is why the schedule is read here, in the same transaction,
+   * rather than derived later - a plan edited next week must not rewrite what
+   * today claimed to be.
    *
    * Reports the day it logged against and whether it had to open that day's
    * session, so the caller can log that; the service itself stays free of
@@ -170,13 +171,13 @@ export class SessionService {
 
     const date = this.calendar.loggingDay(athlete, submitted);
 
-    const plan = await this.plans.planFor(athlete, date);
-
     return this.unitOfWork.run(async () => {
       const existing = await this.sessions.findForDate(athlete.id, date);
       const session =
         existing ??
-        (await this.sessions.add(Session.open(athlete.id, date, TrainingPlanService.sessionPlanFrom(plan), this.deps)));
+        (await this.sessions.add(
+          Session.open(athlete.id, date, sessionPlanOf(await this.schedule.on(athlete, date)), this.deps),
+        ));
 
       const { weightUnit, distanceUnit } = athlete.preferences;
       session.logSet(

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { DaySchedule } from '~application/shared/day-schedule';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { TrainingPlanService } from '~application/use-cases/training-plan-service';
 import { Athlete } from '~domain/athlete/athlete';
@@ -122,7 +123,8 @@ beforeEach(() => {
   exercises = new InMemoryExercisesRepository();
   equipmentRepo = new InMemoryEquipmentRepository();
   sessions = new InMemorySessionsRepository();
-  service = new TrainingPlanService(plans, new ReferenceDirectory(exercises, workouts, equipmentRepo), sessions);
+  const references = new ReferenceDirectory(exercises, workouts, equipmentRepo);
+  service = new TrainingPlanService(new DaySchedule(plans, references), references, sessions);
 });
 
 describe('planFor', () => {
@@ -236,36 +238,6 @@ describe('planFor', () => {
   });
 });
 
-describe('sessionPlanFrom', () => {
-  it('captures a workout day', () => {
-    expect(
-      TrainingPlanService.sessionPlanFrom({
-        type: 'workout',
-        planId: 'r',
-        workoutId: 't',
-        workoutName: 'Push',
-        items: [],
-      }),
-    ).toEqual({ planId: 'r', workoutId: 't', isRestDay: false });
-  });
-
-  it('captures a rest day', () => {
-    expect(TrainingPlanService.sessionPlanFrom({ type: 'rest', planId: 'r' })).toEqual({
-      planId: 'r',
-      workoutId: null,
-      isRestDay: true,
-    });
-  });
-
-  it('captures no active plan', () => {
-    expect(TrainingPlanService.sessionPlanFrom({ type: 'none' })).toEqual({
-      planId: null,
-      workoutId: null,
-      isRestDay: false,
-    });
-  });
-});
-
 describe('upcomingWeek', () => {
   it('reports "none" for every day when there is no active plan', async () => {
     const week = await service.upcomingWeek(athlete, DateOnly.parse('2026-09-01'));
@@ -282,6 +254,17 @@ describe('upcomingWeek', () => {
 
     expect(week[0]).toEqual({ date: '2026-09-01', type: 'workout', workoutName: 'Push Day' });
     expect(week[1]).toEqual({ date: '2026-09-02', type: 'rest' });
+  });
+
+  it('marks a slot whose workout resolves to nothing as rest, the same as the day itself', async () => {
+    await plans.save(plan());
+    // Workout deliberately not saved.
+
+    const week = await service.upcomingWeek(athlete, DateOnly.parse('2026-09-01'));
+    const today = await service.planFor(athlete, DateOnly.parse('2026-09-01'));
+
+    expect(week[0]).toEqual({ date: '2026-09-01', type: 'rest' });
+    expect(today).toEqual({ type: 'rest', planId: 'plan-1' });
   });
 
   it("names the athlete's fork of a sample workout, the same workout Today trains", async () => {

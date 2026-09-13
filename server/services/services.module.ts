@@ -2,6 +2,7 @@ import { Module, type Provider } from '@nestjs/common';
 
 import { productionDeps } from '~application/ports/domain-deps';
 import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import { DaySchedule } from '~application/shared/day-schedule';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { AdminService } from '~application/use-cases/admin-service';
 import { AthleteService } from '~application/use-cases/athlete-service';
@@ -41,6 +42,17 @@ const referenceDirectory: Provider = {
   provide: ReferenceDirectory,
   inject: [EXERCISES_REPOSITORY, WORKOUTS_REPOSITORY, EQUIPMENT_REPOSITORY],
   useFactory: (exercises, workouts, equipment) => new ReferenceDirectory(exercises, workouts, equipment),
+};
+
+/**
+ * One reading of the active plan's cycle, shared by the use case that renders
+ * a day and the one that snapshots it into a session. Not exported, for the
+ * same reason as `referenceDirectory`.
+ */
+const daySchedule: Provider = {
+  provide: DaySchedule,
+  inject: [PLANS_REPOSITORY, ReferenceDirectory],
+  useFactory: (plans, references) => new DaySchedule(plans, references),
 };
 
 const services: Provider[] = [
@@ -114,14 +126,14 @@ const services: Provider[] = [
   },
   {
     provide: TrainingPlanService,
-    inject: [PLANS_REPOSITORY, ReferenceDirectory, SESSIONS_REPOSITORY],
-    useFactory: (plans, references, sessions) => new TrainingPlanService(plans, references, sessions),
+    inject: [DaySchedule, ReferenceDirectory, SESSIONS_REPOSITORY],
+    useFactory: (schedule, references, sessions) => new TrainingPlanService(schedule, references, sessions),
   },
   {
     provide: SessionService,
-    inject: [SESSIONS_REPOSITORY, EXERCISES_REPOSITORY, ReferenceDirectory, TrainingPlanService, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (sessions, exercises, references, plans, unitOfWork, deps) =>
-      new SessionService(sessions, exercises, references, plans, unitOfWork, deps),
+    inject: [SESSIONS_REPOSITORY, EXERCISES_REPOSITORY, ReferenceDirectory, DaySchedule, UNIT_OF_WORK, DOMAIN_DEPS],
+    useFactory: (sessions, exercises, references, schedule, unitOfWork, deps) =>
+      new SessionService(sessions, exercises, references, schedule, unitOfWork, deps),
   },
   {
     provide: WorkoutService,
@@ -139,7 +151,7 @@ const services: Provider[] = [
 
 @Module({
   imports: [AuthModule, RepositoriesModule],
-  providers: [{ provide: DOMAIN_DEPS, useValue: productionDeps }, referenceDirectory, ...services],
+  providers: [{ provide: DOMAIN_DEPS, useValue: productionDeps }, referenceDirectory, daySchedule, ...services],
   exports: services,
 })
 export class ServicesModule {}

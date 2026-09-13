@@ -24,6 +24,10 @@ _Avoid_: catalogue, collection
 The calendar day it currently is in the athlete's own timezone. Nothing is logged against, or shown for, a later day.
 _Avoid_: current date, now, local day
 
+**Scheduled day**:
+What an athlete's active plan says a calendar day is: a workout, a rest day, or nothing when no plan is active. A slot whose workout no longer exists is a rest day.
+_Avoid_: planned day, today's plan
+
 ### References
 
 **Historical reference**:
