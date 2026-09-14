@@ -48,8 +48,8 @@ npm run typecheck    # react-router typegen, then tsc
 Run `npm run format:fix` and `npm run lint:check` on any file you edit
 before finishing a task - CI runs `format:check` and `lint:check`, so an
 unformatted file or a lint error fails the build. Formatting is oxfmt,
-configured in `.oxfmtrc.json`; it also sorts imports, using its built-in
-default groups. Linting is oxlint, configured in `.oxlintrc.json`: the
+configured in `oxfmt.config.ts`; it also sorts imports, using its built-in
+default groups. Linting is oxlint, configured in `oxlint.config.ts`: the
 `correctness` category as errors, with type-aware rules
 (`no-floating-promises`, `await-thenable`, ...) run through
 `oxlint-tsgolint` against `tsconfig.json`. Every rule it turns off or
