@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { DaySchedule } from '~application/shared/day-schedule';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { SessionService } from '~application/use-cases/session-service';
@@ -55,7 +56,15 @@ beforeEach(async () => {
   workouts = stores.workouts;
 
   const references = new ReferenceDirectory(exercises, workouts, stores.equipment);
-  service = new SessionService(sessions, exercises, references, new DaySchedule(plans, references), stores.unitOfWork, deps);
+  service = new SessionService(
+    sessions,
+    exercises,
+    references,
+    new DaySchedule(plans, references),
+    stores.unitOfWork,
+    deps,
+    new AthleteCalendar(deps.clock),
+  );
 
   await exercises.save(
     Exercise.create(

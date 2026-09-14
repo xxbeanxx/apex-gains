@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { ReferenceDirectory } from '~application/shared/reference-directory';
 import { PlanService } from '~application/use-cases/plan-service';
 import { Athlete } from '~domain/athlete/athlete';
@@ -59,11 +60,13 @@ beforeEach(() => {
   plans = stores.plans;
   workouts = stores.workouts;
   const references = new ReferenceDirectory(stores.exercises, workouts, stores.equipment);
-  service = new PlanService(plans, references, stores.unitOfWork, {
-    ids: sequentialIds('new'),
-    clock: fixedClock(NOW),
-    secrets: sequentialSecrets('token'),
-  });
+  service = new PlanService(
+    plans,
+    references,
+    stores.unitOfWork,
+    { ids: sequentialIds('new'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') },
+    new AthleteCalendar(fixedClock(NOW)),
+  );
 });
 
 describe('editing a sample plan', () => {

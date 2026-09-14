@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { BodyWeightService } from '~application/use-cases/body-weight-service';
 import { Athlete } from '~domain/athlete/athlete';
 import { fixedClock } from '~domain/shared/clock';
@@ -36,11 +37,12 @@ let service: BodyWeightService;
 beforeEach(() => {
   const stores = inMemoryRepositories();
   entries = stores.bodyWeight;
-  service = new BodyWeightService(entries, stores.unitOfWork, {
-    ids: sequentialIds('entry'),
-    clock: fixedClock(NOW),
-    secrets: sequentialSecrets('token'),
-  });
+  service = new BodyWeightService(
+    entries,
+    stores.unitOfWork,
+    { ids: sequentialIds('entry'), clock: fixedClock(NOW), secrets: sequentialSecrets('token') },
+    new AthleteCalendar(fixedClock(NOW)),
+  );
 });
 
 describe('record', () => {

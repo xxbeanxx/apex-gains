@@ -495,7 +495,12 @@ cases by `server/services/services.module.ts` but never reaches a route.
 `shared/athlete-calendar.ts` (`AthleteCalendar`) is the one place that
 reads "today" for an athlete - off the injected `Clock`, in their own
 timezone - along with the rule that hangs off it: nothing is logged
-against, or shown for, a later day. The logging use cases clamp a
+against, or shown for, a later day. `server/services/services.module.ts`
+provides it as one singleton, taken as a constructor argument by every
+use case that needs it (`PlanService`, `SessionService`,
+`BodyWeightService`, `BodyMeasurementsService`, `ProgressService`) -
+never constructed inline, so the rule and the instance stay one thing to
+change. The logging use cases clamp a
 submitted date through it, so the rule holds without the route; routes
 reach the same instance through `athleteCalendarContext` for a date
 picker's bounds or the day `/today` shows, and never call

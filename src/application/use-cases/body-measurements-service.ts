@@ -1,7 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyMeasurementsRepository } from '~application/ports/persistence/body-measurements-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { Athlete } from '~domain/athlete/athlete';
 import { BodyMeasurement, type BodyMeasurementMetric } from '~domain/body/body-measurement';
 import { type Result, ok } from '~domain/shared/result';
@@ -18,11 +18,8 @@ export class BodyMeasurementsService {
     private readonly entries: BodyMeasurementsRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {
-    this.calendar = new AthleteCalendar(deps.clock);
-  }
-
-  private readonly calendar: AthleteCalendar;
+    private readonly calendar: AthleteCalendar,
+  ) {}
 
   /**
    * Logs (or corrects) a metric for a day. There is one entry per

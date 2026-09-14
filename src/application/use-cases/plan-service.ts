@@ -1,7 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { PlansRepository } from '~application/ports/persistence/plans-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { type ForkMutation, ForkableLibrary } from '~application/shared/fork';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
 import type { Athlete } from '~domain/athlete/athlete';
@@ -80,12 +80,10 @@ export class PlanService {
     private readonly references: ReferenceDirectory,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
+    private readonly calendar: AthleteCalendar,
   ) {
     this.editor = new ForkableLibrary(this.plans, this.unitOfWork, this.deps, (plan) => plan.slots);
-    this.calendar = new AthleteCalendar(deps.clock);
   }
-
-  private readonly calendar: AthleteCalendar;
 
   /**
    * Load, fork if needed, apply, save - see `shared/fork.ts`.

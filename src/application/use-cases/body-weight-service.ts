@@ -1,7 +1,7 @@
 import type { DomainDeps } from '~application/ports/domain-deps';
 import type { BodyWeightRepository } from '~application/ports/persistence/body-weight-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import type { Athlete } from '~domain/athlete/athlete';
 import { BodyWeightEntry } from '~domain/body/body-weight-entry';
 import { type Result, ok } from '~domain/shared/result';
@@ -17,11 +17,8 @@ export class BodyWeightService {
     private readonly entries: BodyWeightRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {
-    this.calendar = new AthleteCalendar(deps.clock);
-  }
-
-  private readonly calendar: AthleteCalendar;
+    private readonly calendar: AthleteCalendar,
+  ) {}
 
   /**
    * Logs (or corrects) a day's weight. There is one entry per day, so

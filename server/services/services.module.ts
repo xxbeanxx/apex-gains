@@ -72,13 +72,13 @@ const services: Provider[] = [
   },
   {
     provide: BodyMeasurementsService,
-    inject: [BODY_MEASUREMENTS_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (entries, unitOfWork, deps) => new BodyMeasurementsService(entries, unitOfWork, deps),
+    inject: [BODY_MEASUREMENTS_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS, AthleteCalendar],
+    useFactory: (entries, unitOfWork, deps, calendar) => new BodyMeasurementsService(entries, unitOfWork, deps, calendar),
   },
   {
     provide: BodyWeightService,
-    inject: [BODY_WEIGHT_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (entries, unitOfWork, deps) => new BodyWeightService(entries, unitOfWork, deps),
+    inject: [BODY_WEIGHT_REPOSITORY, UNIT_OF_WORK, DOMAIN_DEPS, AthleteCalendar],
+    useFactory: (entries, unitOfWork, deps, calendar) => new BodyWeightService(entries, unitOfWork, deps, calendar),
   },
   {
     provide: ExerciseLibraryService,
@@ -107,8 +107,9 @@ const services: Provider[] = [
   },
   {
     provide: PlanService,
-    inject: [PLANS_REPOSITORY, ReferenceDirectory, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (plans, references, unitOfWork, deps) => new PlanService(plans, references, unitOfWork, deps),
+    inject: [PLANS_REPOSITORY, ReferenceDirectory, UNIT_OF_WORK, DOMAIN_DEPS, AthleteCalendar],
+    useFactory: (plans, references, unitOfWork, deps, calendar) =>
+      new PlanService(plans, references, unitOfWork, deps, calendar),
   },
   {
     provide: ProgressService,
@@ -130,9 +131,17 @@ const services: Provider[] = [
   },
   {
     provide: SessionService,
-    inject: [SESSIONS_REPOSITORY, EXERCISES_REPOSITORY, ReferenceDirectory, DaySchedule, UNIT_OF_WORK, DOMAIN_DEPS],
-    useFactory: (sessions, exercises, references, schedule, unitOfWork, deps) =>
-      new SessionService(sessions, exercises, references, schedule, unitOfWork, deps),
+    inject: [
+      SESSIONS_REPOSITORY,
+      EXERCISES_REPOSITORY,
+      ReferenceDirectory,
+      DaySchedule,
+      UNIT_OF_WORK,
+      DOMAIN_DEPS,
+      AthleteCalendar,
+    ],
+    useFactory: (sessions, exercises, references, schedule, unitOfWork, deps, calendar) =>
+      new SessionService(sessions, exercises, references, schedule, unitOfWork, deps, calendar),
   },
   {
     provide: WorkoutService,

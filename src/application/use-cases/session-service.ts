@@ -2,7 +2,7 @@ import type { DomainDeps } from '~application/ports/domain-deps';
 import type { ExercisesRepository } from '~application/ports/persistence/exercises-repository';
 import type { SessionsRepository } from '~application/ports/persistence/sessions-repository';
 import type { UnitOfWork } from '~application/ports/persistence/unit-of-work';
-import { AthleteCalendar } from '~application/shared/athlete-calendar';
+import type { AthleteCalendar } from '~application/shared/athlete-calendar';
 import { type DaySchedule, sessionPlanOf } from '~application/shared/day-schedule';
 import { type MeasurementInput, toCanonical, toValues } from '~application/shared/measurement-values';
 import type { ReferenceDirectory } from '~application/shared/reference-directory';
@@ -85,11 +85,8 @@ export class SessionService {
     private readonly schedule: DaySchedule,
     private readonly unitOfWork: UnitOfWork,
     private readonly deps: DomainDeps,
-  ) {
-    this.calendar = new AthleteCalendar(deps.clock);
-  }
-
-  private readonly calendar: AthleteCalendar;
+    private readonly calendar: AthleteCalendar,
+  ) {}
 
   async loggedSetsFor(athlete: Athlete, date: DateOnly): Promise<LoggedSetView[]> {
     const session = await this.sessions.findForDate(athlete.id, date);
