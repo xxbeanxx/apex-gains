@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
  * `rows` are `BuilderRow`s in order, rendered as the canvas's `<ol>`, or
  * `empty` in its place when there are none.
  */
-function BuilderFrame({
+export function BuilderFrame({
   palette,
   rows,
   empty,
@@ -67,5 +67,3 @@ function BuilderFrame({
     </>
   );
 }
-
-export { BuilderFrame };

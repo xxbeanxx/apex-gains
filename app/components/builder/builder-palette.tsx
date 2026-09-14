@@ -11,7 +11,7 @@ import { Input } from '~/components/ui/input';
  * (the workout builder's exercise palette) owns the combined filter state
  * itself and renders this beside its facet chips.
  */
-function BuilderPaletteSearch({
+export function BuilderPaletteSearch({
   value,
   onChange,
   placeholder = 'Search…',
@@ -46,7 +46,7 @@ function BuilderPaletteSearch({
  * palette (workouts) and a plain one (a plan's rest-day-and-workouts list)
  * need different filter state entirely.
  */
-function BuilderPalette<T>({
+export function BuilderPalette<T>({
   items,
   getKey,
   renderItem,
@@ -74,5 +74,3 @@ function BuilderPalette<T>({
     </div>
   );
 }
-
-export { BuilderPalette, BuilderPaletteSearch };

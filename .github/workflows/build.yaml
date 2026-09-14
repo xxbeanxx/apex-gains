@@ -38,35 +38,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Check formatting
         run: npm run format:check
-
       - name: Lint
-        run: npm run lint
-
+        run: npm run lint:check
       - name: Run type check
         run: npm run typecheck
-
       - name: Check architecture boundaries
         run: npm run check:architecture
-
       - name: Run tests
         run: npm run test
-
       - name: Run persistence contract tests against Postgres
+        run: npm run test:contract
         env:
           TEST_DATABASE_URL: postgres://apex:apex@localhost:5432/apex_contract
-        run: npm run test:contract
 
   migrate-database:
     name: Apply Database Migrations
@@ -79,20 +71,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Apply pending Drizzle migrations to Supabase
+        run: npx drizzle-kit migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx drizzle-kit migrate
 
   build:
     name: Build & Push Container Image
@@ -107,31 +96,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Generate image tags
         id: tags
+        run: scripts/generate-image-tags.sh >> "$GITHUB_OUTPUT"
         env:
           REPOSITORY: ${{ github.repository }}
-        run: scripts/generate-image-tags.sh >> "$GITHUB_OUTPUT"
-
       - name: Log in to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
-
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Build container image with Podman
-        run: |
-          scripts/build-image.sh \
-            "${{ steps.tags.outputs.version_tag }}" \
-            "${{ steps.tags.outputs.full_version_tag }}" \
-            "${{ steps.tags.outputs.full_latest_tag }}"
-
+        run: scripts/build-image.sh "${{ steps.tags.outputs.version_tag }}" "${{ steps.tags.outputs.full_version_tag }}" "${{ steps.tags.outputs.full_latest_tag }}"
       - name: Push container image to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: |
-          scripts/push-image.sh \
-            "${{ steps.tags.outputs.full_version_tag }}" \
-            "${{ steps.tags.outputs.full_latest_tag }}"
-
+        run: scripts/push-image.sh "${{ steps.tags.outputs.full_version_tag }}" "${{ steps.tags.outputs.full_latest_tag }}"
       - name: Publish build summary
         if: always()
         run: |
@@ -166,7 +142,6 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Deploy image to Container Apps
         uses: azure/cli@v2
         with:

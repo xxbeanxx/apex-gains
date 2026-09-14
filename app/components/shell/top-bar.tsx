@@ -46,7 +46,7 @@ function AccountMenu({ user }: { user: NavUser }) {
  * which has no sidebar to carry the brand lockup, so this is the one place
  * it shows instead.
  */
-function TopBar({ user }: { user: NavUser | null }) {
+export function TopBar({ user }: { user: NavUser | null }) {
   return (
     <header className="sticky top-0 z-30 flex h-(--header-h) items-center gap-2 border-b border-border bg-background/80 px-(--page-px) backdrop-blur-md supports-backdrop-filter:bg-background/65">
       {user ? (
@@ -86,5 +86,3 @@ function TopBar({ user }: { user: NavUser | null }) {
     </header>
   );
 }
-
-export { TopBar };

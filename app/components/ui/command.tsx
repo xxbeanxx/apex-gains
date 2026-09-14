@@ -2,13 +2,12 @@
 
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
-import * as React from 'react';
 import type { ComponentProps } from 'react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { cn } from '~/lib/utils';
 
-function Command({ className, ...props }: ComponentProps<typeof CommandPrimitive>) {
+export function Command({ className, ...props }: ComponentProps<typeof CommandPrimitive>) {
   return (
     <CommandPrimitive
       data-slot="command"
@@ -18,7 +17,7 @@ function Command({ className, ...props }: ComponentProps<typeof CommandPrimitive
   );
 }
 
-function CommandDialog({
+export function CommandDialog({
   title = 'Command palette',
   description = 'Search for a page or an action',
   children,
@@ -37,7 +36,7 @@ function CommandDialog({
   );
 }
 
-function CommandInput({ className, ...props }: ComponentProps<typeof CommandPrimitive.Input>) {
+export function CommandInput({ className, ...props }: ComponentProps<typeof CommandPrimitive.Input>) {
   return (
     <div data-slot="command-input-wrapper" className="flex items-center gap-2 border-b border-border px-3">
       <SearchIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -53,7 +52,7 @@ function CommandInput({ className, ...props }: ComponentProps<typeof CommandPrim
   );
 }
 
-function CommandList({ className, ...props }: ComponentProps<typeof CommandPrimitive.List>) {
+export function CommandList({ className, ...props }: ComponentProps<typeof CommandPrimitive.List>) {
   return (
     <CommandPrimitive.List
       data-slot="command-list"
@@ -63,11 +62,11 @@ function CommandList({ className, ...props }: ComponentProps<typeof CommandPrimi
   );
 }
 
-function CommandEmpty(props: ComponentProps<typeof CommandPrimitive.Empty>) {
+export function CommandEmpty(props: ComponentProps<typeof CommandPrimitive.Empty>) {
   return <CommandPrimitive.Empty data-slot="command-empty" className="py-6 text-center text-sm" {...props} />;
 }
 
-function CommandGroup({ className, ...props }: ComponentProps<typeof CommandPrimitive.Group>) {
+export function CommandGroup({ className, ...props }: ComponentProps<typeof CommandPrimitive.Group>) {
   return (
     <CommandPrimitive.Group
       data-slot="command-group"
@@ -80,7 +79,7 @@ function CommandGroup({ className, ...props }: ComponentProps<typeof CommandPrim
   );
 }
 
-function CommandItem({ className, ...props }: ComponentProps<typeof CommandPrimitive.Item>) {
+export function CommandItem({ className, ...props }: ComponentProps<typeof CommandPrimitive.Item>) {
   return (
     <CommandPrimitive.Item
       data-slot="command-item"
@@ -92,5 +91,3 @@ function CommandItem({ className, ...props }: ComponentProps<typeof CommandPrimi
     />
   );
 }
-
-export { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList };

@@ -10,7 +10,7 @@ import { formatFullDate, formatMonthDay } from '~shared/format';
  * the history timeline and the dashboard's recent-sessions list, so the two
  * stay the same shape rather than drifting apart.
  */
-function SessionRow({ session }: { session: TimelineDay }) {
+export function SessionRow({ session }: { session: TimelineDay }) {
   const isRest = session.isRestDay && session.sets.length === 0;
   const label = session.workoutName ?? (isRest ? 'Rest day' : 'Logged');
 
@@ -38,5 +38,3 @@ function SessionRow({ session }: { session: TimelineDay }) {
     </li>
   );
 }
-
-export { SessionRow };

@@ -16,7 +16,8 @@
       "~domain/*": ["./src/domain/*"],
       "~infrastructure/*": ["./src/infrastructure/*"],
       "~server/*": ["./server/*"],
-      "~shared/*": ["./src/shared/*"]
+      "~shared/*": ["./src/shared/*"],
+      "~test/*": ["./test/*"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

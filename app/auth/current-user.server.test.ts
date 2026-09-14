@@ -3,12 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AthleteService } from '~application/use-cases/athlete-service';
 import type { Athlete } from '~domain/athlete/athlete';
 import type { AppSessionStorage } from '~server/auth/session-storage.provider';
+import { mock } from '~test/mock';
 
 import { loadUserMiddleware } from '~/auth/current-user';
 import { userContext } from '~/auth/user-context';
 import { athleteServiceContext, sessionStorageContext } from '~/router/load-context';
-
-import { mock } from '../../test/mock';
 
 type MiddlewareArgs = Parameters<typeof loadUserMiddleware>[0];
 

@@ -76,7 +76,7 @@ function EquipmentRow({ equipment }: { equipment: EquipmentView }) {
   );
 }
 
-function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; trigger: ReactNode }) {
+export function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; trigger: ReactNode }) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -137,5 +137,3 @@ function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentView[]; t
     </Dialog>
   );
 }
-
-export { EquipmentDialog };

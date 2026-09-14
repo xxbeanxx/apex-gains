@@ -25,7 +25,7 @@ function useBreadcrumbs(): Crumb[] {
   return fallback ? [{ label: fallback.label }] : [];
 }
 
-function Breadcrumbs() {
+export function Breadcrumbs() {
   const crumbs = useBreadcrumbs();
   if (crumbs.length === 0) return null;
 
@@ -51,5 +51,3 @@ function Breadcrumbs() {
     </nav>
   );
 }
-
-export { Breadcrumbs };

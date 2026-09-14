@@ -1,7 +1,6 @@
 'use client';
 
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import * as React from 'react';
 import { useState } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -26,7 +25,7 @@ const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
  * days, no time-of-day) - matches how dates are stored and compared
  * throughout this app. Not a general-purpose date-range picker.
  */
-function Calendar({
+export function Calendar({
   selected,
   today,
   maxDate,
@@ -121,5 +120,3 @@ function Calendar({
     </div>
   );
 }
-
-export { Calendar };

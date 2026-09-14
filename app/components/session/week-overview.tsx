@@ -12,7 +12,7 @@ import { cn } from '~/lib/utils';
  * width and wraps rather than being cut off - it is the one thing this card is
  * for.
  */
-function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
+export function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
   const planned = days.filter((d) => d.type === 'workout').length;
 
   return (
@@ -69,7 +69,7 @@ function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
  * read as one pattern - each row links to that day on `/today` for the
  * per-set detail it doesn't carry itself.
  */
-function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
+export function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
   const workouts = days.filter((d) => d.status === 'workout').length;
   const rests = days.filter((d) => d.status === 'rest').length;
   const totalSets = days.reduce((sum, d) => sum + d.setCount, 0);
@@ -124,5 +124,3 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
     </Card>
   );
 }
-
-export { UpcomingWeekCard, PastWeekCard };

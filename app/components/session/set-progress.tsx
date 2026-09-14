@@ -5,7 +5,7 @@ import { cn } from '~/lib/utils';
 /**
  * "2 of 3 sets" beside a bar, plus a check once `done >= target`.
  */
-function SetProgress({ done, target }: { done: number; target: number }) {
+export function SetProgress({ done, target }: { done: number; target: number }) {
   const pct = Math.min(100, Math.round((done / target) * 100));
   const complete = done >= target;
 
@@ -39,5 +39,3 @@ function SetProgress({ done, target }: { done: number; target: number }) {
     </div>
   );
 }
-
-export { SetProgress };

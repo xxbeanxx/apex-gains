@@ -28,7 +28,7 @@ import { Button } from '~/components/ui/button';
  * `onSelect` - the same controlled pattern this app's other dialogs already
  * use from a dropdown (see `ExerciseRowMenu`).
  */
-function ConfirmDialog({
+export function ConfirmDialog({
   trigger,
   open,
   onOpenChange,
@@ -61,5 +61,3 @@ function ConfirmDialog({
     </AlertDialog>
   );
 }
-
-export { ConfirmDialog };

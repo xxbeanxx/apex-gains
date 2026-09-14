@@ -1,5 +1,4 @@
 import { CheckIcon, ClockIcon, MapPinIcon } from 'lucide-react';
-import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -56,7 +55,7 @@ function groupByRegion(zones: readonly string[]): ReadonlyArray<{ region: string
  * hidden `name`d input, so it drops into a `<Form method="post">` like
  * any other field - there is no client-side submission here.
  */
-function TimezonePicker({
+export function TimezonePicker({
   id,
   name,
   zones,
@@ -135,5 +134,3 @@ function TimezonePicker({
     </>
   );
 }
-
-export { TimezonePicker };

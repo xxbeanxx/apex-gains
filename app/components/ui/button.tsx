@@ -1,6 +1,5 @@
 import { type VariantProps, cva } from 'class-variance-authority';
 import { Slot } from 'radix-ui';
-import * as React from 'react';
 import type { ComponentProps } from 'react';
 
 import { cn } from '~/lib/utils';
@@ -10,7 +9,7 @@ import { cn } from '~/lib/utils';
  * phone, so every control clears the 44px target guidance on touch devices
  * while staying compact under a mouse.
  */
-const buttonVariants = cva(
+export const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-(--dur-fast) ease-(--ease-quint) outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
@@ -47,7 +46,7 @@ const buttonVariants = cva(
   },
 );
 
-function Button({
+export function Button({
   className,
   variant = 'default',
   size = 'default',
@@ -69,5 +68,3 @@ function Button({
     />
   );
 }
-
-export { Button, buttonVariants };

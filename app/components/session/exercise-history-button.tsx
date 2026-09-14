@@ -29,7 +29,7 @@ function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: stri
  * Fetched lazily on first open rather than up front for every exercise on
  * the page.
  */
-function ExerciseHistoryButton({
+export function ExerciseHistoryButton({
   exerciseId,
   exerciseName,
   todayStr,
@@ -83,5 +83,3 @@ function ExerciseHistoryButton({
     </Popover>
   );
 }
-
-export { ExerciseHistoryButton };

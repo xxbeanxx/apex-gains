@@ -33,7 +33,7 @@ export type LoggableExercise = {
   cardioFields: CardioFields;
 };
 
-function LogSetForm({
+export function LogSetForm({
   logSet,
   exercise,
   exerciseOptions,
@@ -193,5 +193,3 @@ function LogSetForm({
     </fetcher.Form>
   );
 }
-
-export { LogSetForm };

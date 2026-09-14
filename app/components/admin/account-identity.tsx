@@ -20,7 +20,7 @@ type Account = {
  * The link stretches over its whole table cell (`after:absolute`), so the row
  * is clickable without nesting anything inside the anchor.
  */
-function AccountIdentity({ account, stretched = false }: { account: Account; stretched?: boolean }) {
+export function AccountIdentity({ account, stretched = false }: { account: Account; stretched?: boolean }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <Avatar name={account.name} src={account.avatarUrl} size={32} />
@@ -40,5 +40,3 @@ function AccountIdentity({ account, stretched = false }: { account: Account; str
     </span>
   );
 }
-
-export { AccountIdentity };

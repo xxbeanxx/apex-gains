@@ -10,6 +10,7 @@ describe('NAV_ITEMS', () => {
 
   it('every tab item is also reachable from the sidebar', () => {
     const tabItems = NAV_ITEMS.filter((item) => item.tab !== undefined);
+
     for (const item of tabItems) {
       expect(NAV_ITEMS).toContain(item);
     }

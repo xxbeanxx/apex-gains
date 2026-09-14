@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from 'react';
-import * as React from 'react';
 
 import { cn } from '~/lib/utils';
 
@@ -20,7 +19,7 @@ const widths: Record<Width, string> = {
   prose: 'max-w-2xl',
 };
 
-function Page({ className, width = 'default', ...props }: ComponentProps<'main'> & { width?: Width }) {
+export function Page({ className, width = 'default', ...props }: ComponentProps<'main'> & { width?: Width }) {
   return (
     <main
       id="main"
@@ -40,7 +39,7 @@ function Page({ className, width = 'default', ...props }: ComponentProps<'main'>
  * Page title block. `actions` sits inline on wide screens and wraps beneath the
  * title on narrow ones rather than crushing the heading.
  */
-function PageHeader({
+export function PageHeader({
   title,
   description,
   actions,
@@ -70,7 +69,7 @@ function PageHeader({
 /**
  * A titled band of content, separated by the shared section rhythm.
  */
-function Section({
+export function Section({
   title,
   description,
   actions,
@@ -101,5 +100,3 @@ function Section({
     </section>
   );
 }
-
-export { Page, PageHeader, Section };

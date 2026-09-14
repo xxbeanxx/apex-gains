@@ -1,5 +1,4 @@
 import { CirclePlusIcon } from 'lucide-react';
-import * as React from 'react';
 import { useState } from 'react';
 
 import { Badge } from '~/components/ui/badge';
@@ -18,7 +17,7 @@ export type FacetOption = { value: string; label: string; count: number };
  * *other* active facets would already narrow to, not the fully-filtered
  * result - otherwise every count converges on the same final number.
  */
-function FacetFilter({
+export function FacetFilter({
   label,
   options,
   selected,
@@ -98,5 +97,3 @@ function FacetFilter({
     </Popover>
   );
 }
-
-export { FacetFilter };

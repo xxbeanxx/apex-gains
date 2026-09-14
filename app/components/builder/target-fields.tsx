@@ -12,7 +12,7 @@ import { cn } from '~/lib/utils';
  * cardio fields within it - is decided once by the exercise's type and its
  * equipment's `cardioFields`, not re-derived by each form that renders one.
  */
-function TargetFields({
+export function TargetFields({
   exerciseType,
   cardioFields,
   weightUnit,
@@ -54,5 +54,3 @@ function TargetFields({
     </>
   );
 }
-
-export { TargetFields };

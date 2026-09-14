@@ -1,5 +1,4 @@
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
-import * as React from 'react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -49,7 +48,7 @@ export function toggleTheme() {
   applyTheme(next);
 }
 
-function ThemeToggle() {
+export function ThemeToggle() {
   // Starts null so the first client render matches the server's (no checkmark
   // rendered yet). The visible icon is driven by CSS, not by this state, so
   // the trigger is correct from the very first paint.
@@ -115,5 +114,3 @@ function ThemeToggle() {
     </DropdownMenu>
   );
 }
-
-export { ThemeToggle };

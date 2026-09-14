@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from 'react';
-import * as React from 'react';
 
 import { cn } from '~/lib/utils';
 
@@ -12,7 +11,7 @@ import { cn } from '~/lib/utils';
  * is for columns of numbers that have to line up vertically, like the user
  * table.
  */
-function Stat({
+export function Stat({
   label,
   value,
   hint,
@@ -35,5 +34,3 @@ function Stat({
     </div>
   );
 }
-
-export { Stat };

@@ -1,6 +1,5 @@
 import { Loader2Icon } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import * as React from 'react';
 import { useNavigation } from 'react-router';
 
 import { Button } from '~/components/ui/button';
@@ -28,7 +27,7 @@ type SubmitButtonProps = ComponentProps<typeof Button> & {
  * A submit button that shows it is working. Purely presentational - the form
  * still submits exactly as it did before.
  */
-function SubmitButton({
+export function SubmitButton({
   pending: pendingProp,
   match,
   pendingLabel = 'Working…',
@@ -68,5 +67,3 @@ function SubmitButton({
     </Button>
   );
 }
-
-export { SubmitButton };

@@ -1,25 +1,24 @@
 'use client';
 
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
-import * as React from 'react';
 import type { ComponentProps } from 'react';
 
 import { buttonVariants } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
 
-function AlertDialog({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Root>) {
+export function AlertDialog({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Root>) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
-function AlertDialogTrigger({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+export function AlertDialogTrigger({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
   return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
 }
 
-function AlertDialogPortal({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Portal>) {
+export function AlertDialogPortal({ ...props }: ComponentProps<typeof AlertDialogPrimitive.Portal>) {
   return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
 }
 
-function AlertDialogOverlay({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+export function AlertDialogOverlay({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
   return (
     <AlertDialogPrimitive.Overlay
       data-slot="alert-dialog-overlay"
@@ -32,7 +31,7 @@ function AlertDialogOverlay({ className, ...props }: ComponentProps<typeof Alert
   );
 }
 
-function AlertDialogContent({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Content>) {
+export function AlertDialogContent({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -48,11 +47,11 @@ function AlertDialogContent({ className, ...props }: ComponentProps<typeof Alert
   );
 }
 
-function AlertDialogHeader({ className, ...props }: ComponentProps<'div'>) {
+export function AlertDialogHeader({ className, ...props }: ComponentProps<'div'>) {
   return <div data-slot="alert-dialog-header" className={cn('flex flex-col gap-2', className)} {...props} />;
 }
 
-function AlertDialogFooter({ className, ...props }: ComponentProps<'div'>) {
+export function AlertDialogFooter({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="alert-dialog-footer"
@@ -62,7 +61,7 @@ function AlertDialogFooter({ className, ...props }: ComponentProps<'div'>) {
   );
 }
 
-function AlertDialogTitle({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Title>) {
+export function AlertDialogTitle({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Title>) {
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
@@ -72,7 +71,7 @@ function AlertDialogTitle({ className, ...props }: ComponentProps<typeof AlertDi
   );
 }
 
-function AlertDialogDescription({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Description>) {
+export function AlertDialogDescription({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Description>) {
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
@@ -82,7 +81,7 @@ function AlertDialogDescription({ className, ...props }: ComponentProps<typeof A
   );
 }
 
-function AlertDialogAction({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Action>) {
+export function AlertDialogAction({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Action>) {
   return (
     <AlertDialogPrimitive.Action
       data-slot="alert-dialog-action"
@@ -92,7 +91,7 @@ function AlertDialogAction({ className, ...props }: ComponentProps<typeof AlertD
   );
 }
 
-function AlertDialogCancel({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
+export function AlertDialogCancel({ className, ...props }: ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
   return (
     <AlertDialogPrimitive.Cancel
       data-slot="alert-dialog-cancel"
@@ -101,17 +100,3 @@ function AlertDialogCancel({ className, ...props }: ComponentProps<typeof AlertD
     />
   );
 }
-
-export {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  AlertDialogPortal,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-};

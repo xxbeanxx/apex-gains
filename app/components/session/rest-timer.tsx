@@ -46,7 +46,15 @@ function writeDeadline(key: string, deadline: number | null): void {
  * wall clock, so the timer stays correct across a navigation or a
  * backgrounded tab rather than resuming from a stale countdown.
  */
-function RestTimer({ exerciseId, restSeconds, signal }: { exerciseId: string; restSeconds: number | null; signal: number }) {
+export function RestTimer({
+  exerciseId,
+  restSeconds,
+  signal,
+}: {
+  exerciseId: string;
+  restSeconds: number | null;
+  signal: number;
+}) {
   const key = storageKey(exerciseId);
 
   // Every render before hydration must match the server's, which has no
@@ -123,5 +131,3 @@ function RestTimer({ exerciseId, restSeconds, signal }: { exerciseId: string; re
     </div>
   );
 }
-
-export { RestTimer };

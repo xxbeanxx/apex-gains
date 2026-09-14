@@ -10,7 +10,7 @@ import { cn } from '~/lib/utils';
  * the canvas's own rows, and this pane renders alongside the canvas at the
  * same viewport widths, so a literal `<ol>` here would double every match.
  */
-function BuilderOutline({ children }: { children: ReactNode }) {
+export function BuilderOutline({ children }: { children: ReactNode }) {
   return (
     <div
       role="list"
@@ -25,7 +25,7 @@ function BuilderOutline({ children }: { children: ReactNode }) {
  * One outline entry. `active` marks the one row worth calling out - the
  * plan builder's next slot to come up - and is otherwise omitted.
  */
-function BuilderOutlineItem({
+export function BuilderOutlineItem({
   position,
   label,
   sublabel,
@@ -63,5 +63,3 @@ function BuilderOutlineItem({
     </div>
   );
 }
-
-export { BuilderOutline, BuilderOutlineItem };

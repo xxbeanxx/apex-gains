@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover
  * an uncontrolled `Input` to reset it after the value it was seeded from
  * changes underneath it.
  */
-function DateField({
+export function DateField({
   name,
   label,
   today,
@@ -76,5 +76,3 @@ function DateField({
     </Field>
   );
 }
-
-export { DateField };

@@ -1,6 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import * as React from 'react';
 
 import { cn } from '~/lib/utils';
 
@@ -8,7 +7,7 @@ import { cn } from '~/lib/utils';
  * The "nothing here yet" state. Replaces bare grey sentences with something
  * that reads as a deliberate destination and offers the next action.
  */
-function EmptyState({
+export function EmptyState({
   icon: Icon,
   title,
   description,
@@ -46,5 +45,3 @@ function EmptyState({
     </div>
   );
 }
-
-export { EmptyState };

@@ -9,7 +9,7 @@ import { NO_MUSCLE_GROUP } from '~/routes/exercises';
 /**
  * Every id here comes from `Field`'s `useId`, so rendering this block twice on one page - the create form and an edit dialog - never produces colliding ids or labels pointing at the wrong input.
  */
-function ExerciseDetailsFields({
+export function ExerciseDetailsFields({
   defaultValues,
   error,
 }: {
@@ -67,5 +67,3 @@ function ExerciseDetailsFields({
     </div>
   );
 }
-
-export { ExerciseDetailsFields };

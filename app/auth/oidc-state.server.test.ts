@@ -42,6 +42,7 @@ describe('oidc-state', () => {
       state: 'state-abc',
       redirectTo: '/today',
     });
+
     const tampered = cookieHeader.replace('__oidc_state=', '__oidc_state=x');
 
     expect(await parseOidcState(cookie, tampered)).toBeNull();
@@ -49,6 +50,7 @@ describe('oidc-state', () => {
 
   it('clears the cookie with maxAge 0', async () => {
     const cleared = await clearOidcState(cookie);
+
     expect(cleared).toMatch(/^__oidc_state=;/);
     expect(cleared).toMatch(/Max-Age=0/);
   });

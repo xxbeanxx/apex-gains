@@ -51,7 +51,7 @@ function EquipmentCheckboxRow({
 /**
  * Name/type/muscle/description, equipment links, and - for a customized copy - reverting to the sample.
  */
-function ExerciseEditorDialog({
+export function ExerciseEditorDialog({
   exercise,
   allEquipment,
   open,
@@ -139,5 +139,3 @@ function ExerciseEditorDialog({
     </Dialog>
   );
 }
-
-export { ExerciseEditorDialog };

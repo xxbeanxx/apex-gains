@@ -6,7 +6,7 @@ import { Badge } from '~/components/ui/badge';
 import { Card, CardContent } from '~/components/ui/card';
 import { typeLabels } from '~/routes/exercises';
 
-function ExerciseCard({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
+export function ExerciseCard({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
   return (
     <Card>
       <CardContent className="flex items-start gap-2 py-3">
@@ -30,5 +30,3 @@ function ExerciseCard({ exercise, allEquipment }: { exercise: ExerciseView; allE
     </Card>
   );
 }
-
-export { ExerciseCard };

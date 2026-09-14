@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Athlete } from '~domain/athlete/athlete';
 import { err, ok } from '~domain/shared/result';
+import { mock } from '~test/mock';
 
 import { type ForkableDetail, forkableDetail } from '~/lib/forkable-detail';
 import { type ForkableUseCases, forkableHandlers } from '~/lib/forkable-detail.server';
 import { dispatch } from '~/lib/intent.server';
-
-import { mock } from '../../test/mock';
 
 const page: ForkableDetail = forkableDetail({
   noun: 'Plan',
@@ -42,7 +41,10 @@ async function submit(
 ): Promise<unknown> {
   const body = new FormData();
   for (const [key, value] of Object.entries(fields)) body.append(key, value);
-  const request = new Request('http://localhost/plans/plan-1', { method: 'POST', body });
+  const request = new Request('http://localhost/plans/plan-1', {
+    method: 'POST',
+    body,
+  });
 
   try {
     return await dispatch(request, forkableHandlers(on, cases, { athlete, id: 'plan-1', log }));
@@ -85,7 +87,9 @@ describe('notFound', () => {
 
 describe('settle', () => {
   it('is ok when the edit applied in place', () => {
-    expect(page.settle({ ok: true, value: { forkedId: null } })).toEqual({ ok: true });
+    expect(page.settle({ ok: true, value: { forkedId: null } })).toEqual({
+      ok: true,
+    });
   });
 
   /**
@@ -117,7 +121,10 @@ describe('delete', () => {
   it('refuses a shared sample, tagged on the delete intent', async () => {
     const answer = await submit({ intent: 'delete' }, useCases({ remove: async () => err('sample' as const) }));
 
-    expect(dataOf(answer)).toEqual({ error: "Sample plans can't be deleted.", intent: 'delete' });
+    expect(dataOf(answer)).toEqual({
+      error: "Sample plans can't be deleted.",
+      intent: 'delete',
+    });
     expect(statusOf(answer)).toBe(400);
   });
 
@@ -139,7 +146,10 @@ describe('revert', () => {
   it('refuses a row that was never a copy of anything', async () => {
     const answer = await submit({ intent: 'revert' }, useCases({ revert: async () => err('nothing-to-revert' as const) }));
 
-    expect(dataOf(answer)).toEqual({ error: 'Nothing to revert', intent: 'revert' });
+    expect(dataOf(answer)).toEqual({
+      error: 'Nothing to revert',
+      intent: 'revert',
+    });
   });
 
   it('is a 404 when the row was not there', async () => {
@@ -208,7 +218,10 @@ describe('another page', () => {
     const deleted = await submit({ intent: 'delete' }, useCases(), log, workouts);
     const duplicated = await submit({ intent: 'duplicate' }, useCases(), log, workouts);
 
-    expect(dataOf(refused)).toEqual({ error: "Sample workouts can't be deleted.", intent: 'delete' });
+    expect(dataOf(refused)).toEqual({
+      error: "Sample workouts can't be deleted.",
+      intent: 'delete',
+    });
     expect(locationOf(deleted)).toBe('/workouts');
     expect(locationOf(duplicated)).toBe('/workouts/copy-1');
     expect(log).toHaveBeenCalledWith('deleted workout plan-1 for user user-1');

@@ -40,7 +40,7 @@ function NewExerciseForm({ onCreated }: { onCreated: () => void }) {
  * The form is only mounted while the dialog is open, which is what resets its
  * fetcher state between openings.
  */
-function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
+export function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
   const [open, setOpen] = useState(false);
   // Stable identity: the form has this in an effect's dependencies.
   const close = useCallback(() => setOpen(false), []);
@@ -58,5 +58,3 @@ function NewExerciseDialog({ trigger }: { trigger: ReactNode }) {
     </Dialog>
   );
 }
-
-export { NewExerciseDialog };

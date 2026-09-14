@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { type ReactElement, type ReactNode, cloneElement, useId } from 'react';
 
 import { Label } from '~/components/ui/label';
@@ -50,7 +49,7 @@ type FieldProps = {
  * pass a function for controls that need the id somewhere other than the root
  * (Radix `Select` puts it on `SelectTrigger`, not on `Select`).
  */
-function Field({ label, description, error, action, className, labelClassName, children }: FieldProps) {
+export function Field({ label, description, error, action, className, labelClassName, children }: FieldProps) {
   const reactId = useId();
   const id = `field-${reactId}`;
   const descriptionId = description ? `${id}-description` : undefined;
@@ -95,5 +94,3 @@ function Field({ label, description, error, action, className, labelClassName, c
     </div>
   );
 }
-
-export { Field };

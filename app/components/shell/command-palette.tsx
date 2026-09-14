@@ -1,5 +1,4 @@
 import { CalendarCheckIcon, ClipboardListIcon, DumbbellIcon, MoonIcon, RepeatIcon, SearchIcon } from 'lucide-react';
-import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -13,7 +12,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
  * fetcher without breaking the no-`useFetcher`-for-writes rule this shell
  * otherwise holds to - it just is not built yet.
  */
-function CommandPalette({ user }: { user: NavUser }) {
+export function CommandPalette({ user }: { user: NavUser }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -99,5 +98,3 @@ function CommandPalette({ user }: { user: NavUser }) {
     </>
   );
 }
-
-export { CommandPalette };

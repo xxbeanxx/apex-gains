@@ -56,7 +56,7 @@ function LoggedSetRow({
   );
 }
 
-function LoggedSetsList({ sets, date, removeSet }: { sets: LoggedSetView[]; date: string; removeSet: Intent<object> }) {
+export function LoggedSetsList({ sets, date, removeSet }: { sets: LoggedSetView[]; date: string; removeSet: Intent<object> }) {
   if (sets.length === 0) return null;
   return (
     <ol className="flex flex-col gap-1.5">
@@ -66,5 +66,3 @@ function LoggedSetsList({ sets, date, removeSet }: { sets: LoggedSetView[]; date
     </ol>
   );
 }
-
-export { LoggedSetsList };

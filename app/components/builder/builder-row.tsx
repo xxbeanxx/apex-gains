@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
  * and the disclosure opening. A page with nothing to edit on a row (the
  * plan builder's day slots) omits it.
  */
-function BuilderRow({
+export function BuilderRow({
   position,
   title,
   chips,
@@ -52,5 +52,3 @@ function BuilderRow({
     </li>
   );
 }
-
-export { BuilderRow };

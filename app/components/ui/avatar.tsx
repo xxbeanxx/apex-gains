@@ -14,7 +14,7 @@ function initial(name: string | null) {
  * Always `alt=""`: the name it stands for is rendered next to it everywhere
  * this appears, so announcing it again would only repeat the row.
  */
-function Avatar({
+export function Avatar({
   name,
   src,
   size = 28,
@@ -49,5 +49,3 @@ function Avatar({
     </span>
   );
 }
-
-export { Avatar };

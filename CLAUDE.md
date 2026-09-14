@@ -32,8 +32,8 @@ npm run db:seed      # seed/refresh the exercise library (idempotent)
 npm run db:studio    # open Drizzle Studio against the local database
 npm run dev          # dev server with HMR, http://localhost:3000/ (Nest + Vite middleware mode)
 npm run format:check # check formatting without writing
-npm run format:write # format the repo with oxfmt
-npm run lint         # lint with oxlint (type-aware)
+npm run format:fix   # format the repo with oxfmt
+npm run lint:check   # lint with oxlint (type-aware)
 npm run lint:fix     # apply oxlint's safe fixes
 npm run preview      # build, then serve it - what the e2e suite runs against
 npm run start        # serve the production build (node ./build/server/main.js)
@@ -45,8 +45,8 @@ npm run test:watch   # vitest in watch mode
 npm run typecheck    # react-router typegen, then tsc
 ```
 
-Run `npm run format:write` and `npm run lint` on any file you edit
-before finishing a task - CI runs `format:check` and `lint`, so an
+Run `npm run format:fix` and `npm run lint:check` on any file you edit
+before finishing a task - CI runs `format:check` and `lint:check`, so an
 unformatted file or a lint error fails the build. Formatting is oxfmt,
 configured in `.oxfmtrc.json`; it also sorts imports, using its built-in
 default groups. Linting is oxlint, configured in `.oxlintrc.json`: the
@@ -57,7 +57,7 @@ reconfigures carries a comment saying why; a genuine exception in code
 gets an `oxlint-disable` directive with its reason beside it, and an
 unused directive is itself an error. A promise deliberately left
 unawaited - `navigate()`, `fetcher.load()` - is marked with `void`.
-`format:check`, `lint`, `typecheck`, `check:architecture`, `test`,
+`format:check`, `lint:check`, `typecheck`, `check:architecture`, `test`,
 `test:contract` and `test:e2e` are the automated checks. Unit tests
 (vitest) live next to the code they cover as `*.test.ts`; `test/mock.ts` exports a
 `mock<T>(overrides)` helper for building partial test doubles without

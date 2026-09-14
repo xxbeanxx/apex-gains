@@ -8,7 +8,7 @@ import { Badge } from '~/components/ui/badge';
  * and the "Today" exercise cards both want this shape, `targetSummary`'s one
  * line is what the mobile card and history still use instead.
  */
-function TargetChips({ target }: { target: WorkoutExerciseView['target'] }) {
+export function TargetChips({ target }: { target: WorkoutExerciseView['target'] }) {
   if (!target) return null;
 
   const chips: string[] = [];
@@ -32,5 +32,3 @@ function TargetChips({ target }: { target: WorkoutExerciseView['target'] }) {
     </>
   );
 }
-
-export { TargetChips };

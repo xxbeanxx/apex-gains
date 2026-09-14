@@ -16,7 +16,7 @@ export type TabSection = {
  * survives a form submit's own page reload for free, and the whole switcher
  * still works with JavaScript disabled.
  */
-function TabShell({
+export function TabShell({
   sections,
   activeId,
   hrefFor,
@@ -52,5 +52,3 @@ function TabShell({
     </div>
   );
 }
-
-export { TabShell };

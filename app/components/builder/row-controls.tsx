@@ -28,7 +28,7 @@ type RowTarget = {
  * A row's up/down pair: two plain `<Form>`s posting `move` with a
  * `direction`, disabled at either end of the list.
  */
-function RowMoveButtons({
+export function RowMoveButtons({
   move,
   id,
   idField,
@@ -65,7 +65,7 @@ function RowMoveButtons({
  * same request cycle a literal form's own submit would make - a menu item
  * can't sit inside a form, and removing a row is one click on purpose.
  */
-function RowRemoveMenu({ remove, id, idField, label }: RowTarget & { remove: RowIntent }) {
+export function RowRemoveMenu({ remove, id, idField, label }: RowTarget & { remove: RowIntent }) {
   const submit = useSubmit();
 
   return (
@@ -87,5 +87,3 @@ function RowRemoveMenu({ remove, id, idField, label }: RowTarget & { remove: Row
     </DropdownMenu>
   );
 }
-
-export { RowMoveButtons, RowRemoveMenu };

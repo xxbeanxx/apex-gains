@@ -14,7 +14,7 @@ const POLL_INTERVAL_MS = 15 * 60 * 1000;
  * the document, so without this a tab left open across a deploy keeps
  * running a JS bundle whose chunks the new deploy no longer serves.
  */
-function VersionCheck({ initialBuildInfo }: { initialBuildInfo: string }) {
+export function VersionCheck({ initialBuildInfo }: { initialBuildInfo: string }) {
   const fetcher = useFetcher<BuildDetails>();
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
@@ -58,5 +58,3 @@ function VersionCheck({ initialBuildInfo }: { initialBuildInfo: string }) {
     </div>
   );
 }
-
-export { VersionCheck };

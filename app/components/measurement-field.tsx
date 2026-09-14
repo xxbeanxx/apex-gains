@@ -40,7 +40,7 @@ const SPECS: Record<
  * One measurement's labelled number input, posting under `name` - the name
  * `MeasurementFieldsDto` validates and the use case reads.
  */
-function MeasurementField({
+export function MeasurementField({
   name,
   defaultValue,
   ...units
@@ -61,7 +61,7 @@ function MeasurementField({
  * Every measurement as a hidden input, for a form that posts values it
  * already has rather than asking for them - applying a suggested target.
  */
-function MeasurementHiddenFields({ values }: { values: MeasurementValues }) {
+export function MeasurementHiddenFields({ values }: { values: MeasurementValues }) {
   return (
     <>
       {(Object.keys(SPECS) as MeasurementName[]).map((name) => (
@@ -70,5 +70,3 @@ function MeasurementHiddenFields({ values }: { values: MeasurementValues }) {
     </>
   );
 }
-
-export { MeasurementField, MeasurementHiddenFields };

@@ -1,5 +1,4 @@
 import { ChevronsLeftIcon, DumbbellIcon } from 'lucide-react';
-import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router';
 
@@ -98,7 +97,7 @@ function CollapseToggle() {
 /**
  * Desktop rail. Hidden below `md:`, where the bottom tab bar takes over.
  */
-function Sidebar({ items }: { items: NavItem[] }) {
+export function Sidebar({ items }: { items: NavItem[] }) {
   const groups = (['primary', 'training', 'account'] as const).map((group) => ({
     group,
     label: GROUP_LABEL[group],
@@ -133,5 +132,3 @@ function Sidebar({ items }: { items: NavItem[] }) {
     </aside>
   );
 }
-
-export { Sidebar };

@@ -6,7 +6,7 @@ import { Badge } from '~/components/ui/badge';
 import { TableCell, TableRow } from '~/components/ui/table';
 import { typeLabels } from '~/routes/exercises';
 
-function ExerciseTableRow({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
+export function ExerciseTableRow({ exercise, allEquipment }: { exercise: ExerciseView; allEquipment: EquipmentView[] }) {
   return (
     <TableRow>
       <TableCell className="font-medium">
@@ -32,5 +32,3 @@ function ExerciseTableRow({ exercise, allEquipment }: { exercise: ExerciseView; 
     </TableRow>
   );
 }
-
-export { ExerciseTableRow };
