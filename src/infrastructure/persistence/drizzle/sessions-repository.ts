@@ -100,7 +100,7 @@ export class DrizzleSessionsRepository implements SessionsRepository {
     const rows = await dbScope.query.sessions.findMany({
       where: eq(sessions.userId, userId),
       orderBy: desc(sessions.date),
-      limit,
+      limit: limit,
       with: withSets,
     });
     return rows.map(toSession);

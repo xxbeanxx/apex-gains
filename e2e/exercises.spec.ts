@@ -12,7 +12,7 @@ test.describe('exercise library', () => {
 
   test('creates a strength exercise and shows it in the library', async ({ page, athlete }) => {
     const name = uniqueName('Bench Press');
-    await createExercise(page, { name, muscleGroup: 'Chest', description: 'Press the handles forward.' });
+    await createExercise(page, { name: name, muscleGroup: 'Chest', description: 'Press the handles forward.' });
 
     const row = page.getByRole('row', { name: new RegExp(name) });
     await expect(row).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('exercise library', () => {
 
   test('shows an exercise’s type in its row', async ({ page, athlete }) => {
     const name = uniqueName('Treadmill Run');
-    await createExercise(page, { name, type: 'Cardio' });
+    await createExercise(page, { name: name, type: 'Cardio' });
 
     await expect(page.getByRole('row', { name: new RegExp(name) })).toContainText('Cardio');
   });
@@ -31,7 +31,7 @@ test.describe('exercise library', () => {
   test('edits an exercise through its editor dialog', async ({ page, athlete }) => {
     const name = uniqueName('Row');
     const renamed = uniqueName('Renamed Row');
-    await createExercise(page, { name });
+    await createExercise(page, { name: name });
 
     const dialog = await openExercise(page, name);
     await dialog.getByLabel('Name').fill(renamed);

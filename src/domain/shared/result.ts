@@ -17,9 +17,9 @@ export type Result<T, E extends string> = Ok<T> | Err<E>;
 export function ok(): Ok<void>;
 export function ok<T>(value: T): Ok<T>;
 export function ok<T>(value?: T): Ok<T | undefined> {
-  return { ok: true, value };
+  return { ok: true, value: value };
 }
 
 export function err<E extends string>(error: E): Err<E> {
-  return { ok: false, error };
+  return { ok: false, error: error };
 }

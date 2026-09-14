@@ -22,7 +22,7 @@ function athleteIn(timezone: string): Athlete {
     lengthUnit: 'in',
     showSampleData: true,
     defaultRestSeconds: null,
-    timezone,
+    timezone: timezone,
     isAdmin: false,
     createdAt: NOW,
     updatedAt: NOW,

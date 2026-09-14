@@ -29,7 +29,7 @@ export async function loader({ context }: Route.LoaderArgs) {
     context.get(trainingPlanServiceContext).planFor(athlete, today),
   ]);
 
-  return { name: athlete.name, dashboard, plan };
+  return { name: athlete.name, dashboard: dashboard, plan: plan };
 }
 
 const FEATURES = [

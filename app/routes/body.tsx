@@ -71,14 +71,14 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   if (isMeasurement(section)) {
     const log = await progressService.bodyMeasurementLog(athlete, section);
-    return { section, unit: log.unit, todayStr, entries: log.entries, series: log.series };
+    return { section: section, unit: log.unit, todayStr: todayStr, entries: log.entries, series: log.series };
   }
 
   const log = await progressService.bodyWeightLog(athlete);
   return {
-    section,
+    section: section,
     unit: log.unit,
-    todayStr,
+    todayStr: todayStr,
     entries: log.entries.map((entry) => ({ id: entry.id, date: entry.date, value: entry.weight })),
     series: log.series,
   };
@@ -295,7 +295,7 @@ function BodySection({ loaderData, actionData }: Pick<Route.ComponentProps, 'loa
 
 export default function Body({ loaderData, actionData }: Route.ComponentProps) {
   const sections: TabSection[] = SECTION_IDS.map((id) => ({
-    id,
+    id: id,
     label: SECTION_LABELS[id],
     content: id === loaderData.section ? <BodySection loaderData={loaderData} actionData={actionData} /> : null,
   }));

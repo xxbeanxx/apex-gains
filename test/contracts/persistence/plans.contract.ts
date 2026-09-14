@@ -9,7 +9,7 @@ export function describePlansContract(subject: ContractSubject): void {
     async function seedWorkouts(count: number): Promise<string[]> {
       const workoutIds = [ids.child, ids.otherChild, ids.extra].slice(0, count);
       for (const [index, id] of workoutIds.entries()) {
-        await repositories.workouts.save(workout({ id, name: `Workout ${index}` }));
+        await repositories.workouts.save(workout({ id: id, name: `Workout ${index}` }));
       }
       return workoutIds;
     }
@@ -37,7 +37,7 @@ export function describePlansContract(subject: ContractSubject): void {
         const full = await repositories.plans.listFor(ids.athlete, showSamples);
         const names = await repositories.plans.listNamesFor(ids.athlete, showSamples);
 
-        expect(names).toEqual(full.map(({ id, name }) => ({ id, name })));
+        expect(names).toEqual(full.map(({ id, name }) => ({ id: id, name: name })));
       }
     });
 

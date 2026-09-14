@@ -28,7 +28,7 @@ function plan(overrides: { id: string; userId: string | null; forkedFromId?: str
     shareToken: null,
     createdAt: NOW,
     updatedAt: NOW,
-    slots: (overrides.slots ?? []).map((id, position) => ({ id, position, workoutId: null })),
+    slots: (overrides.slots ?? []).map((id, position) => ({ id: id, position: position, workoutId: null })),
   });
 }
 

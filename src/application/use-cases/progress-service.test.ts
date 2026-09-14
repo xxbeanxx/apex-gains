@@ -82,7 +82,7 @@ beforeEach(() => {
 });
 
 async function openSession(date: string, isRestDay = false): Promise<Session> {
-  const opened = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay }, deps);
+  const opened = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay: isRestDay }, deps);
   return sessions.add(opened);
 }
 
@@ -232,7 +232,15 @@ describe('history', () => {
    */
   it('names the workout a session recorded, even a sample the athlete has since forked', async () => {
     const workout = (id: string, name: string, userId: string | null, forkedFromId: string | null) =>
-      Workout.fromSnapshot({ id, userId, forkedFromId, name, createdAt: NOW, updatedAt: NOW, exercises: [] });
+      Workout.fromSnapshot({
+        id: id,
+        userId: userId,
+        forkedFromId: forkedFromId,
+        name: name,
+        createdAt: NOW,
+        updatedAt: NOW,
+        exercises: [],
+      });
     await workouts.save(workout('sample-push', 'Push Day', null, null));
     await workouts.save(workout('my-push', 'My Push Day', 'user-1', 'sample-push'));
     await workouts.save(workout('sample-pull', 'Pull Day', null, null));

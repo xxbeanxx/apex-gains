@@ -54,7 +54,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
 
   const libraryService = context.get(exerciseLibraryServiceContext);
   return {
-    workout,
+    workout: workout,
     // Array, not the service's Map - loader data serializes like any other
     // return value, and every other id-keyed lookup on this page is
     // rebuilt into a Map client-side from an array the same way.
@@ -123,7 +123,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   return dispatch(request, [
     ...forkableHandlers(page, workoutService, {
-      athlete,
+      athlete: athlete,
       id: workoutId,
       log: (message) => requestLogger(context).log(message, 'Workouts'),
     }),
@@ -277,7 +277,7 @@ function ExercisePalette({
   );
 
   const typeOptions: FacetOption[] = EXERCISE_TYPES.map((value) => ({
-    value,
+    value: value,
     label: value === 'strength' ? 'Strength' : 'Cardio',
     count: exerciseList.filter((e) => e.exerciseType === value).length,
   }));
@@ -290,9 +290,9 @@ function ExercisePalette({
     }, new Map<string, { name: string; count: number }>());
 
   const equipmentOptions: FacetOption[] = Array.from(equipmentCounts, ([value, { name, count }]) => ({
-    value,
+    value: value,
     label: name,
-    count,
+    count: count,
   }));
 
   return (

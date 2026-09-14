@@ -70,5 +70,5 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   headers.append('Set-Cookie', await sessionStorage.commitSession(session));
   headers.append('Set-Cookie', await clearOidcState(oidcStateCookie));
 
-  return redirect(safeRedirect(state.redirectTo), { headers });
+  return redirect(safeRedirect(state.redirectTo), { headers: headers });
 }

@@ -41,11 +41,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const { athlete, isNew } = await context.get(athleteServiceContext).signInWithEmail(
     {
       googleSub: `test-login:${email}`,
-      email,
-      name,
+      email: email,
+      name: name,
       avatarUrl: null,
     },
-    { asAdministrator },
+    { asAdministrator: asAdministrator },
   );
 
   logger.log(`test login as ${isNew ? 'new' : 'existing'} user ${athlete.id}`, 'Auth');

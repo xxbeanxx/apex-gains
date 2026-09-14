@@ -74,7 +74,7 @@ function toSetInput(set: LoggedSet, preferences: AthletePreferences): SetInput {
     { reps: set.reps, weight: set.weight, duration: set.duration, speed: set.speed, resistance: set.resistanceLevel },
     preferences,
   );
-  return { reps, weight, durationMinutes, speed, resistance };
+  return { reps: reps, weight: weight, durationMinutes: durationMinutes, speed: speed, resistance: resistance };
 }
 
 export class SessionService {
@@ -178,12 +178,20 @@ export class SessionService {
       const { reps, weight, duration, speed, resistance } = toCanonical(input, athlete.preferences);
       session.logSet(
         exerciseId,
-        { reps, weight, duration, speed, resistance, notes: input.notes, rpe: input.rpe != null ? Rpe.of(input.rpe) : null },
+        {
+          reps: reps,
+          weight: weight,
+          duration: duration,
+          speed: speed,
+          resistance: resistance,
+          notes: input.notes,
+          rpe: input.rpe != null ? Rpe.of(input.rpe) : null,
+        },
         this.deps,
       );
 
       await this.sessions.save(session);
-      return ok({ date, sessionOpened: existing === null });
+      return ok({ date: date, sessionOpened: existing === null });
     });
   }
 

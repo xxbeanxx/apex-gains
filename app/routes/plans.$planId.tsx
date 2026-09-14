@@ -58,7 +58,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const shareUrl = plan.shareToken === null ? null : shareUrlFor(request, plan.shareToken);
 
   return {
-    plan,
+    plan: plan,
     workouts: await workoutService.listForPicker(athlete),
     share: shareUrl === null ? null : { url: shareUrl, qr: encodeQr(shareUrl) },
     todayStr: context.get(athleteCalendarContext).today(athlete).value,
@@ -135,7 +135,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   return dispatch(request, [
     ...forkableHandlers(page, planService, {
-      athlete,
+      athlete: athlete,
       id: planId,
       log: (message) => requestLogger(context).log(message, 'Plans'),
     }),

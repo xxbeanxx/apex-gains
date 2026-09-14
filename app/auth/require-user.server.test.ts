@@ -17,7 +17,7 @@ function argsFor(url: string, user: Athlete | null): MiddlewareArgs {
 
   return mock<MiddlewareArgs>({
     request: new Request(url),
-    context,
+    context: context,
     params: {},
   });
 }

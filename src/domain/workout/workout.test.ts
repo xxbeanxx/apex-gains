@@ -30,8 +30,8 @@ function withExercises(exerciseIds: string[], rest: Partial<WorkoutSnapshot> = {
       ...rest,
       exercises: exerciseIds.map((exerciseId, position) => ({
         id: `entry-${position}`,
-        exerciseId,
-        position,
+        exerciseId: exerciseId,
+        position: position,
         targetSets: null,
         targetReps: null,
         targetWeight: null,

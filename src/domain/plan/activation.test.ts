@@ -6,11 +6,11 @@ const NOW = new Date('2026-09-03T12:00:00Z');
 
 function plan(id: string, isActive = false): Plan {
   const snapshot: PlanSnapshot = {
-    id,
+    id: id,
     userId: 'user-1',
     forkedFromId: null,
     name: id,
-    isActive,
+    isActive: isActive,
     anchorDate: '2026-09-01',
     shareToken: null,
     createdAt: NOW,

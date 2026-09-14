@@ -87,7 +87,7 @@ export const ids = {
 
 export function athlete(id: string = ids.athlete, overrides: Partial<{ email: string; googleSub: string }> = {}): Athlete {
   return Athlete.fromSnapshot({
-    id,
+    id: id,
     googleSub: overrides.googleSub ?? `google-${id}`,
     email: overrides.email ?? `${id}@example.com`,
     name: 'Athlete',
@@ -165,9 +165,9 @@ export function session(overrides: Partial<SessionSnapshot> = {}): Session {
 
 export function weighIn(id: string, date: string, pounds: number, userId: string = ids.athlete): BodyWeightEntry {
   return BodyWeightEntry.fromSnapshot({
-    id,
-    userId,
-    date,
+    id: id,
+    userId: userId,
+    date: date,
     // The column is `numeric`, which postgres-js reads back as a string, so
     // a snapshot always carries the string form.
     weight: pounds.toFixed(2),
@@ -183,10 +183,10 @@ export function measurement(
   userId: string = ids.athlete,
 ): BodyMeasurement {
   return BodyMeasurement.fromSnapshot({
-    id,
-    userId,
-    date,
-    metric,
+    id: id,
+    userId: userId,
+    date: date,
+    metric: metric,
     // The column is `numeric`, which postgres-js reads back as a string, so
     // a snapshot always carries the string form.
     value: centimetres.toFixed(2),
@@ -195,7 +195,7 @@ export function measurement(
 }
 
 export function equipmentItem(id: string, name: string, userId: string | null = ids.athlete): Equipment {
-  return Equipment.fromSnapshot({ id, userId, name, cardioKind: null, createdAt: NOW });
+  return Equipment.fromSnapshot({ id: id, userId: userId, name: name, cardioKind: null, createdAt: NOW });
 }
 
 export function adminAction(

@@ -35,8 +35,8 @@ function EquipmentCheckboxRow({
           void fetcher.submit(
             {
               intent: intents.toggleExerciseEquipment.name,
-              exerciseId,
-              equipmentId,
+              exerciseId: exerciseId,
+              equipmentId: equipmentId,
               checked: String(isChecked),
             },
             { method: 'post' },

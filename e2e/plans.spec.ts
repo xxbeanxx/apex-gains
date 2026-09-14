@@ -16,7 +16,7 @@ test('creates a plan, inactive and empty', async ({ page, athlete }) => {
   const name = uniqueName('PPL');
   await createPlan(page, name);
 
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: name, exact: true })).toBeVisible();
   await expect(page.getByText('Inactive')).toBeVisible();
   await expect(page.getByText('No days yet')).toBeVisible();
 });
@@ -116,7 +116,7 @@ test('deletes a plan', async ({ page, athlete }) => {
   await submitForm(page.getByRole('alertdialog').getByRole('button', { name: 'Delete plan' }));
 
   await page.waitForURL('/plans');
-  await expect(page.getByRole('link', { name })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: name })).toHaveCount(0);
 });
 
 test('duplicates a plan from its detail header, keeping its days', async ({ page, athlete }) => {
@@ -140,7 +140,7 @@ test('duplicates a plan from its detail header, keeping its days', async ({ page
   // an exact link name, not `hasText` - a substring match on the plan's own
   // name would also catch its "(copy)" row.
   await page.goto('/plans');
-  const sourceRow = page.getByRole('listitem').filter({ has: page.getByRole('link', { name, exact: true }) });
+  const sourceRow = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: name, exact: true }) });
   await expect(sourceRow.getByText('Active', { exact: true })).toBeVisible();
 });
 

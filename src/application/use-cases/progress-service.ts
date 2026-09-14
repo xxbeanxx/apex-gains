@@ -268,7 +268,7 @@ export class ProgressService {
 
       muscleBalance: muscleGroupBalance(history, MUSCLE_BALANCE_DAYS, today).map((point) => ({ ...point })),
 
-      bodyWeight,
+      bodyWeight: bodyWeight,
     };
   }
 
@@ -277,7 +277,7 @@ export class ProgressService {
     const unit = athlete.preferences.weightUnit;
 
     return {
-      unit,
+      unit: unit,
       // Newest first for the table.
       entries: entries.map((entry) => ({
         id: entry.id,
@@ -305,7 +305,7 @@ export class ProgressService {
       exerciseId: 'body-weight',
       exerciseName: 'Body weight',
       metricLabel: 'Body weight',
-      unit,
+      unit: unit,
       // Oldest first for the trend line; the repository returns newest first.
       points: [...entries].reverse().map((entry) => ({
         date: entry.date.value,
@@ -319,7 +319,7 @@ export class ProgressService {
     const unit = athlete.preferences.lengthUnit;
 
     return {
-      unit,
+      unit: unit,
       // Newest first for the table.
       entries: entries.map((entry) => ({
         id: entry.id,
@@ -350,7 +350,7 @@ export class ProgressService {
       exerciseId: `body-${metric}`,
       exerciseName: label,
       metricLabel: label,
-      unit,
+      unit: unit,
       // Oldest first for the trend line; the repository returns newest first.
       points: [...entries].reverse().map((entry) => ({
         date: entry.date.value,

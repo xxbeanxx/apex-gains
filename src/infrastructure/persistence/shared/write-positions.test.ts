@@ -19,7 +19,7 @@ function applyTo(initial: Record<string, number>) {
     rows.set(id, position);
   };
 
-  return { rows, collisions, update };
+  return { rows: rows, collisions: collisions, update: update };
 }
 
 describe('writePositions', () => {

@@ -30,9 +30,9 @@ function argsWithContext(
     request: new Request('http://localhost/today', {
       headers: { Cookie: '__session=abc' },
     }),
-    context,
+    context: context,
   });
-  return { args, context };
+  return { args: args, context: context };
 }
 
 const noopNext = async () => undefined;

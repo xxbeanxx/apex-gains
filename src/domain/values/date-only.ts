@@ -70,7 +70,7 @@ export class DateOnly {
    */
   static today(now: Date, timeZone: string = DEFAULT_TIMEZONE): DateOnly {
     return new DateOnly(
-      new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now),
+      new Intl.DateTimeFormat('en-CA', { timeZone: timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now),
     );
   }
 
@@ -98,7 +98,7 @@ export class DateOnly {
    * A `length`-long run of consecutive days starting here.
    */
   range(length: number): DateOnly[] {
-    return Array.from({ length }, (_, i) => this.plusDays(i));
+    return Array.from({ length: length }, (_, i) => this.plusDays(i));
   }
 
   /**

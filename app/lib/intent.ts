@@ -103,9 +103,9 @@ export function intent<T extends object>(
   const options = (typeof schemaOrOptions === 'function' ? maybeOptions : schemaOrOptions) ?? {};
 
   return {
-    name,
-    schema,
-    options,
+    name: name,
+    schema: schema,
+    options: options,
     field: { type: 'hidden', name: 'intent', value: name },
     match: { intent: name },
     reject: (message) => data({ error: message, intent: name }, { status: 400 }),

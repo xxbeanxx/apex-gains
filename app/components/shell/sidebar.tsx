@@ -101,7 +101,7 @@ function CollapseToggle() {
  */
 export function Sidebar({ items }: { items: NavItem[] }) {
   const groups = (['primary', 'training', 'account'] as const).map((group) => ({
-    group,
+    group: group,
     label: GROUP_LABEL[group],
     items: items.filter((item) => item.group === group),
   }));

@@ -117,7 +117,7 @@ export async function createExercise(
   // The dialog closes itself only after the fetcher reports success, so this
   // is the signal that the exercise actually exists.
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('button', { name, exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: name, exact: false })).toBeVisible();
 }
 
 /**
@@ -156,7 +156,7 @@ export async function openEquipmentDialog(page: Page): Promise<void> {
  * Opens an exercise's editor from its row in the library list.
  */
 export function exerciseDialog(page: Page, name: string): Locator {
-  return page.getByRole('dialog').filter({ has: page.getByRole('heading', { name, exact: true }) });
+  return page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: name, exact: true }) });
 }
 
 export async function openExercise(page: Page, name: string): Promise<Locator> {

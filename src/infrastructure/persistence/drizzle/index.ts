@@ -36,13 +36,13 @@ function getClient(): Db {
         'No database connection configured - set DATABASE_URL, or call ' + 'configureDatabase() during server bootstrap.',
       );
     }
-    client = drizzle(postgres(url), { schema });
+    client = drizzle(postgres(url), { schema: schema });
   }
   return client;
 }
 
 export const db: Db = new Proxy({} as Db, {
-  get(_target, prop, receiver) {
+  get: function (_target, prop, receiver) {
     return Reflect.get(getClient(), prop, receiver);
   },
 });
@@ -63,7 +63,7 @@ export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * adapters never touch.
  */
 export const dbScope: Db = new Proxy({} as Db, {
-  get(_target, prop, receiver) {
+  get: function (_target, prop, receiver) {
     const scope = currentTransaction() ?? getClient();
     return Reflect.get(scope, prop, receiver);
   },

@@ -52,7 +52,15 @@ function activePlan(overrides: Partial<PlanSnapshot> = {}): Plan {
 }
 
 function workout(id: string, name: string, userId: string | null = 'user-1', forkedFromId: string | null = null): Workout {
-  return Workout.fromSnapshot({ id, userId, forkedFromId, name, createdAt: NOW, updatedAt: NOW, exercises: [] });
+  return Workout.fromSnapshot({
+    id: id,
+    userId: userId,
+    forkedFromId: forkedFromId,
+    name: name,
+    createdAt: NOW,
+    updatedAt: NOW,
+    exercises: [],
+  });
 }
 
 function summary(day: ScheduledDay): string {

@@ -11,7 +11,7 @@ export function describeWorkoutsContract(subject: ContractSubject): void {
     async function seedExercises(count: number): Promise<string[]> {
       const exerciseIds = [ids.child, ids.otherChild, ids.extra].slice(0, count);
       for (const [index, id] of exerciseIds.entries()) {
-        await repositories.exercises.save(exercise({ id, name: `Exercise ${index}` }));
+        await repositories.exercises.save(exercise({ id: id, name: `Exercise ${index}` }));
       }
       return exerciseIds;
     }
@@ -79,7 +79,7 @@ export function describeWorkoutsContract(subject: ContractSubject): void {
         const full = await repositories.workouts.listFor(ids.athlete, showSamples);
         const names = await repositories.workouts.listNamesFor(ids.athlete, showSamples);
 
-        expect(names).toEqual(full.map(({ id, name }) => ({ id, name })));
+        expect(names).toEqual(full.map(({ id, name }) => ({ id: id, name: name })));
       }
     });
 

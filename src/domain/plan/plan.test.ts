@@ -30,8 +30,8 @@ function withSlots(workoutIds: (string | null)[], rest: Partial<PlanSnapshot> = 
       ...rest,
       slots: workoutIds.map((workoutId, position) => ({
         id: `slot-${position}`,
-        position,
-        workoutId,
+        position: position,
+        workoutId: workoutId,
       })),
     }),
   );

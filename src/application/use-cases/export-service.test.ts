@@ -98,7 +98,7 @@ async function seedTraining(): Promise<{ exercise: Exercise }> {
 
   await bodyWeight.save(BodyWeightEntry.record('user-1', DateOnly.parse('2026-09-03'), Weight.lb(180), deps));
 
-  return { exercise };
+  return { exercise: exercise };
 }
 
 describe('snapshot', () => {
@@ -181,10 +181,10 @@ describe('snapshot', () => {
   it('carries each sample exercise and workout their data names, marked as samples, so every id resolves', async () => {
     const sampleExercise = (id: string, name: string) =>
       Exercise.fromSnapshot({
-        id,
+        id: id,
         userId: null,
         forkedFromId: null,
-        name,
+        name: name,
         exerciseType: 'strength',
         muscleGroup: null,
         description: null,
@@ -218,8 +218,12 @@ describe('snapshot', () => {
 
     const snapshot = await service.snapshot(athlete);
 
-    expect(snapshot.workouts.map(({ id, isSample }) => ({ id, isSample }))).toEqual([{ id: 'sample-push', isSample: true }]);
-    expect(snapshot.exercises.map(({ id, isSample }) => ({ id, isSample })).sort((a, b) => a.id.localeCompare(b.id))).toEqual([
+    expect(snapshot.workouts.map(({ id, isSample }) => ({ id: id, isSample: isSample }))).toEqual([
+      { id: 'sample-push', isSample: true },
+    ]);
+    expect(
+      snapshot.exercises.map(({ id, isSample }) => ({ id: id, isSample: isSample })).sort((a, b) => a.id.localeCompare(b.id)),
+    ).toEqual([
       { id: 'sample-bench', isSample: true },
       { id: 'sample-row', isSample: true },
     ]);

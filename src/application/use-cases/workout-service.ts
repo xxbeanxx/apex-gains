@@ -252,7 +252,7 @@ export class WorkoutService {
           continue;
         }
 
-        session = { date, sets: [] };
+        session = { date: date, sets: [] };
         byDate.set(date.value, session);
         sessions.push(session);
       }

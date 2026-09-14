@@ -4,7 +4,7 @@ import { OrderedChildren } from '~domain/shared/ordered';
 type Child = { id: string; position: number };
 
 function child(id: string, position: number): Child {
-  return { id, position };
+  return { id: id, position: position };
 }
 
 function positionsOf(children: OrderedChildren<Child>) {

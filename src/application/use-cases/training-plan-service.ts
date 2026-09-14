@@ -111,7 +111,9 @@ export class TrainingPlanService {
 
     return days.map((day, i): WeekPlanDay => {
       const date = dates[i]!.value;
-      return day.type === 'workout' ? { date, type: 'workout', workoutName: day.workout.name } : { date, type: day.type };
+      return day.type === 'workout'
+        ? { date: date, type: 'workout', workoutName: day.workout.name }
+        : { date: date, type: day.type };
     });
   }
 

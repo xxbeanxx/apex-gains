@@ -13,5 +13,5 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const logService = context.get(sessionServiceContext);
   const sets = await logService.recentSetsFor(athlete, params.exerciseId, RECENT_SETS_LIMIT);
-  return { sets };
+  return { sets: sets };
 }

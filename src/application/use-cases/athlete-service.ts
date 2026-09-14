@@ -134,7 +134,7 @@ export class AthleteService {
       }
 
       await this.athletes.save(athlete);
-      return { athlete, isNew: true };
+      return { athlete: athlete, isNew: true };
     });
   }
 }

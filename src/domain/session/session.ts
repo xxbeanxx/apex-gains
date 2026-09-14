@@ -134,7 +134,7 @@ export class Session {
     const now = deps.clock.now();
     const set = LoggedSet.of({
       id: deps.ids.next(),
-      exerciseId,
+      exerciseId: exerciseId,
       setNumber: this.setsFor(exerciseId).length + 1,
       reps: measurements.reps ?? null,
       weight: measurements.weight ?? null,

@@ -12,7 +12,7 @@ const DATE = DateOnly.parse('2026-09-03');
 const deps = () => ({ ids: sequentialIds('set'), clock: fixedClock(NOW) });
 
 function openSession(isRestDay = false) {
-  return Session.open('user-1', DATE, { planId: 'plan-1', workoutId: 'workout-1', isRestDay }, deps());
+  return Session.open('user-1', DATE, { planId: 'plan-1', workoutId: 'workout-1', isRestDay: isRestDay }, deps());
 }
 
 describe('set numbering', () => {
@@ -33,7 +33,7 @@ describe('set numbering', () => {
     const shared = deps();
 
     for (const reps of [12, 10, 8, 6]) {
-      session.logSet('bench', { reps }, shared);
+      session.logSet('bench', { reps: reps }, shared);
     }
 
     expect(session.setsFor('bench').map((s) => `${s.setNumber}x${s.reps}`)).toEqual(['1x12', '2x10', '3x8', '4x6']);

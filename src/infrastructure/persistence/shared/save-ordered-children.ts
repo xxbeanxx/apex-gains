@@ -64,7 +64,7 @@ export async function saveOrderedChildren<T extends { id: string; position: numb
   }
 
   await writePositions(new Map(existing.map((row) => [row.id, row.position])), diff.updated, (id, position) =>
-    dbScope.update(columns.table).set({ position }).where(eq(columns.id, id)),
+    dbScope.update(columns.table).set({ position: position }).where(eq(columns.id, id)),
   );
 
   if (diff.inserted.length > 0) {

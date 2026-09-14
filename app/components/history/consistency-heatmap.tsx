@@ -55,7 +55,7 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
 
   const monthLabels = Array.from({ length: weeks }, (_, col) => col)
     .filter((col) => col === 0 || days[col * 7].date.slice(0, 7) !== days[(col - 1) * 7].date.slice(0, 7))
-    .map((col) => ({ col, label: shortMonthLabel(days[col * 7].date) }));
+    .map((col) => ({ col: col, label: shortMonthLabel(days[col * 7].date) }));
 
   const hovered = hoveredIndex != null ? days[hoveredIndex] : null;
   const hoveredCol = hoveredIndex != null ? Math.floor(hoveredIndex / 7) : 0;

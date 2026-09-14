@@ -386,7 +386,7 @@ const seedPlan = {
 async function seed() {
   await db
     .insert(equipment)
-    .values(equipmentNames.map((name) => ({ name, cardioKind: cardioKindByEquipmentName[name] })))
+    .values(equipmentNames.map((name) => ({ name: name, cardioKind: cardioKindByEquipmentName[name] })))
     .onConflictDoUpdate({
       target: equipment.name,
       set: { cardioKind: sql`excluded.cardio_kind` },
@@ -418,7 +418,7 @@ async function seed() {
     }
 
     return seedExercise.equipment.map((equipmentName) => ({
-      exerciseId,
+      exerciseId: exerciseId,
       equipmentId: equipmentIdByName.get(equipmentName)!,
     }));
   });
@@ -467,7 +467,7 @@ async function seed() {
       seedWorkout.exercises.map((te, position) => ({
         workoutId: workoutRow.id,
         exerciseId: exerciseIdByName.get(te.exerciseName)!,
-        position,
+        position: position,
         targetSets: te.targetSets ?? null,
         targetReps: te.targetReps ?? null,
         targetDurationSeconds: te.targetDurationSeconds ?? null,
@@ -498,7 +498,7 @@ async function seed() {
     await db.insert(planSlots).values(
       seedPlan.days.map((workoutName, position) => ({
         planId: planRow.id,
-        position,
+        position: position,
         workoutId: workoutName === null ? null : (workoutRowByName.get(workoutName)?.id ?? null),
       })),
     );

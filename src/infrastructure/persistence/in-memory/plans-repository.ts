@@ -20,7 +20,7 @@ export class InMemoryPlansRepository implements PlansRepository, AthleteOwned {
 
   async listNamesFor(userId: string, showSampleData: boolean): Promise<PlanName[]> {
     const plans = await this.listFor(userId, showSampleData);
-    return plans.map(({ id, name }) => ({ id, name }));
+    return plans.map(({ id, name }) => ({ id: id, name: name }));
   }
 
   async findVisible(userId: string, planId: string): Promise<Plan | null> {

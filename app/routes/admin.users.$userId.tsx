@@ -57,7 +57,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   const requested = new URL(request.url).searchParams.get('section');
   const section = requested && validIds.includes(requested) ? requested : 'preferences';
 
-  return { account, section };
+  return { account: account, section: section };
 }
 
 const intents = {

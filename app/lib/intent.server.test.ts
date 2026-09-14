@@ -41,7 +41,7 @@ function post(fields: Record<string, string>): Request {
     body.append(key, value);
   }
 
-  return new Request('http://localhost/test', { method: 'POST', body });
+  return new Request('http://localhost/test', { method: 'POST', body: body });
 }
 
 const rename = intent('rename', RenameDto);

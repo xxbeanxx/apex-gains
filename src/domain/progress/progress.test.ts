@@ -17,7 +17,7 @@ const NOW = new Date('2026-09-03T12:00:00Z');
 
 function exercise(id: string, overrides: Partial<ExerciseSnapshot> = {}): Exercise {
   return Exercise.fromSnapshot({
-    id,
+    id: id,
     userId: 'user-1',
     forkedFromId: null,
     name: id,
@@ -39,7 +39,7 @@ type SetSpec = {
 
 function session(date: string, sets: SetSpec[], isRestDay = false): Session {
   const deps = { ids: sequentialIds(`s-${date}`), clock: fixedClock(NOW) };
-  const built = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay }, deps);
+  const built = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay: isRestDay }, deps);
   for (const spec of sets) {
     built.logSet(
       spec.exerciseId,

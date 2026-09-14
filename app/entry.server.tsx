@@ -44,10 +44,10 @@ export default function handleRequest(
     let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(() => abort(), streamTimeout + 1000);
 
     const { pipe, abort } = renderToPipeableStream(<ServerRouter context={routerContext} url={request.url} />, {
-      [readyOption]() {
+      [readyOption]: function () {
         shellRendered = true;
         const body = new PassThrough({
-          final(callback) {
+          final: function (callback) {
             clearTimeout(timeoutId);
             timeoutId = undefined;
             callback();
@@ -62,10 +62,10 @@ export default function handleRequest(
 
         resolve(new Response(stream, { headers: responseHeaders, status: responseStatusCode }));
       },
-      onShellError(error: unknown) {
+      onShellError: function (error: unknown) {
         reject(error);
       },
-      onError(error: unknown) {
+      onError: function (error: unknown) {
         responseStatusCode = 500;
         // Log streaming rendering errors from inside the shell. Don't log
         // errors encountered during initial shell rendering since they'll

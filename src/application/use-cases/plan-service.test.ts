@@ -142,7 +142,15 @@ describe('editing a sample plan', () => {
 
 describe('detail', () => {
   function sampleWorkout(id: string, name: string, userId: string | null = null, forkedFromId: string | null = null) {
-    return Workout.fromSnapshot({ id, userId, forkedFromId, name, createdAt: NOW, updatedAt: NOW, exercises: [] });
+    return Workout.fromSnapshot({
+      id: id,
+      userId: userId,
+      forkedFromId: forkedFromId,
+      name: name,
+      createdAt: NOW,
+      updatedAt: NOW,
+      exercises: [],
+    });
   }
 
   it('names the workout each slot trains, and leaves a rest day unnamed', async () => {
@@ -151,7 +159,13 @@ describe('detail', () => {
 
     const detail = await service.detail(athlete, 'sample-1');
 
-    expect(detail?.slots.map(({ workoutId, workoutName, isRestDay }) => ({ workoutId, workoutName, isRestDay }))).toEqual([
+    expect(
+      detail?.slots.map(({ workoutId, workoutName, isRestDay }) => ({
+        workoutId: workoutId,
+        workoutName: workoutName,
+        isRestDay: isRestDay,
+      })),
+    ).toEqual([
       { workoutId: 'workout-push', workoutName: 'Push', isRestDay: false },
       { workoutId: null, workoutName: null, isRestDay: true },
     ]);
@@ -358,7 +372,7 @@ describe('next occurrence dates', () => {
         id: 'own-1',
         userId: 'user-1',
         anchorDate: '2026-09-01',
-        slots: Array.from({ length: 6 }, (_, position) => ({ id: `slot-${position}`, position, workoutId: null })),
+        slots: Array.from({ length: 6 }, (_, position) => ({ id: `slot-${position}`, position: position, workoutId: null })),
       }),
     );
 

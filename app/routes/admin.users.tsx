@@ -50,7 +50,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const needle = query.toLowerCase();
 
   return {
-    query,
+    query: query,
     total: accounts.length,
     accounts: needle
       ? accounts.filter(
@@ -87,7 +87,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     'Admin',
   );
 
-  return { ok: true, name: outcome.value.name, isAdmin } as const;
+  return { ok: true, name: outcome.value.name, isAdmin: isAdmin } as const;
 }
 
 export default function AdminUsers({ loaderData, actionData }: Route.ComponentProps) {

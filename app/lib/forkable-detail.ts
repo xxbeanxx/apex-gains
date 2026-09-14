@@ -86,9 +86,9 @@ export function forkableDetail(page: { noun: string; indexPath: string; pathFor:
       rename: intent('rename', RenameDto, { invalidMessage: 'Invalid name' }),
     },
 
-    notFound,
+    notFound: notFound,
 
-    settle(outcome) {
+    settle: function (outcome) {
       if (!outcome.ok) {
         notFound();
       }

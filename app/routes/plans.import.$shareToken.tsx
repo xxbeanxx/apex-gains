@@ -58,7 +58,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     throw redirect(`/plans/${shared.ownPlanId}`);
   }
 
-  return { shared, todayStr: context.get(athleteCalendarContext).today(athlete).value };
+  return { shared: shared, todayStr: context.get(athleteCalendarContext).today(athlete).value };
 }
 
 class ImportPlanDto {

@@ -295,7 +295,7 @@ export class ForkableLibrary<A extends Forkable<A> & Renameable> extends Forkabl
 
       const forkedFromId = aggregate.forkedFromId;
       await this.library.delete(aggregate.id);
-      return ok({ forkedFromId });
+      return ok({ forkedFromId: forkedFromId });
     });
   }
 }

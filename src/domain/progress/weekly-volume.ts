@@ -57,7 +57,7 @@ function weekly<T>(
       throw new Error(`missing bucket for week ${weekStart.value}`);
     }
 
-    return { weekStart, value, isCurrentWeek: weekStart.equals(currentWeekStart) };
+    return { weekStart: weekStart, value: value, isCurrentWeek: weekStart.equals(currentWeekStart) };
   });
 }
 
@@ -87,11 +87,11 @@ export function consistencyCalendar(history: TrainingHistory, weeks: number, tod
     const session = byDate.get(date.value);
 
     if (!session) {
-      return { date, status: 'none' as const, setCount: 0 };
+      return { date: date, status: 'none' as const, setCount: 0 };
     }
 
     return {
-      date,
+      date: date,
       status: session.status,
       setCount: session.setCount,
     };

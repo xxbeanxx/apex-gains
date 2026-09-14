@@ -18,7 +18,7 @@ function athlete(weightUnit: 'lb' | 'kg' = 'lb'): Athlete {
     email: 'athlete@example.com',
     name: 'Athlete',
     avatarUrl: null,
-    weightUnit,
+    weightUnit: weightUnit,
     distanceUnit: 'km',
     lengthUnit: 'in',
     showSampleData: true,

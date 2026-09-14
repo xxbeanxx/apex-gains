@@ -20,7 +20,7 @@ function athlete(lengthUnit: 'cm' | 'in' = 'in'): Athlete {
     avatarUrl: null,
     weightUnit: 'lb',
     distanceUnit: 'km',
-    lengthUnit,
+    lengthUnit: lengthUnit,
     showSampleData: true,
     defaultRestSeconds: null,
     timezone: 'UTC',

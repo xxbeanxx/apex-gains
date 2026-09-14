@@ -29,7 +29,7 @@ function set(overrides: { reps?: number; weightLb?: number; minutes?: number; km
 }
 
 function session(date: string, sets: LoggedSet[]): RecentSession {
-  return { date: DateOnly.parse(date), sets };
+  return { date: DateOnly.parse(date), sets: sets };
 }
 
 const strengthTarget = SetTarget.of({ sets: 3, reps: 10, weight: Weight.lb(135) });

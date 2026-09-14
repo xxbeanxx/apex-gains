@@ -49,7 +49,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
     if (last?.month === month) {
       last.sessions.push(session);
     } else {
-      groups.push({ month, sessions: [session] });
+      groups.push({ month: month, sessions: [session] });
     }
   }
 

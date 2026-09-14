@@ -28,7 +28,7 @@ export class DrizzleAdminActionsRepository implements AdminActionsRepository {
   async listRecent(limit: number): Promise<AdminAction[]> {
     const rows = await dbScope.query.adminActions.findMany({
       orderBy: desc(adminActions.createdAt),
-      limit,
+      limit: limit,
     });
     return rows.map(toAdminAction);
   }

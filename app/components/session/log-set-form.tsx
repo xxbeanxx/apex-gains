@@ -66,7 +66,7 @@ export function LogSetForm({
   const pending = fetcher.state !== 'idle';
   const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
   const { showSpeed, showResistance } = active?.cardioFields ?? { showSpeed: true, showResistance: true };
-  const units = { weightUnit, distanceUnit };
+  const units = { weightUnit: weightUnit, distanceUnit: distanceUnit };
 
   const lastSet = active ? lastSets[active.id] : undefined;
   // The most recent set logged for this exercise today outranks "last time"

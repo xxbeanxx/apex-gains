@@ -45,7 +45,7 @@ test('adds an exercise and edits its target with JavaScript disabled', async ({ 
   const noJsContext = await browser.newContext({
     javaScriptEnabled: false,
     reducedMotion: 'reduce',
-    storageState,
+    storageState: storageState,
   });
   const page = await noJsContext.newPage();
 

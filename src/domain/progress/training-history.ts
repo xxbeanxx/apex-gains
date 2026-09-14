@@ -35,7 +35,7 @@ export class TrainingHistory {
   *entries(): Generator<{ session: Session; set: LoggedSet }> {
     for (const session of this.sessions) {
       for (const set of session.sets) {
-        yield { session, set };
+        yield { session: session, set: set };
       }
     }
   }

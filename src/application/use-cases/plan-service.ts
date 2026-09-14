@@ -189,7 +189,7 @@ export class PlanService {
       return ok<void>(undefined);
     });
 
-    return outcome.ok ? ok({ forkedId: outcome.value.forkedId, token }) : err(outcome.error);
+    return outcome.ok ? ok({ forkedId: outcome.value.forkedId, token: token }) : err(outcome.error);
   }
 
   /**

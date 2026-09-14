@@ -30,7 +30,7 @@ export function describeSessionsContract(subject: ContractSubject): void {
      * Opens a day and logs `count` sets of `exerciseId` against it.
      */
     async function logDay(sessionId: string, date: string, exerciseId: string, count: number, userId = ids.athlete) {
-      const opened = await repositories.sessions.add(session({ id: sessionId, userId, date }));
+      const opened = await repositories.sessions.add(session({ id: sessionId, userId: userId, date: date }));
       for (let n = 0; n < count; n++) {
         opened.logSet(exerciseId, { reps: 8 + n, weight: Weight.in('lb', 100 + n) }, deps);
       }
@@ -163,7 +163,7 @@ export function describeSessionsContract(subject: ContractSubject): void {
           [ids.extra, '2026-09-03'],
           [ids.child, '2026-09-02'],
         ] as const) {
-          await repositories.sessions.add(session({ id, date }));
+          await repositories.sessions.add(session({ id: id, date: date }));
         }
 
         const dates = (await repositories.sessions.listRecent(ids.athlete, 2)).map((found) => found.date.value);
@@ -185,7 +185,7 @@ export function describeSessionsContract(subject: ContractSubject): void {
           [ids.extra, '2026-09-03'],
           [ids.child, '2026-09-02'],
         ] as const) {
-          await repositories.sessions.add(session({ id, date }));
+          await repositories.sessions.add(session({ id: id, date: date }));
         }
 
         const dates = (await repositories.sessions.listAll(ids.athlete)).map((found) => found.date.value);
@@ -207,7 +207,7 @@ export function describeSessionsContract(subject: ContractSubject): void {
           [ids.extra, '2026-09-02'],
           [ids.child, '2026-09-03'],
         ] as const) {
-          await repositories.sessions.add(session({ id, date }));
+          await repositories.sessions.add(session({ id: id, date: date }));
         }
 
         const dates = (await repositories.sessions.listForDateRange(ids.athlete, day('2026-09-01'), day('2026-09-03'))).map(

@@ -59,7 +59,7 @@ export class GoogleIdentityAdapter implements GoogleIdentityProvider {
       state: state,
     });
 
-    return { authorizationUrl, codeVerifier, nonce, state };
+    return { authorizationUrl: authorizationUrl, codeVerifier: codeVerifier, nonce: nonce, state: state };
   }
 
   async completeLogin({

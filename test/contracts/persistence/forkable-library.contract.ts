@@ -31,7 +31,8 @@ type Library = {
 const libraries: Library[] = [
   {
     label: 'exercises',
-    make: (id, userId, forkedFromId = null) => exercise({ id, userId, forkedFromId, name: `Exercise ${id.slice(0, 4)}` }),
+    make: (id, userId, forkedFromId = null) =>
+      exercise({ id: id, userId: userId, forkedFromId: forkedFromId, name: `Exercise ${id.slice(0, 4)}` }),
     save: (r, a) => r.exercises.save(a as never),
     listFor: (r, userId, show) => r.exercises.listFor(userId, show),
     findVisible: (r, userId, id) => r.exercises.findVisible(userId, id),
@@ -40,7 +41,8 @@ const libraries: Library[] = [
   },
   {
     label: 'workouts',
-    make: (id, userId, forkedFromId = null) => workout({ id, userId, forkedFromId, name: `Workout ${id.slice(0, 4)}` }),
+    make: (id, userId, forkedFromId = null) =>
+      workout({ id: id, userId: userId, forkedFromId: forkedFromId, name: `Workout ${id.slice(0, 4)}` }),
     save: (r, a) => r.workouts.save(a as never),
     listFor: (r, userId, show) => r.workouts.listFor(userId, show),
     findVisible: (r, userId, id) => r.workouts.findVisible(userId, id),
@@ -49,7 +51,8 @@ const libraries: Library[] = [
   },
   {
     label: 'plans',
-    make: (id, userId, forkedFromId = null) => plan({ id, userId, forkedFromId, name: `Plan ${id.slice(0, 4)}` }),
+    make: (id, userId, forkedFromId = null) =>
+      plan({ id: id, userId: userId, forkedFromId: forkedFromId, name: `Plan ${id.slice(0, 4)}` }),
     save: (r, a) => r.plans.save(a as never),
     listFor: (r, userId, show) => r.plans.listFor(userId, show),
     findVisible: (r, userId, id) => r.plans.findVisible(userId, id),

@@ -26,7 +26,7 @@ export function TargetFields({
   defaultValues?: MeasurementValues | null;
 }) {
   const { showSpeed, showResistance } = cardioFields;
-  const units = { weightUnit, distanceUnit };
+  const units = { weightUnit: weightUnit, distanceUnit: distanceUnit };
 
   return (
     <>

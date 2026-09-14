@@ -21,7 +21,7 @@ export class InMemoryWorkoutsRepository implements WorkoutsRepository, ExerciseR
 
   async listNamesFor(userId: string, showSampleData: boolean): Promise<WorkoutName[]> {
     const workouts = await this.listFor(userId, showSampleData);
-    return workouts.map(({ id, name }) => ({ id, name }));
+    return workouts.map(({ id, name }) => ({ id: id, name: name }));
   }
 
   async findVisible(userId: string, workoutId: string): Promise<Workout | null> {

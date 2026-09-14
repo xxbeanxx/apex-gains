@@ -101,10 +101,10 @@ export function exerciseProgress(history: TrainingHistory): ExerciseProgress[] {
     }
 
     progress.push({
-      exerciseId,
+      exerciseId: exerciseId,
       exerciseName: group.name,
-      kind,
-      bestByDate,
+      kind: kind,
+      bestByDate: bestByDate,
     });
   }
 
@@ -139,7 +139,7 @@ export function progressSeries(history: TrainingHistory): ProgressSeries[] {
       exerciseName: progress.exerciseName,
       kind: progress.kind,
       points: [...progress.bestByDate.entries()]
-        .map(([date, value]) => ({ date, value }))
+        .map(([date, value]) => ({ date: date, value: value }))
         .sort((a, b) => (a.date < b.date ? -1 : 1)),
     }))
     .sort((a, b) => b.points.length - a.points.length);

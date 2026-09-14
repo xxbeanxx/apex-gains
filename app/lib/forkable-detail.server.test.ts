@@ -47,11 +47,11 @@ async function submit(
 
   const request = new Request('http://localhost/plans/plan-1', {
     method: 'POST',
-    body,
+    body: body,
   });
 
   try {
-    return await dispatch(request, forkableHandlers(on, cases, { athlete, id: 'plan-1', log }));
+    return await dispatch(request, forkableHandlers(on, cases, { athlete: athlete, id: 'plan-1', log: log }));
   } catch (thrown) {
     return thrown;
   }
@@ -188,7 +188,7 @@ describe('rename', () => {
   it('renames to the trimmed name, in place', async () => {
     const rename = vi.fn(async () => ok({ forkedId: null }));
 
-    const answer = await submit({ intent: 'rename', name: '  Push pull  ' }, useCases({ rename }));
+    const answer = await submit({ intent: 'rename', name: '  Push pull  ' }, useCases({ rename: rename }));
 
     expect(answer).toEqual({ ok: true });
     expect(rename).toHaveBeenCalledWith(athlete, 'plan-1', 'Push pull');
@@ -206,7 +206,7 @@ describe('rename', () => {
   it('refuses a blank name without calling the use case', async () => {
     const rename = vi.fn(async () => ok({ forkedId: null }));
 
-    const answer = await submit({ intent: 'rename', name: '   ' }, useCases({ rename }));
+    const answer = await submit({ intent: 'rename', name: '   ' }, useCases({ rename: rename }));
 
     expect(dataOf(answer)).toEqual({ error: 'Invalid name', intent: 'rename' });
     expect(rename).not.toHaveBeenCalled();

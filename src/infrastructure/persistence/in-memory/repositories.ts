@@ -54,15 +54,15 @@ export function inMemoryRepositories(): InMemoryRepositories {
   athletes.referencedBy(adminActions);
 
   return {
-    adminActions,
-    athletes,
-    bodyMeasurements,
-    bodyWeight,
-    equipment,
-    exercises,
-    plans,
-    sessions,
-    workouts,
+    adminActions: adminActions,
+    athletes: athletes,
+    bodyMeasurements: bodyMeasurements,
+    bodyWeight: bodyWeight,
+    equipment: equipment,
+    exercises: exercises,
+    plans: plans,
+    sessions: sessions,
+    workouts: workouts,
     unitOfWork: new InMemoryUnitOfWork(),
   };
 }

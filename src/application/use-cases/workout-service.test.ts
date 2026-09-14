@@ -358,7 +358,7 @@ describe('suggestions', () => {
   function logDay(date: string, measurements: { reps: number; weight: number }[]): Promise<void> {
     const day = Session.open('user-1', DateOnly.parse(date), { planId: null, workoutId: null, isRestDay: false }, deps);
     for (const { reps, weight } of measurements) {
-      day.logSet('exercise-1', { reps, weight: Weight.lb(weight) }, deps);
+      day.logSet('exercise-1', { reps: reps, weight: Weight.lb(weight) }, deps);
     }
     return sessions.save(day);
   }

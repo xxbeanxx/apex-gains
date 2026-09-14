@@ -77,12 +77,12 @@ export function getBuildDetails(): BuildDetails {
   const [, buildRevision, buildId] = match ?? [];
 
   return {
-    imageTag,
+    imageTag: imageTag,
     buildRevision: buildRevision ?? (imageTag !== 'unknown' ? imageTag : null),
     buildId: buildId ?? null,
     buildDate: buildId ? new Date(parseInt(buildId, 16) * 1000).toISOString() : null,
     nodeEnv: process.env.NODE_ENV ?? 'development',
     hostname: nodeOs.hostname(),
-    serverStartedAt,
+    serverStartedAt: serverStartedAt,
   };
 }

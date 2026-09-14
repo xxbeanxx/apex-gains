@@ -22,6 +22,8 @@ export default defineConfig({
     'jsx-a11y/prefer-tag-over-role': 'off',
     // Radix's Checkbox renders a <button>, which the rule cannot see through.
     'jsx-a11y/label-has-associated-control': ['error', { controlComponents: ['Checkbox'] }],
+    // Disallow method and property shorthand syntax for object literals
+    'object-shorthand': ['error', 'never'],
     // React Compiler rules. The app does not use the compiler, and both flag
     // deliberate patterns: reading storage in a mount effect so the first
     // client render matches the server's, and the latest-callback ref.

@@ -45,7 +45,7 @@ function groupByRegion(zones: readonly string[]): ReadonlyArray<{ region: string
   }
   return [...groups.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([region, zoneList]) => ({ region, zones: zoneList }));
+    .map(([region, zoneList]) => ({ region: region, zones: zoneList }));
 }
 
 /**

@@ -29,7 +29,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   return redirect(authorizationUrl.href, {
     headers: {
-      'Set-Cookie': await serializeOidcState(context.get(oidcStateCookieContext), { codeVerifier, nonce, state, redirectTo }),
+      'Set-Cookie': await serializeOidcState(context.get(oidcStateCookieContext), {
+        codeVerifier: codeVerifier,
+        nonce: nonce,
+        state: state,
+        redirectTo: redirectTo,
+      }),
     },
   });
 }

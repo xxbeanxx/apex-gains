@@ -56,7 +56,7 @@ function toView(exercise: Exercise, equipmentById: ReadonlyMap<string, Equipment
     description: exercise.description,
     isSample: exercise.ownership.isSample,
     canRevert: exercise.canRevert,
-    equipment,
+    equipment: equipment,
     cardioFields: cardioFieldsFor(equipment.map((item) => item.cardioKind)),
   };
 }

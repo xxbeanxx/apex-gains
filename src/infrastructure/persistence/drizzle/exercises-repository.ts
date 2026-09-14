@@ -164,7 +164,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
       await dbScope.insert(exerciseEquipment).values(
         snapshot.equipmentIds.map((equipmentId) => ({
           exerciseId: snapshot.id,
-          equipmentId,
+          equipmentId: equipmentId,
         })),
       );
     }

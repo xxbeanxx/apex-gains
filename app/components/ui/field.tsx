@@ -57,13 +57,13 @@ export function Field({ label, description, error, action, className, labelClass
   const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
   const invalid = Boolean(error);
 
-  const args: FieldRenderArgs = { id, describedBy, invalid };
+  const args: FieldRenderArgs = { id: id, describedBy: describedBy, invalid: invalid };
 
   const control =
     typeof children === 'function'
       ? children(args)
       : cloneElement(children, {
-          id,
+          'id': id,
           'aria-describedby': describedBy,
           'aria-invalid': invalid || undefined,
         });

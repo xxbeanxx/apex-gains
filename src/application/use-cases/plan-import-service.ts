@@ -204,7 +204,7 @@ export class PlanImportService {
       // which the importer cannot see - the slot renders as unknown rather
       // than pointing at somebody else's row.
       plan: shared.copyForImport(athlete.id, anchorDate, (id) => workoutIdFor.get(id) ?? id, this.deps),
-      workouts,
+      workouts: workouts,
       exercises: exerciseIdFor.created,
     };
   }
@@ -251,7 +251,7 @@ export class PlanImportService {
       created.push(copy);
     }
 
-    return { reuse, created };
+    return { reuse: reuse, created: created };
   }
 
   /**

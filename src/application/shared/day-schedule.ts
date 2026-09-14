@@ -62,7 +62,7 @@ export class DaySchedule {
     }
 
     const workoutIds = [...new Set(dates.flatMap((date) => workoutIdOn(plan, date) ?? []))];
-    const workouts = await this.references.forwardLooking(athlete.id, { workoutIds });
+    const workouts = await this.references.forwardLooking(athlete.id, { workoutIds: workoutIds });
 
     return dates.map((date): ScheduledDay => {
       const slot = plan.slotOn(date);
@@ -72,7 +72,7 @@ export class DaySchedule {
       }
 
       const workout = slot.workoutId === null ? null : workouts.workout(slot.workoutId);
-      return workout ? { type: 'workout', planId: plan.id, workout } : { type: 'rest', planId: plan.id };
+      return workout ? { type: 'workout', planId: plan.id, workout: workout } : { type: 'rest', planId: plan.id };
     });
   }
 }

@@ -65,7 +65,7 @@ test('creates a workout and lands on its detail page', async ({ page, athlete })
   const name = uniqueName('Push Day');
   await createWorkout(page, name);
 
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: name, exact: true })).toBeVisible();
   await expect(page.getByText('No exercises yet')).toBeVisible();
 });
 
@@ -74,7 +74,7 @@ test('lists a new workout back on the index', async ({ page, athlete }) => {
   await createWorkout(page, name);
 
   await page.goto('/workouts');
-  await expect(page.getByRole('link', { name })).toBeVisible();
+  await expect(page.getByRole('link', { name: name })).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: name })).toContainText('0 exercises');
 });
 
@@ -145,7 +145,7 @@ test('deletes a workout', async ({ page, athlete }) => {
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete workout' }).click();
 
   await page.waitForURL('/workouts');
-  await expect(page.getByRole('link', { name })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: name })).toHaveCount(0);
 });
 
 test('duplicates a workout from its detail header', async ({ page, athlete }) => {
@@ -165,7 +165,7 @@ test('duplicates a workout from its detail header', async ({ page, athlete }) =>
 
   // The source is untouched, still under its own name.
   await page.goto('/workouts');
-  await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: name, exact: true })).toBeVisible();
 });
 
 test('duplicates a workout from the list row menu, and numbers a second copy', async ({ page, athlete }) => {

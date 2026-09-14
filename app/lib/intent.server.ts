@@ -57,7 +57,7 @@ export function handled<T extends object, Result>(
 ): HandledIntent<Result> {
   return {
     intent: intent as Intent<never>,
-    async run(formData: FormData) {
+    run: async function (formData: FormData) {
       const { schema, options } = intent;
 
       if (!schema) {

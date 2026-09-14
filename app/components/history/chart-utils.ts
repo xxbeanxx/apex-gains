@@ -35,7 +35,7 @@ export function paddedAxis(dataMin: number, dataMax: number, targetTicks = 4): {
     ticks.push(Math.round(value * 1000) / 1000);
   }
 
-  return { domain: [min, max], ticks };
+  return { domain: [min, max], ticks: ticks };
 }
 
 /**

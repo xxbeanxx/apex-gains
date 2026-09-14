@@ -26,7 +26,7 @@ export function muscleGroupBalance(history: TrainingHistory, days: number, today
   }
 
   const sorted = [...counts.entries()]
-    .map(([muscleGroup, setCount]) => ({ muscleGroup, setCount }))
+    .map(([muscleGroup, setCount]) => ({ muscleGroup: muscleGroup, setCount: setCount }))
     .sort((a, b) => b.setCount - a.setCount);
 
   const top = sorted.slice(0, MAX_MUSCLE_GROUPS - 1);

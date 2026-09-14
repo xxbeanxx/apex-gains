@@ -30,7 +30,7 @@ export function DropdownMenu({ open: openProp, onOpenChange, ...props }: Compone
   );
 
   return (
-    <DropdownMenuOpenStateContext.Provider value={{ open, setOpen }}>
+    <DropdownMenuOpenStateContext.Provider value={{ open: open, setOpen: setOpen }}>
       <DropdownMenuPrimitive.Root data-slot="dropdown-menu" open={open} onOpenChange={setOpen} {...props} />
     </DropdownMenuOpenStateContext.Provider>
   );

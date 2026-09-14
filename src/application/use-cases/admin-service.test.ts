@@ -26,7 +26,7 @@ let service: AdminService;
 async function register(name: string, options: { isAdmin?: boolean; joinedDaysAgo?: number } = {}): Promise<Athlete> {
   const joinedAt = new Date(NOW.getTime() - (options.joinedDaysAgo ?? 0) * 86_400_000);
   const athlete = Athlete.register(
-    { googleSub: `google-${name}`, email: `${name}@example.com`.toLowerCase(), name, avatarUrl: null },
+    { googleSub: `google-${name}`, email: `${name}@example.com`.toLowerCase(), name: name, avatarUrl: null },
     { ids: deps.ids, clock: fixedClock(joinedAt) },
   );
   if (options.isAdmin) {
@@ -41,7 +41,7 @@ async function register(name: string, options: { isAdmin?: boolean; joinedDaysAg
  * Opens a day for an athlete and logs `setCount` sets into it.
  */
 async function train(athlete: Athlete, date: DateOnly, setCount: number, isRestDay = false): Promise<void> {
-  const session = Session.open(athlete.id, date, { planId: null, workoutId: null, isRestDay }, deps);
+  const session = Session.open(athlete.id, date, { planId: null, workoutId: null, isRestDay: isRestDay }, deps);
   for (let i = 0; i < setCount; i += 1) {
     session.logSet('exercise-1', { reps: 10 }, deps);
   }

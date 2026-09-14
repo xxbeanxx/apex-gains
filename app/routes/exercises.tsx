@@ -305,7 +305,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
 
   const typeCounts = countBy(poolForType, EXERCISE_TYPES, (e) => e.exerciseType);
   const typeOptions: FacetOption[] = EXERCISE_TYPES.map((value) => ({
-    value,
+    value: value,
     label: typeLabels[value],
     count: typeCounts[value],
   }));
@@ -319,7 +319,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
   const sourceValues: ExerciseSource[] = ['sample', 'mine', 'customized'];
   const sourceCounts = countBy(poolForSource, sourceValues, sourceOf);
   const sourceOptions: FacetOption[] = sourceValues.map((value) => ({
-    value,
+    value: value,
     label: SOURCE_LABEL[value],
     count: sourceCounts[value],
   }));
