@@ -36,7 +36,7 @@ test('adds an exercise and edits its target with JavaScript disabled', async ({ 
   const setupContext = await browser.newContext();
   const setupPage = await setupContext.newPage();
   await newAthlete(setupPage);
-  await createExercise(setupPage, { name: exercise, muscleGroup: 'chest' });
+  await createExercise(setupPage, { name: exercise, muscleGroup: 'Chest' });
   await createWorkout(setupPage, workout);
   const workoutUrl = setupPage.url();
   const storageState = await setupContext.storageState();

@@ -13,7 +13,7 @@ function snapshot(overrides: Partial<ExerciseSnapshot> = {}): ExerciseSnapshot {
     forkedFromId: null,
     name: 'Bench Press',
     exerciseType: 'strength',
-    muscleGroup: 'chest',
+    muscleGroup: 'Chest',
     description: null,
     createdAt: NOW,
     equipmentIds: [],
@@ -79,7 +79,7 @@ describe('fork on write', () => {
     copy.editable.updateDetails({
       name: 'My Bench',
       exerciseType: 'strength',
-      muscleGroup: 'chest',
+      muscleGroup: 'Chest',
       description: 'Wider grip',
     });
 
@@ -113,7 +113,7 @@ describe('ownership', () => {
       {
         name: 'Cable Crossover',
         exerciseType: 'strength',
-        muscleGroup: 'chest',
+        muscleGroup: 'Chest',
         description: null,
       },
       deps(),
@@ -132,7 +132,7 @@ describe('copy for import', () => {
     expect(copy.id).not.toBe('theirs');
     expect(copy.ownership.isOwnedBy('user-2')).toBe(true);
     expect(copy.name).toBe('Bench Press');
-    expect(copy.muscleGroup).toBe('chest');
+    expect(copy.muscleGroup).toBe('Chest');
     // Equipment names are globally unique, so a row is the same row for
     // everyone - the ids carry over rather than being remapped.
     expect(copy.equipmentIds).toEqual(['barbell', 'bench']);

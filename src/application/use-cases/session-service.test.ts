@@ -72,7 +72,7 @@ beforeEach(async () => {
       {
         name: 'Bench Press',
         exerciseType: 'strength',
-        muscleGroup: 'chest',
+        muscleGroup: 'Chest',
         description: null,
       },
       { ids: sequentialIds('bench'), clock: fixedClock(NOW) },

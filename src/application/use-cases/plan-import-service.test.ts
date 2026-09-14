@@ -66,7 +66,7 @@ async function seedSharedPlan(options: { exerciseForkedFrom?: string | null } = 
     forkedFromId: options.exerciseForkedFrom ?? null,
     name: 'Bench Press',
     exerciseType: 'strength',
-    muscleGroup: 'chest',
+    muscleGroup: 'Chest',
     description: null,
     createdAt: NOW,
     equipmentIds: ['barbell'],
@@ -225,7 +225,7 @@ describe('what an import reuses instead of copying', () => {
     const token = await seedSharedPlan();
     const mine = Exercise.create(
       importer.id,
-      { name: 'Bench Press', exerciseType: 'strength', muscleGroup: 'chest', description: null },
+      { name: 'Bench Press', exerciseType: 'strength', muscleGroup: 'Chest', description: null },
       deps('mine-exercise'),
     );
     await exercises.save(mine);
@@ -247,7 +247,7 @@ describe('what an import reuses instead of copying', () => {
       forkedFromId: null,
       name: 'Bench Press',
       exerciseType: 'strength',
-      muscleGroup: 'chest',
+      muscleGroup: 'Chest',
       description: null,
       createdAt: NOW,
       equipmentIds: [],
@@ -283,14 +283,14 @@ describe('what an import reuses instead of copying', () => {
       forkedFromId: null,
       name: 'Bench Press',
       exerciseType: 'strength',
-      muscleGroup: 'chest',
+      muscleGroup: 'Chest',
       description: null,
       createdAt: NOW,
       equipmentIds: [],
     });
     await exercises.save(sample);
     const myFork = sample.editableCopyFor(importer.id, deps('my-fork')).editable;
-    myFork.updateDetails({ name: 'Bench Press (mine)', exerciseType: 'strength', muscleGroup: 'chest', description: null });
+    myFork.updateDetails({ name: 'Bench Press (mine)', exerciseType: 'strength', muscleGroup: 'Chest', description: null });
     await exercises.save(myFork);
 
     // Dana shares a plan built on her own fork of the same sample.

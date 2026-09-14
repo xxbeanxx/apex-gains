@@ -24,7 +24,7 @@ import {
  * Builds a plan of one workout day and one rest day, and returns its share link.
  */
 async function shareAPlan(page: Page, names: { exercise: string; workout: string; plan: string }): Promise<string> {
-  await createExercise(page, { name: names.exercise, muscleGroup: 'chest' });
+  await createExercise(page, { name: names.exercise, muscleGroup: 'Chest' });
 
   await createWorkout(page, names.workout);
   await page.getByRole('button', { name: names.exercise, exact: true }).click();
@@ -152,7 +152,7 @@ test('reuses an exercise the importer already has under the same name', async ({
   const link = await shareAPlan(page, names);
 
   await newAthlete(page);
-  await createExercise(page, { name: names.exercise, muscleGroup: 'chest' });
+  await createExercise(page, { name: names.exercise, muscleGroup: 'Chest' });
 
   await page.goto(link);
   await expect(page.getByText('This also adds 1 workout to your library.')).toBeVisible();

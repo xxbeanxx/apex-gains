@@ -71,7 +71,7 @@ function exercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
     forkedFromId: null,
     name: 'Bench Press',
     exerciseType: 'strength',
-    muscleGroup: 'chest',
+    muscleGroup: 'Chest',
     description: null,
     createdAt: NOW,
     equipmentIds: [],

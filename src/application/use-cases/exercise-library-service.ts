@@ -8,6 +8,7 @@ import { type CardioFields, cardioFieldsFor } from '~domain/equipment/cardio-fie
 import { type CardioKind, Equipment } from '~domain/equipment/equipment';
 import { Exercise, type ExerciseDetails } from '~domain/exercise/exercise';
 import type { ExerciseType } from '~domain/exercise/exercise-type';
+import type { MuscleGroup } from '~domain/exercise/muscle-group';
 import { type Result, err, ok } from '~domain/shared/result';
 
 export type EquipmentView = {
@@ -21,7 +22,7 @@ export type ExerciseView = {
   id: string;
   name: string;
   exerciseType: ExerciseType;
-  muscleGroup: string | null;
+  muscleGroup: MuscleGroup | null;
   description: string | null;
   isSample: boolean;
   canRevert: boolean;

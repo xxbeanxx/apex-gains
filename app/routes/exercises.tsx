@@ -6,6 +6,7 @@ import { data } from 'react-router';
 import type { ExerciseView } from '~application/use-cases/exercise-library-service';
 import { CARDIO_KINDS, type CardioKind } from '~domain/equipment/equipment';
 import { EXERCISE_TYPES, type ExerciseType } from '~domain/exercise/exercise-type';
+import { MUSCLE_GROUPS, type MuscleGroup } from '~domain/exercise/muscle-group';
 
 import { requireAthlete } from '~/auth/user-context';
 import { EquipmentDialog } from '~/components/exercises/equipment-dialog';
@@ -50,6 +51,12 @@ export const cardioKindLabels: Record<CardioKind, string> = {
   resistance: 'Resistance only',
 };
 
+/**
+ * Same sentinel trick as `NO_CARDIO_KIND`, for the muscle group `Select`.
+ */
+export const NO_MUSCLE_GROUP = 'none';
+const muscleGroupOptionValues = [...MUSCLE_GROUPS, NO_MUSCLE_GROUP] as const;
+
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const libraryService = context.get(exerciseLibraryServiceContext);
@@ -61,6 +68,13 @@ export async function loader({ context }: Route.LoaderArgs) {
  */
 function toCardioKind(value: (typeof cardioKindOptionValues)[number]): CardioKind | null {
   return value === NO_CARDIO_KIND ? null : value;
+}
+
+/**
+ * Maps the wire-level `'none'` sentinel to the domain's actual "no target" value.
+ */
+function toMuscleGroup(value: (typeof muscleGroupOptionValues)[number]): MuscleGroup | null {
+  return value === NO_MUSCLE_GROUP ? null : value;
 }
 
 class AddEquipmentDto {
@@ -113,11 +127,8 @@ class ExerciseDetailsDto {
   readonly exerciseType!: ExerciseType;
 
   @Expose()
-  @Transform(optionalTrim())
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  readonly muscleGroup?: string;
+  @IsIn(muscleGroupOptionValues)
+  readonly muscleGroup!: (typeof muscleGroupOptionValues)[number];
 
   @Expose()
   @Transform(optionalTrim())
@@ -186,7 +197,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       const outcome = await libraryService.createExercise(athlete, {
         name: details.name,
         exerciseType: details.exerciseType,
-        muscleGroup: details.muscleGroup ?? null,
+        muscleGroup: toMuscleGroup(details.muscleGroup),
         description: details.description ?? null,
       });
       if (!outcome.ok) {
@@ -199,7 +210,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       const outcome = await libraryService.updateExercise(athlete, details.exerciseId, {
         name: details.name,
         exerciseType: details.exerciseType,
-        muscleGroup: details.muscleGroup ?? null,
+        muscleGroup: toMuscleGroup(details.muscleGroup),
         description: details.description ?? null,
       });
       if (!outcome.ok) {

@@ -1,4 +1,5 @@
 import type { ExerciseType } from '~domain/exercise/exercise-type';
+import type { MuscleGroup } from '~domain/exercise/muscle-group';
 import type { Clock } from '~domain/shared/clock';
 import { type EditableCopy, alreadyEditable, identityTranslation } from '~domain/shared/forking';
 import type { IdGenerator } from '~domain/shared/ids';
@@ -7,7 +8,7 @@ import { Ownership } from '~domain/shared/ownership';
 export type ExerciseDetails = {
   readonly name: string;
   readonly exerciseType: ExerciseType;
-  readonly muscleGroup: string | null;
+  readonly muscleGroup: MuscleGroup | null;
   readonly description: string | null;
 };
 
@@ -17,7 +18,7 @@ export type ExerciseSnapshot = {
   readonly forkedFromId: string | null;
   readonly name: string;
   readonly exerciseType: ExerciseType;
-  readonly muscleGroup: string | null;
+  readonly muscleGroup: MuscleGroup | null;
   readonly description: string | null;
   readonly createdAt: Date;
   readonly equipmentIds: readonly string[];
@@ -83,7 +84,7 @@ export class Exercise {
     return this.details.exerciseType;
   }
 
-  get muscleGroup(): string | null {
+  get muscleGroup(): MuscleGroup | null {
     return this.details.muscleGroup;
   }
 

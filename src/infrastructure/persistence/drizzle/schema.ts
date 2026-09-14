@@ -20,6 +20,21 @@ export const distanceUnitEnum = pgEnum('distance_unit', ['km', 'mi']);
 export const lengthUnitEnum = pgEnum('length_unit', ['cm', 'in']);
 export const exerciseTypeEnum = pgEnum('exercise_type', ['strength', 'cardio']);
 export const cardioKindEnum = pgEnum('cardio_kind', ['speed', 'resistance']);
+export const muscleGroupEnum = pgEnum('muscle_group', [
+  'Chest',
+  'Back',
+  'Traps',
+  'Shoulders',
+  'Biceps',
+  'Triceps',
+  'Forearms',
+  'Core',
+  'Quadriceps',
+  'Hamstrings',
+  'Glutes',
+  'Calves',
+  'Full Body',
+]);
 export const bodyMeasurementMetricEnum = pgEnum('body_measurement_metric', [
   'waist',
   'chest',
@@ -57,7 +72,7 @@ export const exercises = pgTable(
     forkedFromId: uuid('forked_from_id').references((): AnyPgColumn => exercises.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     exerciseType: exerciseTypeEnum('exercise_type').notNull(),
-    muscleGroup: text('muscle_group'),
+    muscleGroup: muscleGroupEnum('muscle_group'),
     description: text('description'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

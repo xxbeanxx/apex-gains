@@ -70,7 +70,7 @@ beforeEach(() => {
 async function seedTraining(): Promise<{ exercise: Exercise }> {
   const exercise = Exercise.create(
     'user-1',
-    { name: 'Bench Press', exerciseType: 'strength', muscleGroup: 'chest', description: null },
+    { name: 'Bench Press', exerciseType: 'strength', muscleGroup: 'Chest', description: null },
     deps,
   );
   await exercises.save(exercise);
@@ -126,7 +126,7 @@ describe('snapshot', () => {
         isSample: false,
         name: 'Bench Press',
         exerciseType: 'strength',
-        muscleGroup: 'chest',
+        muscleGroup: 'Chest',
         description: null,
       },
     ]);

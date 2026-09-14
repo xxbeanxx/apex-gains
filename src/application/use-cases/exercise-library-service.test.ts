@@ -38,7 +38,7 @@ function sampleExercise(overrides: Partial<ExerciseSnapshot> = {}): Exercise {
     forkedFromId: null,
     name: 'Bench Press',
     exerciseType: 'strength',
-    muscleGroup: 'chest',
+    muscleGroup: 'Chest',
     description: null,
     createdAt: NOW,
     equipmentIds: [],
@@ -79,7 +79,7 @@ describe('createExercise', () => {
     const outcome = await service.createExercise(athlete, {
       name: 'Squat',
       exerciseType: 'strength',
-      muscleGroup: 'legs',
+      muscleGroup: 'Quadriceps',
       description: null,
     });
 
@@ -111,7 +111,7 @@ describe('updateExercise on a sample', () => {
     const outcome = await service.updateExercise(athlete, 'sample-1', {
       name: 'Bench Press (Barbell)',
       exerciseType: 'strength',
-      muscleGroup: 'chest',
+      muscleGroup: 'Chest',
       description: 'Flat barbell bench press',
     });
 
@@ -167,7 +167,7 @@ describe('updateExercise on a sample', () => {
     const second = await service.updateExercise(athlete, forkedId!, {
       name: 'My Bench',
       exerciseType: 'strength',
-      muscleGroup: 'chest',
+      muscleGroup: 'Chest',
       description: null,
     });
 

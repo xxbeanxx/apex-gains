@@ -96,7 +96,7 @@ export async function createExercise(
   const dialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'New exercise' }) });
   await dialog.getByLabel('Name').fill(name);
   if (type !== 'Strength') await selectOption(dialog.getByLabel('Type'), type);
-  if (muscleGroup) await dialog.getByLabel('Muscle group').fill(muscleGroup);
+  if (muscleGroup) await selectOption(dialog.getByLabel('Muscle group'), muscleGroup);
   if (description) await dialog.getByLabel('Description').fill(description);
 
   await dialog.getByRole('button', { name: 'Create exercise' }).click();

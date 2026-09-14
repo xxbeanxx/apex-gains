@@ -12,13 +12,13 @@ test.describe('exercise library', () => {
 
   test('creates a strength exercise and shows it in the library', async ({ page, athlete }) => {
     const name = uniqueName('Bench Press');
-    await createExercise(page, { name, muscleGroup: 'chest', description: 'Press the handles forward.' });
+    await createExercise(page, { name, muscleGroup: 'Chest', description: 'Press the handles forward.' });
 
     const row = page.getByRole('row', { name: new RegExp(name) });
     await expect(row).toBeVisible();
     // Own exercises are badged to separate them from sample rows.
     await expect(row.getByText('Mine', { exact: true })).toBeVisible();
-    await expect(row.getByText('chest', { exact: true })).toBeVisible();
+    await expect(row.getByText('Chest', { exact: true })).toBeVisible();
   });
 
   test('shows an exercise’s type in its row', async ({ page, athlete }) => {

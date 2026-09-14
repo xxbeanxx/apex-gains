@@ -1,7 +1,10 @@
+import { MUSCLE_GROUPS } from '~domain/exercise/muscle-group';
+
 import { Field } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Textarea } from '~/components/ui/textarea';
+import { NO_MUSCLE_GROUP } from '~/routes/exercises';
 
 /**
  * Every id here comes from `Field`'s `useId`, so rendering this block twice on one page - the create form and an edit dialog - never produces colliding ids or labels pointing at the wrong input.
@@ -37,7 +40,21 @@ function ExerciseDetailsFields({
         )}
       </Field>
       <Field label="Muscle group">
-        <Input name="muscleGroup" defaultValue={defaultValues?.muscleGroup ?? ''} placeholder="chest" />
+        {({ id }) => (
+          <Select name="muscleGroup" defaultValue={defaultValues?.muscleGroup ?? NO_MUSCLE_GROUP}>
+            <SelectTrigger id={id} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_MUSCLE_GROUP}>None</SelectItem>
+              {MUSCLE_GROUPS.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {group}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </Field>
       <Field label="Description">
         <Textarea

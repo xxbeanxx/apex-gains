@@ -24,7 +24,7 @@ export function describeExercisesContract(subject: ContractSubject): void {
 
     it('round-trips every field of an exercise', async () => {
       await repositories.exercises.save(
-        exercise({ id: ids.own, name: 'Rowing', exerciseType: 'cardio', muscleGroup: 'back', description: 'Steady state' }),
+        exercise({ id: ids.own, name: 'Rowing', exerciseType: 'cardio', muscleGroup: 'Back', description: 'Steady state' }),
       );
 
       const found = await repositories.exercises.findById(ids.own);
@@ -34,7 +34,7 @@ export function describeExercisesContract(subject: ContractSubject): void {
         userId: ids.athlete,
         name: 'Rowing',
         exerciseType: 'cardio',
-        muscleGroup: 'back',
+        muscleGroup: 'Back',
         description: 'Steady state',
       });
     });
@@ -43,7 +43,7 @@ export function describeExercisesContract(subject: ContractSubject): void {
       const saved = exercise({ id: ids.own, name: 'Bench press' });
       await repositories.exercises.save(saved);
 
-      saved.updateDetails({ name: 'Incline bench', exerciseType: 'strength', muscleGroup: 'chest', description: null });
+      saved.updateDetails({ name: 'Incline bench', exerciseType: 'strength', muscleGroup: 'Chest', description: null });
       await repositories.exercises.save(saved);
 
       const listed = await repositories.exercises.listFor(ids.athlete, false);

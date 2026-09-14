@@ -152,7 +152,7 @@ describe('muscle group balance', () => {
       ],
       [
         exercise('bench', { muscleGroup: 'Chest' }),
-        exercise('fly', { muscleGroup: 'chest' }),
+        exercise('fly', { muscleGroup: 'Chest' }),
         exercise('row', { muscleGroup: 'Back' }),
       ],
     );
@@ -166,7 +166,7 @@ describe('muscle group balance', () => {
   it('files exercises with no muscle group under Other', () => {
     const history = TrainingHistory.of(
       [session('2026-09-03', [{ exerciseId: 'bench', reps: 10 }])],
-      [exercise('bench', { muscleGroup: '   ' })],
+      [exercise('bench', { muscleGroup: null })],
     );
 
     expect(muscleGroupBalance(history, 28, TODAY)).toEqual([{ muscleGroup: OTHER_MUSCLE_GROUP, setCount: 1 }]);

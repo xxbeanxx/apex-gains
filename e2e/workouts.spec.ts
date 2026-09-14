@@ -60,7 +60,7 @@ test('adds an exercise with targets, which show as a summary', async ({ page, at
   const exercise = uniqueName('Bench Press');
   const workout = uniqueName('Chest Day');
 
-  await createExercise(page, { name: exercise, muscleGroup: 'chest' });
+  await createExercise(page, { name: exercise, muscleGroup: 'Chest' });
   await createWorkout(page, workout);
   await addExercise(page, exercise);
   await setTarget(page, exercise, { sets: '3', reps: '10', weight: '135', restSeconds: '90' });
