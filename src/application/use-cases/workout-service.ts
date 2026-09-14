@@ -155,7 +155,10 @@ export class WorkoutService {
 
   async detail(athlete: Athlete, workoutId: string): Promise<WorkoutDetail | null> {
     const workout = await this.workouts.findVisible(athlete.id, workoutId);
-    if (!workout) return null;
+
+    if (!workout) {
+      return null;
+    }
 
     const exercises = await this.references.forwardLooking(athlete.id, {
       exerciseIds: workout.exercises.map((entry) => entry.exerciseId),
@@ -190,10 +193,16 @@ export class WorkoutService {
   async suggestions(athlete: Athlete, workoutId: string): Promise<Map<string, SuggestionView>> {
     const workout = await this.workouts.findVisible(athlete.id, workoutId);
     const result = new Map<string, SuggestionView>();
-    if (!workout) return result;
+
+    if (!workout) {
+      return result;
+    }
 
     const targeted = workout.exercises.filter((entry) => !entry.target.isEmpty);
-    if (targeted.length === 0) return result;
+
+    if (targeted.length === 0) {
+      return result;
+    }
 
     const exercises = await this.references.forwardLooking(athlete.id, {
       exerciseIds: targeted.map((entry) => entry.exerciseId),
@@ -207,7 +216,10 @@ export class WorkoutService {
       const recent = await this.recentSessionsFor(athlete.id, exercise.id);
 
       const suggestion = suggestNextTarget(entry.target, recent, exercise.exerciseType, exercise.cardioFields, weightIncrement);
-      if (!suggestion || suggestion.kind === 'hold') continue;
+
+      if (!suggestion || suggestion.kind === 'hold') {
+        continue;
+      }
 
       result.set(entry.id, {
         workoutExerciseId: entry.id,
@@ -236,7 +248,10 @@ export class WorkoutService {
     for (const { date, set } of found) {
       let session = byDate.get(date.value);
       if (!session) {
-        if (sessions.length >= SESSIONS_NEEDED) continue;
+        if (sessions.length >= SESSIONS_NEEDED) {
+          continue;
+        }
+
         session = { date, sets: [] };
         byDate.set(date.value, session);
         sessions.push(session);
@@ -274,7 +289,10 @@ export class WorkoutService {
   ): Promise<Result<{ forkedId: string | null }, 'not-found' | 'exercise-not-found'>> {
     return this.editor.edit(athlete.id, workoutId, async (copy) => {
       const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
-      if (!exercise) return err('exercise-not-found' as const);
+
+      if (!exercise) {
+        return err('exercise-not-found' as const);
+      }
 
       copy.editable.addExercise(exerciseId, this.toTarget(athlete, input), this.deps);
       await this.workouts.save(copy.editable);
@@ -294,9 +312,12 @@ export class WorkoutService {
     return this.editor.edit(athlete.id, workoutId, async (copy) => {
       const translatedId = copy.translateChildId(entryId);
       const entry = copy.editable.exercises.find((item) => item.id === translatedId);
+
       // A stale form naming a since-removed entry is a no-op, same as
       // removeExercise/moveExercise - not an error worth surfacing.
-      if (!entry) return ok();
+      if (!entry) {
+        return ok();
+      }
 
       // The same reading `detail` renders the form from, so the fields the
       // athlete was offered are the fields enforced.

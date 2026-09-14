@@ -295,7 +295,10 @@ export class ProgressService {
    */
   private async bodyWeightSeries(athlete: Athlete, loaded?: readonly BodyWeightEntry[]): Promise<ProgressSeriesView | null> {
     const entries = loaded ?? (await this.bodyWeight.listRecent(athlete.id, BODY_WEIGHT_HISTORY_LIMIT));
-    if (entries.length < 2) return null;
+
+    if (entries.length < 2) {
+      return null;
+    }
 
     const unit = athlete.preferences.weightUnit;
     return {
@@ -337,7 +340,9 @@ export class ProgressService {
     metric: BodyMeasurementMetric,
     entries: readonly BodyMeasurement[],
   ): ProgressSeriesView | null {
-    if (entries.length < 2) return null;
+    if (entries.length < 2) {
+      return null;
+    }
 
     const unit = athlete.preferences.lengthUnit;
     const label = BODY_MEASUREMENT_LABELS[metric];

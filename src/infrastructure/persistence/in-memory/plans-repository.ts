@@ -25,7 +25,11 @@ export class InMemoryPlansRepository implements PlansRepository, AthleteOwned {
 
   async findVisible(userId: string, planId: string): Promise<Plan | null> {
     const snapshot = this.byId.get(planId);
-    if (!snapshot) return null;
+
+    if (!snapshot) {
+      return null;
+    }
+
     const visible = Ownership.fromUserId(snapshot.userId).isVisibleTo(userId);
     return visible ? Plan.fromSnapshot(snapshot) : null;
   }
@@ -58,7 +62,9 @@ export class InMemoryPlansRepository implements PlansRepository, AthleteOwned {
 
   removeAllFor(userId: string): void {
     for (const [id, snapshot] of this.byId) {
-      if (snapshot.userId === userId) this.byId.delete(id);
+      if (snapshot.userId === userId) {
+        this.byId.delete(id);
+      }
     }
   }
 }

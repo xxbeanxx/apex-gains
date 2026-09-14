@@ -25,7 +25,11 @@ export class DateOnly {
    */
   static parse(value: string): DateOnly {
     const parsed = DateOnly.tryParse(value);
-    if (!parsed) throw new Error(`Invalid date string: ${value}`);
+
+    if (!parsed) {
+      throw new Error(`Invalid date string: ${value}`);
+    }
+
     return parsed;
   }
 
@@ -33,16 +37,22 @@ export class DateOnly {
    * Returns null instead of throwing - use for anything off a request.
    */
   static tryParse(value: string | null | undefined): DateOnly | null {
-    if (!value || !ISO_DATE.test(value)) return null;
+    if (!value || !ISO_DATE.test(value)) {
+      return null;
+    }
 
     const parsed = Date.parse(`${value}T00:00:00Z`);
-    if (Number.isNaN(parsed)) return null;
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
 
     // `Date.parse` rolls impossible days over rather than rejecting them -
     // "2026-02-30" becomes 2 March - so a date that doesn't survive the round
     // trip wasn't a real day. Without this a form could quietly log against a
     // different day than the one it named.
-    if (new Date(parsed).toISOString().slice(0, 10) !== value) return null;
+    if (new Date(parsed).toISOString().slice(0, 10) !== value) {
+      return null;
+    }
 
     return new DateOnly(value);
   }

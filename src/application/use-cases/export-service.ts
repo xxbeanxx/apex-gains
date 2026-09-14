@@ -115,7 +115,10 @@ const CSV_COLUMNS = [
  * RFC 4180: a field touching a comma, quote or newline is quoted, with embedded quotes doubled.
  */
 function csvField(value: string | number | null): string {
-  if (value === null) return '';
+  if (value === null) {
+    return '';
+  }
+
   const text = String(value);
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }

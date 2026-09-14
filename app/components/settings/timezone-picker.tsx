@@ -74,7 +74,10 @@ export function TimezonePicker({
   const groups = useMemo(() => groupByRegion(zones), [zones]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
+
     const timer = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(timer);
   }, [open]);

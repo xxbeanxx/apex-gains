@@ -72,7 +72,11 @@ export async function pickDate(trigger: Locator, dateStr: string): Promise<void>
   for (let guard = 0; guard < 60; guard++) {
     const shown = new Date(`1 ${await monthLabel.textContent()}`);
     const diff = (year - shown.getFullYear()) * 12 + (month - 1 - shown.getMonth());
-    if (diff === 0) break;
+
+    if (diff === 0) {
+      break;
+    }
+
     await page.getByRole('button', { name: diff > 0 ? 'Next month' : 'Previous month' }).click();
   }
 
@@ -95,9 +99,18 @@ export async function createExercise(
 
   const dialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'New exercise' }) });
   await dialog.getByLabel('Name').fill(name);
-  if (type !== 'Strength') await selectOption(dialog.getByLabel('Type'), type);
-  if (muscleGroup) await selectOption(dialog.getByLabel('Muscle group'), muscleGroup);
-  if (description) await dialog.getByLabel('Description').fill(description);
+
+  if (type !== 'Strength') {
+    await selectOption(dialog.getByLabel('Type'), type);
+  }
+
+  if (muscleGroup) {
+    await selectOption(dialog.getByLabel('Muscle group'), muscleGroup);
+  }
+
+  if (description) {
+    await dialog.getByLabel('Description').fill(description);
+  }
 
   await dialog.getByRole('button', { name: 'Create exercise' }).click();
 
@@ -118,7 +131,11 @@ export async function addEquipment(page: Page, name: string, cardioKind: CardioK
 
   const dialog = equipmentDialog(page);
   await dialog.getByLabel('Add equipment').fill(name);
-  if (cardioKind !== 'Speed & resistance') await selectOption(dialog.getByLabel('Cardio fields'), cardioKind);
+
+  if (cardioKind !== 'Speed & resistance') {
+    await selectOption(dialog.getByLabel('Cardio fields'), cardioKind);
+  }
+
   await dialog.getByRole('button', { name: 'Add', exact: true }).click();
 
   await expect(dialog.getByRole('listitem').filter({ hasText: name })).toBeVisible();

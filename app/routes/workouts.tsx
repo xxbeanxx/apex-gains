@@ -68,10 +68,13 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     handled(intents.duplicate, async ({ workoutId }) => {
       const outcome = await workoutService.duplicate(user, workoutId);
+
       // A stale row - since deleted or since out of view - is a no-op back
       // to the list rather than an error, same as a stale form anywhere
       // else in the builders.
-      if (!outcome.ok) throw redirect('/workouts');
+      if (!outcome.ok) {
+        throw redirect('/workouts');
+      }
 
       requestLogger(context).log(`duplicated workout ${workoutId} into ${outcome.value.id} for user ${user.id}`, 'Workouts');
       throw redirect(`/workouts/${outcome.value.id}`);

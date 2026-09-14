@@ -90,7 +90,10 @@ export class SessionService {
 
   async loggedSetsFor(athlete: Athlete, date: DateOnly): Promise<LoggedSetView[]> {
     const session = await this.sessions.findForDate(athlete.id, date);
-    if (!session) return [];
+
+    if (!session) {
+      return [];
+    }
 
     const references = await this.references.historical({ exerciseIds: session.sets.map((set) => set.exerciseId) });
 
@@ -156,7 +159,10 @@ export class SessionService {
     input: SetInput,
   ): Promise<Result<{ date: DateOnly; sessionOpened: boolean }, 'exercise-not-found'>> {
     const exercise = await this.exercises.findVisible(athlete.id, exerciseId);
-    if (!exercise) return err('exercise-not-found' as const);
+
+    if (!exercise) {
+      return err('exercise-not-found' as const);
+    }
 
     const date = this.calendar.loggingDay(athlete, submitted);
 
@@ -187,7 +193,10 @@ export class SessionService {
   async removeSet(athlete: Athlete, date: DateOnly, setId: string): Promise<Result<void, 'not-found'>> {
     return this.unitOfWork.run(async () => {
       const session = await this.sessions.findForDate(athlete.id, date);
-      if (!session) return err('not-found' as const);
+
+      if (!session) {
+        return err('not-found' as const);
+      }
 
       if (!session.removeSet(setId, this.deps.clock.now())) {
         return err('not-found' as const);

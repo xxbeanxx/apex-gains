@@ -46,7 +46,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const planService = context.get(planServiceContext);
   const plan = await planService.detail(athlete, params.planId);
-  if (!plan) page.notFound();
+
+  if (!plan) {
+    page.notFound();
+  }
 
   const workoutService = context.get(workoutServiceContext);
 
@@ -148,7 +151,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     // was actually minted on, and the one whose URL has to be shown.
     handled(intents.share, async () => {
       const outcome = await planService.share(athlete, planId);
-      if (!outcome.ok) page.notFound();
+
+      if (!outcome.ok) {
+        page.notFound();
+      }
 
       const sharedId = outcome.value.forkedId ?? planId;
       requestLogger(context).log(`shared plan ${sharedId} for user ${athlete.id}`, 'Plans');
@@ -285,7 +291,10 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
   const [searchParams, setSearchParams] = useSearchParams();
   const shareOpen = share !== null && searchParams.has('share');
   const setShareOpen = (open: boolean) => {
-    if (open) return;
+    if (open) {
+      return;
+    }
+
     setSearchParams(
       (params) => {
         params.delete('share');

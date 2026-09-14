@@ -88,7 +88,9 @@ export function Calendar({
 
       <div className="grid grid-cols-7 gap-y-1">
         {cells.map((date, i) => {
-          if (!date) return <span key={`blank-${i}`} />;
+          if (!date) {
+            return <span key={`blank-${i}`} />;
+          }
 
           const dateStr = toDateString(date);
           const isDisabled = maxDate ? dateStr > maxDate : false;

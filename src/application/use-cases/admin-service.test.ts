@@ -29,7 +29,10 @@ async function register(name: string, options: { isAdmin?: boolean; joinedDaysAg
     { googleSub: `google-${name}`, email: `${name}@example.com`.toLowerCase(), name, avatarUrl: null },
     { ids: deps.ids, clock: fixedClock(joinedAt) },
   );
-  if (options.isAdmin) athlete.changeAdminAccess(true, joinedAt);
+  if (options.isAdmin) {
+    athlete.changeAdminAccess(true, joinedAt);
+  }
+
   await athletes.save(athlete);
   return athlete;
 }

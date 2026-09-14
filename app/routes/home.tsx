@@ -18,7 +18,10 @@ export function meta() {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const athlete = context.get(userContext);
-  if (!athlete) return null;
+
+  if (!athlete) {
+    return null;
+  }
 
   const today = context.get(athleteCalendarContext).today(athlete);
   const [dashboard, plan] = await Promise.all([
@@ -99,7 +102,9 @@ function MarketingHome() {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  if (!loaderData) return <MarketingHome />;
+  if (!loaderData) {
+    return <MarketingHome />;
+  }
 
   const { name, dashboard, plan } = loaderData;
   const planLabel = plan.type === 'workout' ? plan.workoutName : plan.type === 'rest' ? 'Rest day' : 'No active plan';

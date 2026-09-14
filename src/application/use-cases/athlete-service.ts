@@ -105,7 +105,10 @@ export class AthleteService {
       const administratorCount = (await this.athletes.listAll()).filter((one) => one.isAdmin).length;
 
       const outcome = closeOwnAccount(athlete, administratorCount, confirmation);
-      if (!outcome.ok) return outcome;
+
+      if (!outcome.ok) {
+        return outcome;
+      }
 
       await this.athletes.remove(athlete);
       return ok();
@@ -119,10 +122,17 @@ export class AthleteService {
   ): Promise<SignIn> {
     return this.unitOfWork.run(async () => {
       const existing = await findExisting();
-      if (existing) return { athlete: existing, isNew: false };
+
+      if (existing) {
+        return { athlete: existing, isNew: false };
+      }
 
       const athlete = Athlete.register(identity, this.deps);
-      if (asAdministrator) athlete.changeAdminAccess(true, this.deps.clock.now());
+
+      if (asAdministrator) {
+        athlete.changeAdminAccess(true, this.deps.clock.now());
+      }
+
       await this.athletes.save(athlete);
       return { athlete, isNew: true };
     });

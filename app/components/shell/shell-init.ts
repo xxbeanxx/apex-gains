@@ -18,8 +18,11 @@ export function isSidebarCollapsed(): boolean {
 
 export function setSidebarCollapsed(collapsed: boolean) {
   try {
-    if (collapsed) localStorage.setItem(STORAGE_KEY, 'collapsed');
-    else localStorage.removeItem(STORAGE_KEY);
+    if (collapsed) {
+      localStorage.setItem(STORAGE_KEY, 'collapsed');
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   } catch {
     // Storage can throw (private browsing, quota) - the toggle still flips
     // the attribute for this load, it just will not survive a reload.

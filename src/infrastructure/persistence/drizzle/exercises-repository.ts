@@ -19,10 +19,17 @@ const FOREIGN_KEY_VIOLATION = '23503';
  */
 function isForeignKeyViolation(error: unknown): boolean {
   for (let current = error; current instanceof Error || (typeof current === 'object' && current !== null);) {
-    if ('code' in current && current.code === FOREIGN_KEY_VIOLATION) return true;
-    if (!('cause' in current) || current.cause === current) return false;
+    if ('code' in current && current.code === FOREIGN_KEY_VIOLATION) {
+      return true;
+    }
+
+    if (!('cause' in current) || current.cause === current) {
+      return false;
+    }
+
     current = current.cause;
   }
+
   return false;
 }
 
@@ -73,11 +80,15 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
   }
 
   async findManyByIds(exerciseIds: readonly string[]): Promise<Exercise[]> {
-    if (exerciseIds.length === 0) return [];
+    if (exerciseIds.length === 0) {
+      return [];
+    }
+
     const rows = await dbScope.query.exercises.findMany({
       where: inArray(exercises.id, [...exerciseIds]),
       with: { equipmentLinks: true },
     });
+
     return rows.map(toExercise);
   }
 
@@ -106,12 +117,15 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
   }
 
   async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Exercise[]> {
-    if (sampleIds.length === 0) return [];
+    if (sampleIds.length === 0) {
+      return [];
+    }
 
     const rows = await dbScope.query.exercises.findMany({
       where: and(eq(exercises.userId, userId), inArray(exercises.forkedFromId, [...sampleIds])),
       with: { equipmentLinks: true },
     });
+
     return rows.map(toExercise);
   }
 
@@ -171,7 +185,10 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
       // points at this". Anything else - a dropped connection, a deadlock -
       // is a failure, and reporting it as `in-use` would tell the athlete
       // their exercise is referenced by something that does not exist.
-      if (isForeignKeyViolation(error)) return 'in-use';
+      if (isForeignKeyViolation(error)) {
+        return 'in-use';
+      }
+
       throw error;
     }
   }

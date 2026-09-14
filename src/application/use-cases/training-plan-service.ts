@@ -74,7 +74,10 @@ export class TrainingPlanService {
 
   async planFor(athlete: Athlete, date: DateOnly): Promise<DayPlan> {
     const day = await this.schedule.on(athlete, date);
-    if (day.type !== 'workout') return day;
+
+    if (day.type !== 'workout') {
+      return day;
+    }
 
     const { workout } = day;
     const exercises = await this.references.forwardLooking(athlete.id, {

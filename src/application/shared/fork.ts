@@ -67,7 +67,9 @@ export async function resolveEditableCopy<A extends Forkable<A>>(
   findExistingFork: (sampleId: string) => Promise<A | null>,
   childrenOf: (aggregate: A) => readonly Positioned[],
 ): Promise<EditableCopy<A>> {
-  if (!aggregate.ownership.isSample) return alreadyEditable(aggregate);
+  if (!aggregate.ownership.isSample) {
+    return alreadyEditable(aggregate);
+  }
 
   const existingFork = await findExistingFork(aggregate.id);
   if (existingFork) {
@@ -94,14 +96,18 @@ export async function existingStandInFor<A extends Forkable<A>>(
   source: A,
   findForkOf: (sampleId: string) => Promise<A | null>,
 ): Promise<string | null> {
-  if (source.ownership.isOwnedBy(userId)) return source.id;
+  if (source.ownership.isOwnedBy(userId)) {
+    return source.id;
+  }
 
   if (source.ownership.isSample) {
     const fork = await findForkOf(source.id);
     return fork?.id ?? source.id;
   }
 
-  if (source.forkedFromId === null) return null;
+  if (source.forkedFromId === null) {
+    return null;
+  }
 
   const fork = await findForkOf(source.forkedFromId);
   return fork?.id ?? null;
@@ -159,11 +165,17 @@ export class ForkableEditor<A extends Forkable<A>> {
   ): Promise<Result<{ forkedId: string | null }, E | 'not-found'>> {
     return this.unitOfWork.run(async () => {
       const loaded = await this.repository.findVisible(userId, id);
-      if (!loaded) return err('not-found' as const);
+
+      if (!loaded) {
+        return err('not-found' as const);
+      }
 
       const copy = await this.editableCopy(loaded, userId);
       const outcome = await work(copy);
-      if (!outcome.ok) return err(outcome.error);
+
+      if (!outcome.ok) {
+        return err(outcome.error);
+      }
 
       return ok({ forkedId: copy.forkedId });
     });
@@ -228,7 +240,10 @@ export class ForkableLibrary<A extends Forkable<A> & Renameable> extends Forkabl
   ): Promise<Result<{ id: string }, 'not-found'>> {
     return this.unitOfWork.run(async () => {
       const source = await this.library.findVisible(userId, id);
-      if (!source) return err('not-found' as const);
+
+      if (!source) {
+        return err('not-found' as const);
+      }
 
       const names = await this.library.listNamesFor(userId, showSampleData);
       const copy = copyOf(source);
@@ -247,8 +262,14 @@ export class ForkableLibrary<A extends Forkable<A> & Renameable> extends Forkabl
   async remove(userId: string, id: string): Promise<Result<void, 'not-found' | 'sample'>> {
     return this.unitOfWork.run(async () => {
       const aggregate = await this.repository.findVisible(userId, id);
-      if (!aggregate) return err('not-found' as const);
-      if (aggregate.ownership.isSample) return err('sample' as const);
+
+      if (!aggregate) {
+        return err('not-found' as const);
+      }
+
+      if (aggregate.ownership.isSample) {
+        return err('sample' as const);
+      }
 
       await this.library.delete(aggregate.id);
       return ok();
@@ -263,7 +284,11 @@ export class ForkableLibrary<A extends Forkable<A> & Renameable> extends Forkabl
   async revert(userId: string, id: string): Promise<Result<{ forkedFromId: string }, 'not-found' | 'nothing-to-revert'>> {
     return this.unitOfWork.run(async () => {
       const aggregate = await this.repository.findVisible(userId, id);
-      if (!aggregate) return err('not-found' as const);
+
+      if (!aggregate) {
+        return err('not-found' as const);
+      }
+
       if (!aggregate.canRevert || !aggregate.forkedFromId) {
         return err('nothing-to-revert' as const);
       }

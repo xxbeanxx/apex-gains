@@ -36,7 +36,11 @@ class MoveDto {
  */
 function post(fields: Record<string, string>): Request {
   const body = new FormData();
-  for (const [key, value] of Object.entries(fields)) body.append(key, value);
+
+  for (const [key, value] of Object.entries(fields)) {
+    body.append(key, value);
+  }
+
   return new Request('http://localhost/test', { method: 'POST', body });
 }
 

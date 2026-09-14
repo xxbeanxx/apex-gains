@@ -102,7 +102,10 @@ export class LibraryVisibility {
   selectFrom<T extends ForkableRecord>(records: readonly T[]): T[] {
     const forked = this.forkedSampleIds(records);
     return records.filter((record) => {
-      if (record.userId === this.userId) return true;
+      if (record.userId === this.userId) {
+        return true;
+      }
+
       return this.includesSamples && record.userId === null && !forked.has(record.id);
     });
   }

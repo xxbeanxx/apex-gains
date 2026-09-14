@@ -114,7 +114,11 @@ export function describeWorkoutsContract(subject: ContractSubject): void {
       it('closes the gap after a removal, leaving positions contiguous', async () => {
         const [first, second, third] = await seedExercises(3);
         const saved = workout({ id: ids.own });
-        for (const exerciseId of [first!, second!, third!]) saved.addExercise(exerciseId, SetTarget.none(), deps);
+
+        for (const exerciseId of [first!, second!, third!]) {
+          saved.addExercise(exerciseId, SetTarget.none(), deps);
+        }
+
         await repositories.workouts.save(saved);
 
         const entryId = saved.exercises[0]!.id;
@@ -149,7 +153,11 @@ export function describeWorkoutsContract(subject: ContractSubject): void {
       it('reverses a whole list in one save', async () => {
         const [first, second, third] = await seedExercises(3);
         const saved = workout({ id: ids.own });
-        for (const exerciseId of [first!, second!, third!]) saved.addExercise(exerciseId, SetTarget.none(), deps);
+
+        for (const exerciseId of [first!, second!, third!]) {
+          saved.addExercise(exerciseId, SetTarget.none(), deps);
+        }
+
         await repositories.workouts.save(saved);
 
         saved.moveExercise(saved.exercises[0]!.id, 'down', NOW);

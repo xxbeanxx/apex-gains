@@ -106,9 +106,12 @@ export function ForkableActions({
  * The line under the header of a customized copy, and nothing otherwise.
  */
 export function CustomizedNote({ page, isCustomized }: { page: ForkableDetail; isCustomized: boolean }) {
-  if (!isCustomized) return null;
+  if (!isCustomized) {
+    return null;
+  }
 
   const noun = page.noun.toLowerCase();
+
   return (
     <p className="mt-4 text-sm text-muted-foreground">
       This is your customized copy of a sample {noun}. The original sample is unaffected.

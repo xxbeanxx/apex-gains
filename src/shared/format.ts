@@ -88,7 +88,9 @@ export function formatMonthYear(dateStr: string): string {
  * strings a character at a time, so nothing user-facing should show them.
  */
 export function formatRelativeDate(dateStr: string, today: string): string {
-  if (dateStr === today) return 'Today';
+  if (dateStr === today) {
+    return 'Today';
+  }
 
   // Plain string comparison can't tell "one day apart" from "one year
   // apart", so the neighbours are computed rather than compared.
@@ -102,8 +104,14 @@ export function formatRelativeDate(dateStr: string, today: string): string {
     return `${year}-${month}-${day}`;
   };
 
-  if (dateStr === shift(-1)) return 'Yesterday';
-  if (dateStr === shift(1)) return 'Tomorrow';
+  if (dateStr === shift(-1)) {
+    return 'Yesterday';
+  }
+
+  if (dateStr === shift(1)) {
+    return 'Tomorrow';
+  }
+
   return formatFullDate(dateStr);
 }
 

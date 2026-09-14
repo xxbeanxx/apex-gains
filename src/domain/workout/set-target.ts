@@ -112,18 +112,32 @@ export class SetTarget {
     }
 
     const weight = preferences.formatWeight(this.weight);
-    if (weight) parts.push(weight);
+
+    if (weight) {
+      parts.push(weight);
+    }
 
     const duration = preferences.formatDuration(this.duration);
-    if (duration) parts.push(duration);
+
+    if (duration) {
+      parts.push(duration);
+    }
 
     const speed = preferences.formatSpeed(this.speed);
-    if (speed) parts.push(speed);
 
-    if (this.resistance !== null) parts.push(`resistance ${this.resistance}`);
+    if (speed) {
+      parts.push(speed);
+    }
+
+    if (this.resistance !== null) {
+      parts.push(`resistance ${this.resistance}`);
+    }
 
     const rest = preferences.formatDuration(this.rest);
-    if (rest) parts.push(`${rest} rest`);
+
+    if (rest) {
+      parts.push(`${rest} rest`);
+    }
 
     return parts.length > 0 ? parts.join(', ') : null;
   }

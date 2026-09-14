@@ -45,8 +45,12 @@ export default function History({ loaderData }: Route.ComponentProps) {
   for (const session of timeline) {
     const month = formatMonthYear(session.date);
     const last = groups.at(-1);
-    if (last?.month === month) last.sessions.push(session);
-    else groups.push({ month, sessions: [session] });
+
+    if (last?.month === month) {
+      last.sessions.push(session);
+    } else {
+      groups.push({ month, sessions: [session] });
+    }
   }
 
   return (

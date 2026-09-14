@@ -60,7 +60,10 @@ export async function signIn(
   details: { email: string; name: string; asAdministrator?: boolean },
 ): Promise<Athlete> {
   const query = new URLSearchParams({ email: details.email, name: details.name });
-  if (details.asAdministrator) query.set('admin', 'true');
+
+  if (details.asAdministrator) {
+    query.set('admin', 'true');
+  }
 
   const response = await page.goto(`/auth/test-login?${query}`);
   expect(response?.ok(), 'test login should succeed - is ENABLE_TEST_LOGIN set?').toBe(true);

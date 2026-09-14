@@ -14,11 +14,18 @@ function useBreadcrumbs(): Crumb[] {
   const matches = useMatches();
 
   const crumbs = matches.flatMap((match) => {
-    if (!isCrumbHandle(match.handle)) return [];
+    if (!isCrumbHandle(match.handle)) {
+      return [];
+    }
+
     const result = match.handle.crumb(match.loaderData);
+
     return Array.isArray(result) ? result : [result];
   });
-  if (crumbs.length > 0) return crumbs;
+
+  if (crumbs.length > 0) {
+    return crumbs;
+  }
 
   const pathname = matches.at(-1)?.pathname ?? '';
   const fallback = NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
@@ -27,7 +34,10 @@ function useBreadcrumbs(): Crumb[] {
 
 export function Breadcrumbs() {
   const crumbs = useBreadcrumbs();
-  if (crumbs.length === 0) return null;
+
+  if (crumbs.length === 0) {
+    return null;
+  }
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">

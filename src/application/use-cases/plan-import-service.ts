@@ -104,7 +104,10 @@ export class PlanImportService {
    */
   async preview(athlete: Athlete, shareToken: string): Promise<SharedPlanPreview | null> {
     const shared = await this.plans.findByShareToken(shareToken);
-    if (!shared) return null;
+
+    if (!shared) {
+      return null;
+    }
 
     const sourceWorkouts = await this.sourceWorkouts(shared);
     const owner = shared.ownership.userId;
@@ -140,12 +143,21 @@ export class PlanImportService {
   async import(athlete: Athlete, shareToken: string, anchorDate: DateOnly): Promise<ImportOutcome> {
     return this.unitOfWork.run(async () => {
       const shared = await this.plans.findByShareToken(shareToken);
-      if (!shared) return err('not-found' as const);
+
+      if (!shared) {
+        return err('not-found' as const);
+      }
 
       const plan = await this.plan(athlete, shared, await this.sourceWorkouts(shared), anchorDate);
 
-      for (const exercise of plan.exercises) await this.exercises.save(exercise);
-      for (const workout of plan.workouts) await this.workouts.save(workout);
+      for (const exercise of plan.exercises) {
+        await this.exercises.save(exercise);
+      }
+
+      for (const workout of plan.workouts) {
+        await this.workouts.save(workout);
+      }
+
       await this.plans.save(plan.plan);
 
       return ok({ planId: plan.plan.id });
@@ -172,8 +184,11 @@ export class PlanImportService {
 
     for (const source of sourceWorkouts.values()) {
       const reused = await this.reusableWorkout(athlete, source);
-      if (reused) workoutIdFor.set(source.id, reused);
-      else toCopy.push(source);
+      if (reused) {
+        workoutIdFor.set(source.id, reused);
+      } else {
+        toCopy.push(source);
+      }
     }
 
     const exerciseIdFor = await this.resolveExercises(athlete, toCopy);
@@ -253,7 +268,9 @@ export class PlanImportService {
     const existing = await existingStandInFor(athlete.id, source, (sampleId) =>
       this.exercises.findForkOf(athlete.id, sampleId),
     );
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
 
     const byName = await this.exercises.findOwnByName(athlete.id, source.name);
     return byName?.id ?? null;

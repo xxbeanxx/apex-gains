@@ -31,7 +31,10 @@ export function muscleGroupBalance(history: TrainingHistory, days: number, today
 
   const top = sorted.slice(0, MAX_MUSCLE_GROUPS - 1);
   const overflow = sorted.slice(MAX_MUSCLE_GROUPS - 1);
-  if (overflow.length === 0) return top;
+
+  if (overflow.length === 0) {
+    return top;
+  }
 
   const overflowCount = overflow.reduce((sum, group) => sum + group.setCount, 0);
   const existingOther = top.find((point) => point.muscleGroup === OTHER_MUSCLE_GROUP);

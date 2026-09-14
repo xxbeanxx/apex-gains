@@ -79,7 +79,9 @@ export class GoogleIdentityAdapter implements GoogleIdentityProvider {
     );
     const claims = tokens.claims();
 
-    if (!claims?.sub || typeof claims.email !== 'string') return null;
+    if (!claims?.sub || typeof claims.email !== 'string') {
+      return null;
+    }
 
     return {
       googleSub: claims.sub,

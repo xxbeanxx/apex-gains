@@ -79,7 +79,9 @@ export class DrizzleSessionsRepository implements SessionsRepository {
       })
       .returning();
 
-    if (inserted.length > 0) return toSession({ ...inserted[0], sets: [] });
+    if (inserted.length > 0) {
+      return toSession({ ...inserted[0], sets: [] });
+    }
 
     const existing = await dbScope.query.sessions.findFirst({
       where: and(eq(sessions.userId, snapshot.userId), eq(sessions.date, snapshot.date)),

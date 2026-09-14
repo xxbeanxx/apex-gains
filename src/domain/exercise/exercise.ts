@@ -116,8 +116,11 @@ export class Exercise {
   }
 
   setEquipment(equipmentId: string, linked: boolean): void {
-    if (linked) this.equipment.add(equipmentId);
-    else this.equipment.delete(equipmentId);
+    if (linked) {
+      this.equipment.add(equipmentId);
+    } else {
+      this.equipment.delete(equipmentId);
+    }
   }
 
   /**
@@ -126,7 +129,9 @@ export class Exercise {
    * equipment links - so the shared original survives the edit.
    */
   editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<Exercise> {
-    if (!this.ownership.isSample) return alreadyEditable(this);
+    if (!this.ownership.isSample) {
+      return alreadyEditable(this);
+    }
 
     const fork = new Exercise(
       deps.ids.next(),

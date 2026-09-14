@@ -43,9 +43,13 @@ export function forkableHandlers(
     handled(intents.delete, async () => {
       const outcome = await useCases.remove(athlete, id);
       if (!outcome.ok) {
-        if (outcome.error === 'not-found') page.notFound();
+        if (outcome.error === 'not-found') {
+          page.notFound();
+        }
+
         return intents.delete.reject(`Sample ${noun}s can't be deleted.`);
       }
+
       log(`deleted ${noun} ${id} for user ${athlete.id}`);
       throw redirect(page.indexPath);
     }),
@@ -53,7 +57,10 @@ export function forkableHandlers(
     handled(intents.revert, async () => {
       const outcome = await useCases.revert(athlete, id);
       if (!outcome.ok) {
-        if (outcome.error === 'not-found') page.notFound();
+        if (outcome.error === 'not-found') {
+          page.notFound();
+        }
+
         return intents.revert.reject('Nothing to revert');
       }
       throw redirect(page.pathFor(outcome.value.forkedFromId));
@@ -61,7 +68,10 @@ export function forkableHandlers(
 
     handled(intents.duplicate, async () => {
       const outcome = await useCases.duplicate(athlete, id);
-      if (!outcome.ok) page.notFound();
+
+      if (!outcome.ok) {
+        page.notFound();
+      }
 
       log(`duplicated ${noun} ${id} into ${outcome.value.id} for user ${athlete.id}`);
       throw redirect(page.pathFor(outcome.value.id));

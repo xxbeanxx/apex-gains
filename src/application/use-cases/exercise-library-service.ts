@@ -118,7 +118,9 @@ export class ExerciseLibraryService {
   private async viewsFor(exercises: readonly Exercise[]): Promise<ExerciseView[]> {
     const ids = new Set<string>();
     for (const exercise of exercises) {
-      for (const id of exercise.equipmentIds) ids.add(id);
+      for (const id of exercise.equipmentIds) {
+        ids.add(id);
+      }
     }
 
     const equipment = await this.equipment.findManyByIds([...ids]);
@@ -130,7 +132,10 @@ export class ExerciseLibraryService {
   async createExercise(athlete: Athlete, details: ExerciseDetails): Promise<Result<{ id: string }, 'duplicate-name'>> {
     return this.unitOfWork.run(async () => {
       const clash = await this.exercises.findOwnByName(athlete.id, details.name);
-      if (clash) return err('duplicate-name' as const);
+
+      if (clash) {
+        return err('duplicate-name' as const);
+      }
 
       const exercise = Exercise.create(athlete.id, details, this.deps);
       await this.exercises.save(exercise);
@@ -191,7 +196,11 @@ export class ExerciseLibraryService {
   async addEquipment(athlete: Athlete, name: string, cardioKind: CardioKind | null = null): Promise<void> {
     await this.unitOfWork.run(async () => {
       const existing = await this.equipment.findByName(name);
-      if (existing) return;
+
+      if (existing) {
+        return;
+      }
+
       await this.equipment.save(Equipment.create(athlete.id, name, cardioKind, this.deps));
     });
   }
@@ -202,7 +211,11 @@ export class ExerciseLibraryService {
   async removeEquipment(athlete: Athlete, equipmentId: string): Promise<void> {
     await this.unitOfWork.run(async () => {
       const item = await this.equipment.findById(equipmentId);
-      if (!item || !item.isRemovableBy(athlete.id)) return;
+
+      if (!item || !item.isRemovableBy(athlete.id)) {
+        return;
+      }
+
       await this.equipment.delete(item.id);
     });
   }
@@ -213,7 +226,11 @@ export class ExerciseLibraryService {
   async setEquipmentCardioKind(athlete: Athlete, equipmentId: string, cardioKind: CardioKind | null): Promise<void> {
     await this.unitOfWork.run(async () => {
       const item = await this.equipment.findById(equipmentId);
-      if (!item || !item.isRemovableBy(athlete.id)) return;
+
+      if (!item || !item.isRemovableBy(athlete.id)) {
+        return;
+      }
+
       item.setCardioKind(cardioKind);
       await this.equipment.save(item);
     });

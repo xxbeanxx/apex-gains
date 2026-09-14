@@ -104,7 +104,10 @@ export class PlanService {
    */
   async detail(athlete: Athlete, planId: string): Promise<PlanDetail | null> {
     const plan = await this.plans.findVisible(athlete.id, planId);
-    if (!plan) return null;
+
+    if (!plan) {
+      return null;
+    }
 
     const workouts = await this.references.forwardLooking(athlete.id, {
       workoutIds: plan.slots.flatMap((slot) => (slot.workoutId ? [slot.workoutId] : [])),

@@ -59,7 +59,10 @@ export function handled<T extends object, Result>(
     intent: intent as Intent<never>,
     async run(formData: FormData) {
       const { schema, options } = intent;
-      if (!schema) return run(undefined as never);
+
+      if (!schema) {
+        return run(undefined as never);
+      }
 
       const source = options.fields ? options.fields(formData) : Object.fromEntries(formData);
       const result = validateForm(schema, source);
@@ -94,7 +97,10 @@ export async function dispatch<Handlers extends readonly AnyHandledIntent[]>(
   const name = formData.get('intent');
 
   const handler = handlers.find((candidate) => candidate.intent.name === name);
-  if (!handler) return unknownIntent(typeof name === 'string' ? name : 'unknown').reject('Unknown action');
+
+  if (!handler) {
+    return unknownIntent(typeof name === 'string' ? name : 'unknown').reject('Unknown action');
+  }
 
   return handler.run(formData) as Promise<ResultOf<Handlers[number]>>;
 }

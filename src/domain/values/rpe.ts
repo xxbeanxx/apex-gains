@@ -12,7 +12,10 @@ export class Rpe {
   private constructor(private readonly rating: number) {}
 
   static of(value: number): Rpe {
-    if (!Rpe.isValid(value)) throw new Error(`Invalid RPE: ${value}`);
+    if (!Rpe.isValid(value)) {
+      throw new Error(`Invalid RPE: ${value}`);
+    }
+
     return new Rpe(value);
   }
 
@@ -27,8 +30,12 @@ export class Rpe {
    * Parses a `numeric` column. Null, empty and unparseable all read as absent.
    */
   static fromStorage(value: string | null | undefined): Rpe | null {
-    if (value == null || value === '') return null;
+    if (value == null || value === '') {
+      return null;
+    }
+
     const parsed = Number(value);
+
     return Number.isFinite(parsed) ? new Rpe(parsed) : null;
   }
 

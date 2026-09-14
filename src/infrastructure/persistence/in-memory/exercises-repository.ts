@@ -38,8 +38,13 @@ export class InMemoryExercisesRepository implements ExercisesRepository, Athlete
 
   async findVisible(userId: string, exerciseId: string): Promise<Exercise | null> {
     const snapshot = this.byId.get(exerciseId);
-    if (!snapshot) return null;
+
+    if (!snapshot) {
+      return null;
+    }
+
     const visible = Ownership.fromUserId(snapshot.userId).isVisibleTo(userId);
+
     return visible ? Exercise.fromSnapshot(snapshot) : null;
   }
 
@@ -80,7 +85,9 @@ export class InMemoryExercisesRepository implements ExercisesRepository, Athlete
 
   removeAllFor(userId: string): void {
     for (const [id, snapshot] of this.byId) {
-      if (snapshot.userId === userId) this.byId.delete(id);
+      if (snapshot.userId === userId) {
+        this.byId.delete(id);
+      }
     }
   }
 

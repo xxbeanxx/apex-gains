@@ -13,7 +13,10 @@ export class DrizzleUnitOfWork implements UnitOfWork {
    * all-or-nothing unit, which is what a caller means by wrapping them.
    */
   async run<T>(work: () => Promise<T>): Promise<T> {
-    if (currentTransaction()) return work();
+    if (currentTransaction()) {
+      return work();
+    }
+
     return db.transaction((tx) => runInTransaction(tx, work));
   }
 }

@@ -36,8 +36,12 @@ export class Weight {
    * Parses a `numeric` column. Null, empty and unparseable all read as absent.
    */
   static fromStorage(value: string | null | undefined): Weight | null {
-    if (value == null || value === '') return null;
+    if (value == null || value === '') {
+      return null;
+    }
+
     const parsed = Number(value);
+
     return Number.isFinite(parsed) ? new Weight(parsed) : null;
   }
 

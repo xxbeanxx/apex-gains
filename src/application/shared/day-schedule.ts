@@ -56,14 +56,21 @@ export class DaySchedule {
    */
   async across(athlete: Athlete, dates: readonly DateOnly[]): Promise<ScheduledDay[]> {
     const plan = await this.plans.findActive(athlete.id);
-    if (!plan) return dates.map(() => ({ type: 'none' }));
+
+    if (!plan) {
+      return dates.map(() => ({ type: 'none' }));
+    }
 
     const workoutIds = [...new Set(dates.flatMap((date) => workoutIdOn(plan, date) ?? []))];
     const workouts = await this.references.forwardLooking(athlete.id, { workoutIds });
 
     return dates.map((date): ScheduledDay => {
       const slot = plan.slotOn(date);
-      if (!slot) return { type: 'none' };
+
+      if (!slot) {
+        return { type: 'none' };
+      }
+
       const workout = slot.workoutId === null ? null : workouts.workout(slot.workoutId);
       return workout ? { type: 'workout', planId: plan.id, workout } : { type: 'rest', planId: plan.id };
     });

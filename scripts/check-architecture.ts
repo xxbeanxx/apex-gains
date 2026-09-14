@@ -40,7 +40,9 @@ const failures: string[] = [];
 
 for (const [directory, forbidden] of rules) {
   for (const file of await files(directory)) {
-    if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) continue;
+    if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) {
+      continue;
+    }
 
     const source: string = await readFile(join(root, file), 'utf8');
 

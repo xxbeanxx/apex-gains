@@ -33,8 +33,12 @@ export class Length {
    * Parses a `numeric` column. Null, empty and unparseable all read as absent.
    */
   static fromStorage(value: string | null | undefined): Length | null {
-    if (value == null || value === '') return null;
+    if (value == null || value === '') {
+      return null;
+    }
+
     const parsed = Number(value);
+
     return Number.isFinite(parsed) ? new Length(parsed) : null;
   }
 

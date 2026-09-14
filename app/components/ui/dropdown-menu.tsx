@@ -20,7 +20,10 @@ export function DropdownMenu({ open: openProp, onOpenChange, ...props }: Compone
   const open = openProp ?? uncontrolledOpen;
   const setOpen = useCallback(
     (value: boolean) => {
-      if (openProp === undefined) setUncontrolledOpen(value);
+      if (openProp === undefined) {
+        setUncontrolledOpen(value);
+      }
+
       onOpenChange?.(value);
     },
     [openProp, onOpenChange],

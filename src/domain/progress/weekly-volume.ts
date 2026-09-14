@@ -34,12 +34,17 @@ function weekly<T>(
   const values = new Map<string, T>();
 
   const starts = Array.from({ length: weeks }, (_, i) => currentWeekStart.minusDays(7 * (weeks - 1 - i)));
-  for (const start of starts) values.set(start.value, empty);
+  for (const start of starts) {
+    values.set(start.value, empty);
+  }
 
   for (const session of history.sessions) {
     const key = session.date.startOfWeek().value;
     const running = values.get(key);
-    if (running !== undefined) values.set(key, accumulate(running, session));
+
+    if (running !== undefined) {
+      values.set(key, accumulate(running, session));
+    }
   }
 
   // Every `start` was seeded into `values` above, so this lookup can never
@@ -47,7 +52,11 @@ function weekly<T>(
   // trusting it through a cast.
   return starts.map((weekStart) => {
     const value = values.get(weekStart.value);
-    if (value === undefined) throw new Error(`missing bucket for week ${weekStart.value}`);
+
+    if (value === undefined) {
+      throw new Error(`missing bucket for week ${weekStart.value}`);
+    }
+
     return { weekStart, value, isCurrentWeek: weekStart.equals(currentWeekStart) };
   });
 }
@@ -76,7 +85,11 @@ export function consistencyCalendar(history: TrainingHistory, weeks: number, tod
 
   return start.range(weeks * 7).map((date) => {
     const session = byDate.get(date.value);
-    if (!session) return { date, status: 'none' as const, setCount: 0 };
+
+    if (!session) {
+      return { date, status: 'none' as const, setCount: 0 };
+    }
+
     return {
       date,
       status: session.status,

@@ -47,7 +47,10 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const workoutService = context.get(workoutServiceContext);
   const workout = await workoutService.detail(athlete, params.workoutId);
-  if (!workout) page.notFound();
+
+  if (!workout) {
+    page.notFound();
+  }
 
   const libraryService = context.get(exerciseLibraryServiceContext);
   return {
@@ -162,7 +165,9 @@ function EditTargetDetail({
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   useCloseOnSubmit(() => {
-    if (detailsRef.current) detailsRef.current.open = false;
+    if (detailsRef.current) {
+      detailsRef.current.open = false;
+    }
   });
 
   return (
@@ -254,9 +259,18 @@ function ExercisePalette({
   const visible = useMemo(
     () =>
       exerciseList.filter((exercise) => {
-        if (types.size > 0 && !types.has(exercise.exerciseType)) return false;
-        if (equipmentIds.size > 0 && !exercise.equipment.some((item) => equipmentIds.has(item.id))) return false;
-        if (needle === '') return true;
+        if (types.size > 0 && !types.has(exercise.exerciseType)) {
+          return false;
+        }
+
+        if (equipmentIds.size > 0 && !exercise.equipment.some((item) => equipmentIds.has(item.id))) {
+          return false;
+        }
+
+        if (needle === '') {
+          return true;
+        }
+
         return exercise.name.toLowerCase().includes(needle);
       }),
     [exerciseList, types, equipmentIds, needle],

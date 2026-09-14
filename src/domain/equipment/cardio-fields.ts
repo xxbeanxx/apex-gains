@@ -23,7 +23,13 @@ export type CardioFields = {
 export function cardioFieldsFor(equipmentCardioKinds: readonly (CardioKind | null)[]): CardioFields {
   const kinds = new Set(equipmentCardioKinds.filter((kind): kind is CardioKind => kind !== null));
 
-  if (kinds.size === 1 && kinds.has('speed')) return { showSpeed: true, showResistance: false };
-  if (kinds.size === 1 && kinds.has('resistance')) return { showSpeed: false, showResistance: true };
+  if (kinds.size === 1 && kinds.has('speed')) {
+    return { showSpeed: true, showResistance: false };
+  }
+
+  if (kinds.size === 1 && kinds.has('resistance')) {
+    return { showSpeed: false, showResistance: true };
+  }
+
   return { showSpeed: true, showResistance: true };
 }

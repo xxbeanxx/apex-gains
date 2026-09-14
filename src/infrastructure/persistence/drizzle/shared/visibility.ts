@@ -29,7 +29,10 @@ type ForkableColumns = OwnedColumns & {
  */
 export function visibleRowsWhere(columns: ForkableColumns, visibility: LibraryVisibility): SQL {
   const own = eq(columns.userId, visibility.userId);
-  if (!visibility.includesSamples) return own;
+
+  if (!visibility.includesSamples) {
+    return own;
+  }
 
   const forkedSampleIds = db
     .select({ id: columns.forkedFromId })

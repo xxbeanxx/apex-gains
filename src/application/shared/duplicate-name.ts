@@ -5,9 +5,16 @@
  */
 export function nextCopyName(name: string, existingNames: ReadonlySet<string>): string {
   const first = `${name} (copy)`;
-  if (!existingNames.has(first)) return first;
+
+  if (!existingNames.has(first)) {
+    return first;
+  }
 
   let n = 2;
-  while (existingNames.has(`${name} (copy ${n})`)) n++;
+
+  while (existingNames.has(`${name} (copy ${n})`)) {
+    n++;
+  }
+
   return `${name} (copy ${n})`;
 }

@@ -157,7 +157,10 @@ async function resolveEach<T extends { id: string; forkedFromId: string | null }
   rows: ForkableRows<T>,
 ): Promise<Map<string, T>> {
   const resolved = new Map<string, T>();
-  if (ids.length === 0) return resolved;
+
+  if (ids.length === 0) {
+    return resolved;
+  }
 
   if (forkOwner !== null) {
     for (const fork of await rows.findForksOf(forkOwner, ids)) {

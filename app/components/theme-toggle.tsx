@@ -68,17 +68,26 @@ export function ThemeToggle() {
 
   // Follow the OS while the preference is "system".
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (theme !== 'system') {
+      return;
+    }
+
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => applyTheme('system');
     media.addEventListener('change', onChange);
+
     return () => media.removeEventListener('change', onChange);
   }, [theme]);
 
   function select(next: Theme) {
     setTheme(next);
-    if (next === 'system') localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, next);
+
+    if (next === 'system') {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, next);
+    }
+
     applyTheme(next);
   }
 
@@ -94,7 +103,9 @@ export function ThemeToggle() {
         <DropdownMenuRadioGroup
           value={theme ?? undefined}
           onValueChange={(value) => {
-            if (isTheme(value)) select(value);
+            if (isTheme(value)) {
+              select(value);
+            }
           }}
         >
           <DropdownMenuRadioItem value="light">

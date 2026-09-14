@@ -17,7 +17,10 @@ const SOURCE_BADGE_VARIANT = {
 } as const;
 
 export function sourceOf(exercise: ExerciseView): ExerciseSource {
-  if (exercise.isSample) return 'sample';
+  if (exercise.isSample) {
+    return 'sample';
+  }
+
   return exercise.canRevert ? 'customized' : 'mine';
 }
 

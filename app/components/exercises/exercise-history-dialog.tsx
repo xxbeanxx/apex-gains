@@ -9,8 +9,12 @@ function groupSetsByDate(sets: RecentSetView[]): { date: string; summaries: stri
   const groups: { date: string; summaries: string[] }[] = [];
   for (const set of sets) {
     const current = groups.at(-1);
-    if (current && current.date === set.date) current.summaries.push(set.summary);
-    else groups.push({ date: set.date, summaries: [set.summary] });
+
+    if (current && current.date === set.date) {
+      current.summaries.push(set.summary);
+    } else {
+      groups.push({ date: set.date, summaries: [set.summary] });
+    }
   }
   return groups;
 }

@@ -107,7 +107,9 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
   }
 
   async findManyByIds(workoutIds: readonly string[]): Promise<Workout[]> {
-    if (workoutIds.length === 0) return [];
+    if (workoutIds.length === 0) {
+      return [];
+    }
 
     const rows = await dbScope.query.workouts.findMany({
       where: inArray(workouts.id, [...workoutIds]),
@@ -127,7 +129,9 @@ export class DrizzleWorkoutsRepository implements WorkoutsRepository {
   }
 
   async findForksOf(userId: string, sampleIds: readonly string[]): Promise<Workout[]> {
-    if (sampleIds.length === 0) return [];
+    if (sampleIds.length === 0) {
+      return [];
+    }
 
     const rows = await dbScope.query.workouts.findMany({
       where: and(eq(workouts.userId, userId), inArray(workouts.forkedFromId, [...sampleIds])),

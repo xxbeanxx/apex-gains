@@ -31,8 +31,15 @@ async function activePlanWith(page: Page, exercise: string, targets?: { sets?: s
 
   if (targets?.sets || targets?.reps) {
     await row.getByText('Edit target').click();
-    if (targets.sets) await row.getByLabel('Sets').fill(targets.sets);
-    if (targets.reps) await row.getByLabel('Reps').fill(targets.reps);
+
+    if (targets.sets) {
+      await row.getByLabel('Sets').fill(targets.sets);
+    }
+
+    if (targets.reps) {
+      await row.getByLabel('Reps').fill(targets.reps);
+    }
+
     await row.getByRole('button', { name: 'Save target' }).click();
   }
 

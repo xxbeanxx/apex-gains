@@ -118,7 +118,10 @@ export class LoggedSet {
    * to count and contribute nothing, rather than being guessed at.
    */
   get tonnage(): Weight | null {
-    if (!this.weight || this.reps === null) return null;
+    if (!this.weight || this.reps === null) {
+      return null;
+    }
+
     return this.weight.times(this.reps);
   }
 
@@ -129,22 +132,36 @@ export class LoggedSet {
     const parts: string[] = [];
 
     const weight = preferences.formatWeight(this.weight);
-    if (weight && this.reps !== null) parts.push(`${weight} x ${this.reps}`);
-    else if (weight) parts.push(weight);
-    else if (this.reps !== null) parts.push(`${this.reps} reps`);
+    if (weight && this.reps !== null) {
+      parts.push(`${weight} x ${this.reps}`);
+    } else if (weight) {
+      parts.push(weight);
+    } else if (this.reps !== null) {
+      parts.push(`${this.reps} reps`);
+    }
 
     const duration = preferences.formatDuration(this.duration);
-    if (duration) parts.push(duration);
+
+    if (duration) {
+      parts.push(duration);
+    }
 
     const speed = preferences.formatSpeed(this.speed);
-    if (speed) parts.push(speed);
+
+    if (speed) {
+      parts.push(speed);
+    }
 
     if (this.resistanceLevel !== null) {
       parts.push(`resistance ${this.resistanceLevel}`);
     }
 
     const summary = parts.join(', ');
-    if (!this.rpe) return summary;
+
+    if (!this.rpe) {
+      return summary;
+    }
+
     return summary ? `${summary} @ ${this.rpe.format()}` : this.rpe.format();
   }
 }

@@ -25,7 +25,10 @@ export class InMemoryAdminActionsRepository implements AdminActionsRepository, A
    */
   clearAthlete(userId: string): void {
     for (const [id, snapshot] of this.byId) {
-      if (snapshot.actorId !== userId && snapshot.targetId !== userId) continue;
+      if (snapshot.actorId !== userId && snapshot.targetId !== userId) {
+        continue;
+      }
+
       this.byId.set(id, {
         ...snapshot,
         actorId: snapshot.actorId === userId ? null : snapshot.actorId,

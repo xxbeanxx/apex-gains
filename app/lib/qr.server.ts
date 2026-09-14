@@ -37,7 +37,10 @@ export function encodeQr(text: string): QrCode {
     for (let column = 0; column <= modules; column++) {
       const dark = column < modules && qr.isDark(row, column);
 
-      if (dark && runStart === null) runStart = column;
+      if (dark && runStart === null) {
+        runStart = column;
+      }
+
       if (!dark && runStart !== null) {
         const length = column - runStart;
         commands.push(`M${runStart + QUIET_ZONE} ${row + QUIET_ZONE}h${length}v1h-${length}z`);

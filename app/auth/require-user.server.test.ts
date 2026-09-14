@@ -11,7 +11,9 @@ type MiddlewareArgs = Parameters<typeof requireUserMiddleware>[0];
 function argsFor(url: string, user: Athlete | null): MiddlewareArgs {
   const context = new RouterContextProvider();
 
-  if (user) context.set(userContext, user);
+  if (user) {
+    context.set(userContext, user);
+  }
 
   return mock<MiddlewareArgs>({
     request: new Request(url),

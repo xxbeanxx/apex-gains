@@ -14,11 +14,16 @@ const deps = { ids: sequentialIds('athlete'), clock: fixedClock(NOW) };
 let seq = 0;
 function athlete(isAdmin = false): Athlete {
   seq += 1;
+
   const registered = Athlete.register(
     { googleSub: `google-${seq}`, email: `athlete-${seq}@example.com`, name: `Athlete ${seq}`, avatarUrl: null },
     deps,
   );
-  if (isAdmin) registered.changeAdminAccess(true, NOW);
+
+  if (isAdmin) {
+    registered.changeAdminAccess(true, NOW);
+  }
+
   return registered;
 }
 
@@ -56,7 +61,9 @@ describe('changeAdminAccess', () => {
     const actor = athlete(true);
     const others = [athlete(true), athlete(true)];
 
-    for (const other of others) changeAdminAccess(actor, other, false, NOW);
+    for (const other of others) {
+      changeAdminAccess(actor, other, false, NOW);
+    }
 
     expect([actor, ...others].filter((one) => one.isAdmin)).toEqual([actor]);
   });

@@ -19,13 +19,17 @@ export async function writePositions(
   update: (id: string, position: number) => Promise<unknown>,
 ): Promise<void> {
   const moved = next.filter((child) => previousPositions.get(child.id) !== child.position);
-  if (moved.length === 0) return;
+
+  if (moved.length === 0) {
+    return;
+  }
 
   // Park first, in one pass, so no final write can land on a position a
   // not-yet-moved row still holds.
   for (const [index, child] of moved.entries()) {
     await update(child.id, -1 - index);
   }
+
   for (const child of moved) {
     await update(child.id, child.position);
   }

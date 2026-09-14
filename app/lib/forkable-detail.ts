@@ -89,8 +89,14 @@ export function forkableDetail(page: { noun: string; indexPath: string; pathFor:
     notFound,
 
     settle(outcome) {
-      if (!outcome.ok) notFound();
-      if (outcome.value.forkedId) throw redirect(page.pathFor(outcome.value.forkedId));
+      if (!outcome.ok) {
+        notFound();
+      }
+
+      if (outcome.value.forkedId) {
+        throw redirect(page.pathFor(outcome.value.forkedId));
+      }
+
       return { ok: true };
     },
   };

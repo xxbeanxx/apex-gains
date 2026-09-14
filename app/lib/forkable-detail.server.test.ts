@@ -40,7 +40,11 @@ async function submit(
   on: ForkableDetail = page,
 ): Promise<unknown> {
   const body = new FormData();
-  for (const [key, value] of Object.entries(fields)) body.append(key, value);
+
+  for (const [key, value] of Object.entries(fields)) {
+    body.append(key, value);
+  }
+
   const request = new Request('http://localhost/plans/plan-1', {
     method: 'POST',
     body,
@@ -58,10 +62,14 @@ async function submit(
  * the init it will be turned into.
  */
 function statusOf(answer: unknown): number | undefined {
-  if (answer instanceof Response) return answer.status;
+  if (answer instanceof Response) {
+    return answer.status;
+  }
+
   if (typeof answer === 'object' && answer !== null && 'init' in answer) {
     return (answer.init as ResponseInit | undefined)?.status;
   }
+
   return undefined;
 }
 

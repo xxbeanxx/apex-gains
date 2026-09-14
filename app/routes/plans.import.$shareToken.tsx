@@ -47,11 +47,16 @@ function notFound(): never {
 export async function loader({ params, context }: Route.LoaderArgs) {
   const athlete = requireAthlete(context);
   const shared = await context.get(planImportServiceContext).preview(athlete, params.shareToken);
-  if (!shared) notFound();
+
+  if (!shared) {
+    notFound();
+  }
 
   // Their own link, come back to them. Copying it would work, but what they
   // almost certainly want is the plan they already have.
-  if (shared.ownPlanId) throw redirect(`/plans/${shared.ownPlanId}`);
+  if (shared.ownPlanId) {
+    throw redirect(`/plans/${shared.ownPlanId}`);
+  }
 
   return { shared, todayStr: context.get(athleteCalendarContext).today(athlete).value };
 }
@@ -66,12 +71,16 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const athlete = requireAthlete(context);
 
   const form = validateForm(ImportPlanDto, Object.fromEntries(await request.formData()));
-  if (!form.success) return data({ error: 'Invalid date' }, { status: 400 });
+  if (!form.success) {
+    return data({ error: 'Invalid date' }, { status: 400 });
+  }
 
   const outcome = await context
     .get(planImportServiceContext)
     .import(athlete, params.shareToken, DateOnly.parse(form.data.anchorDate));
-  if (!outcome.ok) notFound();
+  if (!outcome.ok) {
+    notFound();
+  }
 
   requestLogger(context).log(`imported shared plan as ${outcome.value.planId} for user ${athlete.id}`, 'Plans');
   throw redirect(`/plans/${outcome.value.planId}`);
@@ -82,8 +91,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
  */
 function additionsSummary(newWorkouts: number, newExercises: number): string | null {
   const parts: string[] = [];
-  if (newWorkouts > 0) parts.push(`${newWorkouts} ${newWorkouts === 1 ? 'workout' : 'workouts'}`);
-  if (newExercises > 0) parts.push(`${newExercises} ${newExercises === 1 ? 'exercise' : 'exercises'}`);
+  if (newWorkouts > 0) {
+    parts.push(`${newWorkouts} ${newWorkouts === 1 ? 'workout' : 'workouts'}`);
+  }
+  if (newExercises > 0) {
+    parts.push(`${newExercises} ${newExercises === 1 ? 'exercise' : 'exercises'}`);
+  }
   return parts.length === 0 ? null : parts.join(' and ');
 }
 

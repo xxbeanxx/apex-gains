@@ -35,8 +35,13 @@ export function FacetFilter({
 
   function toggle(value: string) {
     const next = new Set(selected);
-    if (next.has(value)) next.delete(value);
-    else next.add(value);
+
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+
     onChange(next);
   }
 

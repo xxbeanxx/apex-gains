@@ -63,8 +63,14 @@ export class InMemoryAthletesRepository implements AthletesRepository {
    */
   async remove(athlete: Athlete): Promise<void> {
     this.byId.delete(athlete.id);
-    for (const store of this.owned) store.removeAllFor(athlete.id);
-    for (const store of this.referenced) store.clearAthlete(athlete.id);
+
+    for (const store of this.owned) {
+      store.removeAllFor(athlete.id);
+    }
+
+    for (const store of this.referenced) {
+      store.clearAthlete(athlete.id);
+    }
   }
 
   private findBy(predicate: (snapshot: AthleteSnapshot) => boolean): Athlete | null {

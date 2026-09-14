@@ -412,7 +412,11 @@ async function seed() {
 
   const links = seedExercises.flatMap((seedExercise) => {
     const exerciseId = exerciseIdByName.get(seedExercise.name);
-    if (!exerciseId) return [];
+
+    if (!exerciseId) {
+      return [];
+    }
+
     return seedExercise.equipment.map((equipmentName) => ({
       exerciseId,
       equipmentId: equipmentIdByName.get(equipmentName)!,
@@ -454,7 +458,10 @@ async function seed() {
 
   for (const seedWorkout of seedWorkouts) {
     const workoutRow = workoutRowByName.get(seedWorkout.name);
-    if (!workoutRow || workoutRow.workoutExercises.length > 0) continue;
+
+    if (!workoutRow || workoutRow.workoutExercises.length > 0) {
+      continue;
+    }
 
     await db.insert(workoutExercises).values(
       seedWorkout.exercises.map((te, position) => ({

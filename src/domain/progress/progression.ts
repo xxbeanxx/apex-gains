@@ -52,7 +52,9 @@ export function suggestNextTarget(
   cardioFields: CardioFields,
   weightIncrement: Weight,
 ): Suggestion | null {
-  if (recent.length < 2) return null;
+  if (recent.length < 2) {
+    return null;
+  }
 
   return exerciseType === 'cardio'
     ? suggestCardio(current, recent, cardioFields)
@@ -93,7 +95,10 @@ function metSetCountAtWeight(logged: readonly LoggedSet[], targetSets: number, w
 
 function suggestStrength(current: SetTarget, recent: readonly RecentSession[], increment: Weight): Suggestion | null {
   const { sets, reps, weight } = current;
-  if (sets === null || reps === null || weight === null) return null;
+
+  if (sets === null || reps === null || weight === null) {
+    return null;
+  }
 
   const [latest, previous] = recent;
 
@@ -122,15 +127,24 @@ function suggestStrength(current: SetTarget, recent: readonly RecentSession[], i
 
 function hitsCardioTarget(logged: readonly LoggedSet[], duration: Duration, speed: Speed | null): boolean {
   return logged.some((set) => {
-    if (set.duration === null || set.duration.inSeconds < duration.inSeconds) return false;
-    if (speed === null) return true;
+    if (set.duration === null || set.duration.inSeconds < duration.inSeconds) {
+      return false;
+    }
+
+    if (speed === null) {
+      return true;
+    }
+
     return set.speed !== null && set.speed.inKmPerHour >= speed.inKmPerHour;
   });
 }
 
 function suggestCardio(current: SetTarget, recent: readonly RecentSession[], cardioFields: CardioFields): Suggestion | null {
   const { duration } = current;
-  if (duration === null) return null;
+
+  if (duration === null) {
+    return null;
+  }
 
   // Only compare against speed when the equipment reports one - resistance
   // has no established increment convention, so a resistance-only exercise

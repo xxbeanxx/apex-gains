@@ -15,7 +15,9 @@ import { cn } from '~/lib/utils';
 export function RenameDisclosure({ label = 'Rename', children }: { label?: string; children: ReactNode }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   useCloseOnSubmit(() => {
-    if (detailsRef.current) detailsRef.current.open = false;
+    if (detailsRef.current) {
+      detailsRef.current.open = false;
+    }
   });
 
   return (

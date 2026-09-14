@@ -72,10 +72,13 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     handled(intents.duplicate, async ({ planId }) => {
       const outcome = await planService.duplicate(user, planId);
+
       // A stale row - since deleted or since out of view - is a no-op back
       // to the list rather than an error, same as a stale form anywhere
       // else in the builders.
-      if (!outcome.ok) throw redirect('/plans');
+      if (!outcome.ok) {
+        throw redirect('/plans');
+      }
 
       requestLogger(context).log(`duplicated plan ${planId} into ${outcome.value.id} for user ${user.id}`, 'Plans');
       throw redirect(`/plans/${outcome.value.id}`);
@@ -84,7 +87,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 function PlanSummaryLine({ plan }: { plan: PlanSummary }) {
-  if (plan.slotCount === 0) return <>No days yet</>;
+  if (plan.slotCount === 0) {
+    return <>No days yet</>;
+  }
+
   return (
     <>
       {plan.slotCount}-day cycle · anchored {formatWeekday(plan.anchorDate)} {formatMonthDay(plan.anchorDate)}

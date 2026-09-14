@@ -52,7 +52,9 @@ function actingOnSelf(actor: Athlete, target: Athlete): boolean {
  * Grants or withdraws `target`'s administrator access on `actor`'s behalf.
  */
 export function changeAdminAccess(actor: Athlete, target: Athlete, isAdmin: boolean, now: Date): Result<void, AdminRefusal> {
-  if (actingOnSelf(actor, target)) return err('self');
+  if (actingOnSelf(actor, target)) {
+    return err('self');
+  }
 
   target.changeAdminAccess(isAdmin, now);
   return ok();
@@ -65,8 +67,13 @@ export function changeAdminAccess(actor: Athlete, target: Athlete, isAdmin: bool
  * rule.
  */
 export function removeAccount(actor: Athlete, target: Athlete, confirmation: string): Result<void, RemoveAccountRefusal> {
-  if (!confirmsDeletionOf(target, confirmation)) return err('confirmation-mismatch');
-  if (actingOnSelf(actor, target)) return err('self');
+  if (!confirmsDeletionOf(target, confirmation)) {
+    return err('confirmation-mismatch');
+  }
+
+  if (actingOnSelf(actor, target)) {
+    return err('self');
+  }
 
   return ok();
 }
@@ -89,7 +96,13 @@ export function closeOwnAccount(
   administratorCount: number,
   confirmation: string,
 ): Result<void, CloseAccountRefusal> {
-  if (!confirmsDeletionOf(athlete, confirmation)) return err('confirmation-mismatch');
-  if (athlete.isAdmin && administratorCount <= 1) return err('last-administrator');
+  if (!confirmsDeletionOf(athlete, confirmation)) {
+    return err('confirmation-mismatch');
+  }
+
+  if (athlete.isAdmin && administratorCount <= 1) {
+    return err('last-administrator');
+  }
+
   return ok();
 }

@@ -160,7 +160,10 @@ export class Workout {
    */
   updateTarget(entryId: string, target: SetTarget, cardioFields: CardioFields, now: Date): boolean {
     const entry = this.entries.find(entryId);
-    if (!entry) return false;
+
+    if (!entry) {
+      return false;
+    }
 
     entry.retarget(
       SetTarget.of({
@@ -182,7 +185,11 @@ export class Workout {
    */
   removeExercise(entryId: string, now: Date): boolean {
     const removed = this.entries.remove(entryId);
-    if (removed) this.touch(now);
+
+    if (removed) {
+      this.touch(now);
+    }
+
     return removed;
   }
 
@@ -191,7 +198,11 @@ export class Workout {
    */
   moveExercise(entryId: string, direction: MoveDirection, now: Date): boolean {
     const moved = this.entries.move(entryId, direction);
-    if (moved) this.touch(now);
+
+    if (moved) {
+      this.touch(now);
+    }
+
     return moved;
   }
 
@@ -202,7 +213,9 @@ export class Workout {
    * translation matters when the caller holds an entry id.
    */
   editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<Workout> {
-    if (!this.ownership.isSample) return alreadyEditable(this);
+    if (!this.ownership.isSample) {
+      return alreadyEditable(this);
+    }
 
     const now = deps.clock.now();
     const copiedEntries = this.entries.map(

@@ -22,7 +22,10 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
   async add(session: Session): Promise<Session> {
     const snapshot = session.toSnapshot();
     const existing = this.snapshotForDate(snapshot.userId, snapshot.date);
-    if (existing) return Session.fromSnapshot(existing);
+
+    if (existing) {
+      return Session.fromSnapshot(existing);
+    }
 
     this.byId.set(snapshot.id, snapshot);
     return Session.fromSnapshot(snapshot);
@@ -57,9 +60,15 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
   ): Promise<{ date: DateOnly; set: LoggedSet }[]> {
     const entries: { date: DateOnly; set: LoggedSet }[] = [];
     for (const snapshot of this.byId.values()) {
-      if (snapshot.userId !== userId) continue;
+      if (snapshot.userId !== userId) {
+        continue;
+      }
+
       for (const setSnapshot of snapshot.sets) {
-        if (setSnapshot.exerciseId !== exerciseId) continue;
+        if (setSnapshot.exerciseId !== exerciseId) {
+          continue;
+        }
+
         entries.push({
           date: DateOnly.parse(snapshot.date),
           set: LoggedSet.fromSnapshot(setSnapshot),
@@ -81,9 +90,13 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
     const latest = new Map<string, { date: string; set: SessionSnapshot['sets'][number] }>();
 
     for (const snapshot of this.byId.values()) {
-      if (snapshot.userId !== userId || snapshot.date >= beforeDate.value) continue;
+      if (snapshot.userId !== userId || snapshot.date >= beforeDate.value) {
+        continue;
+      }
+
       for (const setSnapshot of snapshot.sets) {
         const current = latest.get(setSnapshot.exerciseId);
+
         if (
           !current ||
           snapshot.date > current.date ||
@@ -107,11 +120,17 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
 
     for (const snapshot of this.byId.values()) {
       const running = totals.get(snapshot.userId) ?? { workoutCount: 0, setCount: 0, lastActiveOn: null };
-      if (!snapshot.isRestDay) running.workoutCount += 1;
+
+      if (!snapshot.isRestDay) {
+        running.workoutCount += 1;
+      }
+
       running.setCount += snapshot.sets.length;
+
       if (running.lastActiveOn === null || snapshot.date > running.lastActiveOn) {
         running.lastActiveOn = snapshot.date;
       }
+
       totals.set(snapshot.userId, running);
     }
 
@@ -134,7 +153,9 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
 
   removeAllFor(userId: string): void {
     for (const [id, snapshot] of this.byId) {
-      if (snapshot.userId === userId) this.byId.delete(id);
+      if (snapshot.userId === userId) {
+        this.byId.delete(id);
+      }
     }
   }
 

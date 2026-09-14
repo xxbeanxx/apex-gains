@@ -26,8 +26,12 @@ export class Speed {
   }
 
   static fromStorage(value: string | null | undefined): Speed | null {
-    if (value == null || value === '') return null;
+    if (value == null || value === '') {
+      return null;
+    }
+
     const parsed = Number(value);
+
     return Number.isFinite(parsed) ? new Speed(parsed) : null;
   }
 

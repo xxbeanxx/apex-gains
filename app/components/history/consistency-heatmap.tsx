@@ -17,12 +17,25 @@ const MARGIN = { top: 56, right: 4, bottom: 4, left: 28 };
  * 0 (nothing logged) through 4 (a big day), for the fill-opacity ramp below.
  */
 function levelForSetCount(setCount: number): number {
-  if (setCount <= 0) return 0;
-  if (setCount <= 2) return 1;
-  if (setCount <= 4) return 2;
-  if (setCount <= 6) return 3;
+  if (setCount <= 0) {
+    return 0;
+  }
+
+  if (setCount <= 2) {
+    return 1;
+  }
+
+  if (setCount <= 4) {
+    return 2;
+  }
+
+  if (setCount <= 6) {
+    return 3;
+  }
+
   return 4;
 }
+
 const LEVEL_OPACITY = [0, 0.28, 0.52, 0.76, 1];
 const WEEKDAY_LABELS: Record<number, string> = { 0: 'Mon', 2: 'Wed', 4: 'Fri' };
 

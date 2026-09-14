@@ -16,7 +16,11 @@ export function useCloseOnSubmit(close: () => void): void {
 
   useEffect(() => {
     const isSubmitting = navigation.state !== 'idle';
-    if (wasSubmitting.current && !isSubmitting) closeRef.current();
+
+    if (wasSubmitting.current && !isSubmitting) {
+      closeRef.current();
+    }
+
     wasSubmitting.current = isSubmitting;
   }, [navigation.state]);
 }

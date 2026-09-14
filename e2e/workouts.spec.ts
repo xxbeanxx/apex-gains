@@ -29,13 +29,35 @@ async function setTarget(
 ): Promise<void> {
   const row = orderedRows(page).filter({ hasText: exercise });
   await row.getByText('Edit target').click();
-  if (targets.sets) await row.getByLabel('Sets').fill(targets.sets);
-  if (targets.reps) await row.getByLabel('Reps').fill(targets.reps);
-  if (targets.weight) await row.getByLabel(/^Weight \(/).fill(targets.weight);
-  if (targets.minutes) await row.getByLabel('Minutes').fill(targets.minutes);
-  if (targets.speed) await row.getByLabel(/^Speed \(/).fill(targets.speed);
-  if (targets.resistance) await row.getByLabel('Resistance').fill(targets.resistance);
-  if (targets.restSeconds) await row.getByLabel('Rest (seconds)').fill(targets.restSeconds);
+
+  if (targets.sets) {
+    await row.getByLabel('Sets').fill(targets.sets);
+  }
+
+  if (targets.reps) {
+    await row.getByLabel('Reps').fill(targets.reps);
+  }
+
+  if (targets.weight) {
+    await row.getByLabel(/^Weight \(/).fill(targets.weight);
+  }
+
+  if (targets.minutes) {
+    await row.getByLabel('Minutes').fill(targets.minutes);
+  }
+
+  if (targets.speed) {
+    await row.getByLabel(/^Speed \(/).fill(targets.speed);
+  }
+
+  if (targets.resistance) {
+    await row.getByLabel('Resistance').fill(targets.resistance);
+  }
+
+  if (targets.restSeconds) {
+    await row.getByLabel('Rest (seconds)').fill(targets.restSeconds);
+  }
+
   await row.getByRole('button', { name: 'Save target' }).click();
 }
 

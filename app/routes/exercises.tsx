@@ -236,7 +236,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 function matchesQuery(exercise: ExerciseView, needle: string): boolean {
-  if (needle === '') return true;
+  if (needle === '') {
+    return true;
+  }
+
   return (
     exercise.name.toLowerCase().includes(needle) ||
     (exercise.muscleGroup ?? '').toLowerCase().includes(needle) ||
@@ -258,7 +261,10 @@ function matchesSources(exercise: ExerciseView, sources: ReadonlySet<string>): b
 
 function countBy<T extends string>(exercises: ExerciseView[], values: readonly T[], key: (exercise: ExerciseView) => T) {
   const counts = Object.fromEntries(values.map((value) => [value, 0])) as Record<T, number>;
-  for (const exercise of exercises) counts[key(exercise)]++;
+  for (const exercise of exercises) {
+    counts[key(exercise)]++;
+  }
+
   return counts;
 }
 

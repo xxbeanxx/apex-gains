@@ -56,7 +56,10 @@ export function exerciseProgress(history: TrainingHistory): ExerciseProgress[] {
 
   for (const { session, set } of history.entries()) {
     const exercise = history.exerciseFor(set.exerciseId);
-    if (!exercise) continue;
+
+    if (!exercise) {
+      continue;
+    }
 
     let group = collected.get(exercise.id);
     if (!group) {
@@ -81,14 +84,22 @@ export function exerciseProgress(history: TrainingHistory): ExerciseProgress[] {
     const bestByDate = new Map<string, number>();
     for (const entry of group.raw) {
       const value = valueFor(kind, entry);
-      if (value === null) continue;
+
+      if (value === null) {
+        continue;
+      }
+
       const prior = bestByDate.get(entry.date);
+
       if (prior === undefined || value > prior) {
         bestByDate.set(entry.date, value);
       }
     }
 
-    if (bestByDate.size === 0) continue;
+    if (bestByDate.size === 0) {
+      continue;
+    }
+
     progress.push({
       exerciseId,
       exerciseName: group.name,
@@ -100,9 +111,18 @@ export function exerciseProgress(history: TrainingHistory): ExerciseProgress[] {
   return progress;
 
   function valueFor(kind: ProgressMetricKind, entry: Raw): number | null {
-    if (kind === 'duration') return entry.seconds;
-    if (kind === 'reps') return entry.reps;
-    if (entry.weight === null || entry.reps === null) return null;
+    if (kind === 'duration') {
+      return entry.seconds;
+    }
+
+    if (kind === 'reps') {
+      return entry.reps;
+    }
+
+    if (entry.weight === null || entry.reps === null) {
+      return null;
+    }
+
     return estimatedOneRepMax(entry.weight, entry.reps).inPounds;
   }
 }

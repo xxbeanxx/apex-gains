@@ -25,8 +25,11 @@ function readDeadline(key: string): number | null {
 
 function writeDeadline(key: string, deadline: number | null): void {
   try {
-    if (deadline === null) sessionStorage.removeItem(key);
-    else sessionStorage.setItem(key, String(deadline));
+    if (deadline === null) {
+      sessionStorage.removeItem(key);
+    } else {
+      sessionStorage.setItem(key, String(deadline));
+    }
   } catch {
     // Nothing to fall back to - the countdown still works for this page view.
   }
@@ -68,7 +71,9 @@ export function RestTimer({
   const previousSignal = useRef(signal);
 
   useEffect(() => {
-    if (hydrated) setDeadline(readDeadline(key));
+    if (hydrated) {
+      setDeadline(readDeadline(key));
+    }
   }, [hydrated, key]);
 
   useEffect(() => {
@@ -81,8 +86,12 @@ export function RestTimer({
   }, [signal, restSeconds, key]);
 
   useEffect(() => {
-    if (deadline === null) return;
+    if (deadline === null) {
+      return;
+    }
+
     setNow(Date.now());
+
     const ticking = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(ticking);
   }, [deadline]);
@@ -93,11 +102,16 @@ export function RestTimer({
     if (deadline !== null && remaining <= 0) {
       setDeadline(null);
       writeDeadline(key, null);
-      if ('vibrate' in navigator) navigator.vibrate(200);
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate(200);
+      }
     }
   }, [remaining, deadline, key]);
 
-  if (!hydrated || deadline === null) return null;
+  if (!hydrated || deadline === null) {
+    return null;
+  }
 
   function skip() {
     setDeadline(null);
@@ -106,9 +120,13 @@ export function RestTimer({
 
   function addThirtySeconds() {
     setDeadline((current) => {
-      if (current === null) return current;
+      if (current === null) {
+        return current;
+      }
+
       const next = current + THIRTY_SECONDS;
       writeDeadline(key, next);
+
       return next;
     });
   }

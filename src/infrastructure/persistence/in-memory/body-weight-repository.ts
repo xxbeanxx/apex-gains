@@ -40,7 +40,9 @@ export class InMemoryBodyWeightRepository implements BodyWeightRepository, Athle
 
   removeAllFor(userId: string): void {
     for (const [id, snapshot] of this.byId) {
-      if (snapshot.userId === userId) this.byId.delete(id);
+      if (snapshot.userId === userId) {
+        this.byId.delete(id);
+      }
     }
   }
 }

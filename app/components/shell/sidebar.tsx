@@ -52,7 +52,9 @@ function SidebarLink({ item }: { item: NavItem }) {
 }
 
 function SidebarGroup({ label, items }: { label: string | null; items: NavItem[] }) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col gap-0.5">

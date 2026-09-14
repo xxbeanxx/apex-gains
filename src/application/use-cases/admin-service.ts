@@ -147,7 +147,10 @@ export class AdminService {
 
   async account(actor: Athlete, userId: string): Promise<AdminAccountDetailView | null> {
     const athlete = await this.athletes.findById(userId);
-    if (!athlete) return null;
+
+    if (!athlete) {
+      return null;
+    }
 
     const totals = await this.sessions.trainingTotals();
     return {
@@ -161,10 +164,16 @@ export class AdminService {
 
   async changeAdminAccess(actor: Athlete, userId: string, isAdmin: boolean): Promise<AdminMutation> {
     const target = await this.athletes.findById(userId);
-    if (!target) return err('not-found');
+
+    if (!target) {
+      return err('not-found');
+    }
 
     const outcome = changeAdminAccess(actor, target, isAdmin, this.deps.clock.now());
-    if (!outcome.ok) return outcome;
+
+    if (!outcome.ok) {
+      return outcome;
+    }
 
     return this.unitOfWork.run(async () => {
       await this.athletes.save(target);
@@ -185,10 +194,16 @@ export class AdminService {
   ): Promise<Result<{ name: string }, 'not-found' | RemoveAccountRefusal>> {
     return this.unitOfWork.run(async () => {
       const target = await this.athletes.findById(userId);
-      if (!target) return err('not-found' as const);
+
+      if (!target) {
+        return err('not-found' as const);
+      }
 
       const outcome = removeAccount(actor, target, confirmation);
-      if (!outcome.ok) return outcome;
+
+      if (!outcome.ok) {
+        return outcome;
+      }
 
       // Recorded before the delete, not after: the FK is `on delete set
       // null`, so writing the entry first and then removing the row still

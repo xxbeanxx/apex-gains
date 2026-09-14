@@ -180,9 +180,13 @@ export class Plan {
    * plan anchored in the future still answers for today.
    */
   slotIndexOn(date: DateOnly): number | null {
-    if (this.slotList.isEmpty) return null;
+    if (this.slotList.isEmpty) {
+      return null;
+    }
+
     const offset = this.anchor.daysUntil(date);
     const length = this.cycleLength;
+
     return ((offset % length) + length) % length;
   }
 
@@ -253,7 +257,10 @@ export class Plan {
    * Revokes the link. A token is never reissued, so a leaked one stays dead.
    */
   unshare(now: Date): void {
-    if (this.token === null) return;
+    if (this.token === null) {
+      return;
+    }
+
     this.token = null;
     this.touch(now);
   }
@@ -270,13 +277,21 @@ export class Plan {
 
   removeSlot(slotId: string, now: Date): boolean {
     const removed = this.slotList.remove(slotId);
-    if (removed) this.touch(now);
+
+    if (removed) {
+      this.touch(now);
+    }
+
     return removed;
   }
 
   moveSlot(slotId: string, direction: MoveDirection, now: Date): boolean {
     const moved = this.slotList.move(slotId, direction);
-    if (moved) this.touch(now);
+
+    if (moved) {
+      this.touch(now);
+    }
+
     return moved;
   }
 
@@ -286,7 +301,9 @@ export class Plan {
    * claiming it here would sidestep the coordination in ./activation.
    */
   editableCopyFor(userId: string, deps: { ids: IdGenerator; clock: Clock }): EditableCopy<Plan> {
-    if (!this.ownership.isSample) return alreadyEditable(this);
+    if (!this.ownership.isSample) {
+      return alreadyEditable(this);
+    }
 
     const now = deps.clock.now();
     const copiedSlots = this.slotList.map((slot) => new PlanSlot(deps.ids.next(), slot.position, slot.workoutId));

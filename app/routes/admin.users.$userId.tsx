@@ -78,7 +78,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const granting = isAdmin === 'true';
       const outcome = await adminService.changeAdminAccess(administrator, params.userId, granting);
       if (!outcome.ok) {
-        if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
+        if (outcome.error === 'not-found') {
+          throw data('User not found', { status: 404 });
+        }
+
         return intents.changeAdminAccess.reject('You cannot change your own admin access.');
       }
 
@@ -92,7 +95,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     handled(intents.deleteAccount, async ({ confirmEmail }) => {
       const outcome = await adminService.removeAccount(administrator, params.userId, confirmEmail);
       if (!outcome.ok) {
-        if (outcome.error === 'not-found') throw data('User not found', { status: 404 });
+        if (outcome.error === 'not-found') {
+          throw data('User not found', { status: 404 });
+        }
+
         return intents.deleteAccount.reject(
           outcome.error === 'confirmation-mismatch'
             ? "That doesn't match this account's email address."

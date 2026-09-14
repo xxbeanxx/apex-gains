@@ -27,7 +27,10 @@ export type TargetView = {
 };
 
 export function toTargetView(target: SetTarget, preferences: AthletePreferences): TargetView | null {
-  if (target.isEmpty) return null;
+  if (target.isEmpty) {
+    return null;
+  }
+
   return {
     sets: target.sets,
     reps: target.reps,

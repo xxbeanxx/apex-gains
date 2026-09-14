@@ -41,11 +41,15 @@ export class DrizzleEquipmentRepository implements EquipmentRepository {
   }
 
   async findManyByIds(equipmentIds: readonly string[]): Promise<Equipment[]> {
-    if (equipmentIds.length === 0) return [];
+    if (equipmentIds.length === 0) {
+      return [];
+    }
+
     const rows = await dbScope
       .select()
       .from(equipment)
       .where(inArray(equipment.id, [...equipmentIds]));
+
     return rows.map(toEquipment);
   }
 

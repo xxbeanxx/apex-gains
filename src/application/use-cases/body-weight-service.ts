@@ -51,9 +51,14 @@ export class BodyWeightService {
   async remove(athlete: Athlete, date: DateOnly, entryId: string): Promise<Result<void, never>> {
     await this.unitOfWork.run(async () => {
       const entry = await this.entries.findForDate(athlete.id, date);
-      if (!entry || entry.id !== entryId) return;
+
+      if (!entry || entry.id !== entryId) {
+        return;
+      }
+
       await this.entries.delete(entry.id);
     });
+
     return ok();
   }
 }

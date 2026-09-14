@@ -112,7 +112,10 @@ export class Session {
    * rest day still counts as having trained.
    */
   get status(): 'workout' | 'rest' | 'none' {
-    if (this.loggedSets.length > 0) return 'workout';
+    if (this.loggedSets.length > 0) {
+      return 'workout';
+    }
+
     return this.plan.isRestDay ? 'rest' : 'none';
   }
 
@@ -154,9 +157,14 @@ export class Session {
    */
   removeSet(setId: string, now: Date): boolean {
     const index = this.loggedSets.findIndex((set) => set.id === setId);
-    if (index === -1) return false;
+
+    if (index === -1) {
+      return false;
+    }
+
     this.loggedSets.splice(index, 1);
     this.lastUpdatedAt = now;
+
     return true;
   }
 

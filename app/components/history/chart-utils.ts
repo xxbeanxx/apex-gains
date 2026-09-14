@@ -30,7 +30,10 @@ export function paddedAxis(dataMin: number, dataMax: number, targetTicks = 4): {
   const max = Math.ceil((dataMax + pad) / step) * step;
 
   const ticks: number[] = [];
-  for (let value = min; value <= max + step / 2; value += step) ticks.push(Math.round(value * 1000) / 1000);
+
+  for (let value = min; value <= max + step / 2; value += step) {
+    ticks.push(Math.round(value * 1000) / 1000);
+  }
 
   return { domain: [min, max], ticks };
 }
@@ -39,7 +42,10 @@ export function paddedAxis(dataMin: number, dataMax: number, targetTicks = 4): {
  * A "nice" gridline step - 1, 2 or 5 times a power of ten.
  */
 function niceStep(span: number, targetTicks: number): number {
-  if (span <= 0) return 1;
+  if (span <= 0) {
+    return 1;
+  }
+
   const rough = span / targetTicks;
   const magnitude = 10 ** Math.floor(Math.log10(rough));
   const residual = rough / magnitude;
