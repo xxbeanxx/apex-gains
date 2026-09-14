@@ -116,12 +116,7 @@ export class ExerciseLibraryService {
    * sample equipment that their preferences hide from the equipment list.
    */
   private async viewsFor(exercises: readonly Exercise[]): Promise<ExerciseView[]> {
-    const ids = new Set<string>();
-    for (const exercise of exercises) {
-      for (const id of exercise.equipmentIds) {
-        ids.add(id);
-      }
-    }
+    const ids = new Set(exercises.flatMap((exercise) => exercise.equipmentIds));
 
     const equipment = await this.equipment.findManyByIds([...ids]);
     const byId = new Map(equipment.map((item) => [item.id, toEquipmentView(item)]));

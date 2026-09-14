@@ -236,29 +236,26 @@ export class ExportService {
       exerciseIds: sessions.flatMap((session) => session.sets.map((set) => set.exerciseId)),
     });
 
-    const rows: string[] = [CSV_COLUMNS.join(',')];
-    for (const session of sessions) {
-      for (const set of session.sets) {
-        rows.push(
-          [
-            session.date.value,
-            references.exercise(set.exerciseId).name,
-            set.setNumber,
-            set.reps,
-            set.weight?.inPounds ?? null,
-            set.duration?.inSeconds ?? null,
-            set.speed?.inKmPerHour ?? null,
-            set.resistanceLevel,
-            set.rpe?.value ?? null,
-            set.notes,
-          ]
-            .map(csvField)
-            .join(','),
-        );
-      }
-    }
+    const dataRows = sessions.flatMap((session) =>
+      session.sets.map((set) =>
+        [
+          session.date.value,
+          references.exercise(set.exerciseId).name,
+          set.setNumber,
+          set.reps,
+          set.weight?.inPounds ?? null,
+          set.duration?.inSeconds ?? null,
+          set.speed?.inKmPerHour ?? null,
+          set.resistanceLevel,
+          set.rpe?.value ?? null,
+          set.notes,
+        ]
+          .map(csvField)
+          .join(','),
+      ),
+    );
 
-    return rows.join('\n');
+    return [CSV_COLUMNS.join(','), ...dataRows].join('\n');
   }
 
   /**

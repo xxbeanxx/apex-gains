@@ -150,14 +150,12 @@ export function progressSeries(history: TrainingHistory): ProgressSeries[] {
  */
 export function personalRecords(history: TrainingHistory): PersonalRecord[] {
   const records = exerciseProgress(history).map((progress) => {
-    const entries = [...progress.bestByDate.entries()];
-    let [bestDate, bestValue] = entries[0];
-    for (const [date, value] of entries.slice(1)) {
-      if (value > bestValue || (value === bestValue && date < bestDate)) {
-        bestDate = date;
-        bestValue = value;
-      }
-    }
+    const [bestDate, bestValue] = [...progress.bestByDate.entries()].reduce((best, current) => {
+      const [bestD, bestV] = best;
+      const [currD, currV] = current;
+      return currV > bestV || (currV === bestV && currD < bestD) ? current : best;
+    });
+
     return {
       exerciseId: progress.exerciseId,
       exerciseName: progress.exerciseName,

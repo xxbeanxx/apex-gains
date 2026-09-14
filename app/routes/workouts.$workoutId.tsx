@@ -282,14 +282,14 @@ function ExercisePalette({
     count: exerciseList.filter((e) => e.exerciseType === value).length,
   }));
 
-  const equipmentById = new Map<string, { name: string; count: number }>();
-  for (const exercise of exerciseList) {
-    for (const item of exercise.equipment) {
-      const current = equipmentById.get(item.id);
-      equipmentById.set(item.id, { name: item.name, count: (current?.count ?? 0) + 1 });
-    }
-  }
-  const equipmentOptions: FacetOption[] = [...equipmentById.entries()].map(([value, { name, count }]) => ({
+  const equipmentCounts = exerciseList
+    .flatMap((exercise) => exercise.equipment)
+    .reduce((counts, item) => {
+      const current = counts.get(item.id);
+      return counts.set(item.id, { name: item.name, count: (current?.count ?? 0) + 1 });
+    }, new Map<string, { name: string; count: number }>());
+
+  const equipmentOptions: FacetOption[] = Array.from(equipmentCounts, ([value, { name, count }]) => ({
     value,
     label: name,
     count,

@@ -53,15 +53,9 @@ export function ConsistencyHeatmap({ days }: { days: HeatmapDayView[] }) {
   const chartW = MARGIN.left + MARGIN.right + weeks * STEP - GAP;
   const chartH = MARGIN.top + MARGIN.bottom + 7 * STEP - GAP;
 
-  const monthLabels: { col: number; label: string }[] = [];
-  let lastMonth = '';
-  for (let col = 0; col < weeks; col++) {
-    const month = days[col * 7].date.slice(0, 7);
-    if (month !== lastMonth) {
-      monthLabels.push({ col, label: shortMonthLabel(days[col * 7].date) });
-      lastMonth = month;
-    }
-  }
+  const monthLabels = Array.from({ length: weeks }, (_, col) => col)
+    .filter((col) => col === 0 || days[col * 7].date.slice(0, 7) !== days[(col - 1) * 7].date.slice(0, 7))
+    .map((col) => ({ col, label: shortMonthLabel(days[col * 7].date) }));
 
   const hovered = hoveredIndex != null ? days[hoveredIndex] : null;
   const hoveredCol = hoveredIndex != null ? Math.floor(hoveredIndex / 7) : 0;

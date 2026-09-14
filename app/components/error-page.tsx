@@ -10,18 +10,38 @@ import { Button } from '~/components/ui/button';
 // Exporting this as that route's ErrorBoundary opts it back into normal
 // document rendering (still wrapped in root's <Layout>) without giving it a
 // `default` component it doesn't otherwise need.
-export function ErrorPage({ error }: { error: unknown }) {
-  let message = 'Something went wrong';
-  let details = 'An unexpected error occurred.';
-  let stack: string | undefined;
+type ErrorDetails = {
+  readonly message: string;
+  readonly details: string;
+  readonly stack?: string;
+};
 
+function resolveErrorDetails(error: unknown): ErrorDetails {
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? 'Page not found' : 'Error';
-    details = error.status === 404 ? 'The requested page could not be found.' : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
+    const is404 = error.status === 404;
+
+    return {
+      message: is404 ? 'Page not found' : 'Error',
+      details: is404 ? 'The requested page could not be found.' : error.statusText || 'An unexpected error occurred.',
+    };
   }
+
+  if (import.meta.env.DEV && error instanceof Error) {
+    return {
+      message: 'Something went wrong',
+      details: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    message: 'Something went wrong',
+    details: 'An unexpected error occurred.',
+  };
+}
+
+export function ErrorPage({ error }: { error: unknown }) {
+  const { message, details, stack } = resolveErrorDetails(error);
 
   return (
     <main

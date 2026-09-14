@@ -127,15 +127,16 @@ export class SessionService {
    */
   async lastSetsFor(athlete: Athlete, date: DateOnly): Promise<Record<string, LastSetView>> {
     const entries = await this.sessions.lastSetPerExercise(athlete.id, date);
-    const result: Record<string, LastSetView> = {};
-    for (const [exerciseId, { date: loggedDate, set }] of entries) {
-      result[exerciseId] = {
-        date: loggedDate.value,
-        summary: set.format(athlete.preferences),
-        ...toSetInput(set, athlete.preferences),
-      };
-    }
-    return result;
+    return Object.fromEntries(
+      [...entries].map(([exerciseId, { date: loggedDate, set }]) => [
+        exerciseId,
+        {
+          date: loggedDate.value,
+          summary: set.format(athlete.preferences),
+          ...toSetInput(set, athlete.preferences),
+        },
+      ]),
+    );
   }
 
   /**
