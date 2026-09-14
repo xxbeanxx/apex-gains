@@ -22,12 +22,12 @@ function LoggedSetRow({
 
   return (
     <li
-      className="flex items-center gap-2.5 rounded-lg bg-muted/60 py-1.5 pr-1.5 pl-2.5 text-sm"
+      className="bg-muted/60 flex items-center gap-2.5 rounded-lg py-1.5 pr-1.5 pl-2.5 text-sm"
       hidden={fetcher.state !== 'idle'}
     >
       <span
         aria-hidden="true"
-        className="flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-muted text-[0.6875rem] font-semibold text-brand-strong tabular-nums"
+        className="bg-brand-muted text-brand-strong flex size-5 shrink-0 items-center justify-center rounded-md text-[0.6875rem] font-semibold tabular-nums"
       >
         {index + 1}
       </span>
@@ -36,7 +36,7 @@ function LoggedSetRow({
           <span className="sr-only">Set {index + 1}: </span>
           {set.summary}
         </span>
-        {set.notes ? <span className="block truncate text-xs text-muted-foreground">{set.notes}</span> : null}
+        {set.notes ? <span className="text-muted-foreground block truncate text-xs">{set.notes}</span> : null}
       </span>
       <fetcher.Form method="post" className="contents">
         <input {...removeSet.field} />
@@ -44,7 +44,7 @@ function LoggedSetRow({
         <input type="hidden" name="setId" value={set.id} />
         <button
           type="submit"
-          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-destructive/10 hover:text-destructive pointer-coarse:size-8"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex size-6 shrink-0 items-center justify-center rounded-md transition-colors duration-(--dur-fast) pointer-coarse:size-8"
         >
           <XIcon className="size-3.5" aria-hidden="true" />
           <span className="sr-only">

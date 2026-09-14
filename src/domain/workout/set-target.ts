@@ -85,13 +85,13 @@ export class SetTarget {
 
   get isEmpty(): boolean {
     return (
-      this.sets === null &&
-      this.reps === null &&
-      this.weight === null &&
-      this.duration === null &&
-      this.speed === null &&
-      this.resistance === null &&
-      this.rest === null
+      this.sets === null
+      && this.reps === null
+      && this.weight === null
+      && this.duration === null
+      && this.speed === null
+      && this.resistance === null
+      && this.rest === null
     );
   }
 

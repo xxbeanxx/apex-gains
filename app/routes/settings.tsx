@@ -238,7 +238,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               }
               <div aria-live="polite" className="empty:hidden">
                 {intents.updateUnits.succeededIn(actionData) ? (
-                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <p className="animate-fade-in text-success flex items-center gap-1.5 text-sm font-medium">
                     <CheckCircle2Icon className="size-4" aria-hidden="true" />
                     Saved.
                   </p>
@@ -281,7 +281,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
 
               <div aria-live="polite" className="empty:hidden">
                 {intents.updateTimezone.succeededIn(actionData) ? (
-                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <p className="animate-fade-in text-success flex items-center gap-1.5 text-sm font-medium">
                     <CheckCircle2Icon className="size-4" aria-hidden="true" />
                     Saved.
                   </p>
@@ -328,7 +328,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
 
               <div aria-live="polite" className="empty:hidden">
                 {intents.updateRestDuration.succeededIn(actionData) ? (
-                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <p className="animate-fade-in text-success flex items-center gap-1.5 text-sm font-medium">
                     <CheckCircle2Icon className="size-4" aria-hidden="true" />
                     Saved.
                   </p>
@@ -365,7 +365,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
 
               <div aria-live="polite" className="empty:hidden">
                 {intents.updateSampleDataVisibility.succeededIn(actionData) ? (
-                  <p className="animate-fade-in flex items-center gap-1.5 text-sm font-medium text-success">
+                  <p className="animate-fade-in text-success flex items-center gap-1.5 text-sm font-medium">
                     <CheckCircle2Icon className="size-4" aria-hidden="true" />
                     Saved.
                   </p>

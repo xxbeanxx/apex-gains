@@ -163,7 +163,7 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                   this instance always has at least one administrator left. Your training preferences live on{' '}
                   <Link
                     to="/settings"
-                    className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+                    className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
                   >
                     your settings page
                   </Link>
@@ -213,9 +213,9 @@ export default function AdminUserDetail({ loaderData, actionData }: Route.Compon
                 </Form>
                 <div aria-live="polite" className="empty:hidden">
                   {intents.changeAdminAccess.errorIn(actionData) ? (
-                    <p className="text-sm font-medium text-destructive">{intents.changeAdminAccess.errorIn(actionData)}</p>
+                    <p className="text-destructive text-sm font-medium">{intents.changeAdminAccess.errorIn(actionData)}</p>
                   ) : actionData && 'ok' in actionData && actionData.intent === 'changeAdminAccess' ? (
-                    <p className="animate-fade-in text-sm font-medium text-success">Saved.</p>
+                    <p className="animate-fade-in text-success text-sm font-medium">Saved.</p>
                   ) : null}
                 </div>
               </CardContent>

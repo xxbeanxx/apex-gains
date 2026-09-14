@@ -197,7 +197,7 @@ function DayRow({
       title={
         slot.isRestDay ? (
           <span className="inline-flex items-center gap-1.5">
-            <MoonIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <MoonIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
             Rest day
           </span>
         ) : (
@@ -235,11 +235,11 @@ function PaletteSlotRow({ item }: { item: PaletteItem }) {
       <input type="hidden" name="workoutId" value={item.id} />
       <button
         type="submit"
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-(--dur-fast) hover:bg-muted"
+        className="hover:bg-muted flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-(--dur-fast)"
       >
-        {item.id === 'rest' ? <MoonIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+        {item.id === 'rest' ? <MoonIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" /> : null}
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        <PlusIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <PlusIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
       </button>
     </Form>
   );
@@ -405,11 +405,11 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
         />
 
         {workoutList.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-4 text-sm">
             You don't have any workouts yet —{' '}
             <Link
               to="/workouts"
-              className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+              className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
             >
               create one
             </Link>{' '}

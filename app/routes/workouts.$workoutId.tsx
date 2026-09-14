@@ -174,7 +174,7 @@ function EditTargetDetail({
     <details ref={detailsRef}>
       <summary
         role="button"
-        className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+        className="text-muted-foreground [details[open]_&]:text-foreground flex cursor-pointer items-center gap-1 text-sm font-medium select-none [&::-webkit-details-marker]:hidden"
       >
         <ChevronRightIcon
           className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
@@ -192,7 +192,7 @@ function EditTargetDetail({
           distanceUnit={distanceUnit}
           defaultValues={entry.target?.values}
         />
-        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+        {error ? <p className="text-destructive text-sm font-medium">{error}</p> : null}
         <SubmitButton size="sm" match={intents.updateTarget.match} pendingLabel="Saving" className="self-start">
           Save target
         </SubmitButton>
@@ -211,9 +211,9 @@ function TargetSuggestion({ suggestion }: { suggestion: SuggestionView }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-      <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+      <span className="text-muted-foreground inline-flex items-center gap-1 text-sm">
         <TrendingUpIcon className="size-3.5 shrink-0" aria-hidden="true" />
-        Suggested: <span className="font-medium text-foreground">{suggestion.summary}</span> — {suggestion.because}
+        Suggested: <span className="text-foreground font-medium">{suggestion.summary}</span> — {suggestion.because}
       </span>
       <Form method="post">
         <input {...intents.applySuggestion.field} />
@@ -235,10 +235,10 @@ function PaletteExerciseRow({ exercise, disabled }: { exercise: ExerciseView; di
       <button
         type="submit"
         disabled={disabled}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-(--dur-fast) hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        className="hover:bg-muted flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-(--dur-fast) disabled:pointer-events-none disabled:opacity-50"
       >
         <span className="min-w-0 flex-1 truncate">{exercise.name}</span>
-        <PlusIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <PlusIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
       </button>
     </Form>
   );

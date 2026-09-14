@@ -48,7 +48,7 @@ export function VersionCheck({ initialBuildInfo }: { initialBuildInfo: string })
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-[calc(var(--bottom-tabs-h)+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm shadow-lg md:inset-x-auto md:right-4 md:bottom-4"
+      className="border-border bg-card fixed inset-x-4 bottom-[calc(var(--bottom-tabs-h)+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-lg md:inset-x-auto md:right-4 md:bottom-4"
     >
       <span>A new version is available.</span>
       <Button type="button" size="sm" onClick={() => window.location.reload()}>

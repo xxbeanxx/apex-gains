@@ -15,11 +15,11 @@ export async function parseOidcState(cookie: Cookie, cookieHeader: string | null
   const value = await cookie.parse(cookieHeader);
 
   const hasRequiredFields =
-    !!value &&
-    typeof value.codeVerifier === 'string' &&
-    typeof value.nonce === 'string' &&
-    typeof value.state === 'string' &&
-    typeof value.redirectTo === 'string';
+    !!value
+    && typeof value.codeVerifier === 'string'
+    && typeof value.nonce === 'string'
+    && typeof value.state === 'string'
+    && typeof value.redirectTo === 'string';
 
   if (!hasRequiredFields) {
     return null;

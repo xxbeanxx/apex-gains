@@ -17,7 +17,7 @@ export function AppShell({ user, buildInfo, children }: { user: NavUser | null; 
     <div className="flex min-h-dvh">
       <a
         href="#main"
-        className="sr-only z-50 focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:rounded-lg focus-visible:bg-primary focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-primary-foreground"
+        className="focus-visible:bg-primary focus-visible:text-primary-foreground sr-only z-50 focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:rounded-lg focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium"
       >
         Skip to content
       </a>
@@ -35,7 +35,7 @@ export function AppShell({ user, buildInfo, children }: { user: NavUser | null; 
         >
           {children}
         </div>
-        <footer className="hidden border-t border-border px-(--page-px) py-3 text-center text-xs text-muted-foreground md:block">
+        <footer className="border-border text-muted-foreground hidden border-t px-(--page-px) py-3 text-center text-xs md:block">
           {buildInfo}
         </footer>
       </div>

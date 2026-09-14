@@ -45,13 +45,13 @@ export function Breadcrumbs() {
         const isLast = index === crumbs.length - 1;
         return (
           <span key={index} className="flex min-w-0 items-center gap-1.5">
-            {index > 0 ? <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+            {index > 0 ? <ChevronRightIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" /> : null}
             {crumb.to && !isLast ? (
-              <Link to={crumb.to} className="truncate text-muted-foreground hover:text-foreground">
+              <Link to={crumb.to} className="text-muted-foreground hover:text-foreground truncate">
                 {crumb.label}
               </Link>
             ) : (
-              <span aria-current={isLast ? 'page' : undefined} className="truncate font-medium text-foreground">
+              <span aria-current={isLast ? 'page' : undefined} className="text-foreground truncate font-medium">
                 {crumb.label}
               </span>
             )}

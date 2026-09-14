@@ -100,10 +100,10 @@ export function TimezonePicker({
         className="w-full justify-between font-normal"
       >
         <span className="flex min-w-0 items-center gap-1.5 truncate">
-          <ClockIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <ClockIcon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
           {labelFor(value)}
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{timeIn(value, now)}</span>
+        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{timeIn(value, now)}</span>
       </Button>
 
       <CommandDialog
@@ -127,7 +127,7 @@ export function TimezonePicker({
                 <CommandItem key={zone} value={`${group.region} ${labelFor(zone)}`} onSelect={() => choose(zone)}>
                   <CheckIcon className={cn('shrink-0', zone === value ? 'opacity-100' : 'opacity-0')} aria-hidden="true" />
                   <span className="min-w-0 flex-1 truncate">{labelFor(zone)}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{timeIn(zone, now)}</span>
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{timeIn(zone, now)}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

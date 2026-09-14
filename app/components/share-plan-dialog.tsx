@@ -48,7 +48,7 @@ export function SharePlanDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4">
-          <div className="rounded-xl border border-border bg-white p-3">
+          <div className="border-border rounded-xl border bg-white p-3">
             <QrCodeImage code={qr} label={`QR code linking to the shared plan ${planName}`} />
           </div>
 

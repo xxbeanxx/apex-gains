@@ -10,9 +10,9 @@ export type CrumbHandle = { crumb: (data: unknown) => Crumb | Crumb[] };
 
 export function isCrumbHandle(handle: unknown): handle is CrumbHandle {
   return (
-    typeof handle === 'object' &&
-    handle !== null &&
-    'crumb' in handle &&
-    typeof (handle as { crumb: unknown }).crumb === 'function'
+    typeof handle === 'object'
+    && handle !== null
+    && 'crumb' in handle
+    && typeof (handle as { crumb: unknown }).crumb === 'function'
   );
 }

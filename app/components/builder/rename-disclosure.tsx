@@ -32,7 +32,7 @@ export function RenameDisclosure({ label = 'Rename', children }: { label?: strin
         <PencilIcon aria-hidden="true" />
         {label}
       </summary>
-      <div className="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-border bg-popover p-3 shadow-lg ring-1 ring-foreground/10">
+      <div className="border-border bg-popover ring-foreground/10 absolute right-0 z-20 mt-2 w-72 rounded-xl border p-3 shadow-lg ring-1">
         {children}
       </div>
     </details>

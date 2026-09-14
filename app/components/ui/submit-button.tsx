@@ -39,9 +39,9 @@ export function SubmitButton({
   const navigation = useNavigation();
 
   const matchesNavigation =
-    navigation.state === 'submitting' &&
-    navigation.formData != null &&
-    (match === undefined || Object.entries(match).every(([key, value]) => navigation.formData?.get(key) === value));
+    navigation.state === 'submitting'
+    && navigation.formData != null
+    && (match === undefined || Object.entries(match).every(([key, value]) => navigation.formData?.get(key) === value));
 
   const pending = pendingProp ?? matchesNavigation;
 

@@ -50,7 +50,7 @@ export function ErrorPage({ error }: { error: unknown }) {
     >
       <span
         aria-hidden="true"
-        className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+        className="bg-destructive/10 text-destructive flex size-12 items-center justify-center rounded-full"
       >
         <AlertTriangleIcon className="size-6" />
       </span>
@@ -65,7 +65,7 @@ export function ErrorPage({ error }: { error: unknown }) {
         </Link>
       </Button>
       {stack && (
-        <pre className="mt-4 w-full overflow-x-auto rounded-xl bg-muted p-4 text-left text-xs text-muted-foreground">
+        <pre className="bg-muted text-muted-foreground mt-4 w-full overflow-x-auto rounded-xl p-4 text-left text-xs">
           <code>{stack}</code>
         </pre>
       )}

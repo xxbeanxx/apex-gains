@@ -54,7 +54,7 @@ export function ExerciseHistoryDialog({
           <DialogTitle>{exerciseName}: recent sets</DialogTitle>
         </DialogHeader>
         {fetcher.state !== 'idle' ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-muted-foreground text-sm">Loading…</p>
         ) : groups.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {groups.map((group) => (
@@ -65,7 +65,7 @@ export function ExerciseHistoryDialog({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing logged for this exercise yet.</p>
+          <p className="text-muted-foreground text-sm">Nothing logged for this exercise yet.</p>
         )}
       </DialogContent>
     </Dialog>

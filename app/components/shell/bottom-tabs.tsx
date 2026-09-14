@@ -37,7 +37,7 @@ function MoreMenu({ user, items, buildInfo }: { user: NavUser; items: NavItem[];
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-expanded:text-foreground"
+          className="text-muted-foreground aria-expanded:text-foreground flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[0.6875rem]"
         >
           <MoreHorizontalIcon className="size-5" aria-hidden="true" />
           More
@@ -63,7 +63,7 @@ function MoreMenu({ user, items, buildInfo }: { user: NavUser; items: NavItem[];
           Sign out
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <div className="px-2 py-1.5 text-center text-xs text-muted-foreground">{buildInfo}</div>
+        <div className="text-muted-foreground px-2 py-1.5 text-center text-xs">{buildInfo}</div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -82,7 +82,7 @@ export function BottomTabs({ user, items, buildInfo }: { user: NavUser; items: N
   return (
     <nav
       aria-label="Bottom tabs"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
       {tabbed.map((item) => (
         <NavLink key={item.to} to={item.to} className="flex flex-1">

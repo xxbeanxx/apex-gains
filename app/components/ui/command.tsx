@@ -29,7 +29,7 @@ export function CommandDialog({
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
-      <DialogContent showCloseButton={false} className="top-24 sm:max-w-lg translate-y-0 gap-0 overflow-hidden p-0">
+      <DialogContent showCloseButton={false} className="top-24 translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
         <Command className="[&_[cmdk-group-heading]]:px-2">{children}</Command>
       </DialogContent>
     </Dialog>
@@ -38,8 +38,8 @@ export function CommandDialog({
 
 export function CommandInput({ className, ...props }: ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="flex items-center gap-2 border-b border-border px-3">
-      <SearchIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+    <div data-slot="command-input-wrapper" className="border-border flex items-center gap-2 border-b px-3">
+      <SearchIcon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(

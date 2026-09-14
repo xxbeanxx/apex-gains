@@ -19,7 +19,7 @@ export function ExerciseCard({ exercise, allEquipment }: { exercise: ExerciseVie
             ) : null}
             <span className="truncate font-medium text-pretty">{exercise.name}</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {typeLabels[exercise.exerciseType]}
             {exercise.equipment.length > 0 ? ` · ${exercise.equipment.map((item) => item.name).join(', ')}` : ''}
           </p>

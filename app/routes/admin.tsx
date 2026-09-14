@@ -41,9 +41,9 @@ export async function loader({ context }: Route.LoaderArgs) {
  */
 function AccountRow({ account, measure }: { account: AdminAccountView; measure: ReactNode }) {
   return (
-    <li className="relative flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors duration-(--dur) hover:border-ring/30">
+    <li className="border-border bg-card hover:border-ring/30 relative flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-(--dur)">
       <AccountIdentity account={account} stretched />
-      <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{measure}</span>
+      <span className="text-muted-foreground shrink-0 text-sm tabular-nums">{measure}</span>
     </li>
   );
 }
@@ -55,12 +55,12 @@ function AccountRow({ account, measure }: { account: AdminAccountView; measure: 
  */
 function ActionRow({ action }: { action: AdminActionView }) {
   return (
-    <li className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <li className="border-border bg-card flex flex-col gap-0.5 rounded-xl border px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="text-sm">
         <span className="font-medium">{action.actorEmail}</span> {ACTION_VERBS[action.action]}{' '}
         <span className="font-medium">{action.targetEmail}</span>
       </span>
-      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{formatDateTime(action.createdAt)}</span>
+      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{formatDateTime(action.createdAt)}</span>
     </li>
   );
 }
@@ -160,13 +160,13 @@ export default function AdminDashboard({ loaderData }: Route.ComponentProps) {
         <CardHeader>
           <CardTitle>About admin access</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+        <CardContent className="text-muted-foreground flex flex-col gap-2 text-sm">
           <p>
             Sign-up is open, so anyone with a Google account can create one here. Administrators are the exception: access is
             only ever granted by another administrator, from the{' '}
             <Link
               to="/admin/users"
-              className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+              className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
             >
               user manager
             </Link>

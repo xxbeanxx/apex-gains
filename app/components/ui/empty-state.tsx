@@ -33,14 +33,14 @@ export function EmptyState({
     >
       {Icon ? (
         <span
-          className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full"
           aria-hidden="true"
         >
           <Icon className="size-5" />
         </span>
       ) : null}
-      <p className="font-heading text-base font-medium text-foreground">{title}</p>
-      {description ? <p className="max-w-prose text-sm text-muted-foreground">{description}</p> : null}
+      <p className="font-heading text-foreground text-base font-medium">{title}</p>
+      {description ? <p className="text-muted-foreground max-w-prose text-sm">{description}</p> : null}
       {action ? <div className="mt-1">{action}</div> : null}
     </div>
   );

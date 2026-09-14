@@ -113,7 +113,7 @@ export function CustomizedNote({ page, isCustomized }: { page: ForkableDetail; i
   const noun = page.noun.toLowerCase();
 
   return (
-    <p className="mt-4 text-sm text-muted-foreground">
+    <p className="text-muted-foreground mt-4 text-sm">
       This is your customized copy of a sample {noun}. The original sample is unaffected.
     </p>
   );
@@ -189,7 +189,7 @@ function RevertOrDeleteForm({
           }
         />
       )}
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm font-medium">{error}</p> : null}
     </div>
   );
 }

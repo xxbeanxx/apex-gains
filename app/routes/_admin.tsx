@@ -21,7 +21,7 @@ const ADMIN_NAV = [
 export default function AdminLayout() {
   return (
     <>
-      <div className="border-b border-border bg-muted/40">
+      <div className="border-border bg-muted/40 border-b">
         <nav aria-label="Admin" className="mx-auto flex max-w-(--content-max) items-center gap-1 px-(--page-px)">
           {ADMIN_NAV.map(({ to, label, icon: Icon }) => (
             <NavLink

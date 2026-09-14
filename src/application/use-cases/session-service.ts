@@ -170,8 +170,8 @@ export class SessionService {
     return this.unitOfWork.run(async () => {
       const existing = await this.sessions.findForDate(athlete.id, date);
       const session =
-        existing ??
-        (await this.sessions.add(
+        existing
+        ?? (await this.sessions.add(
           Session.open(athlete.id, date, sessionPlanOf(await this.schedule.on(athlete, date)), this.deps),
         ));
 

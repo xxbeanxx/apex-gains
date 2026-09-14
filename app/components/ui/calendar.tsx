@@ -80,7 +80,7 @@ export function Calendar({
         </Button>
       </div>
 
-      <div aria-hidden="true" className="grid grid-cols-7 gap-y-1 text-center text-xs text-muted-foreground">
+      <div aria-hidden="true" className="text-muted-foreground grid grid-cols-7 gap-y-1 text-center text-xs">
         {WEEKDAY_LABELS.map((label, i) => (
           <span key={i}>{label}</span>
         ))}

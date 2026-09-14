@@ -23,7 +23,7 @@ export function BuilderPaletteSearch({
   return (
     <div className="relative">
       <SearchIcon
-        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
         aria-hidden="true"
       />
       <Input
@@ -62,13 +62,13 @@ export function BuilderPalette<T>({
   newAction?: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-sm shadow-black/[0.03] dark:shadow-black/20">
+    <div className="border-border bg-card flex h-full flex-col gap-3 rounded-xl border p-3 shadow-sm shadow-black/[0.03] dark:shadow-black/20">
       {filters}
       <ul className="flex max-h-96 flex-1 flex-col gap-1 overflow-y-auto md:max-h-none">
         {items.map((item) => (
           <li key={getKey(item)}>{renderItem(item)}</li>
         ))}
-        {items.length === 0 ? <li className="px-2 py-6 text-center text-sm text-muted-foreground">{emptyLabel}</li> : null}
+        {items.length === 0 ? <li className="text-muted-foreground px-2 py-6 text-center text-sm">{emptyLabel}</li> : null}
       </ul>
       {newAction}
     </div>

@@ -25,8 +25,8 @@ export function CommandPalette({ user }: { user: NavUser }) {
       const target = event.target;
 
       if (
-        target instanceof HTMLElement &&
-        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+        target instanceof HTMLElement
+        && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
       ) {
         return;
       }
@@ -49,13 +49,13 @@ export function CommandPalette({ user }: { user: NavUser }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open command palette"
-        className="flex h-8 items-center gap-2 rounded-lg border border-border bg-background px-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground sm:w-48 sm:justify-between sm:px-3"
+        className="border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 items-center gap-2 rounded-lg border px-2.5 text-sm sm:w-48 sm:justify-between sm:px-3"
       >
         <span className="flex items-center gap-2">
           <SearchIcon className="size-4" aria-hidden="true" />
           <span className="hidden sm:inline">Search...</span>
         </span>
-        <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-xs sm:inline">⌘K</kbd>
+        <kbd className="border-border bg-muted hidden rounded border px-1.5 py-0.5 font-sans text-xs sm:inline">⌘K</kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>

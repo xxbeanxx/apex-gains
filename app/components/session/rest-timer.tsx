@@ -132,8 +132,8 @@ export function RestTimer({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm">
-      <TimerIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+    <div className="bg-muted/60 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
+      <TimerIcon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
       <span className="tabular-nums" role="timer">
         {formatRemaining(remaining)}
       </span>

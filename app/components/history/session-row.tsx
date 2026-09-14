@@ -19,19 +19,19 @@ export function SessionRow({ session }: { session: TimelineDay }) {
       <Link
         to={`/today?date=${session.date}`}
         aria-label={`${formatFullDate(session.date)}: ${label}, ${session.sets.length} set${session.sets.length === 1 ? '' : 's'}${session.tonnage ? `, ${session.tonnage} lifted` : ''}. Edit this day.`}
-        className="flex min-h-10 items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors duration-(--dur) hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="border-border bg-card/50 hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-ring/50 flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors duration-(--dur) outline-none focus-visible:ring-3"
       >
-        <span aria-hidden="true" className="w-16 shrink-0 text-muted-foreground tabular-nums">
+        <span aria-hidden="true" className="text-muted-foreground w-16 shrink-0 tabular-nums">
           {formatMonthDay(session.date)}
         </span>
         <span aria-hidden="true" className="flex min-w-0 flex-1 items-center gap-1.5 truncate font-medium">
-          {isRest ? <MoonIcon className="size-3.5 shrink-0 text-muted-foreground" /> : null}
+          {isRest ? <MoonIcon className="text-muted-foreground size-3.5 shrink-0" /> : null}
           {label}
         </span>
-        <span aria-hidden="true" className="w-16 shrink-0 text-right text-muted-foreground tabular-nums">
+        <span aria-hidden="true" className="text-muted-foreground w-16 shrink-0 text-right tabular-nums">
           {session.sets.length} set{session.sets.length === 1 ? '' : 's'}
         </span>
-        <span aria-hidden="true" className="w-20 shrink-0 text-right text-muted-foreground tabular-nums">
+        <span aria-hidden="true" className="text-muted-foreground w-20 shrink-0 text-right tabular-nums">
           {session.tonnage ?? '—'}
         </span>
       </Link>

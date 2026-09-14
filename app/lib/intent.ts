@@ -84,11 +84,11 @@ export type Intent<T extends object | void = void> = {
 
 function isRejection(actionData: unknown, name: string): actionData is IntentRejection {
   return (
-    typeof actionData === 'object' &&
-    actionData !== null &&
-    'error' in actionData &&
-    'intent' in actionData &&
-    actionData.intent === name
+    typeof actionData === 'object'
+    && actionData !== null
+    && 'error' in actionData
+    && 'intent' in actionData
+    && actionData.intent === name
   );
 }
 
@@ -111,11 +111,11 @@ export function intent<T extends object>(
     reject: (message) => data({ error: message, intent: name }, { status: 400 }),
     errorIn: (actionData) => (isRejection(actionData, name) ? actionData.error : undefined),
     succeededIn: (actionData) =>
-      typeof actionData === 'object' &&
-      actionData !== null &&
-      'ok' in actionData &&
-      actionData.ok === true &&
-      'intent' in actionData &&
-      actionData.intent === name,
+      typeof actionData === 'object'
+      && actionData !== null
+      && 'ok' in actionData
+      && actionData.ok === true
+      && 'intent' in actionData
+      && actionData.intent === name,
   };
 }

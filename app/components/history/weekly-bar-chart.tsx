@@ -50,7 +50,7 @@ export function WeeklyBarChart({
               formatter={(value) => (
                 <div className="flex flex-1 items-center justify-between gap-4 leading-none">
                   <span className="text-muted-foreground">{seriesLabel}</span>
-                  <span className="font-medium text-foreground tabular-nums">{formatValue(Number(value))}</span>
+                  <span className="text-foreground font-medium tabular-nums">{formatValue(Number(value))}</span>
                 </div>
               )}
             />

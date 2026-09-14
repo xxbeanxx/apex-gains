@@ -101,13 +101,13 @@ export function EquipmentDialog({ equipment, trigger }: { equipment: EquipmentVi
         </DialogHeader>
 
         {equipment.length > 0 ? (
-          <ul className="divide-y divide-border/60 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+          <ul className="divide-border/60 ring-foreground/10 divide-y overflow-hidden rounded-lg ring-1">
             {equipment.map((eq) => (
               <EquipmentRow key={eq.id} equipment={eq} />
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No equipment yet. Add your first one below.</p>
+          <p className="text-muted-foreground text-sm">No equipment yet. Add your first one below.</p>
         )}
 
         <fetcher.Form ref={formRef} method="post" className="flex flex-wrap items-end gap-3">

@@ -64,9 +64,9 @@ export function ExerciseHistoryButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72">
-        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{exerciseName}: recent sets</p>
+        <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">{exerciseName}: recent sets</p>
         {fetcher.state !== 'idle' ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-muted-foreground text-sm">Loading…</p>
         ) : groups.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {groups.map((group) => (
@@ -77,7 +77,7 @@ export function ExerciseHistoryButton({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing logged for this exercise yet.</p>
+          <p className="text-muted-foreground text-sm">Nothing logged for this exercise yet.</p>
         )}
       </PopoverContent>
     </Popover>

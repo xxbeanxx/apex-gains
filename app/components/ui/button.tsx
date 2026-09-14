@@ -52,8 +52,8 @@ export function Button({
   size = 'default',
   asChild = false,
   ...props
-}: ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
+}: ComponentProps<'button'>
+  & VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot.Root : 'button';

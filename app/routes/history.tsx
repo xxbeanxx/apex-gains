@@ -91,9 +91,9 @@ export default function History({ loaderData }: Route.ComponentProps) {
 
       {groups.map((group) => (
         <section key={group.month} aria-label={group.month} className="mt-(--section-gap)">
-          <div className="sticky top-(--header-h) z-10 flex items-center gap-3 bg-background py-2">
-            <h2 className="font-heading text-sm font-semibold tracking-wide text-muted-foreground uppercase">{group.month}</h2>
-            <span aria-hidden="true" className="h-px flex-1 bg-border" />
+          <div className="bg-background sticky top-(--header-h) z-10 flex items-center gap-3 py-2">
+            <h2 className="font-heading text-muted-foreground text-sm font-semibold tracking-wide uppercase">{group.month}</h2>
+            <span aria-hidden="true" className="bg-border h-px flex-1" />
           </div>
 
           <ul className="flex flex-col gap-1.5">

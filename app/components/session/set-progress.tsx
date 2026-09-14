@@ -20,7 +20,7 @@ export function SetProgress({ done, target }: { done: number; target: number }) 
         aria-valuemin={0}
         aria-valuemax={target}
         aria-label={`${done} of ${target} sets logged`}
-        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+        className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full"
       >
         <div
           className={cn(
@@ -31,7 +31,7 @@ export function SetProgress({ done, target }: { done: number; target: number }) 
         />
       </div>
       {complete ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-success">
+        <span className="text-success inline-flex shrink-0 items-center gap-1 text-xs font-medium">
           <CheckIcon className="size-3.5" aria-hidden="true" />
           <span className="sr-only">Done</span>
         </span>

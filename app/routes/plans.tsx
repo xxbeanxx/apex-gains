@@ -158,7 +158,7 @@ export default function Plans({ loaderData, actionData }: Route.ComponentProps) 
               A plan is a repeating cycle of days — each day is either one of your{' '}
               <Link
                 to="/workouts"
-                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+                className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
               >
                 workouts
               </Link>{' '}
@@ -207,7 +207,7 @@ export default function Plans({ loaderData, actionData }: Route.ComponentProps) 
                         <OwnershipBadge isSample={plan.isSample} isCustomized={plan.isCustomized} />
                         <PlanRowMenu plan={plan} />
                       </span>
-                      <span className="text-sm text-muted-foreground tabular-nums">
+                      <span className="text-muted-foreground text-sm tabular-nums">
                         <PlanSummaryLine plan={plan} />
                       </span>
                     </CardContent>
@@ -218,7 +218,7 @@ export default function Plans({ loaderData, actionData }: Route.ComponentProps) 
                 <DialogTrigger asChild>
                   <button
                     type="button"
-                    className="flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors duration-(--dur) hover:border-ring/40 hover:text-foreground"
+                    className="border-border text-muted-foreground hover:border-ring/40 hover:text-foreground flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-sm font-medium transition-colors duration-(--dur)"
                   >
                     <PlusIcon className="size-5" aria-hidden="true" />
                     New plan

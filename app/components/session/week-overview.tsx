@@ -19,7 +19,7 @@ export function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Next seven days</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {planned} workout{planned === 1 ? '' : 's'} scheduled
         </p>
       </CardHeader>
@@ -38,13 +38,13 @@ export function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
                 )}
               >
                 {isToday ? (
-                  <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-brand-strong" />
+                  <span aria-hidden="true" className="bg-brand-strong absolute inset-y-2 left-0 w-0.5 rounded-full" />
                 ) : null}
                 <span aria-hidden="true" className="w-24 shrink-0 whitespace-nowrap">
                   <span className={cn('font-medium', isToday ? 'text-brand-strong' : 'text-foreground')}>
                     {formatWeekday(day.date)}
                   </span>{' '}
-                  <span className="text-xs text-muted-foreground tabular-nums">{formatMonthDay(day.date)}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">{formatMonthDay(day.date)}</span>
                 </span>
                 <span aria-hidden="true" className="min-w-0 flex-1 wrap-break-word">
                   {day.type === 'rest' ? (
@@ -78,7 +78,7 @@ export function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Last seven days</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {workouts} workout{workouts === 1 ? '' : 's'}, {rests} rest day
           {rests === 1 ? '' : 's'}, {totalSets} set{totalSets === 1 ? '' : 's'} logged
         </p>
@@ -97,16 +97,16 @@ export function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
                 <Link
                   to={`/today?date=${day.date}`}
                   aria-label={`${formatFullDate(day.date)}: ${what}. Log a set for this day.`}
-                  className="flex min-h-10 items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2 outline-none transition-colors duration-(--dur) hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="border-border bg-card/50 hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-ring/50 flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 transition-colors duration-(--dur) outline-none focus-visible:ring-3"
                 >
                   <span aria-hidden="true" className="w-24 shrink-0 whitespace-nowrap">
-                    <span className="font-medium text-foreground">{formatWeekday(day.date)}</span>{' '}
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatMonthDay(day.date)}</span>
+                    <span className="text-foreground font-medium">{formatWeekday(day.date)}</span>{' '}
+                    <span className="text-muted-foreground text-xs tabular-nums">{formatMonthDay(day.date)}</span>
                   </span>
                   <span aria-hidden="true" className="min-w-0 flex-1 wrap-break-word">
                     {day.status === 'workout' ? (
                       <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
-                        <CheckIcon className="size-3.5 shrink-0 text-success" />
+                        <CheckIcon className="text-success size-3.5 shrink-0" />
                         {day.setCount} set{day.setCount === 1 ? '' : 's'}
                       </span>
                     ) : day.status === 'rest' ? (

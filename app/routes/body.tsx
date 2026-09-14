@@ -238,7 +238,7 @@ function BodySection({ loaderData, actionData }: Pick<Route.ComponentProps, 'loa
 
             <div aria-live="polite" className="empty:hidden">
               {logIntent.succeededIn(actionData) ? (
-                <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+                <p className="text-success mt-3 flex items-center gap-1.5 text-sm font-medium">
                   <CheckCircle2Icon className="size-4" aria-hidden="true" />
                   Saved.
                 </p>

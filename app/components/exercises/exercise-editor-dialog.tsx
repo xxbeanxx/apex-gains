@@ -26,7 +26,7 @@ function EquipmentCheckboxRow({
   const [checked, setChecked] = useState(defaultChecked);
 
   return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted has-[:focus-visible]:bg-muted">
+    <label className="hover:bg-muted has-[:focus-visible]:bg-muted flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-(--dur-fast)">
       <Checkbox
         checked={checked}
         onCheckedChange={(value) => {
@@ -78,7 +78,7 @@ export function ExerciseEditorDialog({
           <DialogTitle>{exercise.name}</DialogTitle>
         </DialogHeader>
         {isCustomized ? (
-          <div className="flex flex-col gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm">
+          <div className="bg-muted flex flex-col gap-2 rounded-lg px-3 py-2.5 text-sm">
             <p className="text-muted-foreground">
               This is your customized copy of a sample exercise. The original sample is unaffected.
             </p>
@@ -120,7 +120,7 @@ export function ExerciseEditorDialog({
           </SubmitButton>
         </fetcher.Form>
 
-        <div className="flex flex-col gap-3 border-t border-border pt-4">
+        <div className="border-border flex flex-col gap-3 border-t pt-4">
           <p className="text-sm font-medium">Equipment</p>
           {allEquipment.map((eq) => (
             <EquipmentCheckboxRow
@@ -132,7 +132,7 @@ export function ExerciseEditorDialog({
             />
           ))}
           {allEquipment.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No equipment yet — add some with “Manage equipment” first.</p>
+            <p className="text-muted-foreground text-sm">No equipment yet — add some with “Manage equipment” first.</p>
           ) : null}
         </div>
       </DialogContent>

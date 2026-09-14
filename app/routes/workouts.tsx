@@ -145,7 +145,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
               or “Leg Day”. Build workouts here, then arrange them into a cycle on the{' '}
               <Link
                 to="/plans"
-                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+                className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
               >
                 Plans
               </Link>{' '}
@@ -193,7 +193,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
                         <OwnershipBadge isSample={workout.isSample} isCustomized={workout.isCustomized} />
                         <WorkoutRowMenu workout={workout} />
                       </span>
-                      <span className="text-sm text-muted-foreground tabular-nums">
+                      <span className="text-muted-foreground text-sm tabular-nums">
                         {workout.exerciseCount} exercise
                         {workout.exerciseCount === 1 ? '' : 's'}
                       </span>
@@ -205,7 +205,7 @@ export default function Workouts({ loaderData, actionData }: Route.ComponentProp
                 <DialogTrigger asChild>
                   <button
                     type="button"
-                    className="flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors duration-(--dur) hover:border-ring/40 hover:text-foreground"
+                    className="border-border text-muted-foreground hover:border-ring/40 hover:text-foreground flex h-full min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-sm font-medium transition-colors duration-(--dur)"
                   >
                     <PlusIcon className="size-5" aria-hidden="true" />
                     New workout

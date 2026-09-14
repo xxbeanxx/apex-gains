@@ -98,9 +98,9 @@ export class InMemorySessionsRepository implements SessionsRepository, ExerciseR
         const current = latest.get(setSnapshot.exerciseId);
 
         if (
-          !current ||
-          snapshot.date > current.date ||
-          (snapshot.date === current.date && setSnapshot.createdAt.getTime() > current.set.createdAt.getTime())
+          !current
+          || snapshot.date > current.date
+          || (snapshot.date === current.date && setSnapshot.createdAt.getTime() > current.set.createdAt.getTime())
         ) {
           latest.set(setSnapshot.exerciseId, { date: snapshot.date, set: setSnapshot });
         }

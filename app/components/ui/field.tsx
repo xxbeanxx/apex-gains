@@ -74,7 +74,7 @@ export function Field({ label, description, error, action, className, labelClass
         {label}
       </Label>
       {description ? (
-        <p id={descriptionId} className="text-xs text-muted-foreground">
+        <p id={descriptionId} className="text-muted-foreground text-xs">
           {description}
         </p>
       ) : null}
@@ -87,7 +87,7 @@ export function Field({ label, description, error, action, className, labelClass
         control
       )}
       {error ? (
-        <p id={errorId} className="text-sm font-medium text-destructive">
+        <p id={errorId} className="text-destructive text-sm font-medium">
           {error}
         </p>
       ) : null}

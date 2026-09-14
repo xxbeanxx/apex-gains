@@ -59,16 +59,16 @@ function MarketingHome() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto w-full max-w-(--content-max) flex-1 px-(--page-px) outline-none">
       <section className="flex flex-col items-center gap-6 py-20 text-center sm:py-28">
-        <span className="animate-fade-in inline-flex items-center gap-2 rounded-full bg-brand-muted px-3 py-1 text-xs font-medium text-brand-strong ring-1 ring-brand/25">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-brand-strong" />
+        <span className="animate-fade-in bg-brand-muted text-brand-strong ring-brand/25 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ring-1">
+          <span aria-hidden="true" className="bg-brand-strong size-1.5 rounded-full" />
           Personal workout tracker
         </span>
 
-        <h1 className="animate-rise-in max-w-4xl font-heading text-display font-semibold tracking-tight text-balance">
+        <h1 className="animate-rise-in font-heading text-display max-w-4xl font-semibold tracking-tight text-balance">
           Every rep, <span className="text-brand-strong">accounted for</span>.
         </h1>
 
-        <p className="animate-rise-in max-w-xl text-lg text-pretty text-muted-foreground">
+        <p className="animate-rise-in text-muted-foreground max-w-xl text-lg text-pretty">
           Build reusable workouts, cycle them on your own schedule, and log every set as you lift it.
         </p>
 
@@ -76,7 +76,7 @@ function MarketingHome() {
           <Button asChild size="lg" variant="brand">
             <a href="/auth/google">Sign in with Google</a>
           </Button>
-          <p className="text-xs text-muted-foreground">Free, and yours alone. No streaks, no leaderboards.</p>
+          <p className="text-muted-foreground text-xs">Free, and yours alone. No streaks, no leaderboards.</p>
         </div>
       </section>
 
@@ -84,16 +84,16 @@ function MarketingHome() {
         {FEATURES.map(({ icon: Icon, title, body }) => (
           <div
             key={title}
-            className="flex flex-col gap-3 rounded-xl bg-card p-5 shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 dark:shadow-black/20"
+            className="bg-card ring-foreground/10 flex flex-col gap-3 rounded-xl p-5 shadow-sm ring-1 shadow-black/[0.03] dark:shadow-black/20"
           >
             <span
               aria-hidden="true"
-              className="flex size-9 items-center justify-center rounded-lg bg-brand-muted text-brand-strong"
+              className="bg-brand-muted text-brand-strong flex size-9 items-center justify-center rounded-lg"
             >
               <Icon className="size-4.5" />
             </span>
             <h2 className="font-heading text-base font-medium">{title}</h2>
-            <p className="text-sm text-pretty text-muted-foreground">{body}</p>
+            <p className="text-muted-foreground text-sm text-pretty">{body}</p>
           </div>
         ))}
       </section>
@@ -122,14 +122,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
       <Card interactive className="relative mt-(--section-gap)">
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
+          <CardTitle className="text-muted-foreground text-sm font-medium">Today</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 font-heading text-lg font-semibold">
-            {plan.type === 'rest' ? <MoonIcon className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
+          <span className="font-heading flex items-center gap-2 text-lg font-semibold">
+            {plan.type === 'rest' ? <MoonIcon className="text-muted-foreground size-4" aria-hidden="true" /> : null}
             {planLabel}
           </span>
-          <Link to="/today" className="text-sm font-medium text-brand-strong after:absolute after:inset-0 after:content-['']">
+          <Link to="/today" className="text-brand-strong text-sm font-medium after:absolute after:inset-0 after:content-['']">
             Log it →
           </Link>
         </CardContent>

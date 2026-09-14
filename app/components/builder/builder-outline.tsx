@@ -14,7 +14,7 @@ export function BuilderOutline({ children }: { children: ReactNode }) {
   return (
     <div
       role="list"
-      className="flex flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-sm shadow-black/[0.03] dark:shadow-black/20"
+      className="border-border bg-card flex flex-col gap-1 rounded-xl border p-2 shadow-sm shadow-black/[0.03] dark:shadow-black/20"
     >
       {children}
     </div>
@@ -57,9 +57,9 @@ export function BuilderOutlineItem({
       </span>
       <div className="min-w-0 flex-1">
         <p className={wrapLabel ? undefined : 'truncate'}>{label}</p>
-        {sublabel ? <p className="truncate text-xs text-muted-foreground">{sublabel}</p> : null}
+        {sublabel ? <p className="text-muted-foreground truncate text-xs">{sublabel}</p> : null}
       </div>
-      {active ? <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand-strong" /> : null}
+      {active ? <span aria-hidden="true" className="bg-brand-strong size-1.5 shrink-0 rounded-full" /> : null}
     </div>
   );
 }

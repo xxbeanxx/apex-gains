@@ -70,7 +70,7 @@ export function FacetFilter({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-0">
-        <div className="border-b border-border p-2">
+        <div className="border-border border-b p-2">
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -82,17 +82,17 @@ export function FacetFilter({
         <ul className="max-h-64 overflow-y-auto p-1">
           {filtered.map((option) => (
             <li key={option.value}>
-              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted">
+              <label className="hover:bg-muted flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors duration-(--dur-fast)">
                 <Checkbox checked={selected.has(option.value)} onCheckedChange={() => toggle(option.value)} />
                 <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{option.count}</span>
+                <span className="text-muted-foreground text-xs tabular-nums">{option.count}</span>
               </label>
             </li>
           ))}
-          {filtered.length === 0 ? <li className="px-2 py-4 text-center text-sm text-muted-foreground">No matches</li> : null}
+          {filtered.length === 0 ? <li className="text-muted-foreground px-2 py-4 text-center text-sm">No matches</li> : null}
         </ul>
         {selected.size > 0 ? (
-          <div className="border-t border-border p-1">
+          <div className="border-border border-t p-1">
             <Button variant="ghost" size="sm" className="w-full justify-center" onClick={() => onChange(new Set())}>
               Clear
             </Button>

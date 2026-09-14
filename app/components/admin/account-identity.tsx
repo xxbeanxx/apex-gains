@@ -35,7 +35,7 @@ export function AccountIdentity({ account, stretched = false }: { account: Accou
           {account.isAdmin ? <Badge variant="brand-subtle">Admin</Badge> : null}
           {account.isSelf ? <Badge variant="outline">You</Badge> : null}
         </span>
-        <span className="truncate text-xs text-muted-foreground">{account.email}</span>
+        <span className="text-muted-foreground truncate text-xs">{account.email}</span>
       </span>
     </span>
   );

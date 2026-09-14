@@ -48,13 +48,13 @@ function AccountMenu({ user }: { user: NavUser }) {
  */
 export function TopBar({ user }: { user: NavUser | null }) {
   return (
-    <header className="sticky top-0 z-30 flex h-(--header-h) items-center gap-2 border-b border-border bg-background/80 px-(--page-px) backdrop-blur-md supports-backdrop-filter:bg-background/65">
+    <header className="border-border bg-background/80 supports-backdrop-filter:bg-background/65 sticky top-0 z-30 flex h-(--header-h) items-center gap-2 border-b px-(--page-px) backdrop-blur-md">
       {user ? (
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Link to="/" aria-label="Home" className="flex shrink-0 items-center rounded-lg md:hidden">
             <span
               aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-lg bg-brand text-brand-foreground"
+              className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-lg"
             >
               <DumbbellIcon className="size-4" />
             </span>
@@ -62,10 +62,10 @@ export function TopBar({ user }: { user: NavUser | null }) {
           <Breadcrumbs />
         </div>
       ) : (
-        <Link to="/" className="mr-auto flex items-center gap-2 font-heading text-base font-semibold tracking-tight">
+        <Link to="/" className="font-heading mr-auto flex items-center gap-2 text-base font-semibold tracking-tight">
           <span
             aria-hidden="true"
-            className="flex size-7 items-center justify-center rounded-lg bg-brand text-brand-foreground"
+            className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-lg"
           >
             <DumbbellIcon className="size-4" />
           </span>
@@ -78,7 +78,7 @@ export function TopBar({ user }: { user: NavUser | null }) {
         {user ? (
           <AccountMenu user={user} />
         ) : (
-          <Link to="/auth/google" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          <Link to="/auth/google" className="text-muted-foreground hover:text-foreground text-sm font-medium">
             Sign in
           </Link>
         )}

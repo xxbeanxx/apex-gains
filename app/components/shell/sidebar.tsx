@@ -59,7 +59,7 @@ function SidebarGroup({ label, items }: { label: string | null; items: NavItem[]
   return (
     <div className="flex flex-col gap-0.5">
       {label ? (
-        <span data-sidebar-label className="px-2.5 pt-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <span data-sidebar-label className="text-muted-foreground px-2.5 pt-3 pb-1 text-xs font-medium tracking-wide uppercase">
           {label}
         </span>
       ) : null}
@@ -107,15 +107,15 @@ export function Sidebar({ items }: { items: NavItem[] }) {
   }));
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-(--sidebar-w) shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-(--dur) md:flex">
+    <aside className="border-sidebar-border bg-sidebar sticky top-0 hidden h-dvh w-(--sidebar-w) shrink-0 flex-col border-r transition-[width] duration-(--dur) md:flex">
       <div className="flex h-(--header-h) items-center gap-2 px-3">
         <Link
           to="/"
-          className="flex min-w-0 flex-1 items-center gap-2 font-heading text-base font-semibold tracking-tight text-sidebar-foreground"
+          className="font-heading text-sidebar-foreground flex min-w-0 flex-1 items-center gap-2 text-base font-semibold tracking-tight"
         >
           <span
             aria-hidden="true"
-            className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground"
+            className="bg-brand text-brand-foreground flex size-7 shrink-0 items-center justify-center rounded-lg"
           >
             <DumbbellIcon className="size-4" />
           </span>

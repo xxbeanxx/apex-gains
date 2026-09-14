@@ -241,9 +241,9 @@ function matchesQuery(exercise: ExerciseView, needle: string): boolean {
   }
 
   return (
-    exercise.name.toLowerCase().includes(needle) ||
-    (exercise.muscleGroup ?? '').toLowerCase().includes(needle) ||
-    exercise.equipment.some((item) => item.name.toLowerCase().includes(needle))
+    exercise.name.toLowerCase().includes(needle)
+    || (exercise.muscleGroup ?? '').toLowerCase().includes(needle)
+    || exercise.equipment.some((item) => item.name.toLowerCase().includes(needle))
   );
 }
 
@@ -383,7 +383,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
           <div className="mt-8 flex flex-wrap items-center gap-2">
             <div className="relative min-w-56 flex-1 sm:max-w-xs">
               <SearchIcon
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
                 aria-hidden="true"
               />
               <Input
@@ -418,7 +418,7 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
             </div>
           ) : (
             <>
-              <div className="mt-6 hidden overflow-hidden rounded-xl bg-card shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 md:block dark:shadow-black/20">
+              <div className="bg-card ring-foreground/10 mt-6 hidden overflow-hidden rounded-xl shadow-sm ring-1 shadow-black/[0.03] md:block dark:shadow-black/20">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -446,12 +446,12 @@ export default function Exercises({ loaderData }: Route.ComponentProps) {
           )}
 
           {isFiltered ? (
-            <p className="mt-6 text-sm text-muted-foreground" role="status">
+            <p className="text-muted-foreground mt-6 text-sm" role="status">
               Showing {visible.length} of {exerciseList.length} exercises.{' '}
               <button
                 type="button"
                 onClick={clearFilters}
-                className="font-medium text-foreground underline decoration-brand-strong decoration-2 underline-offset-4 hover:decoration-4"
+                className="text-foreground decoration-brand-strong font-medium underline decoration-2 underline-offset-4 hover:decoration-4"
               >
                 Clear filters
               </button>

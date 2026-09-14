@@ -32,11 +32,11 @@ export function BuilderRow({
   detail?: ReactNode;
 }) {
   return (
-    <li className="rounded-xl border border-border bg-card shadow-sm shadow-black/[0.03] dark:shadow-black/20">
+    <li className="border-border bg-card rounded-xl border shadow-sm shadow-black/[0.03] dark:shadow-black/20">
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span
           aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground tabular-nums"
+          className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold tabular-nums"
         >
           {position}
         </span>
@@ -48,7 +48,7 @@ export function BuilderRow({
         {controls ? <div className="flex shrink-0 items-center gap-0.5">{controls}</div> : null}
         {menu}
       </div>
-      {detail ? <div className="border-t border-border px-3 py-2.5">{detail}</div> : null}
+      {detail ? <div className="border-border border-t px-3 py-2.5">{detail}</div> : null}
     </li>
   );
 }

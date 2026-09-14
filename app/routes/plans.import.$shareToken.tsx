@@ -117,26 +117,26 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
 
       <Section title="Days" description="The cycle as it was shared. Your copy starts from the date you pick below.">
         {shared.slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground">This plan has no days yet.</p>
+          <p className="text-muted-foreground text-sm">This plan has no days yet.</p>
         ) : (
           <ol className="grid gap-3 lg:grid-cols-2">
             {shared.slots.map((slot, index) => (
               <li
                 key={slot.position}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm shadow-black/[0.03] dark:shadow-black/20"
+                className="border-border bg-card flex items-center gap-3 rounded-xl border px-3 py-2.5 shadow-sm shadow-black/[0.03] dark:shadow-black/20"
               >
                 <span
                   aria-hidden="true"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground tabular-nums"
+                  className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold tabular-nums"
                 >
                   {index + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Day {index + 1}</p>
+                  <p className="text-muted-foreground text-xs">Day {index + 1}</p>
                   <p className="flex items-center gap-1.5 truncate font-medium">
                     {slot.isRestDay ? (
                       <>
-                        <MoonIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                        <MoonIcon className="text-muted-foreground size-3.5" aria-hidden="true" />
                         Rest
                       </>
                     ) : (
@@ -152,7 +152,7 @@ export default function ImportSharedPlan({ loaderData, actionData }: Route.Compo
         <Card className="max-w-xl">
           <CardHeader>
             <CardTitle>Add to your plans</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {additions
                 ? `This also adds ${additions} to your library. Anything you already have is reused rather than duplicated.`
                 : 'You already have everything this plan needs, so only the plan itself is added.'}

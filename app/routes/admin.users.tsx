@@ -110,18 +110,18 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
 
       <div aria-live="polite" className="mt-4 empty:hidden">
         {confirmation ? (
-          <p className="animate-fade-in text-sm font-medium text-success">
+          <p className="animate-fade-in text-success text-sm font-medium">
             {confirmation.isAdmin ? 'Granted' : 'Revoked'} admin access {confirmation.isAdmin ? 'to' : 'from'}{' '}
             {confirmation.name}.
           </p>
         ) : null}
       </div>
 
-      <p className="mt-4 text-sm text-muted-foreground">
+      <p className="text-muted-foreground mt-4 text-sm">
         {query ? (
           <>
             {formatCount(accounts.length)} of {formatCount(total)} account{total === 1 ? '' : 's'} matching “{query}”.{' '}
-            <Link to="/admin/users" className="font-medium text-foreground underline underline-offset-4">
+            <Link to="/admin/users" className="text-foreground font-medium underline underline-offset-4">
               Clear
             </Link>
           </>
@@ -140,7 +140,7 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
           description={query ? 'Try a different name or email.' : undefined}
         />
       ) : (
-        <div className="mt-4 rounded-xl border border-border">
+        <div className="border-border mt-4 rounded-xl border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -158,8 +158,8 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
                   <TableCell className="relative px-3 py-2.5">
                     <AccountIdentity account={account} stretched />
                   </TableCell>
-                  <TableCell className="px-3 text-muted-foreground">{formatFullDate(account.joinedOn)}</TableCell>
-                  <TableCell className="px-3 text-muted-foreground">
+                  <TableCell className="text-muted-foreground px-3">{formatFullDate(account.joinedOn)}</TableCell>
+                  <TableCell className="text-muted-foreground px-3">
                     {account.lastActiveOn ? formatFullDate(account.lastActiveOn) : 'Never'}
                   </TableCell>
                   <TableCell className="px-3 text-right tabular-nums">{formatCount(account.workoutCount)}</TableCell>
@@ -170,7 +170,7 @@ export default function AdminUsers({ loaderData, actionData }: Route.ComponentPr
                       // domain refuses it, and the guarantee that at least one
                       // administrator always remains rests on that.
                       account.isSelf ? (
-                        <span className="text-sm text-muted-foreground">—</span>
+                        <span className="text-muted-foreground text-sm">—</span>
                       ) : (
                         <Form method="post">
                           <input type="hidden" name="userId" value={account.id} />

@@ -31,7 +31,7 @@ export function TabShell({
 
   return (
     <div className="flex flex-col gap-(--section-gap) md:flex-row md:items-start">
-      <nav aria-label={ariaLabel} className="scrollbar-none flex gap-1 overflow-x-auto md:w-44 md:shrink-0 md:flex-col">
+      <nav aria-label={ariaLabel} className="flex scrollbar-none gap-1 overflow-x-auto md:w-44 md:shrink-0 md:flex-col">
         {sections.map((section) => (
           <Link
             key={section.id}

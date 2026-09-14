@@ -149,7 +149,7 @@ function ExerciseProgressCard({ series }: { series: ProgressSeriesView[] }) {
       <CardContent>
         {selected ? (
           <>
-            <p className="mb-2 text-xs text-muted-foreground">{selected.metricLabel}</p>
+            <p className="text-muted-foreground mb-2 text-xs">{selected.metricLabel}</p>
             <ExerciseProgressChart series={selected} />
           </>
         ) : (

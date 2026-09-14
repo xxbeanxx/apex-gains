@@ -230,7 +230,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
               </PopoverTrigger>
               <PopoverContent align="center" className="w-auto">
                 <Calendar selected={date} today={todayStr} maxDate={todayStr} onSelect={goToDate} />
-                <div className="mt-3 border-t border-border pt-3">
+                <div className="border-border mt-3 border-t pt-3">
                   <Button
                     variant="secondary"
                     size="sm"
@@ -322,7 +322,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
                       <details>
                         <summary
                           role="button"
-                          className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+                          className="text-muted-foreground [details[open]_&]:text-foreground flex cursor-pointer items-center gap-1 text-sm font-medium select-none [&::-webkit-details-marker]:hidden"
                         >
                           <ChevronRightIcon
                             className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
@@ -427,7 +427,7 @@ export default function Today({ loaderData }: Route.ComponentProps) {
       <details className="mt-(--section-gap) md:hidden">
         <summary
           role="button"
-          className="flex cursor-pointer items-center gap-1 text-sm font-medium text-muted-foreground select-none [&::-webkit-details-marker]:hidden [details[open]_&]:text-foreground"
+          className="text-muted-foreground [details[open]_&]:text-foreground flex cursor-pointer items-center gap-1 text-sm font-medium select-none [&::-webkit-details-marker]:hidden"
         >
           <ChevronRightIcon
             className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"

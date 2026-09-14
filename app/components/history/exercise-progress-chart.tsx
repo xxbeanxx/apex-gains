@@ -80,7 +80,7 @@ export function ExerciseProgressChart({ series }: { series: ProgressSeriesView }
               formatter={(value) => (
                 <div className="flex flex-1 items-center justify-between gap-4 leading-none">
                   <span className="text-muted-foreground">{series.metricLabel}</span>
-                  <span className="font-medium text-foreground tabular-nums">
+                  <span className="text-foreground font-medium tabular-nums">
                     {formatMetricValue(Number(value), series.unit)} {series.unit}
                   </span>
                 </div>

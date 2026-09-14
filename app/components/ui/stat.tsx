@@ -28,9 +28,9 @@ export function Stat({
       className={cn('flex flex-col gap-1 rounded-xl border border-border bg-card px-4 py-3.5', className)}
       {...props}
     >
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium">{label}</span>
       <span className="font-heading text-2xl font-semibold tracking-tight">{value}</span>
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {hint ? <span className="text-muted-foreground text-xs">{hint}</span> : null}
     </div>
   );
 }

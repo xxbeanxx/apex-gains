@@ -59,7 +59,7 @@ export function PageHeader({
           <h1 className="font-heading text-3xl font-semibold tracking-tight">{title}</h1>
           {badge}
         </div>
-        {description ? <p className="max-w-prose text-sm text-pretty text-muted-foreground">{description}</p> : null}
+        {description ? <p className="text-muted-foreground max-w-prose text-sm text-pretty">{description}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>
@@ -91,7 +91,7 @@ export function Section({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
             <Heading className="font-heading text-lg font-semibold tracking-tight">{title}</Heading>
-            {description ? <p className="max-w-prose text-sm text-muted-foreground">{description}</p> : null}
+            {description ? <p className="text-muted-foreground max-w-prose text-sm">{description}</p> : null}
           </div>
           {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
         </div>
