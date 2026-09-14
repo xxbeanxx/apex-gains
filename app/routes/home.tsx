@@ -139,7 +139,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             compact
           />
         ) : (
-          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border">
+          <ul className="flex flex-col gap-1.5">
             {dashboard.recentSessions.map((session) => (
               <SessionRow key={session.id} session={session} />
             ))}

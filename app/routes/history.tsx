@@ -92,7 +92,7 @@ export default function History({ loaderData }: Route.ComponentProps) {
             <span aria-hidden="true" className="h-px flex-1 bg-border" />
           </div>
 
-          <ul className="flex flex-col divide-y divide-border">
+          <ul className="flex flex-col gap-1.5">
             {group.sessions.map((session) => (
               <SessionRow key={session.id} session={session} />
             ))}

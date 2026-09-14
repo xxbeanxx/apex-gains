@@ -1,7 +1,7 @@
 import { CheckIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import type { WeekHistoryDay, WeekPlanDay } from '~application/use-cases/training-plan-service';
-import { formatDayOfMonth, formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
+import { formatFullDate, formatMonthDay, formatWeekday } from '~shared/format';
 
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
@@ -65,9 +65,9 @@ function UpcomingWeekCard({ days }: { days: WeekPlanDay[] }) {
 }
 
 /**
- * The past week as a seven-column calendar strip. Each cell holds only a set
- * count or a rest marker, which fits a phone's width without scrolling as long
- * as the date is just the day of the month; the full date is in the label.
+ * The past week in the same row shape as `UpcomingWeekCard`, so the two cards
+ * read as one pattern - each row links to that day on `/today` for the
+ * per-set detail it doesn't carry itself.
  */
 function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
   const workouts = days.filter((d) => d.status === 'workout').length;
@@ -84,7 +84,7 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
         </p>
       </CardHeader>
       <CardContent>
-        <ul className="grid grid-cols-7 gap-1.5">
+        <ul className="flex flex-col gap-1.5">
           {days.map((day) => {
             const what =
               day.status === 'workout'
@@ -93,28 +93,26 @@ function PastWeekCard({ days }: { days: WeekHistoryDay[] }) {
                   ? 'Rest day'
                   : 'Nothing logged';
             return (
-              <li key={day.date} className="flex min-w-0">
+              <li key={day.date}>
                 <Link
                   to={`/today?date=${day.date}`}
                   aria-label={`${formatFullDate(day.date)}: ${what}. Log a set for this day.`}
-                  className="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg border border-border bg-card/50 px-0.5 py-2 text-center outline-none transition-colors duration-(--dur) hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="flex min-h-10 items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2 outline-none transition-colors duration-(--dur) hover:border-brand/40 hover:bg-brand-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">
-                    {formatWeekday(day.date)}
+                  <span aria-hidden="true" className="w-24 shrink-0 whitespace-nowrap">
+                    <span className="font-medium text-foreground">{formatWeekday(day.date)}</span>{' '}
+                    <span className="text-xs text-muted-foreground tabular-nums">{formatMonthDay(day.date)}</span>
                   </span>
-                  <span aria-hidden="true" className="text-sm font-medium tabular-nums">
-                    {formatDayOfMonth(day.date)}
-                  </span>
-                  <span aria-hidden="true" className="mt-0.5 flex h-4 items-center">
+                  <span aria-hidden="true" className="min-w-0 flex-1 wrap-break-word">
                     {day.status === 'workout' ? (
-                      <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums">
-                        <CheckIcon className="size-3 shrink-0 text-success" />
-                        {day.setCount}
+                      <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
+                        <CheckIcon className="size-3.5 shrink-0 text-success" />
+                        {day.setCount} set{day.setCount === 1 ? '' : 's'}
                       </span>
                     ) : day.status === 'rest' ? (
-                      <span className="text-[0.625rem] font-medium text-muted-foreground">Rest</span>
+                      <Badge variant="secondary">Rest</Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </span>
                 </Link>
