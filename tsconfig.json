@@ -10,14 +10,13 @@
     "jsx": "react-jsx",
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
-      "~/*": ["./app/*"],
-      "~app/*": ["./app/*"],
       "~application/*": ["./core/application/*"],
       "~domain/*": ["./core/domain/*"],
       "~infrastructure/*": ["./core/infrastructure/*"],
       "~server/*": ["./server/*"],
       "~shared/*": ["./core/shared/*"],
-      "~test/*": ["./test/*"]
+      "~test/*": ["./test/*"],
+      "~web/*": ["./web/*"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

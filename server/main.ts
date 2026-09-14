@@ -28,8 +28,7 @@ import { AppModule } from '~server/app.module';
 import { coreConfig } from '~server/config/core.config';
 import { LOGGER } from '~server/logging/tokens';
 import { collectNestSingletons } from '~server/react-router/singletons';
-
-import type { NestSingletons } from '~/router/load-context';
+import type { NestSingletons } from '~web/router/load-context';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,7 +127,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // The process is the server, so its crash handlers belong here rather than
-  // anywhere under `app/`, where importing the module would hook them inside
+  // anywhere under `web/`, where importing the module would hook them inside
   // the vitest process too.
   process.on('uncaughtException', (err) => {
     logger.fatal('uncaught exception', err.stack, 'Process');

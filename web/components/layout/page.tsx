@@ -1,0 +1,101 @@
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '~web/lib/utils';
+
+/**
+ * Page rhythm lives here and nowhere else.
+ *
+ * Every route previously hand-rolled `mx-auto max-w-7xl px-4 py-8`, with the
+ * width drifting between 7xl / 6xl / 2xl / lg from page to page. One container,
+ * one gutter token (`--page-px`), one vertical rhythm token (`--section-gap`).
+ */
+
+type Width = 'full' | 'default' | 'narrow' | 'prose';
+
+const widths: Record<Width, string> = {
+  full: 'max-w-none',
+  default: 'max-w-(--content-max)',
+  narrow: 'max-w-4xl',
+  prose: 'max-w-2xl',
+};
+
+export function Page({ className, width = 'default', ...props }: ComponentProps<'main'> & { width?: Width }) {
+  return (
+    <main
+      id="main"
+      tabIndex={-1}
+      className={cn(
+        'mx-auto w-full flex-1 px-(--page-px) pt-8 pb-16 outline-none',
+        'animate-rise-in',
+        widths[width],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/**
+ * Page title block. `actions` sits inline on wide screens and wraps beneath the
+ * title on narrow ones rather than crushing the heading.
+ */
+export function PageHeader({
+  title,
+  description,
+  actions,
+  badge,
+  className,
+  ...props
+}: Omit<ComponentProps<'header'>, 'title'> & {
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  badge?: ReactNode;
+}) {
+  return (
+    <header className={cn('flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between', className)} {...props}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">{title}</h1>
+          {badge}
+        </div>
+        {description ? <p className="text-muted-foreground max-w-prose text-sm text-pretty">{description}</p> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
+  );
+}
+
+/**
+ * A titled band of content, separated by the shared section rhythm.
+ */
+export function Section({
+  title,
+  description,
+  actions,
+  headingLevel = 'h2',
+  className,
+  children,
+  ...props
+}: Omit<ComponentProps<'section'>, 'title'> & {
+  title?: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  headingLevel?: 'h2' | 'h3';
+}) {
+  const Heading = headingLevel;
+
+  return (
+    <section className={cn('mt-(--section-gap) flex flex-col gap-4', className)} {...props}>
+      {title ? (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <Heading className="font-heading text-lg font-semibold tracking-tight">{title}</Heading>
+            {description ? <p className="text-muted-foreground max-w-prose text-sm">{description}</p> : null}
+          </div>
+          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}

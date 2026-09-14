@@ -19,7 +19,7 @@ export default defineConfig(({ command }) => ({
     // route at a time - re-bundling mid-session and reloading the page to
     // hand over the new URLs. Naming the real entry points gets that work
     // done at startup instead.
-    entries: ['./app/root.tsx', './app/routes/**/*.tsx'],
+    entries: ['./web/root.tsx', './web/routes/**/*.tsx'],
   },
   environments: {
     ssr: {
@@ -79,8 +79,8 @@ export default defineConfig(({ command }) => ({
           name: 'jsdom',
           environment: 'jsdom',
           include: [
-            '**/app/**/components/*.test.(ts|tsx)', //
-            '**/app/**/routes/*.test.(ts|tsx)',
+            '**/web/**/components/*.test.(ts|tsx)', //
+            '**/web/**/routes/*.test.(ts|tsx)',
           ],
         },
       },
@@ -90,14 +90,14 @@ export default defineConfig(({ command }) => ({
           name: 'node',
           environment: 'node',
           include: [
-            '**/app/**/*.test.(ts|tsx)', //
+            '**/web/**/*.test.(ts|tsx)', //
             '**/server/**/*.test.(ts|tsx)',
             '**/core/**/*.test.(ts|tsx)',
             '**/test/**/*.test.(ts|tsx)',
           ],
           exclude: [
-            '**/app/**/components/*.test.(ts|tsx)', //
-            '**/app/**/routes/*.test.(ts|tsx)',
+            '**/web/**/components/*.test.(ts|tsx)', //
+            '**/web/**/routes/*.test.(ts|tsx)',
             '**/e2e/**',
             ...configDefaults.exclude,
           ],

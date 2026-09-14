@@ -1,0 +1,194 @@
+import { ChevronRightIcon, PlusIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useFetcher } from 'react-router';
+import type { LastSetView, LoggedSetView } from '~application/use-cases/session-service';
+import type { CardioFields } from '~domain/equipment/cardio-fields';
+import type { ExerciseType } from '~domain/exercise/exercise-type';
+import { formatNumber } from '~domain/values/units';
+import type { DistanceUnit, WeightUnit } from '~domain/values/units';
+import { formatMonthDay } from '~shared/format';
+import { MeasurementField } from '~web/components/measurement-field';
+import { ExerciseHistoryButton } from '~web/components/session/exercise-history-button';
+import { Field } from '~web/components/ui/field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~web/components/ui/select';
+import { SubmitButton } from '~web/components/ui/submit-button';
+import { Textarea } from '~web/components/ui/textarea';
+import type { Intent } from '~web/lib/intent';
+import { cn } from '~web/lib/utils';
+
+/**
+ * 1 to 10, in half-point steps - the same scale `Rpe.isValid` enforces server-side.
+ */
+const RPE_OPTIONS = Array.from({ length: 19 }, (_, i) => 1 + i * 0.5);
+
+/**
+ * The minimum an exercise has to offer for the log form to render the right
+ * fields for it. Both the plan's items and the full library satisfy it.
+ */
+export type LoggableExercise = {
+  id: string;
+  name: string;
+  exerciseType: ExerciseType;
+  cardioFields: CardioFields;
+};
+
+export function LogSetForm({
+  logSet,
+  exercise,
+  exerciseOptions,
+  date,
+  todayStr,
+  weightUnit,
+  distanceUnit,
+  loggedSets,
+  lastSets,
+}: {
+  logSet: Intent<object>;
+  exercise?: LoggableExercise;
+  exerciseOptions?: LoggableExercise[];
+  date: string;
+  todayStr: string;
+  weightUnit: WeightUnit;
+  distanceUnit: DistanceUnit;
+  /**
+   * Every set already logged this page's date - source of "same day" prefill.
+   */
+  loggedSets: LoggedSetView[];
+  /**
+   * The previous session's set per exercise - source of the "Last time" hint and its fallback prefill.
+   */
+  lastSets: Record<string, LastSetView>;
+}) {
+  const fetcher = useFetcher();
+  const [selectedId, setSelectedId] = useState(exercise?.id ?? '');
+  const active = exercise ?? exerciseOptions?.find((e) => e.id === selectedId);
+  const pending = fetcher.state !== 'idle';
+  const error = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
+  const { showSpeed, showResistance } = active?.cardioFields ?? { showSpeed: true, showResistance: true };
+  const units = { weightUnit: weightUnit, distanceUnit: distanceUnit };
+
+  const lastSet = active ? lastSets[active.id] : undefined;
+  // The most recent set logged for this exercise today outranks "last time"
+  // as a default: mid-session, it's what keeps set 3 close to set 2.
+  const todaysLastSet = active ? loggedSets.filter((set) => set.exerciseId === active.id).at(-1) : undefined;
+  const prefill = todaysLastSet ?? lastSet;
+  // Uncontrolled inputs never reset on their own, so the key has to change
+  // whenever the resolved prefill does - switching exercises, or a set just
+  // logged today changing what "same day" now means - or a stale value from
+  // one exercise (or date) would leak into the next.
+  const fieldsKey = `${active?.id ?? 'none'}:${todaysLastSet?.id ?? lastSet?.date ?? 'none'}`;
+
+  return (
+    <fetcher.Form method="post" className="flex flex-col gap-3">
+      <input {...logSet.field} />
+      <input type="hidden" name="date" value={date} />
+      {exercise ? (
+        <input type="hidden" name="exerciseId" value={exercise.id} />
+      ) : (
+        <Field
+          label="Exercise"
+          className="sm:max-w-xs"
+          action={
+            active ? <ExerciseHistoryButton exerciseId={active.id} exerciseName={active.name} todayStr={todayStr} /> : null
+          }
+        >
+          {({ id }) => (
+            <Select name="exerciseId" value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger id={id} className="w-full">
+                <SelectValue placeholder="Choose an exercise" />
+              </SelectTrigger>
+              <SelectContent>
+                {exerciseOptions?.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </Field>
+      )}
+
+      {lastSet ? (
+        <p className="text-muted-foreground text-xs">
+          Last time: {lastSet.summary} on {formatMonthDay(lastSet.date)}
+        </p>
+      ) : null}
+
+      {active?.exerciseType === 'strength' ? (
+        <div key={fieldsKey} className="grid grid-cols-2 gap-3 sm:max-w-md sm:grid-cols-3">
+          <MeasurementField name="reps" defaultValue={prefill?.reps} {...units} />
+          <MeasurementField name="weight" defaultValue={prefill?.weight} {...units} />
+          <Field label="RPE">
+            {({ id }) => (
+              <Select name="rpe">
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RPE_OPTIONS.map((rating) => (
+                    <SelectItem key={rating} value={String(rating)}>
+                      {formatNumber(rating)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Field>
+        </div>
+      ) : null}
+
+      {active?.exerciseType === 'cardio' ? (
+        <div
+          key={fieldsKey}
+          className={cn(
+            'grid grid-cols-2 gap-3 sm:max-w-md',
+            showSpeed && showResistance ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+          )}
+        >
+          <MeasurementField name="durationMinutes" defaultValue={prefill?.durationMinutes} {...units} />
+          {showSpeed ? <MeasurementField name="speed" defaultValue={prefill?.speed} {...units} /> : null}
+          {showResistance ? <MeasurementField name="resistance" defaultValue={prefill?.resistance} {...units} /> : null}
+        </div>
+      ) : null}
+
+      {active ? (
+        <details className="sm:max-w-md">
+          <summary
+            role="button"
+            className="text-muted-foreground [details[open]_&]:text-foreground flex cursor-pointer items-center gap-1 text-sm font-medium select-none [&::-webkit-details-marker]:hidden"
+          >
+            <ChevronRightIcon
+              className="size-3.5 transition-transform duration-(--dur-fast) [details[open]_&]:rotate-90"
+              aria-hidden="true"
+            />
+            Add a note
+          </summary>
+          <div className="mt-3">
+            <Field label="Notes">
+              <Textarea name="notes" maxLength={500} placeholder="Rod 4 slipping" />
+            </Field>
+          </div>
+        </details>
+      ) : null}
+
+      {error ? (
+        <p role="alert" className="text-destructive text-sm font-medium">
+          {error}
+        </p>
+      ) : null}
+
+      <SubmitButton
+        pending={pending}
+        pendingLabel="Logging set"
+        disabled={!active}
+        size="sm"
+        variant="brand"
+        className="self-start"
+      >
+        {pending ? null : <PlusIcon aria-hidden="true" />}
+        Log set
+      </SubmitButton>
+    </fetcher.Form>
+  );
+}

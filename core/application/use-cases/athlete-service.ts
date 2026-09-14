@@ -55,7 +55,7 @@ export class AthleteService {
    * the account with admin access already granted - the /admin specs need an
    * administrator, and nothing in the UI can mint the first one. Only ever
    * reachable when ENABLE_TEST_LOGIN is set - see
-   * `app/routes/auth.test-login.tsx`.
+   * `web/routes/auth.test-login.tsx`.
    *
    * `asAdministrator` applies on registration only, so a returning account
    * keeps whatever access it has now.

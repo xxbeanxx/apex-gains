@@ -13,7 +13,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
  * one - since that is the day the athlete believes they are training on.
  * That split is deliberate.
  *
- * Display formatting lives in `app/lib/format.ts` instead: it is
+ * Display formatting lives in `web/lib/format.ts` instead: it is
  * locale-dependent and runs in the browser, whereas this is pure calendar
  * math.
  */

@@ -347,7 +347,7 @@ what GHCR's deletion API checks.
   rules, `core/application/` is the use cases plus the ports they need,
   and `core/infrastructure/` holds the adapters behind those ports.
   Nothing in `core/` imports Nest, React Router, Drizzle or Express
-  above the infrastructure layer, and nothing in it imports `app/` or
+  above the infrastructure layer, and nothing in it imports `web/` or
   `server/` at all.
 
   ```text
@@ -356,15 +356,15 @@ what GHCR's deletion API checks.
   core/infrastructure/ persistence/drizzle/, persistence/in-memory/
   core/shared/         framework-neutral utilities
 
-  app/                React Router: routes, components, auth middleware
+  web/                React Router: routes, components, auth middleware
   server/             NestJS: DI, config, HTTP runtime
   ```
 
   `npm run check:architecture` enforces those directions and runs in CI
   ahead of the tests, so the layering is a check rather than a
   convention. Imports name the layer they cross into - `~domain/`,
-  `~application/`, `~infrastructure/`, `~shared/`, `~/` for `app/`, and
-  `~server/`.
+  `~application/`, `~infrastructure/`, `~shared/`, `~web/` for `web/`,
+  and `~server/`.
 
 - **A domain model owns the rules.** Aggregates (`Plan`, `Workout`,
   `Session`, `Exercise`, `Equipment`, `Athlete`, `BodyWeightEntry`)
@@ -388,7 +388,7 @@ what GHCR's deletion API checks.
   composition root: it handles dependency injection for repositories,
   use cases, auth providers, and logging; wraps Express; and bridges
   singletons into React Router via load context
-  (`app/router/load-context.ts`). In dev, it runs Vite in middleware
+  (`web/router/load-context.ts`). In dev, it runs Vite in middleware
   mode with HMR;
   in production, it serves static assets and dispatches SSR requests to
   the request handler `build/server/index.js` exports. Nest reaches

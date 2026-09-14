@@ -16,15 +16,14 @@ import { WorkoutService } from '~application/use-cases/workout-service';
 import { OIDC_STATE_COOKIE, SESSION_STORAGE } from '~server/auth/tokens';
 import { testLoginConfig } from '~server/config/test-login.config';
 import { LOGGER } from '~server/logging/tokens';
-
-import type { NestSingletons } from '~/router/load-context';
+import type { NestSingletons } from '~web/router/load-context';
 
 /**
  * Where in the DI container each load-context value lives, keyed as
  * `NestSingletons` is.
  *
  * Typed off `NestSingletons`, so adding a context in
- * `app/router/load-context.ts` without a line here - or a line naming a
+ * `web/router/load-context.ts` without a line here - or a line naming a
  * class of the wrong type - fails to compile. A symbol or string token
  * carries no type, so for the logger, the cookie, the session storage and
  * the test-login config only the key is checked.

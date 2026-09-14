@@ -1,0 +1,80 @@
+import type { ComponentProps } from 'react';
+import { cn } from '~web/lib/utils';
+
+export function Card({
+  className,
+  size = 'default',
+  interactive = false,
+  ...props
+}: ComponentProps<'div'> & {
+  size?: 'default' | 'sm';
+  /**
+   * Adds a hover lift + border warm-up. Only for cards that are clickable.
+   */
+  interactive?: boolean;
+}) {
+  return (
+    <div
+      data-slot="card"
+      data-size={size}
+      data-interactive={interactive || undefined}
+      className={cn(
+        'group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-sm shadow-black/[0.03] ring-1 ring-foreground/10 [--card-spacing:--spacing(5)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 dark:shadow-black/20 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl',
+        'data-interactive:transition-[box-shadow,transform,--tw-ring-color] data-interactive:duration-(--dur) data-interactive:ease-(--ease-quint) data-interactive:hover:-translate-y-0.5 data-interactive:hover:shadow-md data-interactive:hover:ring-foreground/20 data-interactive:has-[:focus-visible]:ring-2 data-interactive:has-[:focus-visible]:ring-ring',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="card-header"
+      className={cn(
+        'group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function CardTitle({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="card-title"
+      className={cn('font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm', className)}
+      {...props}
+    />
+  );
+}
+
+export function CardDescription({ className, ...props }: ComponentProps<'div'>) {
+  return <div data-slot="card-description" className={cn('text-sm text-muted-foreground', className)} {...props} />;
+}
+
+export function CardAction({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="card-action"
+      className={cn('col-start-2 row-span-2 row-start-1 self-start justify-self-end', className)}
+      {...props}
+    />
+  );
+}
+
+export function CardContent({ className, ...props }: ComponentProps<'div'>) {
+  return <div data-slot="card-content" className={cn('px-(--card-spacing)', className)} {...props} />;
+}
+
+export function CardFooter({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn('flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)', className)}
+      {...props}
+    />
+  );
+}

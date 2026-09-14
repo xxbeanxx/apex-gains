@@ -52,7 +52,7 @@ export default defineConfig({
     },
     {
       // shadcn/ui components stay close to upstream so they can be re-pulled.
-      files: ['app/components/ui/**'],
+      files: ['web/components/ui/**'],
       rules: {
         'typescript/restrict-template-expressions': 'off',
       },

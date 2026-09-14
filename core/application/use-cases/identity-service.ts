@@ -8,7 +8,7 @@ import type { NewAthlete } from '~domain/athlete/athlete';
 /**
  * Google sign-in, kept separate from `AthleteService`: this is the identity
  * concern (proving who is asking), not the registration/sign-in one (what
- * happens once they're proven). `app/routes/auth.google.callback.tsx` calls
+ * happens once they're proven). `web/routes/auth.google.callback.tsx` calls
  * both - this to validate the OIDC round trip and get a profile, then
  * `AthleteService.signInWithGoogle` to find or register the athlete it names.
  */

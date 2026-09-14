@@ -26,7 +26,7 @@
 !react-router.config.ts
 
 # Include the app source, server runtime, and static assets
-!app/
+!web/
 !public/
 !server/
 !src/

@@ -197,15 +197,15 @@ never the single-line form:
 
 ## Architecture
 
-**Routing.** `app/routes.ts` is the single route manifest (Framework
+**Routing.** `web/routes.ts` is the single route manifest (Framework
 Mode, not file-system routing). All authenticated pages are nested
 under the `routes/_protected.tsx` layout, which sets
-`requireUserMiddleware` (`app/auth/require-user.ts`) to redirect
+`requireUserMiddleware` (`web/auth/require-user.ts`) to redirect
 anonymous requests to `/auth/google`. Nested inside that,
 `routes/_admin.tsx` adds `requireAdminMiddleware`
-(`app/auth/require-admin.ts`) and holds the `/admin` pages.
+(`web/auth/require-admin.ts`) and holds the `/admin` pages.
 The current user is threaded through via React Router's context API:
-`app/auth/user-context.ts` defines `userContext` — which holds the
+`web/auth/user-context.ts` defines `userContext` — which holds the
 `Athlete` aggregate, not the raw `users` row, so loaders have the athlete's unit preferences and
 behaviour to hand — populated by `loadUserMiddleware` (see Auth, below)
 and read in loaders/actions with `context.get(userContext)`.
@@ -213,8 +213,8 @@ Route modules import their generated types
 from `./+types/<route-file-name>`.
 
 A route names its place in the breadcrumb trail by exporting a `handle`
-with a `crumb(data)` function (`app/lib/breadcrumbs.ts`), which
-`app/components/shell/top-bar.tsx` reads off `useMatches()`. A route
+with a `crumb(data)` function (`web/lib/breadcrumbs.ts`), which
+`web/components/shell/top-bar.tsx` reads off `useMatches()`. A route
 that is never itself the current page — a resource route fetched with
 `fetcher.load`, a loader-only redirect — simply exports none.
 
@@ -229,17 +229,17 @@ core/application/shared/        helpers the use cases share.
 core/infrastructure/            concrete adapters behind the ports.
 core/shared/                    framework-neutral utilities.
 
-app/                           the React Router inbound adapter.
-app/routes/                    parse form -> call use case -> map result to HTTP.
-app/router/load-context.ts     how a use case reaches a route.
+web/                           the React Router inbound adapter.
+web/routes/                    parse form -> call use case -> map result to HTTP.
+web/router/load-context.ts     how a use case reaches a route.
 
 server/                        the Nest composition root and HTTP runtime.
 ```
 
 `core/` is framework-neutral: nothing in it imports Nest, React Router,
 Drizzle, Express, `openid-client`, `vite`, or `node:*` above the
-infrastructure layer, and nothing in it imports `app/` or `server/` at
-all. `app/` and `server/` may both depend on `core/application` and
+infrastructure layer, and nothing in it imports `web/` or `server/` at
+all. `web/` and `server/` may both depend on `core/application` and
 `core/domain`; `server/` may also reach `core/infrastructure`, because
 choosing an adapter is its job.
 
@@ -251,16 +251,16 @@ trips it as a design question, not a rule to widen.
 
 Path aliases name the layer an import crosses into, so a reader can see
 the direction at the import: `~domain/`, `~application/`,
-`~infrastructure/`, `~shared/` for `core/*`, `~/` for `app/`, and
+`~infrastructure/`, `~shared/` for `core/*`, `~web/` for `web/`, and
 `~server/` for `server/`.
 
 The `.server` suffix marks exactly one thing: a module that has a
 client-importable sibling of the same name and must not be bundled with
-it (`app/lib/intent.ts` / `intent.server.ts`, `validate-form.ts` /
+it (`web/lib/intent.ts` / `intent.server.ts`, `validate-form.ts` /
 `validate-form.server.ts`, `qr.ts` / `qr.server.ts`). A server-only
 module with no such sibling carries no suffix, and nothing under `core/`
 carries one at all. The trade-off: the suffix is a disambiguator, not a
-blanket guard, so importing `app/lib/logger.ts` from a component
+blanket guard, so importing `web/lib/logger.ts` from a component
 bundles it instead of failing the build. Keep server-only imports in
 `loader`, `action`, and `middleware` — the route module boundary is
 what actually keeps them out of the browser.
@@ -330,7 +330,7 @@ React Router's load context is the _only_ conduit from Nest to the app
   `userContext`. Repositories do not: nothing above the service layer
   holds a port.
 
-The whole bridge is three pieces. `app/router/load-context.ts`
+The whole bridge is three pieces. `web/router/load-context.ts`
 declares one `contexts` map, and derives from it the exported tokens,
 the `NestSingletons` type, and `nestLoadContext(singletons)`, which
 builds a populated `RouterContextProvider`; a value Nest forgets to
@@ -378,7 +378,7 @@ the container image ships no `node_modules`:
 - `vite.server.config.ts` writes `build/server/main.js` plus its
   `build/server/chunks/`, bundling `server/main.ts` and everything it
   reaches - Nest, Express, Drizzle, postgres-js, and a second copy of
-  the `app/` tree. It runs second: `react-router build` clears `build/`
+  the `web/` tree. It runs second: `react-router build` clears `build/`
   first, and this build sets `emptyOutDir: false` so it lands beside
   the output already there.
 
@@ -515,7 +515,7 @@ one on first login, so no route touches `AthletesRepository` directly
 (`loadUserMiddleware` goes through `AthleteService.byId`). Each is a
 plain class Nest constructs through a factory (see Server runtime,
 above); routes reach one via `context.get(xServiceContext)` (the tokens
-live in `app/router/load-context.ts`), never by importing the class or
+live in `web/router/load-context.ts`), never by importing the class or
 constructing it themselves. **They return plain DTOs, never domain
 objects**: React Router serializes loader data, so anything with methods
 cannot cross that boundary. That is also what lets a client component
@@ -566,9 +566,9 @@ dropped by `unshare`. It is looked up by
 definition not the owner. `PlanService.share` goes through the same
 `ForkableLibrary` as every other mutation, so sharing a sample forks it
 first and the token lands on the fork; the caller has to follow
-`forkedId`. `app/lib/share-link.ts` states the link's shape once,
-and `app/lib/qr.server.ts` encodes it server-side so `qrcode-generator`
-stays out of the client bundle — only a `QrCode` (`app/lib/qr.ts`, no
+`forkedId`. `web/lib/share-link.ts` states the link's shape once,
+and `web/lib/qr.server.ts` encodes it server-side so `qrcode-generator`
+stays out of the client bundle — only a `QrCode` (`web/lib/qr.ts`, no
 `.server` suffix precisely so the component can import it) crosses to
 the browser.
 
@@ -642,9 +642,9 @@ athlete's fork and a workout that resolves to nothing read as rest.
 transaction; neither use case depends on the other.
 
 **Route module action pattern.** Routes with multiple mutations
-declare their intents once with `intent()` (`app/lib/intent.ts`) and run
-them through `dispatch`/`handled` (`app/lib/intent.server.ts`) — see
-`app/routes/plans.$planId.tsx` for the fullest example: rename,
+declare their intents once with `intent()` (`web/lib/intent.ts`) and run
+them through `dispatch`/`handled` (`web/lib/intent.server.ts`) — see
+`web/routes/plans.$planId.tsx` for the fullest example: rename,
 reanchor, activate/deactivate, addSlot, removeSlot, move, delete. One
 declaration derives everything that used to be a hand-typed string in
 five places: `intent.field` is the hidden input, `intent.match` is what
@@ -658,14 +658,14 @@ page never declared is a 400, not a silent success. A single-form route
 at all and calls `validateForm` directly — there is nothing to dispatch
 between. Each intent names a local
 `class-validator` DTO class, checked through `validateForm`
-(`app/lib/validate-form.server.ts`) — the same
+(`web/lib/validate-form.server.ts`) — the same
 `class-validator`/`class-transformer` pairing `server/config/` uses for
 env vars (see Server runtime, above), so there is one validation
 mechanism for the whole app rather than a second one only for forms.
 `validateForm` returns `{ success: true; data }` or `{ success: false;
 message }` instead of throwing, since a bad submission is a 400, not a
 boot failure. Both fork-on-write detail routes build a
-`forkableDetail(...)` (`app/lib/forkable-detail.ts`) naming their
+`forkableDetail(...)` (`web/lib/forkable-detail.ts`) naming their
 noun and paths. It declares the four intents every such page shares
 (`delete`, `revert`, `duplicate`, `rename`), which a route spreads into
 its own `intents`, plus `notFound` and `settle` (not-found is a 404, and
@@ -675,12 +675,12 @@ for the four are `forkableHandlers` in `forkable-detail.server.ts`, spread
 into the route's `dispatch`; the header that submits them - rename, the
 page's own actions as children, duplicate, and the revert-or-delete form
 that follows from the Sample/Customized badge - is `ForkableActions` in
-`app/components/forkable-header.tsx`. What is left in each route
+`web/components/forkable-header.tsx`. What is left in each route
 is what the two pages genuinely do differently: re-anchoring,
 activating and sharing a plan, adding a targeted exercise to a workout. Every mutating
 form is a `<Form method="post">` (react-router's, never a fetcher), which
 still navigates and triggers a full loader revalidation — just without a
-document reload; `~/components/ui/submit-button.tsx` (`SubmitButton`)
+document reload; `~web/components/ui/submit-button.tsx` (`SubmitButton`)
 infers its own pending state from `useNavigation()` matched against a
 `match` prop — pass `intent.match` whenever a page has more than one
 form, or every submit button on the page will spin together. The one
@@ -690,10 +690,10 @@ would reset scroll position for no reason: that row owns its own
 `useFetcher()` and renders `<fetcher.Form>`, with the row itself `hidden`
 while `fetcher.state !== 'idle'` so it disappears the instant its own
 delete is submitted rather than waiting on the round trip
-(`app/components/session/logged-sets-list.tsx`,
-`app/routes/body.tsx`'s `EntryRow`). `SubmitButton` takes an
+(`web/components/session/logged-sets-list.tsx`,
+`web/routes/body.tsx`'s `EntryRow`). `SubmitButton` takes an
 explicit `pending` prop for exactly this case. It does not extend to the
-plan/workout builders (`app/routes/plans.$planId.tsx`,
+plan/workout builders (`web/routes/plans.$planId.tsx`,
 `workouts.$workoutId.tsx`), which hold to a no-fetcher rule of their own
 for reordering and adding/removing days or exercises — a full
 revalidation keeps their derived state (positions, cycle math) from
@@ -702,22 +702,22 @@ document reload to reset transient UI state for free any more, so a
 `<details>` disclosure or controlled `Dialog` that a submission inside it
 should close — the rename/re-anchor popover, the mobile "Add day"/"Add
 exercise" palette — closes itself instead: `useCloseOnSubmit`
-(`app/components/builder/use-close-on-submit.ts`) runs a callback once
+(`web/components/builder/use-close-on-submit.ts`) runs a callback once
 `useNavigation()` settles back to idle.
 
 A destructive action that deletes or discards a whole item — deleting a
 plan/workout/equipment row, or reverting a customized plan, workout, or
 exercise back to its sample and losing the edits — is gated behind
-`~/components/ui/confirm-dialog.tsx` (`ConfirmDialog`, over the
-`app/components/ui/alert-dialog.tsx` Radix primitives): a trigger button
+`~web/components/ui/confirm-dialog.tsx` (`ConfirmDialog`, over the
+`web/components/ui/alert-dialog.tsx` Radix primitives): a trigger button
 opens it, and the real submit button only renders inside the dialog.
 Quick, frequent row removals (a logged set, a weigh-in, a day off a plan,
 an exercise off a workout) stay unconfirmed on purpose — those are
 one-click by design and trivially redone. Because the dialog's content
 portals to `document.body`, its confirm button usually can't sit inside
 the form it submits; it targets the form by HTML's `form="<id>"`
-attribute instead; `ForkableActions`' revert-or-delete form (`app/components/forkable-header.tsx`)
-and `EquipmentRow` (`app/components/exercises/equipment-dialog.tsx`) both
+attribute instead; `ForkableActions`' revert-or-delete form (`web/components/forkable-header.tsx`)
+and `EquipmentRow` (`web/components/exercises/equipment-dialog.tsx`) both
 give the target form an id via `useId()` for this. That is also why
 `SubmitButton` fixes `type="submit"` as the _last_ prop rather than the
 first: `ConfirmDialog` wraps its confirm button in Radix's
@@ -732,7 +732,7 @@ instead calls `event.preventDefault()` in `onSelect` and opens
 `trigger`) — see `ExerciseRowMenu`'s revert action.
 
 Loaders and actions under the `_protected` layout read the athlete with
-`requireAthlete(context)` (`app/auth/user-context.ts`) rather than
+`requireAthlete(context)` (`web/auth/user-context.ts`) rather than
 `context.get(userContext)!`. The context is nullable because
 `loadUserMiddleware` runs on every request signed in or not; under the
 layout `requireUserMiddleware` has already made the null unreachable,
@@ -759,17 +759,17 @@ to the adapter under the `GOOGLE_IDENTITY_PROVIDER` token, and
 `identityServiceContext` is how a route reaches it. It exists
 separately from `AthleteService`: identity (proving who is asking) and
 registration/sign-in (what happens once they're proven) are different
-concerns, so `app/routes/auth.google.callback.tsx` calls
+concerns, so `web/routes/auth.google.callback.tsx` calls
 `IdentityService.completeGoogleLogin` for a validated profile and then
 `AthleteService.signInWithGoogle` with it. The PKCE/state cookie itself
-stays HTTP transport, owned by the React Router adapter: `app/auth/oidc-state.ts`
+stays HTTP transport, owned by the React Router adapter: `web/auth/oidc-state.ts`
 holds its serialize/parse logic, taking the `Cookie` as a parameter
 rather than building its own, and the cookie itself is a Nest provider
 (`server/auth/oidc-state-cookie.provider.ts`, reached via
 `oidcStateCookieContext`). Session storage is likewise a Nest provider
 (`server/auth/session-storage.provider.ts`, reached via
 `sessionStorageContext`). `loadUserMiddleware`
-(`app/auth/current-user.ts`) reads the session and populates
+(`web/auth/current-user.ts`) reads the session and populates
 `userContext` on every request (registered in `root.tsx`'s
 `middleware` export, ahead of `requireUserMiddleware` which only the
 `_protected` layout adds). Any Google account can sign in (open
@@ -807,7 +807,7 @@ falls back to the raw (proxy-internal) `Host` header's port whenever
 `X-Forwarded-Host` lacks one. Without both pieces, `request.url`'s
 origin wouldn't match the browser's `Origin` header on POSTs, which
 React Router's built-in CSRF check rejects with a 400. The same two
-pieces are also what let `app/routes/auth.google.tsx` and
+pieces are also what let `web/routes/auth.google.tsx` and
 `auth.google.callback.tsx` take `new URL(request.url).origin` as the
 app's externally-visible origin — used to build and validate the OIDC
 `redirect_uri` — rather than reading it from an env var.
@@ -825,27 +825,27 @@ A target's or a set's measurements, as numbers in the athlete's units,
 are `MeasurementValues` (`core/application/shared/measurement-values.ts`),
 and its keys are the one list of names for them everywhere: the form
 field, the DTO property (`MeasurementFieldsDto` / `TargetFieldsDto` in
-`app/lib/measurement-fields.ts`, which a form's DTO extends), and the use
+`web/lib/measurement-fields.ts`, which a form's DTO extends), and the use
 case's input - so a route hands its validated DTO straight to the
 service. `toCanonical` is the only conversion from those numbers to
 `Weight`/`Speed`/`Duration`, and `toValues` the inverse a form's defaults
 come from (`TargetView.values`). `MeasurementField`
-(`app/components/measurement-field.tsx`) is how each one is typed in, so
+(`web/components/measurement-field.tsx`) is how each one is typed in, so
 both forms label and bound a measurement the same way.
 
 **UI.** shadcn/ui primitives (Radix + `class-variance-authority`) live
-in `app/components/ui/`; layout chrome (`Page`, `PageHeader`,
-`Section`) is in `app/components/layout/page.tsx`. Design tokens
+in `web/components/ui/`; layout chrome (`Page`, `PageHeader`,
+`Section`) is in `web/components/layout/page.tsx`. Design tokens
 ("Volt on Graphite" theme: warm-neutral graphite base, one rationed
 volt accent for active states/focus rings/progress, dark mode via
-`.dark` class) are defined once in `app/app.css` — extend the token
-set there rather than hardcoding colors in components. Path alias `~/`
-maps to `app/` (see `tsconfig.json` and `components.json`); the rest
-are under Layers, above.
-`app/components/nav-progress.tsx` drives an NProgress bar off
+`.dark` class) are defined once in `web/app.css` — extend the token
+set there rather than hardcoding colors in components. Path alias
+`~web/` maps to `web/` (see `tsconfig.json` and `components.json`); the
+rest are under Layers, above.
+`web/components/nav-progress.tsx` drives an NProgress bar off
 `useNavigation()` so client-side transitions get a loading indicator.
 
-The chrome around every page is `app/components/shell/`: `app-shell.tsx`
+The chrome around every page is `web/components/shell/`: `app-shell.tsx`
 composes a `sidebar.tsx` (desktop), `bottom-tabs.tsx` (mobile),
 `top-bar.tsx` with `breadcrumbs.tsx`, and a `command-palette.tsx`, all
 navigating the one list in `nav-items.ts`. Both the sidebar's collapsed
@@ -853,18 +853,18 @@ state and the theme are read from storage by a blocking inline script in
 `root.tsx`'s `<head>` (`shell-init.ts`, `theme-toggle.tsx`) before first
 paint, which is why `<html>` carries `suppressHydrationWarning` — the
 markup React hydrates has already been mutated on purpose.
-`app/components/builder/` holds the shared editor for the two ordered
+`web/components/builder/` holds the shared editor for the two ordered
 lists (a plan's slots, a workout's exercises): `BuilderFrame` lays out a
 palette to add from (behind an "Add ..." dialog on mobile), an outline,
 and a canvas of `BuilderRow`s, whose up/down and remove controls are
 `row-controls.tsx`.
 
-**Charts.** Recharts, through shadcn's `app/components/ui/chart.tsx`
+**Charts.** Recharts, through shadcn's `web/components/ui/chart.tsx`
 wrapper (`ChartContainer` + `ChartTooltipContent`) — a chart declares a
 `ChartConfig` and paints with the `var(--color-<key>)` variables
 `ChartContainer` emits from it, so the same component is themed by
 `app.css` in both modes. The charts themselves are in
-`app/components/history/`, and they render only in the browser:
+`web/components/history/`, and they render only in the browser:
 `ResponsiveContainer` has to measure its box first, so an SSR'd page
 shows the card and fills the plot on hydration. Two constraints are not
 obvious. Bar animation is off, because Recharts restarts it whenever the
@@ -889,8 +889,8 @@ against Nest's own names - `verbose`, `debug`, `log`, `warn`, `error`,
 unrecognised value stops the server at boot.
 
 The logger reaches the React Router app via `nestLoggerContext`
-(`app/router/load-context.ts` - see Server runtime, above), read
-through `requestLogger(context)` in `app/lib/logger.ts`. That
+(`web/router/load-context.ts` - see Server runtime, above), read
+through `requestLogger(context)` in `web/lib/logger.ts`. That
 is safe on every path, matched route or not, because the load context
 is built before routing. `requestLoggingMiddleware`, registered first
 in `root.tsx`'s `middleware` export so everything it wraps counts
@@ -898,7 +898,7 @@ towards the duration it reports, logs one line per request - `GET
 /today 200 in 12ms for user <id>`. The process-wide
 `uncaughtException`/`unhandledRejection` handlers live in
 `server/main.ts`, which holds the logger directly; registering them
-anywhere under `app/` would hook them inside the vitest process too.
+anywhere under `web/` would hook them inside the vitest process too.
 
 Log lines are plain sentences with the values interpolated (`created
 plan <id> for user <id>`), and the second argument is Nest's
@@ -909,7 +909,7 @@ is no structured-field or correlation-id machinery: `logger.error` takes
 a stack string as its second argument, so an `Error` is passed as
 `err.stack`.
 
-**Build info.** `app/lib/build-info.ts`'s `getBuildInfo()`
+**Build info.** `web/lib/build-info.ts`'s `getBuildInfo()`
 returns the `VERSION_TAG` env var (baked into the image as
 `date-sha-buildnum` by `containerfile`/`build.yaml`) or, outside a
 container, the working tree's short git SHA. It reaches the browser

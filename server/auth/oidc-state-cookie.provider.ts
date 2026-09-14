@@ -7,7 +7,7 @@ import { sessionConfig } from '~server/config/session.config';
 
 /**
  * The short-lived PKCE/state cookie, used only across the Google OIDC
- * redirect round-trip. `app/auth/oidc-state.ts` holds the
+ * redirect round-trip. `web/auth/oidc-state.ts` holds the
  * serialize/parse logic; this is just the configured cookie.
  */
 export const oidcStateCookieProvider: Provider = {
