@@ -18,7 +18,7 @@ function SessionRow({ session }: { session: TimelineDay }) {
       <Link
         to={`/today?date=${session.date}`}
         aria-label={`${formatFullDate(session.date)}: ${label}, ${session.sets.length} set${session.sets.length === 1 ? '' : 's'}${session.tonnage ? `, ${session.tonnage} lifted` : ''}. Edit this day.`}
-        className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted"
+        className="flex items-center gap-3 px-2 py-2.5 text-sm transition-colors duration-(--dur-fast) hover:bg-muted"
       >
         <span aria-hidden="true" className="w-16 shrink-0 text-muted-foreground tabular-nums">
           {formatMonthDay(session.date)}
