@@ -13,7 +13,7 @@ import {
 } from './helpers';
 
 /**
- * Logged sets render as an `ol`; the two week rails above them are `ul`s.
+ * Logged sets render as an `ol`; the two week cards above them are `ul`s.
  */
 function loggedSets(page: Page) {
   return page.locator('ol > li');
@@ -50,7 +50,7 @@ test('shows no active plan until one is set', async ({ page, athlete }) => {
 
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(page.getByText('No plan is active, so log whatever you like for today.')).toBeVisible();
-  // The week rails render twice - once always-expanded for `md:` and up,
+  // The week cards render twice - once always-expanded for `md:` and up,
   // once behind a mobile-only `<details>` - so `.first()` picks whichever
   // copy this viewport actually shows.
   await expect(page.getByText('Next seven days').first()).toBeVisible();

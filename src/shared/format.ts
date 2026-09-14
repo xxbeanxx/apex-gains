@@ -22,11 +22,20 @@ function toLocalDate(dateStr: string): Date {
 }
 
 /**
- * "Tue" - for the week strip.
+ * "Tue" - for the week overview on Today.
  */
 export function formatWeekday(dateStr: string): string {
   return toLocalDate(dateStr).toLocaleDateString(undefined, {
     weekday: 'short',
+  });
+}
+
+/**
+ * "2" - for a calendar cell whose month is shown elsewhere or not at all.
+ */
+export function formatDayOfMonth(dateStr: string): string {
+  return toLocalDate(dateStr).toLocaleDateString(undefined, {
+    day: 'numeric',
   });
 }
 

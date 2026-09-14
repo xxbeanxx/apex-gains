@@ -13,7 +13,7 @@ import { LogSetForm } from '~/components/session/log-set-form';
 import { LoggedSetsList } from '~/components/session/logged-sets-list';
 import { RestTimer } from '~/components/session/rest-timer';
 import { SetProgress } from '~/components/session/set-progress';
-import { PastWeekCard, UpcomingWeekCard } from '~/components/session/week-rail';
+import { PastWeekCard, UpcomingWeekCard } from '~/components/session/week-overview';
 import { TargetChips } from '~/components/target-chips';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -143,7 +143,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 /**
- * The two week rails, shared by the always-visible desktop copy and the collapsed mobile one.
+ * The two week cards, shared by the always-visible desktop copy and the collapsed mobile one.
  */
 function WeekOverview({
   upcomingWeek,
@@ -153,7 +153,7 @@ function WeekOverview({
   pastWeek: Route.ComponentProps['loaderData']['pastWeek'];
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
       <UpcomingWeekCard days={upcomingWeek} />
       <PastWeekCard days={pastWeek} />
     </div>
