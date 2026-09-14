@@ -2,7 +2,7 @@
  * DI tokens for the repository ports in this directory.
  *
  * They live in the composition root rather than beside the ports, because
- * nothing in `src/application` is Nest-aware: a use case takes its ports as
+ * nothing in `core/application` is Nest-aware: a use case takes its ports as
  * plain constructor parameters and `server/services/services.module.ts`
  * supplies them through an explicit factory. Binding a token to a concrete
  * adapter (Drizzle vs in-memory) is the composition root's job too, and

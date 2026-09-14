@@ -12,11 +12,11 @@
     "paths": {
       "~/*": ["./app/*"],
       "~app/*": ["./app/*"],
-      "~application/*": ["./src/application/*"],
-      "~domain/*": ["./src/domain/*"],
-      "~infrastructure/*": ["./src/infrastructure/*"],
+      "~application/*": ["./core/application/*"],
+      "~domain/*": ["./core/domain/*"],
+      "~infrastructure/*": ["./core/infrastructure/*"],
       "~server/*": ["./server/*"],
-      "~shared/*": ["./src/shared/*"],
+      "~shared/*": ["./core/shared/*"],
       "~test/*": ["./test/*"]
     },
     "esModuleInterop": true,

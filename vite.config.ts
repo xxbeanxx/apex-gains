@@ -92,7 +92,7 @@ export default defineConfig(({ command }) => ({
           include: [
             '**/app/**/*.test.(ts|tsx)', //
             '**/server/**/*.test.(ts|tsx)',
-            '**/src/**/*.test.(ts|tsx)',
+            '**/core/**/*.test.(ts|tsx)',
             '**/test/**/*.test.(ts|tsx)',
           ],
           exclude: [

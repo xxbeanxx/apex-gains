@@ -64,7 +64,7 @@ App is at `http://localhost:3000/`.
 | `npm run build`              | Production build (application, then server runtime)                     |
 | `npm run build:app`          | Build the React Router app into `build/`                                |
 | `npm run build:server`       | Bundle the Nest server runtime into `build/server/main.js`              |
-| `npm run check:architecture` | Verify the `src/` layer boundaries hold                                 |
+| `npm run check:architecture` | Verify the `core/` layer boundaries hold                                |
 | `npm run db:generate`        | Generate a Drizzle migration from the Drizzle schema                    |
 | `npm run db:migrate`         | Apply pending migrations                                                |
 | `npm run db:seed`            | Seed/refresh the exercise library                                       |
@@ -170,7 +170,7 @@ account), the per-statement `(parentId, position)` uniqueness that
 `persistence/shared/write-positions.ts` exists to work around, and the
 `onConflictDoNothing` resolution behind opening a day twice. The in-memory
 adapters imitate the first two by being told which stores reference them -
-see `src/infrastructure/persistence/in-memory/references.ts` - and
+see `core/infrastructure/persistence/in-memory/references.ts` - and
 `inMemoryRepositories()` in `in-memory/repositories.ts` is the one place that
 tells them, for the app, the contract suite and the service tests alike.
 
@@ -342,19 +342,19 @@ what GHCR's deletion API checks.
 
 ## Architecture notes
 
-- **The business rules live outside the frameworks.** `src/` is
-  framework-neutral TypeScript: `src/domain/` is the model and its
-  rules, `src/application/` is the use cases plus the ports they need,
-  and `src/infrastructure/` holds the adapters behind those ports.
-  Nothing in `src/` imports Nest, React Router, Drizzle or Express
+- **The business rules live outside the frameworks.** `core/` is
+  framework-neutral TypeScript: `core/domain/` is the model and its
+  rules, `core/application/` is the use cases plus the ports they need,
+  and `core/infrastructure/` holds the adapters behind those ports.
+  Nothing in `core/` imports Nest, React Router, Drizzle or Express
   above the infrastructure layer, and nothing in it imports `app/` or
   `server/` at all.
 
   ```text
-  src/domain/         aggregates, value objects, domain services
-  src/application/    ports/, use-cases/, shared/
-  src/infrastructure/ persistence/drizzle/, persistence/in-memory/
-  src/shared/         framework-neutral utilities
+  core/domain/         aggregates, value objects, domain services
+  core/application/    ports/, use-cases/, shared/
+  core/infrastructure/ persistence/drizzle/, persistence/in-memory/
+  core/shared/         framework-neutral utilities
 
   app/                React Router: routes, components, auth middleware
   server/             NestJS: DI, config, HTTP runtime
@@ -370,11 +370,11 @@ what GHCR's deletion API checks.
   `Session`, `Exercise`, `Equipment`, `Athlete`, `BodyWeightEntry`)
   enforce their own invariants, the use cases orchestrate them, and the
   repository adapters only map them to and from rows. Anything that can
-  be decided without asking the database is decided in `src/domain/`,
+  be decided without asking the database is decided in `core/domain/`,
   which is why most of the test suite runs without one.
 
 - **Ports and adapters, chosen once.** Every repository is an interface
-  in `src/application/ports/persistence/` with two implementations - a
+  in `core/application/ports/persistence/` with two implementations - a
   Drizzle one and an in-memory one. Which is used is decided at
   startup, in one file, on whether `DATABASE_URL` is set; that is what
   lets the whole app (and the e2e suite) run with no database at all.
@@ -392,7 +392,7 @@ what GHCR's deletion API checks.
   mode with HMR;
   in production, it serves static assets and dispatches SSR requests to
   the request handler `build/server/index.js` exports. Nest reaches
-  into `src/` and never the reverse: a use case is a plain class, and
+  into `core/` and never the reverse: a use case is a plain class, and
   the module files name each constructor argument in an explicit
   factory rather than decorating the class.
 
@@ -404,16 +404,16 @@ what GHCR's deletion API checks.
   that names a sample the athlete has since customized trains their copy,
   while history keeps pointing at what was actually logged - `CONTEXT.md`
   calls these forward-looking and historical references, and
-  `ReferenceDirectory` (`src/application/shared/`) is the one place that
+  `ReferenceDirectory` (`core/application/shared/`) is the one place that
   resolves either kind.
 
 - **Plans are cycles, not weekdays.** A plan is an ordered list
   of day-slots (each a workout or an explicit rest day). "Today's
   slot" = `(days since anchor date) mod (slot count)` - see
-  `Plan.slotOn` in `src/domain/plan/plan.ts`. This is strict
+  `Plan.slotOn` in `core/domain/plan/plan.ts`. This is strict
   calendar-day math: it does not pause for missed days, and a
   plan's anchor date can be set independently of when it was
-  activated. `DaySchedule` (`src/application/shared/`) is the one reading
+  activated. `DaySchedule` (`core/application/shared/`) is the one reading
   of that cycle, shared by the Today page, the week ahead and the session
   a logged set opens.
 
@@ -436,7 +436,7 @@ what GHCR's deletion API checks.
   anything. The import page sits behind the normal auth gate, so a
   recipient who is not signed in is sent to Google and returned to the
   link afterwards - the account can be brand new. See
-  `src/application/use-cases/plan-import-service.ts`.
+  `core/application/use-cases/plan-import-service.ts`.
 
 - **Sets are logged individually**, not as one row per exercise, so
   pyramids/drop-sets are representable. A workout's "targets" pre-fill

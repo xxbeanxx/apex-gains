@@ -25,7 +25,7 @@ it holds definitions only, never implementation detail.
 npm run build        # production build (application, then server runtime)
 npm run build:app  # react-router build -> build/client + build/server/index.js
 npm run build:server # bundle the Nest runtime -> build/server/main.js
-npm run check:architecture # enforce the src/ layer boundaries
+npm run check:architecture # enforce the core/ layer boundaries
 npm run db:generate  # generate a Drizzle migration from the Drizzle schema
 npm run db:migrate   # apply pending migrations
 npm run db:seed      # seed/refresh the exercise library (idempotent)
@@ -66,10 +66,10 @@ neither: the domain layer is pure, so its tests construct real
 aggregates, and service tests wire real services to the in-memory
 repository adapters rather than mocking a database - taking the whole
 family from one `inMemoryRepositories()` call
-(`src/infrastructure/persistence/in-memory/repositories.ts`), never a
+(`core/infrastructure/persistence/in-memory/repositories.ts`), never a
 store constructed on its own, and constructing the
 service class directly (`new PlanService(...)`), not through Nest's
-DI container, which tests never boot - nothing under `src/` is
+DI container, which tests never boot - nothing under `core/` is
 Nest-aware, so there is no container to boot (see Server runtime,
 below). `test/contracts/persistence/` is the exception to that
 last point: it states each port's promises once and runs them against
@@ -81,7 +81,7 @@ be both the code under test and its own oracle; the behaviour only
 Postgres can show - `on delete restrict`/`cascade`, per-statement unique
 constraints, `onConflictDoNothing` - is imitated in-memory by naming the
 referencing stores to each adapter
-(`src/infrastructure/persistence/in-memory/references.ts`), which
+(`core/infrastructure/persistence/in-memory/references.ts`), which
 `inMemoryRepositories()` does for the Nest module, the contract suite and
 every service test alike. `.github/workflows/build.yaml`'s `test` job runs
 the Drizzle pass too, against a Postgres service container scoped to that
@@ -218,16 +218,16 @@ with a `crumb(data)` function (`app/lib/breadcrumbs.ts`), which
 that is never itself the current page — a resource route fetched with
 `fetcher.load`, a loader-only redirect — simply exports none.
 
-**Layers.** Hexagonal, strictly one-directional — `src/domain/` depends
+**Layers.** Hexagonal, strictly one-directional — `core/domain/` depends
 on nothing, and nothing above it may be skipped:
 
 ```
-src/domain/                    pure TS. No Drizzle, no react-router, no I/O, no env.
-src/application/ports/         what a use case needs from the outside world.
-src/application/use-cases/     application services + read models.
-src/application/shared/        helpers the use cases share.
-src/infrastructure/            concrete adapters behind the ports.
-src/shared/                    framework-neutral utilities.
+core/domain/                    pure TS. No Drizzle, no react-router, no I/O, no env.
+core/application/ports/         what a use case needs from the outside world.
+core/application/use-cases/     application services + read models.
+core/application/shared/        helpers the use cases share.
+core/infrastructure/            concrete adapters behind the ports.
+core/shared/                    framework-neutral utilities.
 
 app/                           the React Router inbound adapter.
 app/routes/                    parse form -> call use case -> map result to HTTP.
@@ -236,29 +236,29 @@ app/router/load-context.ts     how a use case reaches a route.
 server/                        the Nest composition root and HTTP runtime.
 ```
 
-`src/` is framework-neutral: nothing in it imports Nest, React Router,
+`core/` is framework-neutral: nothing in it imports Nest, React Router,
 Drizzle, Express, `openid-client`, `vite`, or `node:*` above the
 infrastructure layer, and nothing in it imports `app/` or `server/` at
-all. `app/` and `server/` may both depend on `src/application` and
-`src/domain`; `server/` may also reach `src/infrastructure`, because
+all. `app/` and `server/` may both depend on `core/application` and
+`core/domain`; `server/` may also reach `core/infrastructure`, because
 choosing an adapter is its job.
 
 `scripts/check-architecture.ts` (`npm run check:architecture`, and a CI
 step ahead of the tests) is what holds that: it scans every import
-under `src/` against the rules above and exits non-zero on a violation.
+under `core/` against the rules above and exits non-zero on a violation.
 The layering is a check, not a convention — treat a new import that
 trips it as a design question, not a rule to widen.
 
 Path aliases name the layer an import crosses into, so a reader can see
 the direction at the import: `~domain/`, `~application/`,
-`~infrastructure/`, `~shared/` for `src/*`, `~/` for `app/`, and
+`~infrastructure/`, `~shared/` for `core/*`, `~/` for `app/`, and
 `~server/` for `server/`.
 
 The `.server` suffix marks exactly one thing: a module that has a
 client-importable sibling of the same name and must not be bundled with
 it (`app/lib/intent.ts` / `intent.server.ts`, `validate-form.ts` /
 `validate-form.server.ts`, `qr.ts` / `qr.server.ts`). A server-only
-module with no such sibling carries no suffix, and nothing under `src/`
+module with no such sibling carries no suffix, and nothing under `core/`
 carries one at all. The trade-off: the suffix is a disambiguator, not a
 blanket guard, so importing `app/lib/logger.ts` from a component
 bundles it instead of failing the build. Keep server-only imports in
@@ -268,13 +268,13 @@ what actually keeps them out of the browser.
 **Server runtime.** `server/` is the NestJS composition root: it
 decides which adapter backs each port, wires everything together, and
 hosts the actual HTTP server; it holds no business logic of its own
-(that stays in `src/`, per the layers above). `server/main.ts`
+(that stays in `core/`, per the layers above). `server/main.ts`
 bootstraps Nest, then either mounts Vite in middleware mode (dev) or
 serves the built `build/client` output (prod) - both funnel non-static
 requests to a React Router `createRequestHandler`, one process either
 way. In dev `main.ts` builds that handler itself; in production it
 imports the ready-made one from `build/server/index.js` (see Build
-output, below). Nest reaches _into_ `src/`, never the other way
+output, below). Nest reaches _into_ `core/`, never the other way
 round: a use case, a repository adapter and the `UnitOfWork` are all
 plain classes taking plain constructor arguments, carrying no
 `@Injectable()` and no `@Inject()`. `server/` supplies those arguments
@@ -408,7 +408,7 @@ every class it was built from, not the route bundle's. A Nest provider
 must never hand a route a raw instance of a third-party class that
 itself runs `instanceof` checks - `openid-client`'s `Configuration` is
 one such class, which is why `GoogleIdentityAdapter`
-(`src/infrastructure/identity/google/google-identity-adapter.ts`)
+(`core/infrastructure/identity/google/google-identity-adapter.ts`)
 performs every `openid-client` call (`discovery`, `buildAuthorizationUrl`,
 `authorizationCodeGrant`) itself and exposes only plain data (a `URL`,
 an athlete profile) through the `GoogleIdentityProvider` port it
@@ -422,14 +422,14 @@ Google authorization URL" test is the one spec that exercises
 typecheck and unit tests each run one layer in isolation and never load
 the two production bundles side by side.
 
-**Domain layer.** `src/domain/` holds the rules. Aggregates (`Plan`,
+**Domain layer.** `core/domain/` holds the rules. Aggregates (`Plan`,
 `Workout`, `Session`, `Exercise`, `Equipment`, `Athlete`,
 `BodyWeightEntry`) own their own invariants; value objects (`DateOnly`,
 `Weight`, `Speed`, `Duration`, `SetTarget`, `Ownership`) stop raw
 strings and unitless numbers leaking upward. Aggregates never reach for
 identity, time, or randomness — all three arrive as ports
 (`IdGenerator`, `Clock`, `SecretGenerator`, bundled as `DomainDeps` in
-`src/application/ports/domain-deps.ts`), which is what lets every rule be
+`core/application/ports/domain-deps.ts`), which is what lets every rule be
 tested with no database and no mocks. `SecretGenerator`
 (`domain/shared/secrets.ts`) is deliberately not `IdGenerator`: a share
 token is bearer authorization, so it must never be confusable with a row
@@ -443,14 +443,14 @@ services — see `domain/plan/activation.ts` and
 `domain/athlete/administration.ts`.
 
 **Data layer.** The ports live with the use cases that need them
-(`src/application/ports/persistence/`) and the adapters that implement
-them live in `src/infrastructure/persistence/`, in a `drizzle/` and an
+(`core/application/ports/persistence/`) and the adapters that implement
+them live in `core/infrastructure/persistence/`, in a `drizzle/` and an
 `in-memory/` family. A port is over _aggregates_, not rows: `load` /
 `save` / `delete` plus real queries. Which family backs each port is
 decided once at Nest bootstrap by
 `server/repositories/repositories.module.ts` (see Server runtime,
 above), never by the port file itself.
-`src/infrastructure/persistence/drizzle/schema.ts` is the single
+`core/infrastructure/persistence/drizzle/schema.ts` is the single
 Drizzle schema (Postgres), and `drizzle.config.ts` points `db:generate`
 at it. Adapters map
 snapshots to rows and hold no rules. `save` receives the whole aggregate
@@ -470,7 +470,7 @@ Transactions are ambient: `UnitOfWork.run` publishes one via
 `AsyncLocalStorage` (`persistence/drizzle/transaction.ts`) and adapters query
 through `dbScope`, never `db`, so writes stay inside it.
 
-**Use cases.** `src/application/use-cases/` holds what routes call
+**Use cases.** `core/application/use-cases/` holds what routes call
 — `PlanService`, `WorkoutService`, `SessionService`,
 `ExerciseLibraryService`, `TrainingPlanService`, `ProgressService`,
 `AthleteService`, `BodyWeightService`, `BodyMeasurementsService`,
@@ -534,7 +534,7 @@ excluded from that user's view so the same logical item doesn't show
 twice. The copy is `aggregate.editableCopyFor(userId, deps)`; deciding
 _whether_ to copy — reusing an existing fork instead of minting a second
 one — needs a query, so it lives in
-`src/application/shared/fork.ts` (`resolveEditableCopy`), which
+`core/application/shared/fork.ts` (`resolveEditableCopy`), which
 every mutating use case goes through. Because a fork's children get new
 ids, an id that arrived on a form names a child of the _sample_; the
 returned `translateChildId` maps it onto the copy by position. Around
@@ -550,7 +550,7 @@ rows a list shows — own rows plus not-yet-forked samples — is
 `LibraryVisibility` in `domain/shared/ownership.ts`, beside `Ownership`
 itself: `selectFrom` answers it for the in-memory adapters, and because
 SQL cannot call a predicate,
-`src/infrastructure/persistence/drizzle/shared/visibility.ts`
+`core/infrastructure/persistence/drizzle/shared/visibility.ts`
 translates the same rule into one `where` builder the three forkable
 tables share. The two readings are kept in step by tests, not by the
 compiler. So "does this row's `userId` match the current user" isn't
@@ -624,7 +624,7 @@ re-derives it.
 
 **Plans are day-count cycles, not weekdays.** A plan's "today"
 slot is `(days since anchorDate) mod (slot count)` — `Plan.slotOn`
-in `src/domain/plan/plan.ts`. This is strict calendar-day math
+in `core/domain/plan/plan.ts`. This is strict calendar-day math
 done in UTC on `YYYY-MM-DD` strings (`DateOnly`): it does not pause for
 missed days, and a plan's `anchorDate` can be set independently of
 when it was activated or of what weekday it falls on. Only one plan
@@ -633,7 +633,7 @@ plans, so it lives in `domain/plan/activation.ts`
 (`activatePlan`) rather than on the aggregate, with the schema's
 `plans_one_active_per_user` partial unique index as the backstop — the
 two plans it changes must be saved in one transaction.
-`DaySchedule` (`src/application/shared/day-schedule.ts`) is the one
+`DaySchedule` (`core/application/shared/day-schedule.ts`) is the one
 reading of that cycle - what the active plan says a date is (a scheduled
 day, in `CONTEXT.md`), with the slot's workout resolved forward to the
 athlete's fork and a workout that resolves to nothing read as rest.
@@ -742,10 +742,10 @@ read the nullable context directly.
 
 **Auth.** Google OIDC via `openid-client`, reached through an
 application port like every other outside capability. `GoogleIdentityProvider`
-(`src/application/ports/identity/google-identity-provider.ts`) declares
+(`core/application/ports/identity/google-identity-provider.ts`) declares
 `beginLogin`/`completeLogin` over plain data - a `URL`, PKCE/state
 strings, a `NewAthlete` profile - never an `openid-client` type.
-`GoogleIdentityAdapter` (`src/infrastructure/identity/google/google-identity-adapter.ts`)
+`GoogleIdentityAdapter` (`core/infrastructure/identity/google/google-identity-adapter.ts`)
 is the only place that imports `openid-client`: it wraps OIDC discovery
 in a memoizing `discover()` rather than resolving it eagerly at Nest
 bootstrap, since it's a real network call to Google that shouldn't
@@ -753,7 +753,7 @@ block every server start, and both PKCE/state generation and callback
 claims validation happen inside it, alongside the discovery/authorize/grant
 calls (see "Server runtime" above for why every `openid-client` call has
 to stay on this one side of the Nest/route bundle split). `IdentityService`
-(`src/application/use-cases/identity-service.ts`) is the thin use case
+(`core/application/use-cases/identity-service.ts`) is the thin use case
 that holds the port; `server/auth/google-identity.provider.ts` binds it
 to the adapter under the `GOOGLE_IDENTITY_PROVIDER` token, and
 `identityServiceContext` is how a route reaches it. It exists
@@ -822,7 +822,7 @@ weight string or append a unit by hand. An athlete's `weightUnit` /
 number is rendered.
 
 A target's or a set's measurements, as numbers in the athlete's units,
-are `MeasurementValues` (`src/application/shared/measurement-values.ts`),
+are `MeasurementValues` (`core/application/shared/measurement-values.ts`),
 and its keys are the one list of names for them everywhere: the form
 field, the DTO property (`MeasurementFieldsDto` / `TargetFieldsDto` in
 `app/lib/measurement-fields.ts`, which a form's DTO extends), and the use

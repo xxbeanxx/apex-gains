@@ -7,21 +7,21 @@ type BoundaryRule = [directory: string, forbiddenPatterns: RegExp[]];
 
 const rules: BoundaryRule[] = [
   [
-    './src/application',
+    './core/application',
     [
       /^(?:@nestjs|react-router|@react-router|drizzle-|postgres|openid-client|express|vite|node:)/, //
       /^~(?:app|server|infrastructure)\//,
     ],
   ],
   [
-    './src/domain',
+    './core/domain',
     [
       /^~(?!domain\/)/, //
       /^(?:@nestjs|react-router|@react-router|drizzle-|postgres|openid-client|express|vite|node:)/,
     ],
   ],
   [
-    './src/infrastructure',
+    './core/infrastructure',
     [
       /^~(?:app|server)\//, //
     ],
