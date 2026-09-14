@@ -21,15 +21,12 @@
 !tsconfig.json
 
 # Include build configuration
+!react-router.config.ts
 !vite.config.ts
 !vite.server.config.ts
-!react-router.config.ts
 
 # Include the app source, server runtime, and static assets
-!web/
+!core/
 !public/
 !server/
-!src/
-
-# Exclude node_modules everywhere (installed inside container)
-**/node_modules/
+!web/
