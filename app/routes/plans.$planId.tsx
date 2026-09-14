@@ -381,6 +381,7 @@ export default function PlanDetail({ loaderData, actionData }: Route.ComponentPr
                     label={formatRelativeDate(slot.nextDate, todayDate)}
                     sublabel={slot.isRestDay ? 'Rest day' : slot.workoutName}
                     active={slot.nextDate === todayDate}
+                    wrapLabel
                   />
                 ))}
               </BuilderOutline>

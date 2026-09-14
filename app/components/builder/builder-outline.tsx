@@ -30,11 +30,19 @@ function BuilderOutlineItem({
   label,
   sublabel,
   active,
+  wrapLabel,
 }: {
   position: number;
   label: ReactNode;
   sublabel?: ReactNode;
   active?: boolean;
+  /**
+   * A date label (the plan builder's use) loses the day-of-month the moment
+   * it clips, unlike a name label (the workout builder's use), which stays
+   * identifiable when clipped. Set this to let the label wrap instead of
+   * truncating.
+   */
+  wrapLabel?: boolean;
 }) {
   return (
     <div role="listitem" className={cn('flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm', active && 'bg-brand-muted')}>
@@ -48,7 +56,7 @@ function BuilderOutlineItem({
         {position}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate">{label}</p>
+        <p className={wrapLabel ? undefined : 'truncate'}>{label}</p>
         {sublabel ? <p className="truncate text-xs text-muted-foreground">{sublabel}</p> : null}
       </div>
       {active ? <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand-strong" /> : null}
