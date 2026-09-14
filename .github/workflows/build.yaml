@@ -112,32 +112,7 @@ jobs:
         id: tags
         env:
           REPOSITORY: ${{ github.repository }}
-        run: |
-          # 8-digit date in UTC (e.g. 20260901)
-          DATE=$(date --utc +'%Y%m%d')
-
-          # 8-character commit SHA of what was actually checked out
-          SHA="${GITHUB_SHA:0:8}"
-
-          # Lowercase image repository name for GHCR
-          IMAGE_NAME=$(echo "ghcr.io/${REPOSITORY}" | tr '[:upper:]' '[:lower:]')
-
-          # 8-character hex Unix timestamp (e.g. 66d5e2c0). Same width as
-          # the SHA segment, and sorts correctly as a string until the
-          # epoch exceeds 0xffffffff (year 2106).
-          BUILD_NUM=$(printf '%08x' "$(date -u +%s)")
-
-          # Tag format: date-sha-timestamp (e.g. 20260901-abcd1234-66d5e2c0)
-          VERSION_TAG="${DATE}-${SHA}-${BUILD_NUM}"
-
-          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
-          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
-          echo "full_version_tag=${IMAGE_NAME}:${VERSION_TAG}" >> "$GITHUB_OUTPUT"
-          echo "full_latest_tag=${IMAGE_NAME}:latest" >> "$GITHUB_OUTPUT"
-
-          echo "Image tags generated:"
-          echo "  - Version: ${IMAGE_NAME}:${VERSION_TAG}"
-          echo "  - Latest:  ${IMAGE_NAME}:latest"
+        run: scripts/generate-image-tags.sh >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         run: |
@@ -145,18 +120,17 @@ jobs:
 
       - name: Build container image with Podman
         run: |
-          podman build \
-            --file containerfile \
-            --build-arg VERSION_TAG="${{ steps.tags.outputs.version_tag }}" \
-            --tag "${{ steps.tags.outputs.full_version_tag }}"              \
-            --tag "${{ steps.tags.outputs.full_latest_tag }}"               \
-            .
+          scripts/build-image.sh \
+            "${{ steps.tags.outputs.version_tag }}" \
+            "${{ steps.tags.outputs.full_version_tag }}" \
+            "${{ steps.tags.outputs.full_latest_tag }}"
 
       - name: Push container image to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
-          podman push "${{ steps.tags.outputs.full_version_tag }}"
-          podman push "${{ steps.tags.outputs.full_latest_tag }}"
+          scripts/push-image.sh \
+            "${{ steps.tags.outputs.full_version_tag }}" \
+            "${{ steps.tags.outputs.full_latest_tag }}"
 
       - name: Publish build summary
         if: always()

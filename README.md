@@ -267,11 +267,21 @@ Two things keep that split honest:
 
 Built with `containerfile` (not `Dockerfile` - this project targets
 Podman) and run locally for dev via `podman play kube` (not
-docker-compose).
+docker-compose). `scripts/` holds the tagging and Podman
+commands `.github/workflows/build.yaml`'s `build` job runs, so the
+same scripts build the image locally:
 
 ```bash
-podman build -t apex-gains -f containerfile .
+scripts/build-image.sh
 ```
+
+with no arguments, it mints its own `date-sha-timestamp` tag
+(`scripts/generate-image-tags.sh`) the same way CI does; the
+workflow instead passes the tag its "Generate image tags" step already
+produced, so the image it builds matches the one it records as the
+job's `image_tag` output. `scripts/push-image.sh
+<full_version_tag> <full_latest_tag>` pushes an already-built image and
+needs a registry session (`podman login`) first.
 
 The image contains the build output and nothing else - no
 `node_modules`, no source - because both halves of the build inline
