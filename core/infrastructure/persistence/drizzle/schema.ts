@@ -60,7 +60,7 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 export const exercises = pgTable(
   'exercises',
@@ -82,7 +82,7 @@ export const exercises = pgTable(
       .where(sql`${table.userId} is null`),
     unique('exercises_user_name_unique').on(table.userId, table.name),
   ],
-);
+).enableRLS();
 
 export const equipment = pgTable('equipment', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -90,7 +90,7 @@ export const equipment = pgTable('equipment', {
   name: text('name').notNull().unique(),
   cardioKind: cardioKindEnum('cardio_kind'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 export const exerciseEquipment = pgTable(
   'exercise_equipment',
@@ -103,7 +103,7 @@ export const exerciseEquipment = pgTable(
       .references(() => equipment.id, { onDelete: 'cascade' }),
   },
   (table) => [primaryKey({ columns: [table.exerciseId, table.equipmentId] })],
-);
+).enableRLS();
 
 export const workouts = pgTable(
   'workouts',
@@ -122,7 +122,7 @@ export const workouts = pgTable(
       .on(table.name)
       .where(sql`${table.userId} is null`),
   ],
-);
+).enableRLS();
 
 export const workoutExercises = pgTable(
   'workout_exercises',
@@ -144,7 +144,7 @@ export const workoutExercises = pgTable(
     targetRestSeconds: integer('rest_seconds'),
   },
   (table) => [unique('workout_exercises_workout_position_unique').on(table.workoutId, table.position)],
-);
+).enableRLS();
 
 export const plans = pgTable(
   'plans',
@@ -175,7 +175,7 @@ export const plans = pgTable(
       .on(table.name)
       .where(sql`${table.userId} is null`),
   ],
-);
+).enableRLS();
 
 export const planSlots = pgTable(
   'plan_slots',
@@ -190,7 +190,7 @@ export const planSlots = pgTable(
     }),
   },
   (table) => [unique('plan_slots_plan_position_unique').on(table.planId, table.position)],
-);
+).enableRLS();
 
 export const sessions = pgTable(
   'sessions',
@@ -211,7 +211,7 @@ export const sessions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('sessions_user_date_unique').on(table.userId, table.date)],
-);
+).enableRLS();
 
 export const bodyWeightLogs = pgTable(
   'body_weight_logs',
@@ -225,7 +225,7 @@ export const bodyWeightLogs = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('body_weight_logs_user_date_unique').on(table.userId, table.date)],
-);
+).enableRLS();
 
 export const bodyMeasurements = pgTable(
   'body_measurements',
@@ -240,7 +240,7 @@ export const bodyMeasurements = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('body_measurements_user_date_metric_unique').on(table.userId, table.date, table.metric)],
-);
+).enableRLS();
 
 export const sessionSets = pgTable('session_sets', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -259,7 +259,7 @@ export const sessionSets = pgTable('session_sets', {
   notes: text('notes'),
   rpe: numeric('rpe', { precision: 3, scale: 1 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /**
  * Append-only: an administrator granting or revoking access, or deleting an
@@ -277,7 +277,7 @@ export const adminActions = pgTable('admin_actions', {
   targetEmail: text('target_email').notNull(),
   action: text('action').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 export const usersRelations = relations(users, ({ many }) => ({
   workouts: many(workouts),

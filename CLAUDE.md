@@ -465,6 +465,10 @@ repository names only its table and the columns beyond `id`/parent
 id/`position`; exercise equipment links carry no position or identity of
 their own, so `exercises-repository.ts` replaces them wholesale instead
 of going through this module.
+Every table calls `.enableRLS()` with no policies: Supabase exposes `public`
+through its REST API to the anon key, and RLS with no policy denies that
+route entirely. The app is unaffected because it connects as the `postgres`
+role through the pooler, which bypasses RLS. A new table must do the same.
 Transactions are ambient: `UnitOfWork.run` publishes one via
 `AsyncLocalStorage` (`persistence/drizzle/transaction.ts`) and adapters query
 through `dbScope`, never `db`, so writes stay inside it.
