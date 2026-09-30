@@ -102,8 +102,8 @@ Config values are validated at server startup using `class-validator`:
 - `HOST` - Bind address override (optional, binds to all interfaces if unset).
 - `TRUST_PROXY` - Number of reverse-proxy hops in front of the app whose
   `X-Forwarded-*` headers Express should trust (optional, defaults to
-  `0` - trust none). The deployed app sets this to `1` for Azure
-  Container Apps' single ingress hop.
+  `0` - trust none). The deployed app sets this to `1` for Render's
+  single ingress hop.
 - `LOG_LEVEL` - Least severe NestJS log level to print (`verbose`,
   `debug`, `log`, `warn`, `error`, `fatal`; defaults to `log`).
 - `ENABLE_TEST_LOGIN=true` - Turns on `GET /auth/test-login?email=...`,
@@ -294,25 +294,24 @@ manifest, or your host's secret store).
 
 ## Hosting
 
-The app runs on Azure Container Apps (`apex-gains` app, in the
-`rg-apex-gains` resource group / `cae-apex-gains` environment, Canada
-Central), scaled to zero when idle, served at
+The app runs on Render (`apex-gains` web service, free plan, Ohio
+region), which spins the service down after ~15 minutes idle and
+cold-starts it on the next request, served at
 [apex.atomic-nucleus.com](https://apex.atomic-nucleus.com) via a
-custom domain with an Azure-managed certificate (the DNS zone lives in
-`DefaultResourceGroup-CCAN`; a CNAME + `asuid.apex` TXT record point
-it at the Container App's default `*.azurecontainerapps.io` hostname,
-which still works directly too). The image is public on GHCR
-(`ghcr.io/xxbeanxx/apex-gains`), so the Container App pulls it without
+custom domain with a Render-managed certificate (a CNAME points it at
+the service's default `*.onrender.com` hostname, which still works
+directly too; DNS is hosted at Namecheap). The image is public on GHCR
+(`ghcr.io/xxbeanxx/apex-gains`), so the service pulls it without
 registry credentials. `DATABASE_URL`, `SESSION_SECRET`, and
-`GOOGLE_CLIENT_SECRET` are stored as Container App secrets;
-`GOOGLE_CLIENT_ID`, `PORT`, and `TRUST_PROXY` (set to `1`, for Azure's
-single ingress hop) are plain env vars. The app derives its own origin
-from the request rather than a separate env var (Express's "trust
-proxy" setting, since Azure's ingress terminates TLS and forwards
-plain HTTP - see `server/main.ts`), so Google's OAuth redirect URI
-(`https://apex.atomic-nucleus.com/auth/google/callback`) just needs to
-be registered once in the Google Cloud console; there's nothing to
-configure on the Container App for it.
+`GOOGLE_CLIENT_SECRET` are stored as Render environment variable
+secrets; `GOOGLE_CLIENT_ID`, `PORT`, and `TRUST_PROXY` (set to `1`,
+for Render's single ingress hop) are plain env vars. The app derives
+its own origin from the request rather than a separate env var
+(Express's "trust proxy" setting, since Render's ingress terminates
+TLS and forwards plain HTTP - see `server/main.ts`), so Google's OAuth
+redirect URI (`https://apex.atomic-nucleus.com/auth/google/callback`)
+just needs to be registered once in the Google Cloud console; there's
+nothing to configure on the Render service for it.
 
 ## Database migrations and deployment in CI
 
@@ -323,13 +322,11 @@ push to `main`:
   Supabase project via `drizzle-kit migrate`, using the `DATABASE_URL`
   repo secret.
 - `build` - builds and pushes the container image to GHCR.
-- `deploy` - logs in to Azure via OIDC federated credentials (no
-  stored client secret; `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and
-  `AZURE_SUBSCRIPTION_ID` repo secrets identify the app registration
-  and subscription) and runs `az containerapp update` to point the
-  Container App at the image the `build` job just pushed. Migrations
-  run before the deploy, so the new image never sees a schema it
-  predates.
+- `deploy` - installs the Render CLI and runs `render deploys create`
+  to point the `apex-gains` service at the image the `build` job just
+  pushed, authenticating with the `RENDER_API_KEY` repo secret.
+  Migrations run before the deploy, so the new image never sees a
+  schema it predates.
 
 This is a straight rolling update - every push to `main` deploys.
 There's no separate staging slot or manual promotion step.

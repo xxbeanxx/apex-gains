@@ -122,16 +122,15 @@ prepared statements, unlike the transaction pooler; the direct
 connection is IPv6-only). `.github/workflows/build.yaml` runs
 `drizzle-kit migrate` against it on every push to `main` via the
 `migrate-database` job (the `DATABASE_URL` repo secret), so schema
-changes ship on merge. The app itself is hosted on Azure Container
-Apps (`apex-gains` app in the `rg-apex-gains` resource group, Canada
-Central, scale-to-zero), served at apex.atomic-nucleus.com via a
-custom domain with an Azure-managed certificate (DNS zone in
-`DefaultResourceGroup-CCAN`), and deployed by the same workflow's `deploy`
-job, which runs after `migrate-database` and `build` and points the
-Container App at the image `build` just pushed to GHCR (public, so no
-registry pull credentials are needed) via `az containerapp update`,
-authenticating to Azure with OIDC federated credentials (no stored
-client secret). Every push to `main` is a full deploy — see README.md
+changes ship on merge. The app itself is hosted on Render
+(`apex-gains` web service, free plan, Ohio region), served at
+apex.atomic-nucleus.com via a custom domain with a Render-managed
+certificate (DNS is hosted at Namecheap), and deployed by the same
+workflow's `deploy` job, which runs after `migrate-database` and
+`build` and points the service at the image `build` just pushed to
+GHCR (public, so no registry pull credentials are needed) via
+`render deploys create`, authenticating with the `RENDER_API_KEY`
+repo secret. Every push to `main` is a full deploy — see README.md
 "Hosting" and "Database migrations and deployment in CI" for details.
 `.github/workflows/cleanup-images.yaml` prunes the GHCR package
 nightly (or on demand), keeping only the 5 most recent image versions.
@@ -796,7 +795,7 @@ is_admin = true where id = '…'` — since nothing in the UI can mint it
 (e2e reaches for `/auth/test-login?admin=true`, which is gated behind
 ENABLE_TEST_LOGIN like the rest of that route).
 
-Azure Container Apps terminates TLS at
+Render terminates TLS at
 its ingress and forwards plain HTTP with `X-Forwarded-*` headers, so
 `server/main.ts` (an Express server under Nest's `@nestjs/platform-express`
 adapter, built on `@react-router/express` - see Server runtime, above)

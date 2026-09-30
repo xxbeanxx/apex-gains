@@ -127,26 +127,26 @@ jobs:
           fi
 
   deploy:
-    name: Deploy to Azure Container Apps
+    name: Deploy to Render
     needs: [migrate-database, build]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      id-token: write
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
     steps:
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Deploy image to Container Apps
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az containerapp update \
-              --name apex-gains \
-              --resource-group rg-apex-gains \
-              --image "${{ needs.build.outputs.image_tag }}"
+      - name: Install Render CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download -R render-oss/cli --pattern '*_linux_amd64.zip' --output render.zip
+          unzip -o render.zip 'cli_*'
+          sudo mv cli_* /usr/local/bin/render
+          sudo chmod +x /usr/local/bin/render
+      - name: Deploy image to Render
+        run: |
+          render deploys create srv-datp2m1srm7s739isf50 \
+            --image "${{ needs.build.outputs.image_tag }}" \
+            --wait --confirm -o json
